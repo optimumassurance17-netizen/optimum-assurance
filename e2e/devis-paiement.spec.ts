@@ -1,0 +1,67 @@
+import { test, expect } from "@playwright/test"
+
+/** Fermer le bandeau cookies s'il est visible */
+async function dismissCookieBanner(page: import("@playwright/test").Page) {
+  const acceptBtn = page.getByRole("button", { name: "Accepter" })
+  try {
+    await acceptBtn.click({ timeout: 2000 })
+  } catch {
+    // Pas de bandeau ou déjà fermé
+  }
+}
+
+test.describe("Parcours devis → paiement → attestation", () => {
+  test("Accès à la page devis et formulaire", async ({ page }) => {
+    await page.goto("/devis")
+    await expect(page.locator("h1")).toContainText("Demande de devis décennale")
+
+    // Remplir SIRET (placeholder = 12345678900012)
+    const siretInput = page.getByPlaceholder("12345678900012")
+    await siretInput.fill("73282932000074")
+
+    // Vérifier qu'on peut soumettre (bouton Remplir ou Calculer)
+    const remplirBtn = page.getByRole("button", { name: "Remplir" })
+    await expect(remplirBtn).toBeVisible()
+  })
+
+  test("Page accueil et navigation", async ({ page }) => {
+    await page.goto("/")
+    await expect(page).toHaveTitle(/Optimum Assurance/)
+    await expect(page.locator("h1")).toBeVisible()
+
+    // Accepter les cookies si bandeau affiché
+    await dismissCookieBanner(page)
+
+    // Lien direct vers devis (éviter les menus déroulants)
+    await page.goto("/devis")
+    await expect(page).toHaveURL(/\/devis/)
+    await expect(page.locator("h1")).toContainText("devis")
+  })
+
+  test("Page espace client (connexion requise)", async ({ page }) => {
+    await page.goto("/espace-client")
+    await expect(page).toHaveURL(/\/(connexion|espace-client)/)
+  })
+
+  test("Page devis dommage ouvrage", async ({ page }) => {
+    await page.goto("/devis-dommage-ouvrage")
+    await expect(page.locator("h1")).toContainText(/dommage ouvrage|devis/i)
+  })
+
+  test("Liens footer et mentions légales", async ({ page }) => {
+    await page.goto("/")
+    await dismissCookieBanner(page)
+    await page.waitForTimeout(800)
+    const mentionsLink = page.getByRole("link", { name: "Mentions légales" }).first()
+    await mentionsLink.scrollIntoViewIfNeeded()
+    await mentionsLink.click()
+    await expect(page).toHaveURL("/mentions-legales", { timeout: 10000 })
+    await expect(page.locator("h1")).toContainText("Mentions légales")
+  })
+
+  test("Politique de confidentialité", async ({ page }) => {
+    await page.goto("/confidentialite")
+    await expect(page.locator("h1")).toContainText("confidentialité")
+    await expect(page.getByRole("heading", { name: /RGPD/ })).toBeVisible()
+  })
+})

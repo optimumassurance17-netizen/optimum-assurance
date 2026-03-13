@@ -1,0 +1,45 @@
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+    }
+
+    const [documents, payments] = await Promise.all([
+      prisma.document.findMany({
+        where: { userId: session.user.id },
+        select: { type: true, status: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.payment.findMany({
+        where: { userId: session.user.id },
+        select: { amount: true, status: true, paidAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+    ])
+
+    const attestations = documents.filter((d) => d.type === "attestation" || d.type === "attestation_do")
+    const suspendedCount = attestations.filter((d) => d.status === "suspendu").length
+    const paidTotal = payments.filter((p) => p.status === "paid").reduce((acc, p) => acc + p.amount, 0)
+
+    return NextResponse.json({
+      documentsCount: documents.length,
+      attestationsCount: attestations.length,
+      suspendedCount,
+      paymentsCount: payments.length,
+      paidTotal,
+      lastPayment: payments.find((p) => p.status === "paid"),
+    })
+  } catch (error) {
+    console.error("Erreur summary client:", error)
+    return NextResponse.json(
+      { error: "Erreur lors de la récupération" },
+      { status: 500 }
+    )
+  }
+}

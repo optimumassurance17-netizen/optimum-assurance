@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/rappels-renouvellement",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/rappel-devis-abandonne",
+      "schedule": "0 10 * * *"
+    }
+  ]
+}

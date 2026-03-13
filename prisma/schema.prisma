@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String                 @id @default(cuid())
+  email                 String                 @unique
+  passwordHash          String
+  raisonSociale         String?
+  siret                String?
+  adresse               String?
+  codePostal            String?
+  ville                 String?
+  telephone             String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  documents             Document[]
+  userDocuments         UserDocument[]
+  payments              Payment[]
+  avenantFees           AvenantFee[]
+  passwordResetTokens   PasswordResetToken[]
+  resiliationRequests   ResiliationRequest[]
+  clientNotes           ClientNote[]
+  sinistres             Sinistre[]
+}
+
+model UserDocument {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // kbis | piece_identite | ... | releve_sinistralite | ...
+  filename  String
+  filepath  String   // chemin relatif sur le serveur
+  mimeType  String
+  size      Int      // octets
+  createdAt DateTime @default(now())
+  sinistres Sinistre[]
+
+  @@unique([userId, type])
+}
+
+model Sinistre {
+  id               String        @id @default(cuid())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userDocumentId   String?       // relevé de sinistralité auquel ce sinistre est lié
+  userDocument     UserDocument? @relation(fields: [userDocumentId], references: [id], onDelete: SetNull)
+  dateSinistre     DateTime
+  montantIndemnisation Float?
+  description      String?
+  createdAt        DateTime      @default(now())
+}
+
+model Document {
+  id                   String               @id @default(cuid())
+  userId               String
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type                 String               // "devis" | "contrat" | "attestation" | "avenant"
+  numero               String               @unique
+  data                 String               // JSON des données du document
+  verificationToken    String?              @unique // pour QR code attestation
+  status               String               @default("valide") // "valide" | "perimee" | "suspendu" | "resilie"
+  createdAt            DateTime             @default(now())
+  resiliationLogs      ResiliationLog[]
+  resiliationRequests  ResiliationRequest[]
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  molliePaymentId String  @unique
+  amount          Float
+  status          String   // "paid" | "pending" | "failed"
+  paidAt          DateTime?
+  metadata        String?  // JSON
+  createdAt       DateTime @default(now())
+}
+
+model AvenantFee {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentId String
+  amount     Float     @default(60)
+  status     String    @default("pending")
+  paidAt     DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model DevisLead {
+  id            String   @id @default(cuid())
+  email         String
+  raisonSociale String?
+  siret         String?
+  primeAnnuelle Float?
+  rappelSentAt  DateTime?
+  createdAt     DateTime @default(now())
+}
+
+model DevisEtudeLead {
+  id            String   @id @default(cuid())
+  email         String
+  raisonSociale String?
+  siret         String?
+  data          String   // JSON : chiffreAffaires, sinistres, activites, etc.
+  statut        String   @default("pending") // pending | mise_envoyee | cloture
+  primeProposee Float?   // prime personnalisée envoyée au client
+  miseEnvoyeeAt DateTime?
+  createdAt     DateTime @default(now())
+}
+
+model DevisDommageOuvrageLead {
+  id        String   @id @default(cuid())
+  email     String
+  data      String   // JSON du questionnaire
+  coutTotal Float?
+  createdAt DateTime @default(now())
+}
+
+model PendingSignature {
+  id                 String   @id @default(cuid())
+  signatureRequestId String   @unique // ID Yousign
+  userId             String
+  contractData       String   // JSON du contrat
+  contractNumero     String
+  createdAt          DateTime @default(now())
+}
+
+model DevoirConseilLog {
+  id         String   @id @default(cuid())
+  email      String?
+  userId     String?
+  page       String   // souscription | signature | formulaire_do | paiement_do
+  produit    String   // decennale | dommage-ouvrage
+  acceptedAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model ResiliationLog {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  adminEmail String
+  motif      String?
+  createdAt  DateTime @default(now())
+}
+
+model ResiliationRequest {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  motif      String?
+  status     String   @default("pending") // pending | approved | rejected
+  approvedAt DateTime?
+  approvedBy String?
+  createdAt  DateTime @default(now())
+}
+
+model DevisDraft {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  data      String   // JSON du devis en cours
+  produit   String   @default("decennale") // decennale | dommage-ouvrage
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model ClientNote {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content    String
+  adminEmail String
+  createdAt  DateTime @default(now())
+}
+
+model AdminActivityLog {
+  id         String   @id @default(cuid())
+  adminEmail String
+  action     String
+  targetType String?  // user | document | payment | ...
+  targetId   String?
+  details    String?  // JSON
+  createdAt  DateTime @default(now())
+}

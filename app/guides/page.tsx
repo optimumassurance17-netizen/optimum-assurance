@@ -1,0 +1,106 @@
+import Link from "next/link"
+import { Header } from "@/components/Header"
+import { Breadcrumb } from "@/components/Breadcrumb"
+import { GUIDES_SEO } from "@/lib/guides-seo"
+
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+
+export const metadata = {
+  title: "Guides Assurance Décennale et Dommage Ouvrage | Optimum",
+  description:
+    "Guides pratiques : obligation décennale, résiliation, sinistre, dommage ouvrage, auto-construction, garantie clos et couvert. Décennale BTP et DO.",
+  alternates: { canonical: `${baseUrl}/guides` },
+  openGraph: {
+    url: `${baseUrl}/guides`,
+    title: "Guides Décennale & Dommage Ouvrage | Optimum Assurance",
+  },
+}
+
+export default function GuidesPage() {
+  return (
+    <main className="min-h-screen bg-[var(--background)]">
+      <Header />
+
+      <div className="max-w-3xl mx-auto px-6 py-14">
+        <Breadcrumb items={[{ label: "Accueil", href: "/" }, { label: "Guides" }]} />
+        <h1 className="text-3xl md:text-4xl font-bold text-[#0a0a0a] mb-4">
+          Guides assurance décennale et dommage ouvrage
+        </h1>
+        <p className="text-lg text-[#171717] mb-12">
+          Tout ce qu&apos;il faut savoir sur l&apos;assurance décennale BTP et l&apos;assurance dommage ouvrage pour maîtres d&apos;ouvrage.
+        </p>
+
+        <section className="mb-12">
+          <h2 className="text-lg font-bold text-[#0a0a0a] mb-4 flex items-center gap-2">
+            <span className="bg-[#FEF3F0] text-[#C65D3B] px-2 py-0.5 rounded text-sm">Décennale BTP</span>
+          </h2>
+          <div className="space-y-6">
+            {GUIDES_SEO.filter((g) => ["obligation-decennale", "resiliation-decennale", "declaration-sinistre"].includes(g.slug)).map((guide) => (
+              <Link
+                key={guide.slug}
+                href={`/guides/${guide.slug}`}
+                className="block bg-white rounded-2xl p-6 border border-[#e5e5e5] hover:border-[#C65D3B]/40 hover:shadow-md transition-all group"
+              >
+                <h3 className="text-xl font-bold text-[#0a0a0a] mb-2 group-hover:text-[#C65D3B] transition-colors">
+                  {guide.title}
+                </h3>
+                <p className="text-[#171717] text-sm leading-relaxed">
+                  {guide.description}
+                </p>
+                <p className="text-[#C65D3B] font-medium mt-3 text-sm">
+                  Lire le guide →
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-bold text-[#0a0a0a] mb-4 flex items-center gap-2">
+            <span className="bg-[#FEF3F0] text-[#C65D3B] px-2 py-0.5 rounded text-sm">Dommage ouvrage</span>
+          </h2>
+          <div className="space-y-6">
+            {GUIDES_SEO.filter((g) => ["obligation-dommage-ouvrage", "dommage-ouvrage-auto-construction", "garantie-clos-couvert"].includes(g.slug)).map((guide) => (
+              <Link
+                key={guide.slug}
+                href={`/guides/${guide.slug}`}
+                className="block bg-white rounded-2xl p-6 border border-[#e5e5e5] hover:border-[#C65D3B]/40 hover:shadow-md transition-all group"
+              >
+                <h3 className="text-xl font-bold text-[#0a0a0a] mb-2 group-hover:text-[#C65D3B] transition-colors">
+                  {guide.title}
+                </h3>
+                <p className="text-[#171717] text-sm leading-relaxed">
+                  {guide.description}
+                </p>
+                <p className="text-[#C65D3B] font-medium mt-3 text-sm">
+                  Lire le guide →
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <div className="mt-12 flex flex-wrap justify-center gap-4">
+          <Link
+            href="/devis"
+            className="inline-block bg-[#C65D3B] text-white px-8 py-4 rounded-2xl hover:bg-[#B04F2F] font-semibold transition-all"
+          >
+            Devis décennale
+          </Link>
+          <Link
+            href="/devis-dommage-ouvrage"
+            className="inline-block border-2 border-[#C65D3B] text-[#C65D3B] px-8 py-4 rounded-2xl hover:bg-[#FEF3F0] font-semibold transition-all"
+          >
+            Devis dommage ouvrage
+          </Link>
+        </div>
+
+        <p className="text-center mt-8">
+          <Link href="/" className="text-[#C65D3B] font-medium hover:underline">
+            ← Retour à l&apos;accueil
+          </Link>
+        </p>
+      </div>
+    </main>
+  )
+}
