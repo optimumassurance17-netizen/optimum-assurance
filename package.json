@@ -2,6 +2,7 @@
   "name": "optimum-assurance",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.0.0",
   "scripts": {
     "dev": "next dev",
     "dev:setup": "node scripts/dev-setup.mjs",

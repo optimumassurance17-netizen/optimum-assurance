@@ -473,7 +473,7 @@ export default function GestionPage() {
               {(data.devisEtudeLeads?.length ?? 0) > 0 && (
                 <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                   <p className="text-gray-300 text-sm">Demandes d&apos;étude</p>
-                  <p className="text-2xl font-bold text-[#C65D3B]">{data.devisEtudeLeads.length}</p>
+                  <p className="text-2xl font-bold text-[#C65D3B]">{data.devisEtudeLeads?.length ?? 0}</p>
                   <p className="text-xs text-gray-400 mt-1">À traiter (remise personnalisée)</p>
                 </div>
               )}

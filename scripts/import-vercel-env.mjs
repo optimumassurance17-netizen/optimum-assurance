@@ -8,7 +8,7 @@
  */
 import { readFileSync, existsSync } from "node:fs"
 import { resolve } from "node:path"
-import { spawn } from "node:child_process"
+import { execSync } from "node:child_process"
 
 const root = resolve(process.cwd())
 const envPath = resolve(root, "vercel-env.env")
@@ -50,25 +50,13 @@ if (vars.length === 0) {
   process.exit(1)
 }
 
-const ENVIRONMENTS = ["production", "preview", "development"]
+const ENVIRONMENTS = ["production", "development"]
 
 function addOne(key, value, env) {
-  return new Promise((resolve, reject) => {
-    const proc = spawn(
-      process.platform === "win32" ? "npx.cmd" : "npx",
-      ["vercel", "env", "add", key, env, "--yes", "--force"],
-      {
-        stdio: ["pipe", "inherit", "inherit"],
-      }
-    )
-
-    proc.stdin.write(value, "utf8")
-    proc.stdin.end()
-
-    proc.on("close", (code) => {
-      if (code === 0) resolve()
-      else reject(new Error(`vercel env add ${key} ${env} → exit ${code}`))
-    })
+  execSync(`npx vercel env add ${key} ${env} --yes --force`, {
+    input: value,
+    encoding: "utf8",
+    stdio: ["pipe", "inherit", "inherit"],
   })
 }
 
@@ -79,7 +67,7 @@ async function main() {
   for (const { key, value } of vars) {
     for (const env of ENVIRONMENTS) {
       try {
-        await addOne(key, value, env)
+        addOne(key, value, env)
         console.log(`   ✓ ${key} (${env})`)
       } catch (e) {
         console.error(`   ✗ ${key} (${env}): ${e.message}`)

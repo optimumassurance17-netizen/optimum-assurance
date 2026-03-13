@@ -42,8 +42,8 @@ Fais-les dans l'ordre.
 4. Clique **Import**
 
 **Option B — Via la CLI (automatique)**  
-1. Dans le terminal : `vercel login` (une fois, pour te connecter)  
-2. Puis : `vercel link` (une fois, pour lier le projet)  
+1. Dans le terminal : `npx vercel login` (une fois, pour te connecter — ouvre le navigateur)  
+2. Puis : `npx vercel link` (une fois, pour lier le projet)  
 3. Enfin : `npm run vercel:import`  
    → Toutes les variables de vercel-env.env sont envoyées vers Vercel
 
