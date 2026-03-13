@@ -32,8 +32,8 @@ export function HeaderClient() {
 
   const navLinks = (
     <>
-      {/* Obtenir un devis — en premier, bien visible */}
-      <div className="pb-4 mb-4 border-b border-[#e5e5e5] dark:border-gray-700">
+      {/* Obtenir un devis — en premier, bien visible, ne pas compresser */}
+      <div className="pb-4 mb-4 border-b border-[#e5e5e5] dark:border-gray-700 flex-shrink-0">
         <p className="text-xs font-semibold text-[#737373] dark:text-gray-400 uppercase tracking-wide px-1 mb-3">Obtenir un devis</p>
         <Link
           href="/devis"
@@ -84,8 +84,8 @@ export function HeaderClient() {
           </span>
         </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-2 sm:gap-4 shrink-0" aria-label="Navigation principale">
+        {/* Desktop nav — uniquement sur grands écrans (lg+) pour éviter le dropdown buggé sur mobile/tablette */}
+        <nav className="hidden lg:flex items-center gap-2 sm:gap-4 shrink-0" aria-label="Navigation principale">
           <ThemeToggle />
           <Link href="/devis-dommage-ouvrage" className="text-[#171717] hover:text-[#0a0a0a] dark:text-gray-200 dark:hover:text-white font-medium text-sm px-2 py-2 -my-2 sm:px-0 sm:py-0 min-h-[44px] flex items-center justify-center transition-colors">
             Dommage ouvrage
@@ -127,8 +127,8 @@ export function HeaderClient() {
               id="devis-menu"
               role="menu"
               aria-labelledby="devis-trigger"
-              className={`absolute right-0 mt-1 py-2 min-w-[260px] w-72 bg-white rounded-xl border border-[#e5e5e5] shadow-xl transition-all z-[60] dark:bg-gray-800 dark:border-gray-700 ${
-                devisOpen ? "opacity-100 visible" : "opacity-0 invisible"
+              className={`absolute right-0 top-full mt-1 py-2 min-w-[260px] w-72 bg-white rounded-xl border border-[#e5e5e5] shadow-xl transition-all z-[60] dark:bg-gray-800 dark:border-gray-700 ${
+                devisOpen ? "opacity-100 visible pointer-events-auto" : "opacity-0 invisible pointer-events-none"
               }`}
             >
               <div className="px-4 py-2 border-b border-[#e5e5e5] dark:border-gray-700">
@@ -157,8 +157,8 @@ export function HeaderClient() {
           </div>
         </nav>
 
-        {/* Mobile: ThemeToggle + Hamburger */}
-        <div className="flex md:hidden items-center gap-1">
+        {/* Mobile/Tablette: ThemeToggle + Hamburger */}
+        <div className="flex lg:hidden items-center gap-1">
           <ThemeToggle />
           <button
             type="button"
@@ -182,9 +182,9 @@ export function HeaderClient() {
 
       {/* Mobile menu drawer */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[110] md:hidden" role="dialog" aria-modal="true" aria-label="Menu de navigation">
+        <div className="fixed inset-0 z-[110] lg:hidden" role="dialog" aria-modal="true" aria-label="Menu de navigation">
           <div className="absolute inset-0 bg-black/30" onClick={closeMobile} aria-hidden />
-          <nav className="absolute top-0 right-0 w-80 max-w-[85vw] h-full bg-white dark:bg-gray-900 shadow-2xl p-6 pt-16 flex flex-col gap-1 overflow-y-auto">
+          <nav className="absolute top-0 right-0 w-80 max-w-[85vw] h-full bg-white dark:bg-gray-900 shadow-2xl p-6 pt-16 flex flex-col gap-1 overflow-y-auto overscroll-contain">
             {navLinks}
           </nav>
         </div>
