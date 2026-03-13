@@ -6,13 +6,11 @@ Fais-les dans l'ordre.
 
 ## ÉTAPE 1 : Base de données (2 minutes)
 
-1. Va sur **vercel.com**
-2. Ouvre ton projet **optimum-assurance**
-3. En haut, clique sur l'onglet **Storage**
-4. Clique sur **Create Database**
-5. Choisis **Postgres**
-6. Clique sur **Create**
-7. **C'est tout** — Vercel ajoute DATABASE_URL automatiquement
+1. Va sur **vercel.com** → ton projet **optimum-assurance**
+2. Onglet **Storage** (ou **Integrations** → Marketplace)
+3. **Create Database** → **Postgres** → **Create**  
+   *ou* Marketplace → **Neon** → **Install** → **Create New Neon Account**
+4. **C'est tout** — Vercel ajoute DATABASE_URL automatiquement
 
 ---
 
@@ -46,6 +44,18 @@ Fais-les dans l'ordre.
 2. Puis : `npx vercel link` (une fois, pour lier le projet)  
 3. Enfin : `npm run vercel:import`  
    → Toutes les variables de vercel-env.env sont envoyées vers Vercel
+
+---
+
+## ÉTAPE 4 : Créer les tables (premier déploiement)
+
+Après avoir créé la base (étape 1), dans le terminal :
+
+```bash
+npm run vercel:db-push
+```
+
+→ Récupère DATABASE_URL depuis Vercel et crée les tables.
 
 ---
 

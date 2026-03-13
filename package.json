@@ -15,7 +15,8 @@
     "db:generate": "prisma generate",
     "generate-secret": "node scripts/generate-secret.mjs",
     "check-env": "node scripts/check-env.mjs",
-    "vercel:import": "node scripts/import-vercel-env.mjs"
+    "vercel:import": "node scripts/import-vercel-env.mjs",
+    "vercel:db-push": "node scripts/db-push-vercel.mjs"
   },
   "dependencies": {
     "@mollie/api-client": "^4.4.0",

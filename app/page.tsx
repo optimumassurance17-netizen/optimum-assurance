@@ -49,7 +49,7 @@ export default function Home() {
       <Header />
 
       {/* OBLIGATION - bandeau d'urgence */}
-      <section className="relative z-0 bg-[#C65D3B] text-white px-6 py-6">
+      <section className="relative z-0 bg-[#C65D3B] text-white px-4 sm:px-6 py-5 sm:py-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6">
           <p className="font-semibold text-sm md:text-base text-center sm:text-left">
             Obligatoire pour tous les professionnels du BTP (loi Spinetta 1978) — Sans assurance décennale : jusqu&apos;à 75 000 € d&apos;amende et 6 mois d&apos;emprisonnement
@@ -66,7 +66,7 @@ export default function Home() {
       {/* HERO - gradient, impactant */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#FEF3F0] via-[#FAFAF9] to-[#F5F5F4]" />
-        <div className="relative px-6 md:px-8 py-20 md:py-32">
+        <div className="relative px-4 sm:px-4 sm:px-6 md:px-8 py-14 sm:py-20 md:py-32">
           <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 lg:gap-20 items-center">
             <div>
               <div className="flex flex-wrap gap-2 mb-4">
@@ -126,7 +126,7 @@ export default function Home() {
       <section className="relative overflow-hidden" aria-labelledby="do-section">
         <div className="absolute inset-0 bg-gradient-to-r from-[#C65D3B] via-[#D96B4A] to-[#C65D3B]" />
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.08\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50" />
-        <div className="relative px-6 md:px-8 py-16 md:py-20">
+        <div className="relative px-4 sm:px-4 sm:px-6 md:px-8 py-12 sm:py-16 md:py-20">
           <div className="max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="text-white">
@@ -194,7 +194,7 @@ export default function Home() {
       </section>
 
       {/* OBLIGATION + ARGUMENTS */}
-      <section className="px-6 md:px-8 py-20 bg-white border-y border-[#e5e5e5]">
+      <section className="px-4 sm:px-6 md:px-8 py-20 bg-white border-y border-[#e5e5e5]">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-6 text-center">
             Pourquoi l&apos;assurance décennale est obligatoire
@@ -236,7 +236,7 @@ export default function Home() {
       </section>
 
       {/* MÉTIERS BTP — icônes */}
-      <section className="px-6 md:px-8 py-16 bg-white border-y border-[#e5e5e5]">
+      <section className="px-4 sm:px-6 md:px-8 py-16 bg-white border-y border-[#e5e5e5]">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-xl md:text-2xl font-bold text-[#0a0a0a] mb-2 text-center">
             Plus de 100 métiers couverts
@@ -260,7 +260,7 @@ export default function Home() {
       </section>
 
       {/* ASSURANCE DÉCENNALE - focus principal */}
-      <section className="px-6 md:px-8 py-20 bg-[var(--background)]">
+      <section className="px-4 sm:px-6 md:px-8 py-20 bg-[var(--background)]">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-4 text-center">
             Assurance décennale BTP — Notre spécialité
@@ -306,7 +306,7 @@ export default function Home() {
       </section>
 
       {/* OFFRE DÉCOUVERTE + JEUNES ENTREPRISES */}
-      <section className="px-6 md:px-8 py-16 bg-gradient-to-r from-[#FEF3F0] to-[#F9F6F0] border-y border-[#e5e5e5]">
+      <section className="px-4 sm:px-6 md:px-8 py-16 bg-gradient-to-r from-[#FEF3F0] to-[#F9F6F0] border-y border-[#e5e5e5]">
         <div className="max-w-4xl mx-auto text-center">
           <span className="inline-block bg-[#C65D3B] text-white text-sm font-semibold px-4 py-1.5 rounded-full mb-4">Offre découverte</span>
           <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2">Devis gratuit et sans engagement</h2>
@@ -321,7 +321,7 @@ export default function Home() {
       </section>
 
       {/* COMPARATEUR DE PRIX */}
-      <section className="px-6 md:px-8 py-20 bg-white">
+      <section className="px-4 sm:px-6 md:px-8 py-20 bg-white">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-6 text-center">Comparez et économisez</h2>
           <div className="grid md:grid-cols-3 gap-6">
@@ -345,7 +345,7 @@ export default function Home() {
       </section>
 
       {/* TABLEAU DES GARANTIES */}
-      <section className="px-6 md:px-8 py-20 bg-white border-y border-[#e5e5e5]">
+      <section className="px-4 sm:px-6 md:px-8 py-20 bg-white border-y border-[#e5e5e5]">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2 text-center">
             Garanties incluses dans votre contrat
@@ -382,7 +382,7 @@ export default function Home() {
       </section>
 
       {/* TÉMOIGNAGES + NOTE */}
-      <section className="px-6 md:px-8 py-20 bg-[var(--background)] border-y border-[#e5e5e5]">
+      <section className="px-4 sm:px-6 md:px-8 py-20 bg-[var(--background)] border-y border-[#e5e5e5]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
             <p className="text-4xl font-bold text-[#0a0a0a] mb-1">4,9</p>
@@ -416,7 +416,7 @@ export default function Home() {
       </section>
 
       {/* GUIDES PRATIQUES */}
-      <section className="px-6 md:px-8 py-16 bg-white border-y border-[#e5e5e5]">
+      <section className="px-4 sm:px-6 md:px-8 py-16 bg-white border-y border-[#e5e5e5]">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl font-bold text-[#0a0a0a] mb-2 text-center">Guides décennale et dommage ouvrage</h2>
           <p className="text-[#171717] text-center mb-8 max-w-xl mx-auto">
@@ -455,7 +455,7 @@ export default function Home() {
       </section>
 
       {/* PARTENAIRES TECHNIQUES */}
-      <section className="px-6 md:px-8 py-16 bg-[var(--background)] border-y border-[#e5e5e5]">
+      <section className="px-4 sm:px-6 md:px-8 py-16 bg-[var(--background)] border-y border-[#e5e5e5]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-xl font-bold text-[#0a0a0a] mb-2">Partenaires de confiance</h2>
           <p className="text-[#171717] text-sm mb-8">Paiement sécurisé et signature électronique certifiée</p>
@@ -467,7 +467,7 @@ export default function Home() {
       </section>
 
       {/* PARTENARIATS */}
-      <section className="px-6 md:px-8 py-20 bg-white">
+      <section className="px-4 sm:px-6 md:px-8 py-20 bg-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl font-bold text-[#0a0a0a] mb-4">Partenariats professionnels</h2>
           <p className="text-[#171717] mb-8 leading-relaxed">
@@ -480,7 +480,7 @@ export default function Home() {
       </section>
 
       {/* CONTACT — Comment pouvons-nous vous aider ? */}
-      <section className="px-6 md:px-8 py-20 bg-white border-y border-[#e5e5e5]">
+      <section className="px-4 sm:px-6 md:px-8 py-20 bg-white border-y border-[#e5e5e5]">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2 text-center">
             Comment pouvons-nous vous aider ?
@@ -507,7 +507,7 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="px-6 md:px-8 py-20 bg-[var(--background)]">
+      <section className="px-4 sm:px-6 md:px-8 py-20 bg-[var(--background)]">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-8">
             Conformité légale et meilleur prix — protégez votre activité dès aujourd&apos;hui

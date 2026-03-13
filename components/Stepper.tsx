@@ -40,7 +40,7 @@ export function Stepper({ currentStep }: { currentStep: string }) {
               >
                 {i < currentIndex ? "✓" : i + 1}
               </div>
-              <span className={`text-xs mt-2 hidden sm:block text-center font-medium ${i <= currentIndex ? "text-[#0a0a0a]" : "text-[#171717]"}`}>
+              <span className={`text-[10px] sm:text-xs mt-2 block text-center font-medium truncate max-w-full ${i <= currentIndex ? "text-[#0a0a0a]" : "text-[#171717]"}`} title={step.label}>
                 {step.label}
               </span>
             </div>

@@ -88,7 +88,7 @@ export default function SouscriptionPage() {
     <main className="min-h-screen bg-[#FDF8F3]">
       <Header />
 
-      <div className="max-w-2xl mx-auto px-6 py-12">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
         <Breadcrumb items={[{ label: "Accueil", href: "/" }, { label: "Devis", href: "/devis" }, { label: "Souscription" }]} />
         <Stepper currentStep="souscription" />
         <h1 className="text-3xl font-semibold mb-2 text-black">

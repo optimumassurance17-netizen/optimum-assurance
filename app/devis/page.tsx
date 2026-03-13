@@ -178,7 +178,7 @@ function DevisPageContent() {
     <main className="min-h-screen bg-[var(--background)]">
       <Header />
 
-      <div className="max-w-2xl mx-auto px-6 py-14">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
         <Breadcrumb items={[{ label: "Accueil", href: "/" }, { label: "Devis décennale" }]} />
         <Stepper currentStep="devis" />
         <h1 className="text-3xl md:text-4xl font-bold mb-3 text-[#0a0a0a]">
@@ -193,7 +193,7 @@ function DevisPageContent() {
             <label className="block mb-3 font-semibold text-[#0a0a0a]">
               Numéro SIRET
             </label>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 value={siret}
@@ -504,7 +504,7 @@ function DevisPageContent() {
               </div>
               <div className="mt-4 pt-4 border-t border-[#C65D3B]/20">
                 <p className="text-sm font-medium text-[#0a0a0a] mb-2">Sauvegarder et recevoir un lien pour reprendre ce devis (valable 7 jours)</p>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="email"
                     value={emailDevis}

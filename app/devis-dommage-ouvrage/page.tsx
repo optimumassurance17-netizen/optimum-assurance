@@ -33,7 +33,7 @@ export default function DevisDommageOuvragePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <Header />
 
-      <div className="max-w-2xl mx-auto px-6 py-14 text-black">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-14 text-black">
         <Breadcrumb items={[{ label: "Accueil", href: "/" }, { label: "Devis dommage ouvrage" }]} />
 
         <div className="mb-8">

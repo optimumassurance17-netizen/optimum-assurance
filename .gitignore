@@ -45,3 +45,4 @@ vercel-env.env
 next-env.d.ts
 
 .vercel
+.env*.local

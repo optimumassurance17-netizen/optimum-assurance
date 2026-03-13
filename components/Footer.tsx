@@ -4,7 +4,7 @@ const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance
 
 export function Footer() {
   return (
-    <footer className="px-6 md:px-8 py-12 border-t border-[#e5e5e5] bg-white dark:bg-gray-900 dark:border-gray-700">
+    <footer className="px-4 sm:px-6 md:px-8 py-10 sm:py-12 border-t border-[#e5e5e5] bg-white dark:bg-gray-900 dark:border-gray-700">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
           <p className="font-bold text-[#0a0a0a] dark:text-white text-lg">Optimum Assurance</p>
@@ -15,29 +15,29 @@ export function Footer() {
           </div>
         </div>
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <nav className="flex flex-wrap justify-center gap-6 text-sm">
-            <Link href="/contact" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors">
+          <nav className="flex flex-wrap justify-center gap-4 sm:gap-6 text-sm">
+            <Link href="/contact" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors py-2 min-h-[44px] flex items-center">
               Contact
             </Link>
-            <Link href="/avis" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors">
+            <Link href="/avis" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors py-2 min-h-[44px] flex items-center">
               Avis clients
             </Link>
-            <Link href="/guides" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors">
+            <Link href="/guides" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors py-2 min-h-[44px] flex items-center">
               Guides
             </Link>
-            <Link href="/faq" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors">
+            <Link href="/faq" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors py-2 min-h-[44px] flex items-center">
               FAQ
             </Link>
-            <Link href="/cgv" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors">
+            <Link href="/cgv" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors py-2 min-h-[44px] flex items-center">
               CGV
             </Link>
-            <Link href="/mentions-legales" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors">
+            <Link href="/mentions-legales" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors py-2 min-h-[44px] flex items-center">
               Mentions légales
             </Link>
-            <Link href="/confidentialite" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors">
+            <Link href="/confidentialite" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors py-2 min-h-[44px] flex items-center">
               Confidentialité
             </Link>
-            <Link href="/droits-personnes" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors">
+            <Link href="/droits-personnes" className="text-[#171717] dark:text-gray-300 hover:text-[#C65D3B] transition-colors py-2 min-h-[44px] flex items-center">
               Droits RGPD
             </Link>
           </nav>

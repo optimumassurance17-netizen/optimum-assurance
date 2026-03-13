@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle"
 export function HeaderClient() {
   const { data: session, status } = useSession()
   const [devisOpen, setDevisOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const devisRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -20,6 +21,45 @@ export function HeaderClient() {
     document.addEventListener("click", handleClickOutside)
     return () => document.removeEventListener("click", handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    if (mobileMenuOpen) document.body.style.overflow = "hidden"
+    else document.body.style.overflow = ""
+    return () => { document.body.style.overflow = "" }
+  }, [mobileMenuOpen])
+
+  const closeMobile = () => setMobileMenuOpen(false)
+
+  const navLinks = (
+    <>
+      <Link href="/devis-dommage-ouvrage" onClick={closeMobile} className="text-[#171717] hover:text-[#0a0a0a] dark:text-gray-200 dark:hover:text-white font-medium text-base py-3 min-h-[44px] flex items-center transition-colors">
+        Dommage ouvrage
+      </Link>
+      <Link href="/faq" onClick={closeMobile} className="text-[#171717] hover:text-[#0a0a0a] dark:text-gray-200 dark:hover:text-white font-medium text-base py-3 min-h-[44px] flex items-center transition-colors">
+        FAQ
+      </Link>
+      <Link href="/guides" onClick={closeMobile} className="text-[#171717] hover:text-[#0a0a0a] dark:text-gray-200 dark:hover:text-white font-medium text-base py-3 min-h-[44px] flex items-center transition-colors">
+        Guides
+      </Link>
+      <Link href="/espace-client" onClick={closeMobile} className="border-2 border-[#C65D3B] text-[#C65D3B] px-4 py-3 rounded-xl hover:bg-[#C65D3B] hover:text-white font-semibold text-base transition-all dark:border-[#C65D3B] dark:text-[#C65D3B] dark:hover:bg-[#C65D3B] dark:hover:text-white min-h-[44px] flex items-center">
+        Espace client
+      </Link>
+      {status === "authenticated" && session && (
+        <button type="button" onClick={() => { closeMobile(); signOut({ callbackUrl: "/" }) }} className="text-[#737373] hover:text-[#C65D3B] dark:text-gray-400 dark:hover:text-[#C65D3B] font-medium text-base py-3 min-h-[44px] flex items-center transition-colors text-left w-full">
+          Déconnexion
+        </button>
+      )}
+      <div className="pt-2 border-t border-[#e5e5e5] dark:border-gray-700 mt-2">
+        <p className="text-xs font-semibold text-[#737373] dark:text-gray-400 uppercase tracking-wide px-1 mb-2">Obtenir un devis</p>
+        <Link href="/devis" onClick={closeMobile} className="block py-3 text-[#0a0a0a] dark:text-white font-medium min-h-[44px]">
+          Devis décennale — 3 min
+        </Link>
+        <Link href="/devis-dommage-ouvrage" onClick={closeMobile} className="block py-3 text-[#0a0a0a] dark:text-white font-medium min-h-[44px]">
+          Devis dommage ouvrage — 24h
+        </Link>
+      </div>
+    </>
+  )
 
   return (
     <header className="relative z-50 overflow-visible px-4 sm:px-6 md:px-8 py-4 sm:py-5 border-b border-[#e5e5e5] bg-white/95 backdrop-blur-sm dark:bg-gray-900/95 dark:border-gray-700">
@@ -33,15 +73,16 @@ export function HeaderClient() {
           </span>
         </Link>
 
-        <nav className="flex items-center gap-2 sm:gap-4 shrink-0" aria-label="Navigation principale">
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-2 sm:gap-4 shrink-0" aria-label="Navigation principale">
           <ThemeToggle />
-          <Link href="/devis-dommage-ouvrage" className="hidden md:flex text-[#171717] hover:text-[#0a0a0a] dark:text-gray-200 dark:hover:text-white font-medium text-sm px-2 py-2 -my-2 sm:px-0 sm:py-0 min-h-[44px] flex items-center justify-center transition-colors">
+          <Link href="/devis-dommage-ouvrage" className="text-[#171717] hover:text-[#0a0a0a] dark:text-gray-200 dark:hover:text-white font-medium text-sm px-2 py-2 -my-2 sm:px-0 sm:py-0 min-h-[44px] flex items-center justify-center transition-colors">
             Dommage ouvrage
           </Link>
           <Link href="/faq" className="text-[#171717] hover:text-[#0a0a0a] dark:text-gray-200 dark:hover:text-white font-medium text-sm sm:text-base px-2 py-2 -my-2 sm:px-0 sm:py-0 min-h-[44px] min-w-[44px] sm:min-w-0 flex items-center justify-center transition-colors">
             FAQ
           </Link>
-          <Link href="/guides" className="hidden sm:flex text-[#171717] hover:text-[#0a0a0a] dark:text-gray-200 dark:hover:text-white font-medium text-sm sm:text-base px-2 py-2 -my-2 sm:px-0 sm:py-0 min-h-[44px] min-w-[44px] sm:min-w-0 items-center justify-center transition-colors">
+          <Link href="/guides" className="text-[#171717] hover:text-[#0a0a0a] dark:text-gray-200 dark:hover:text-white font-medium text-sm sm:text-base px-2 py-2 -my-2 sm:px-0 sm:py-0 min-h-[44px] min-w-[44px] sm:min-w-0 items-center justify-center transition-colors">
             Guides
           </Link>
           <Link
@@ -69,9 +110,7 @@ export function HeaderClient() {
               aria-controls="devis-menu"
               id="devis-trigger"
             >
-              <span className="hidden sm:inline">Obtenir un devis </span>
-              <span className="sm:hidden">Devis</span>
-              <span className="text-sm" aria-hidden="true">▾</span>
+              Obtenir un devis <span className="text-sm" aria-hidden="true">▾</span>
             </button>
             <div
               id="devis-menu"
@@ -106,7 +145,39 @@ export function HeaderClient() {
             </div>
           </div>
         </nav>
+
+        {/* Mobile: ThemeToggle + Hamburger */}
+        <div className="flex md:hidden items-center gap-1">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((o) => !o)}
+            className="p-2 -mr-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl hover:bg-[#f5f5f5] dark:hover:bg-gray-800 transition-colors"
+            aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? (
+              <svg className="w-6 h-6 text-[#0a0a0a] dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6 text-[#0a0a0a] dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile menu drawer */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[100] md:hidden" role="dialog" aria-modal="true" aria-label="Menu de navigation">
+          <div className="absolute inset-0 bg-black/30" onClick={closeMobile} aria-hidden />
+          <nav className="absolute top-0 right-0 w-80 max-w-[85vw] h-full bg-white dark:bg-gray-900 shadow-2xl p-6 pt-16 flex flex-col gap-1 overflow-y-auto">
+            {navLinks}
+          </nav>
+        </div>
+      )}
     </header>
   )
 }

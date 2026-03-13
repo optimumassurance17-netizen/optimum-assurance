@@ -40,7 +40,7 @@ export default function ContactPage() {
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <Header />
-      <div className="max-w-xl mx-auto px-6 py-14">
+      <div className="max-w-xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
         <h1 className="text-3xl font-bold text-[#0a0a0a] mb-2">Nous contacter</h1>
         <p className="text-[#171717] mb-8">
           Une question sur l&apos;assurance décennale ou le dommage ouvrage ? Remplissez le formulaire, nous vous répondrons sous 24h.
