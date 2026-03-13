@@ -32,6 +32,26 @@ export function HeaderClient() {
 
   const navLinks = (
     <>
+      {/* Obtenir un devis — en premier, bien visible */}
+      <div className="pb-4 mb-4 border-b border-[#e5e5e5] dark:border-gray-700">
+        <p className="text-xs font-semibold text-[#737373] dark:text-gray-400 uppercase tracking-wide px-1 mb-3">Obtenir un devis</p>
+        <Link
+          href="/devis"
+          onClick={closeMobile}
+          className="flex items-center justify-between w-full bg-[#C65D3B] text-white px-4 py-3.5 rounded-xl font-semibold mb-3 hover:bg-[#B04F2F] transition-colors min-h-[48px]"
+        >
+          Devis décennale — 3 min
+          <span aria-hidden>→</span>
+        </Link>
+        <Link
+          href="/devis-dommage-ouvrage"
+          onClick={closeMobile}
+          className="flex items-center justify-between w-full bg-[#C65D3B] text-white px-4 py-3.5 rounded-xl font-semibold hover:bg-[#B04F2F] transition-colors min-h-[48px]"
+        >
+          Devis dommage ouvrage — 24h
+          <span aria-hidden>→</span>
+        </Link>
+      </div>
       <Link href="/devis-dommage-ouvrage" onClick={closeMobile} className="text-[#171717] hover:text-[#0a0a0a] dark:text-gray-200 dark:hover:text-white font-medium text-base py-3 min-h-[44px] flex items-center transition-colors">
         Dommage ouvrage
       </Link>
@@ -49,15 +69,6 @@ export function HeaderClient() {
           Déconnexion
         </button>
       )}
-      <div className="pt-2 border-t border-[#e5e5e5] dark:border-gray-700 mt-2">
-        <p className="text-xs font-semibold text-[#737373] dark:text-gray-400 uppercase tracking-wide px-1 mb-2">Obtenir un devis</p>
-        <Link href="/devis" onClick={closeMobile} className="block py-3 text-[#0a0a0a] dark:text-white font-medium min-h-[44px]">
-          Devis décennale — 3 min
-        </Link>
-        <Link href="/devis-dommage-ouvrage" onClick={closeMobile} className="block py-3 text-[#0a0a0a] dark:text-white font-medium min-h-[44px]">
-          Devis dommage ouvrage — 24h
-        </Link>
-      </div>
     </>
   )
 
@@ -171,7 +182,7 @@ export function HeaderClient() {
 
       {/* Mobile menu drawer */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[100] md:hidden" role="dialog" aria-modal="true" aria-label="Menu de navigation">
+        <div className="fixed inset-0 z-[110] md:hidden" role="dialog" aria-modal="true" aria-label="Menu de navigation">
           <div className="absolute inset-0 bg-black/30" onClick={closeMobile} aria-hidden />
           <nav className="absolute top-0 right-0 w-80 max-w-[85vw] h-full bg-white dark:bg-gray-900 shadow-2xl p-6 pt-16 flex flex-col gap-1 overflow-y-auto">
             {navLinks}
