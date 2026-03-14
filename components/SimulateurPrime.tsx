@@ -8,7 +8,7 @@ import { ACTIVITES_BTP } from "@/lib/activites-btp"
 
 export function SimulateurPrime() {
   const [chiffreAffaires, setChiffreAffaires] = useState<string>("80000")
-  const [activite, setActivite] = useState<string>("Plomberie")
+  const [activite, setActivite] = useState<string>(ACTIVITES_BTP[0])
   const [resultat, setResultat] = useState<{ prime: number; economie: number } | null>(null)
 
   const calculer = () => {
@@ -47,7 +47,7 @@ export function SimulateurPrime() {
             onChange={(e) => { setResultat(null); setActivite(e.target.value) }}
             className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none transition-all text-[#0a0a0a] font-medium bg-[#ebebeb]"
           >
-            {ACTIVITES_BTP.slice(0, 15).map((a) => (
+            {ACTIVITES_BTP.map((a) => (
               <option key={a} value={a}>{a}</option>
             ))}
           </select>
