@@ -11,12 +11,14 @@ export function HeaderClient() {
   const [devisOpen, setDevisOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const devisRef = useRef<HTMLDivElement>(null)
+  const mobileDevisRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (devisRef.current && !devisRef.current.contains(e.target as Node)) {
-        setDevisOpen(false)
-      }
+      const target = e.target as Node
+      const inDesktop = devisRef.current?.contains(target)
+      const inMobile = mobileDevisRef.current?.contains(target)
+      if (!inDesktop && !inMobile) setDevisOpen(false)
     }
     document.addEventListener("click", handleClickOutside)
     return () => document.removeEventListener("click", handleClickOutside)
@@ -157,8 +159,45 @@ export function HeaderClient() {
           </div>
         </nav>
 
-        {/* Mobile/Tablette: ThemeToggle + Hamburger */}
+        {/* Mobile/Tablette: Devis dropdown + ThemeToggle + Hamburger */}
         <div className="flex lg:hidden items-center gap-1">
+          {/* Bouton Devis visible en haut à droite — dropdown avec sous-pages */}
+          <div className="relative" ref={mobileDevisRef}>
+            <button
+              type="button"
+              onClick={() => setDevisOpen((o) => !o)}
+              className="bg-[#C65D3B] text-white px-3 py-2 rounded-xl hover:bg-[#B04F2F] transition-all font-semibold text-sm min-h-[44px] flex items-center gap-1 shrink-0"
+              aria-haspopup="true"
+              aria-expanded={devisOpen}
+              aria-label="Obtenir un devis"
+            >
+              Devis
+              <span className={`text-xs transition-transform ${devisOpen ? "rotate-180" : ""}`} aria-hidden>▾</span>
+            </button>
+            {devisOpen && (
+              <div
+                className="absolute right-0 top-full mt-1 py-2 min-w-[220px] bg-white dark:bg-gray-800 rounded-xl border border-[#e5e5e5] dark:border-gray-700 shadow-xl z-[120]"
+                role="menu"
+              >
+                <Link
+                  href="/devis"
+                  onClick={() => setDevisOpen(false)}
+                  className="block px-4 py-3 text-[#0a0a0a] dark:text-white font-medium hover:bg-[#FEF3F0] dark:hover:bg-gray-700 min-h-[44px] flex items-center"
+                  role="menuitem"
+                >
+                  Devis décennale — 3 min
+                </Link>
+                <Link
+                  href="/devis-dommage-ouvrage"
+                  onClick={() => setDevisOpen(false)}
+                  className="block px-4 py-3 text-[#0a0a0a] dark:text-white font-medium hover:bg-[#FEF3F0] dark:hover:bg-gray-700 min-h-[44px] flex items-center"
+                  role="menuitem"
+                >
+                  Devis dommage ouvrage — 24h
+                </Link>
+              </div>
+            )}
+          </div>
           <ThemeToggle />
           <button
             type="button"
