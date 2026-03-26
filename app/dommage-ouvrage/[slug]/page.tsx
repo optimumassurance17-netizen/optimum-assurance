@@ -73,9 +73,9 @@ export default async function DommageOuvragePage({
       <div className="max-w-3xl mx-auto px-6 py-14">
         <nav aria-label="Fil d'Ariane" className="text-sm mb-8">
           <Link href="/" className="text-[#C65D3B] hover:underline">Accueil</Link>
-          <span className="text-[#a3a3a3] mx-2">/</span>
+          <span className="text-[#333333] mx-2">/</span>
           <Link href="/devis-dommage-ouvrage" className="text-[#C65D3B] hover:underline">Dommage ouvrage</Link>
-          <span className="text-[#a3a3a3] mx-2">/</span>
+          <span className="text-[#333333] mx-2">/</span>
           <span className="text-[#0a0a0a] font-medium">{data.nom}</span>
         </nav>
 

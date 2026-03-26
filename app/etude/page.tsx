@@ -70,9 +70,22 @@ export default function EtudePage() {
         <Header />
         <div className="max-w-2xl mx-auto px-6 py-12">
           <div className="bg-white border border-[#F0EBE3] rounded-2xl p-8 shadow-sm text-center">
-            <p className="text-[#171717] mb-6">Aucune donnée enregistrée. Merci de refaire votre demande depuis le formulaire de devis.</p>
+            <p className="text-[#171717] mb-4">
+              Aucune donnée enregistrée. Pour une étude « sinistres », passez d&apos;abord par le{" "}
+              <Link href="/devis" className="text-[#C65D3B] font-medium hover:underline">
+                formulaire de devis
+              </Link>
+              .
+            </p>
+            <p className="text-[#171717] mb-6 text-sm">
+              Votre activité n&apos;est pas dans la liste ?{" "}
+              <Link href="/etude/domaine" className="text-[#C65D3B] font-medium hover:underline">
+                Demande d&apos;étude pour une activité non listée
+              </Link>
+              .
+            </p>
             <Link href="/devis" className="inline-block bg-[#C65D3B] text-white py-3 px-6 rounded-xl hover:bg-[#B04F2F] transition font-medium">
-              Faire une demande de devis
+              Aller au devis décennale
             </Link>
           </div>
         </div>
@@ -93,7 +106,7 @@ export default function EtudePage() {
             </div>
             <h1 className="text-2xl font-semibold text-black text-center mb-4">Demande enregistrée</h1>
             <p className="text-[#171717] text-center mb-8">
-              Votre dossier a bien été transmis à notre équipe. Un conseiller vous contactera sous 48h ouvrées avec une proposition personnalisée à l&apos;adresse {email}.
+              Votre dossier a bien été transmis à notre équipe. Un conseiller vous contactera sous 24 h avec une proposition personnalisée à l&apos;adresse {email}.
             </p>
             <Link href="/" className="block w-full bg-[#C65D3B] text-white py-3 rounded-xl hover:bg-[#B04F2F] transition text-center font-medium">
               Retour à l&apos;accueil
@@ -121,7 +134,7 @@ export default function EtudePage() {
           </h1>
 
           <p className="text-[#171717] text-center mb-6">
-            En raison du nombre de sinistres déclarés, notre équipe va étudier votre dossier pour vous proposer une remise personnalisée. Un conseiller vous contactera sous 48h.
+            En raison du nombre de sinistres déclarés, notre équipe va étudier votre dossier pour vous proposer une remise personnalisée. Un conseiller vous contactera sous 24 h.
           </p>
 
           {donnees && (
@@ -150,7 +163,7 @@ export default function EtudePage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="votre@email.com"
                 required
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none text-black"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]"
               />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}

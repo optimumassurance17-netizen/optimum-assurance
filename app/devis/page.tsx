@@ -12,6 +12,8 @@ import { STORAGE_KEYS } from "@/lib/types"
 import { ACTIVITES_BTP } from "@/lib/activites-btp"
 import { CA_MINIMUM } from "@/lib/tarification"
 import { faqDevis } from "@/lib/garanties-data"
+import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
+import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 
 function DevisPageContent() {
   const router = useRouter()
@@ -200,7 +202,7 @@ function DevisPageContent() {
                 onChange={(e) => setSiret(e.target.value.replace(/\D/g, "").slice(0, 14))}
                 placeholder="12345678900012"
                 maxLength={14}
-                className="flex-1 border border-[#d4d4d4] rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#ebebeb] font-mono text-[#0a0a0a] transition-all"
+                className={`flex-1 rounded-xl px-4 py-3.5 font-mono transition-all ${inputFieldBg} ${inputTextDark}`}
               />
               <button
                 type="button"
@@ -246,12 +248,25 @@ function DevisPageContent() {
                 {siretError}
               </p>
             )}
+            <AdresseAutocomplete
+              show={!!siretError}
+              onPick={(a) => {
+                setSiretPrefill((prev) => ({
+                  raisonSociale: prev?.raisonSociale,
+                  dateCreationSociete: prev?.dateCreationSociete,
+                  adresse: a.adresse,
+                  codePostal: a.codePostal,
+                  ville: a.ville,
+                }))
+                setSiretError(null)
+              }}
+            />
             {siretPrefill?.raisonSociale && (
               <div className="mt-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                <p className="text-sm font-semibold text-emerald-800 mb-2">
+                <p className="text-sm font-semibold text-emerald-900 mb-2">
                   ✓ Données pré-remplies depuis l&apos;API Sirene
                 </p>
-                <div className="space-y-1 text-sm text-emerald-700">
+                <div className="space-y-1 text-sm text-black">
                   <p><strong>Raison sociale :</strong> {siretPrefill.raisonSociale}</p>
                   {siretPrefill.adresse && (
                     <p><strong>Adresse :</strong> {siretPrefill.adresse}</p>
@@ -277,10 +292,13 @@ function DevisPageContent() {
               onChange={(e) => setChiffreAffaires(e.target.value)}
               min={CA_MINIMUM}
               step="1000"
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#ebebeb] text-[#0a0a0a] transition-all"
+              className={`w-full rounded-xl px-4 py-3.5 transition-all ${inputFieldBg} ${inputTextDark}`}
             />
-            <p className="text-sm text-[#171717] mt-2">
+            <p className="text-sm text-[#0a0a0a] mt-2">
               Minimum déclaratif : 40 000 €
+            </p>
+            <p className="text-sm text-[#0a0a0a] mt-1.5 italic">
+              Les déclarations de CA sont contrôlées chaque année auprès du greffe et des impôts. Pour éviter les régularisations, pensez à bien indiquer votre CA réel.
             </p>
             {chiffreAffaires && Number(chiffreAffaires) > 0 && Number(chiffreAffaires) < CA_MINIMUM && (
               <p className="text-sm text-red-600 mt-1">
@@ -298,7 +316,7 @@ function DevisPageContent() {
               value={sinistres}
               onChange={(e) => setSinistres(e.target.value)}
               min="0"
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#ebebeb] text-[#0a0a0a] transition-all"
+              className={`w-full rounded-xl px-4 py-3.5 transition-all ${inputFieldBg} ${inputTextDark}`}
             />
             {besoinEtude && (
               <p className="text-sm text-[#C65D3B] mt-1 font-medium">
@@ -323,7 +341,7 @@ function DevisPageContent() {
                   min="0"
                   step="1"
                   placeholder="Ex: 15000"
-                  className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#ebebeb] text-[#0a0a0a]"
+                  className={`w-full rounded-xl px-4 py-3 ${inputFieldBg} ${inputTextDark}`}
                 />
               </div>
               <div>
@@ -334,7 +352,7 @@ function DevisPageContent() {
                   type="file"
                   accept=".pdf"
                   onChange={(e) => setReleveSinistralite(e.target.files?.[0] ?? null)}
-                  className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#ebebeb] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#C65D3B] file:text-white file:font-medium"
+                  className={`w-full rounded-xl px-4 py-3 ${inputFieldBg} ${inputTextDark} file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#C65D3B] file:text-white file:font-medium`}
                 />
                 <p className="text-xs text-[#171717] mt-1">
                   Document fourni par votre ancien assureur. Format PDF. Vous pourrez le transmettre à notre conseiller lors du contact.
@@ -371,7 +389,7 @@ function DevisPageContent() {
                   id="dateCreationSociete"
                   value={dateCreationSociete}
                   onChange={(e) => setDateCreationSociete(e.target.value)}
-                  className="border border-[#d4d4d4] rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-white text-[#0a0a0a]"
+                  className={`rounded-xl px-4 py-2.5 ${inputFieldBg} ${inputTextDark}`}
                 />
                 <p className="text-xs text-[#171717] mt-1">
                   Une attestation de non sinistralité sera générée automatiquement de cette date au jour de prise d&apos;effet.
@@ -424,14 +442,15 @@ function DevisPageContent() {
           </div>
 
           <div className="p-6 bg-[#f5f5f5] rounded-2xl border border-[#d4d4d4] shadow-sm">
-            <label className="block mb-4 font-semibold text-[#0a0a0a]">
+            <label htmlFor="activite-selection" className="block mb-4 font-semibold text-[#0a0a0a]">
               Activités à assurer (max 8)
             </label>
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <select
+                id="activite-selection"
                 value={activiteSelectionnee}
                 onChange={(e) => setActiviteSelectionnee(e.target.value)}
-                className="flex-1 border border-[#d4d4d4] rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#ebebeb] text-[#0a0a0a] transition-all"
+                className={`flex-1 rounded-xl px-4 py-3.5 transition-all ${inputFieldBg} ${inputTextDark}`}
               >
                 <option value="">Sélectionnez une activité</option>
                 {ACTIVITES_BTP.map((act) => (
@@ -453,9 +472,9 @@ function DevisPageContent() {
               {activites.map((act, index) => (
                 <div
                   key={index}
-                  className="flex justify-between items-center bg-[#ebebeb] border border-[#d4d4d4] rounded-xl px-4 py-3"
+                  className="flex justify-between items-center bg-[#e4e4e4] border border-[#d4d4d4] rounded-xl px-4 py-3"
                 >
-                  <span className="text-[#0a0a0a] font-medium">{act}</span>
+                  <span className="text-black font-medium">{act}</span>
                   <button
                     type="button"
                     onClick={() => supprimerActivite(index)}
@@ -466,6 +485,19 @@ function DevisPageContent() {
                 </div>
               ))}
             </div>
+            <div className="mt-5 p-4 rounded-xl border border-[#C65D3B]/30 bg-[#FEF3F0]">
+              <p className="text-sm font-semibold text-[#0a0a0a] mb-1">Vous ne trouvez pas votre activité dans la liste ?</p>
+              <p className="text-sm text-[#171717] mb-3">
+                Décrivez votre domaine : notre équipe étudie les cas spécifiques et vous recontacte sous 24 h.
+              </p>
+              <Link
+                href="/etude/domaine"
+                className="inline-flex items-center gap-2 text-[#C65D3B] font-semibold text-sm hover:underline"
+              >
+                Faire une demande d&apos;étude pour une activité non listée
+                <span aria-hidden>→</span>
+              </Link>
+            </div>
           </div>
 
           {besoinEtude && chiffreAffaires && Number(chiffreAffaires) >= CA_MINIMUM && (
@@ -474,7 +506,7 @@ function DevisPageContent() {
                 Étude personnalisée requise
               </h3>
               <p className="text-[#171717] text-sm">
-                Avec plus d&apos;un sinistre déclaré, votre dossier nécessite une étude par notre équipe. Un conseiller vous contactera sous 48h avec une proposition sur mesure.
+                Avec plus d&apos;un sinistre déclaré, votre dossier nécessite une étude par notre équipe. Un conseiller vous contactera sous 24 h avec une proposition sur mesure.
               </p>
             </div>
           )}
@@ -486,12 +518,13 @@ function DevisPageContent() {
               </h3>
               <div className="flex items-baseline gap-2 mb-2">
                 <span className="text-4xl font-bold text-[#C65D3B] tracking-tight">
-                  {tarif.primeMensuelle} €
+                  {tarif.primeMensuelle.toLocaleString("fr-FR")} €
                 </span>
-                <span className="text-[#171717]">/ mois</span>
+                <span className="text-[#171717]">/ mois (équivalent)</span>
               </div>
-              <p className="text-sm text-[#171717] mb-4">
-                Soit {tarif.primeAnnuelle} € par an
+              <p className="text-sm text-[#171717] mb-2">
+                Soit {tarif.primeAnnuelle.toLocaleString("fr-FR")} €/an — prélevé par trimestre :{" "}
+                <strong>{tarif.primeTrimestrielle.toLocaleString("fr-FR")} €</strong> / trimestre (hors 1er paiement CB + frais)
               </p>
               {tarif.reprisePasse && tarif.supplementReprisePasse && (
                 <p className="text-sm text-[#C65D3B] mb-2 font-medium">
@@ -503,14 +536,15 @@ function DevisPageContent() {
                 <p>Plafond : {tarif.plafond.toLocaleString("fr-FR")} €</p>
               </div>
               <div className="mt-4 pt-4 border-t border-[#C65D3B]/20">
-                <p className="text-sm font-medium text-[#0a0a0a] mb-2">Sauvegarder et recevoir un lien pour reprendre ce devis (valable 7 jours)</p>
+                <label htmlFor="email-devis-save" className="block text-sm font-medium text-[#0a0a0a] mb-2">Sauvegarder et recevoir un lien pour reprendre ce devis (valable 7 jours)</label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
+                    id="email-devis-save"
                     type="email"
                     value={emailDevis}
                     onChange={(e) => setEmailDevis(e.target.value)}
                     placeholder="votre@email.com"
-                    className="flex-1 border border-[#d4d4d4] rounded-xl px-4 py-2.5 text-sm text-[#0a0a0a] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#ebebeb]"
+                    className={`flex-1 rounded-xl px-4 py-2.5 text-sm ${inputFieldBg} ${inputTextDark}`}
                   />
                   <button
                     type="button"

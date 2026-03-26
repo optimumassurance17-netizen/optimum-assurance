@@ -17,7 +17,7 @@ interface ContratTemplateProps {
     primeMensuelle?: number
     primeTrimestrielle?: number
     modePaiement?: "unique" | "prelevement"
-    periodicitePrelevement?: "mensuel" | "trimestriel"
+    periodicitePrelevement?: "trimestriel"
     fraisGestionPrelevement?: number
     franchise: number
     plafond: number
@@ -70,7 +70,7 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
                 <>
                   <tr className="border-b">
                     <td className="py-2">Mode de paiement</td>
-                    <td className="text-right">Prélèvement {data.periodicitePrelevement === "mensuel" ? "mensuel" : "trimestriel"}</td>
+                    <td className="text-right">Prélèvement trimestriel</td>
                   </tr>
                   {data.fraisGestionPrelevement != null && (
                     <tr className="border-b">
@@ -78,11 +78,23 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
                       <td className="text-right">{data.fraisGestionPrelevement} €</td>
                     </tr>
                   )}
-                  {(data.primeMensuelle != null || data.primeTrimestrielle != null) && (
+                  {(data.primeTrimestrielle != null || data.primeAnnuelle != null) && (
                     <tr className="border-b">
-                      <td className="py-2">Montant par échéance</td>
+                      <td className="py-2">Montant par échéance trimestrielle</td>
                       <td className="text-right">
-                        {(data.primeMensuelle ?? data.primeTrimestrielle ?? 0).toLocaleString("fr-FR")} €
+                        {(
+                          data.primeTrimestrielle ??
+                          (data.primeAnnuelle != null ? Math.round((data.primeAnnuelle / 4) * 100) / 100 : 0)
+                        ).toLocaleString("fr-FR")}{" "}
+                        €
+                      </td>
+                    </tr>
+                  )}
+                  {data.primeAnnuelle != null && (
+                    <tr className="border-b">
+                      <td className="py-2">Équivalent mensuel (indicatif)</td>
+                      <td className="text-right">
+                        {Math.round((data.primeAnnuelle / 12) * 100) / 100} €
                       </td>
                     </tr>
                   )}
@@ -113,7 +125,7 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
         <p className="text-xs text-[#171717] mt-8">
           Les conditions générales du contrat sont annexées et font partie intégrante du présent contrat.
         </p>
-        <p className="text-[10px] text-[#737373] mt-4 leading-tight">
+        <p className="text-[10px] text-[#333333] mt-4 leading-tight">
           En application du 2° de l&apos;article 261 C du CGI, sont exonérées de la taxe sur la valeur ajoutée (TVA) les opérations d&apos;assurance, de réassurance ainsi que les prestations de services afférentes à ces opérations effectuées par les courtiers et intermédiaires d&apos;assurance.
         </p>
       </div>

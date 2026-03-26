@@ -94,7 +94,7 @@ function ResetForm() {
               onChange={(e) => setPassword(e.target.value)}
               minLength={8}
               required
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] outline-none bg-[#ebebeb]"
+              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] outline-none bg-[#e4e4e4]"
             />
           </div>
           <div>
@@ -105,7 +105,7 @@ function ResetForm() {
               onChange={(e) => setConfirm(e.target.value)}
               minLength={8}
               required
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] outline-none bg-[#ebebeb]"
+              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] outline-none bg-[#e4e4e4]"
             />
           </div>
           {error && (

@@ -23,7 +23,7 @@ Renseigner toutes les variables dans `.env` (ou les secrets de la plateforme) :
 | `NEXT_PUBLIC_WHATSAPP` | Numéro WhatsApp (sans espaces) | `33612345678` |
 | `INSEE_API_KEY_INTEGRATION` | Optionnel — pré-remplissage SIRET (gratuit, portail-api.insee.fr) | — |
 | `PAPPERS_API_KEY` | Optionnel — pré-remplissage SIRET (Pappers, payant) | — |
-| `CRON_SECRET` | Recommandé — sécurise les crons Vercel (rappels renouvellement, devis abandonné) | — |
+| `CRON_SECRET` | **Obligatoire en production** pour que les appels `/api/cron/*` fonctionnent (sinon **503**). Vercel envoie `Authorization: Bearer <CRON_SECRET>` sur les crons planifiés si la variable est définie. | `npm run generate-secret` |
 | `YOUSIGN_WEBHOOK_SECRET` | Recommandé — vérifie la signature des webhooks Yousign | — |
 
 ### 2. Base de données (PostgreSQL obligatoire sur Vercel)
@@ -53,6 +53,7 @@ Renseigner toutes les variables dans `.env` (ou les secrets de la plateforme) :
 - Dashboard Yousign (mode Production) → Webhooks
 - URL : `https://optimum-assurance.fr/api/yousign/webhook`
 - Événements : `signature_request.completed`, `signature_request.declined`
+- **Secret** : la variable `YOUSIGN_WEBHOOK_SECRET` doit avoir **la même valeur** sur Vercel et dans la configuration du webhook Yousign (signature `X-Yousign-Signature-256`). En **Preview** Vercel, ajouter manuellement la variable si vous utilisez des déploiements de branche (le CLI peut exiger une branche précise).
 
 ### 4. Domaine et SSL
 

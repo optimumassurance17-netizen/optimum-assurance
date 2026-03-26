@@ -56,13 +56,13 @@ function SignatureCallbackContent() {
               Signature enregistrée
             </h1>
             <p className="text-[#171717] mb-8">
-              Votre contrat a été signé électroniquement. Passez au paiement pour finaliser votre souscription.
+              Votre contrat a été signé électroniquement. Renseignez vos coordonnées bancaires (IBAN et mandat SEPA) pour finaliser votre souscription.
             </p>
             <Link
-              href="/paiement"
+              href="/mandat-sepa"
               className="inline-block bg-[#C65D3B] text-white px-8 py-3 rounded-xl hover:bg-[#B04F2F] transition font-medium"
             >
-              Payer maintenant
+              IBAN et mandat SEPA →
             </Link>
           </>
         )}

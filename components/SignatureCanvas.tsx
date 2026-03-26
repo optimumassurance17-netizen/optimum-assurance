@@ -104,7 +104,7 @@ export function SignatureCanvas({
 
   return (
     <div className="space-y-4">
-        <div className="border-2 border-[#d4d4d4] rounded-xl overflow-hidden bg-[#ebebeb]">
+        <div className="border-2 border-[#d4d4d4] rounded-xl overflow-hidden bg-[#e4e4e4]">
         <canvas
           ref={canvasRef}
           width={width}

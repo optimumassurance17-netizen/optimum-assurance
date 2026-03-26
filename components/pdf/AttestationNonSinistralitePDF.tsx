@@ -10,7 +10,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: { fontSize: 18, color: "#C65D3B", marginBottom: 4 },
-  subtitle: { fontSize: 9, color: "#6B6560" },
+  subtitle: { fontSize: 9, color: "#333333" },
   h2: { fontSize: 14, marginBottom: 8, marginTop: 8, textAlign: "center" },
   h2sub: { fontSize: 11, marginBottom: 20, textAlign: "center", color: "#C65D3B" },
   numero: { textAlign: "center", marginBottom: 20 },
@@ -81,14 +81,14 @@ export function AttestationNonSinistralitePDF({
             civile décennale sur la période du {dateDebutFr} au {dateFinFr}.
           </Text>
           {data.motif === "jamais_assure" && (
-            <Text style={[styles.p, { fontSize: 9, color: "#6B6560" }]}>
+            <Text style={[styles.p, { fontSize: 9, color: "#333333" }]}>
               Cette attestation est délivrée à la demande de l&apos;assuré, qui
               n&apos;avait jamais souscrit de contrat d&apos;assurance décennale avant
               la date de prise d&apos;effet du présent contrat.
             </Text>
           )}
           {data.motif === "reprise_passe" && (
-            <Text style={[styles.p, { fontSize: 9, color: "#6B6560" }]}>
+            <Text style={[styles.p, { fontSize: 9, color: "#333333" }]}>
               Cette attestation concerne la période de reprise du passé (3 mois
               rétroactifs) prévue au contrat.
             </Text>

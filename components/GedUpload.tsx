@@ -156,7 +156,7 @@ function docRow(
   return (
     <div
       key={type}
-      className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-[#ebebeb] rounded-xl border border-[#d4d4d4]"
+      className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-[#e4e4e4] rounded-xl border border-[#d4d4d4]"
     >
       <div className="flex items-center gap-3 min-w-0">
         <span className="text-2xl">{typeIcons[type] || "📄"}</span>

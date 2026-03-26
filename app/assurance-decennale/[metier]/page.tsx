@@ -19,7 +19,7 @@ export async function generateMetadata({
   if (!data) return {}
 
   return {
-    title: `Assurance Décennale ${data.nom} | Devis dès ${data.prixMin} €/mois | Optimum`,
+    title: `Assurance Décennale ${data.nom} | Devis dès ${data.prixMin} €/mois (équivalent) | Optimum`,
     description: data.description,
     keywords: [
       `assurance décennale ${data.nom.toLowerCase()}`,
@@ -73,9 +73,9 @@ export default async function MetierPage({
       <div className="max-w-3xl mx-auto px-6 py-14">
         <nav aria-label="Fil d'Ariane" className="text-sm mb-8">
           <Link href="/" className="text-[#C65D3B] hover:underline">Accueil</Link>
-          <span className="text-[#a3a3a3] mx-2">/</span>
+          <span className="text-[#333333] mx-2">/</span>
           <Link href="/devis" className="text-[#C65D3B] hover:underline">Devis</Link>
-          <span className="text-[#a3a3a3] mx-2">/</span>
+          <span className="text-[#333333] mx-2">/</span>
           <span className="text-[#0a0a0a] font-medium">{data.nom}</span>
         </nav>
 
@@ -118,7 +118,7 @@ export default async function MetierPage({
             Devis {data.nom} en 3 minutes
           </Link>
           <p className="text-sm text-[#171717]">
-            Dès {data.prixMin} €/mois • Attestation immédiate • Sans engagement
+            Dès {data.prixMin} €/mois (équivalent) • Paiement trimestriel • Attestation immédiate • Sans engagement
           </p>
         </div>
 

@@ -1,7 +1,24 @@
 import Link from "next/link"
 import { Header } from "@/components/Header"
 
+function siteHostname(): string {
+  const url = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+  try {
+    return new URL(url).hostname
+  } catch {
+    return "optimum-assurance.fr"
+  }
+}
+
 export default function MentionsLegalesPage() {
+  const host = siteHostname()
+  const legalAddress =
+    process.env.NEXT_PUBLIC_LEGAL_COMPANY_ADDRESS || "[adresse du siège à compléter dans .env — NEXT_PUBLIC_LEGAL_COMPANY_ADDRESS]"
+  const legalRcsCity = process.env.NEXT_PUBLIC_LEGAL_RCS_CITY || "[ville RCS à compléter — NEXT_PUBLIC_LEGAL_RCS_CITY]"
+  const legalSiret = process.env.NEXT_PUBLIC_LEGAL_SIRET || "[SIRET à compléter — NEXT_PUBLIC_LEGAL_SIRET]"
+  const orias =
+    process.env.NEXT_PUBLIC_ORIAS_NUMBER || "[numéro ORIAS à compléter — NEXT_PUBLIC_ORIAS_NUMBER]"
+
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <Header />
@@ -10,11 +27,19 @@ export default function MentionsLegalesPage() {
         <div className="prose prose-gray max-w-none text-[#171717] space-y-6">
           <section>
             <h2 className="text-xl font-semibold text-black">1. Éditeur du site</h2>
-            <p>Le site optimum-assurance.fr est édité par Optimum Assurance, société par actions simplifiée au capital de 10 000 €, dont le siège social est situé au [adresse du siège à compléter], immatriculée au RCS de [ville] sous le numéro [SIRET].</p>
+            <p>
+              Le site <strong>{host}</strong> est édité par Optimum Assurance, société par actions simplifiée au capital de 10 000 €, dont le siège social est situé au {legalAddress}, immatriculée au RCS de {legalRcsCity} sous le numéro {legalSiret}.
+            </p>
           </section>
           <section>
             <h2 className="text-xl font-semibold text-black">2. Intermédiaire en assurance</h2>
-            <p>Optimum Assurance est un intermédiaire en assurance immatriculé à l&apos;ORIAS sous le numéro [numéro ORIAS à compléter]. L&apos;ORIAS est le registre unique des intermédiaires en assurance, mutuelle et prévoyance. Vous pouvez vérifier notre immatriculation sur <a href="https://www.orias.fr" target="_blank" rel="noopener noreferrer" className="text-[#C65D3B] hover:underline">www.orias.fr</a>.</p>
+            <p>
+              Optimum Assurance est un intermédiaire en assurance immatriculé à l&apos;ORIAS sous le numéro <strong>{orias}</strong>. L&apos;ORIAS est le registre unique des intermédiaires en assurance, mutuelle et prévoyance. Vous pouvez vérifier notre immatriculation sur{" "}
+              <a href="https://www.orias.fr" target="_blank" rel="noopener noreferrer" className="text-[#C65D3B] hover:underline">
+                www.orias.fr
+              </a>
+              .
+            </p>
           </section>
           <section>
             <h2 className="text-xl font-semibold text-black">3. Hébergement</h2>

@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { assertCronAuthorized } from "@/lib/cron-auth"
 
 /**
  * À appeler par un cron (ex: Vercel Cron, GitHub Actions)
  * Envoie des rappels 30 jours avant échéance des attestations
- * Protéger par CRON_SECRET dans les headers
+ * Sécurisé par CRON_SECRET (voir `lib/cron-auth.ts`)
  */
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get("authorization")
-    const secret = process.env.CRON_SECRET
-    if (secret && authHeader !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-    }
+    const denied = assertCronAuthorized(request)
+    if (denied) return denied
 
     const attestations = await prisma.document.findMany({
       where: { type: "attestation", status: "valide" },

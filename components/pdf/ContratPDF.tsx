@@ -5,7 +5,7 @@ const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10 },
   header: { borderBottomWidth: 2, borderBottomColor: "#C65D3B", paddingBottom: 15, marginBottom: 20 },
   title: { fontSize: 18, color: "#C65D3B", marginBottom: 4 },
-  subtitle: { fontSize: 9, color: "#6B6560" },
+  subtitle: { fontSize: 9, color: "#333333" },
   h2: { fontSize: 14, marginBottom: 15, marginTop: 15 },
   h3: { fontSize: 11, marginBottom: 8, marginTop: 12 },
   p: { marginBottom: 6, lineHeight: 1.4 },
@@ -88,7 +88,7 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
               <>
                 <View style={styles.row}>
                   <Text style={styles.cellLeft}>Mode de paiement</Text>
-                  <Text style={styles.cellRight}>Prélèvement {data.periodicitePrelevement}</Text>
+                  <Text style={styles.cellRight}>Prélèvement trimestriel</Text>
                 </View>
                 {data.fraisGestionPrelevement != null && (
                   <View style={styles.row}>
@@ -97,11 +97,23 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
                   </View>
                 )}
                 <View style={styles.row}>
-                  <Text style={styles.cellLeft}>Montant par échéance</Text>
+                  <Text style={styles.cellLeft}>Montant par échéance trimestrielle</Text>
                   <Text style={styles.cellRight}>
-                    {(data.primeMensuelle ?? data.primeTrimestrielle ?? 0).toLocaleString("fr-FR")} €
+                    {(
+                      data.primeTrimestrielle ??
+                      (data.primeAnnuelle != null ? Math.round((data.primeAnnuelle / 4) * 100) / 100 : 0)
+                    ).toLocaleString("fr-FR")}{" "}
+                    €
                   </Text>
                 </View>
+                {data.primeAnnuelle != null && (
+                  <View style={styles.row}>
+                    <Text style={styles.cellLeft}>Équivalent mensuel (indicatif, prime ÷ 12)</Text>
+                    <Text style={styles.cellRight}>
+                      {Math.round((data.primeAnnuelle / 12) * 100) / 100} €
+                    </Text>
+                  </View>
+                )}
               </>
             )}
             <View style={styles.row}>
@@ -129,7 +141,7 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
 
         <View style={styles.signatureZone}>
           <Text style={styles.p}>Signature du représentant légal :</Text>
-          <Text style={[styles.p, { fontSize: 9, color: "#6B6560", marginTop: 8 }]}>
+          <Text style={[styles.p, { fontSize: 9, color: "#333333", marginTop: 8 }]}>
             {data.civilite || ""} {data.representantLegal || "—"}
           </Text>
         </View>

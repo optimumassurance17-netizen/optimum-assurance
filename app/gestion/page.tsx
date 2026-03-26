@@ -349,15 +349,15 @@ export default function GestionPage() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
-        <p className="text-gray-300">Chargement...</p>
+      <main className="gestion-app min-h-screen bg-[#1a1a1a] flex items-center justify-center">
+        <p className="text-gray-200">Chargement...</p>
       </main>
     )
   }
 
   if (error) {
     return (
-      <main className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
+      <main className="gestion-app min-h-screen bg-[#1a1a1a] flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">{error}</p>
           <Link href="/" className="text-[#C65D3B] hover:underline">Retour</Link>
@@ -376,7 +376,7 @@ export default function GestionPage() {
   const contrats = data.documents.filter((d) => d.type === "contrat")
 
   return (
-    <main className="min-h-screen bg-[#1a1a1a] text-gray-200">
+    <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
       <header className="border-b border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-xl font-semibold text-white">Gestion CRM</h1>
@@ -398,7 +398,7 @@ export default function GestionPage() {
                 a.click()
                 URL.revokeObjectURL(url)
               }}
-              className="text-sm text-gray-300 hover:text-white"
+              className="text-sm text-gray-200 hover:text-white"
             >
               Export paiements
             </button>
@@ -420,12 +420,12 @@ export default function GestionPage() {
                   a.click()
                   URL.revokeObjectURL(url)
                 }}
-                className="text-sm text-gray-300 hover:text-white"
+                className="text-sm text-gray-200 hover:text-white"
               >
                 Export devis DO
               </button>
             )}
-            <Link href="/" className="text-sm text-gray-300 hover:text-white">← Retour site</Link>
+            <Link href="/" className="text-sm text-gray-200 hover:text-white">← Retour site</Link>
           </div>
         </div>
       </header>
@@ -444,48 +444,48 @@ export default function GestionPage() {
             </div>
             <section className="grid grid-cols-2 md:grid-cols-6 gap-4">
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-                <p className="text-gray-300 text-sm">Clients</p>
+                <p className="text-gray-200 text-sm">Clients</p>
                 <Link href="#clients" className="text-2xl font-bold text-white hover:text-[#C65D3B] block">
                   {filterUsersBySearch(data.users, searchQuery).length}
                 </Link>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-                <p className="text-gray-300 text-sm">Paiements</p>
+                <p className="text-gray-200 text-sm">Paiements</p>
                 <p className="text-2xl font-bold text-white">{filterBySearch(data.payments, searchQuery).length}</p>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-                <p className="text-gray-300 text-sm">CA (paiements)</p>
+                <p className="text-gray-200 text-sm">CA (paiements)</p>
                 <p className="text-2xl font-bold text-green-400">{filterBySearch(data.payments, searchQuery).filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0).toLocaleString("fr-FR")} €</p>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-                <p className="text-gray-300 text-sm">Attestations suspendues</p>
+                <p className="text-gray-200 text-sm">Attestations suspendues</p>
                 <p className="text-2xl font-bold text-red-400">{filterBySearch(data.documents.filter((d) => d.type === "attestation"), searchQuery).filter((d) => d.status === "suspendu").length}</p>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-                <p className="text-gray-300 text-sm">Résiliés</p>
-                <p className="text-2xl font-bold text-gray-400">{filterBySearch(data.documents.filter((d) => d.type === "attestation" || d.type === "contrat"), searchQuery).filter((d) => d.status === "resilie").length}</p>
+                <p className="text-gray-200 text-sm">Résiliés</p>
+                <p className="text-2xl font-bold text-gray-200">{filterBySearch(data.documents.filter((d) => d.type === "attestation" || d.type === "contrat"), searchQuery).filter((d) => d.status === "resilie").length}</p>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-                <p className="text-gray-300 text-sm">Frais avenant en attente</p>
+                <p className="text-gray-200 text-sm">Frais avenant en attente</p>
                 <p className="text-2xl font-bold text-amber-400">{data.avenantFees?.length ?? 0}</p>
-                <p className="text-xs text-gray-400 mt-1">{(data.avenantFees?.reduce((a, f) => a + f.amount, 0) ?? 0).toLocaleString("fr-FR")} € à reporter</p>
+                <p className="text-xs text-gray-200 mt-1">{(data.avenantFees?.reduce((a, f) => a + f.amount, 0) ?? 0).toLocaleString("fr-FR")} € à reporter</p>
               </div>
               {(data.devisEtudeLeads?.length ?? 0) > 0 && (
                 <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-                  <p className="text-gray-300 text-sm">Demandes d&apos;étude</p>
+                  <p className="text-gray-200 text-sm">Demandes d&apos;étude</p>
                   <p className="text-2xl font-bold text-[#C65D3B]">{data.devisEtudeLeads?.length ?? 0}</p>
-                  <p className="text-xs text-gray-400 mt-1">À traiter (remise personnalisée)</p>
+                  <p className="text-xs text-gray-200 mt-1">À traiter (remise personnalisée)</p>
                 </div>
               )}
               {data.doStats && (
                 <>
                   <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-                    <p className="text-gray-300 text-sm">Attestations DO</p>
+                    <p className="text-gray-200 text-sm">Attestations DO</p>
                     <p className="text-2xl font-bold text-white">{data.doStats.attestationsCount}</p>
-                    <p className="text-xs text-gray-400 mt-1">Clos/couv. {data.doStats.closCouvertCount} — DO complète {data.doStats.doCompletCount}</p>
+                    <p className="text-xs text-gray-200 mt-1">Clos/couv. {data.doStats.closCouvertCount} — DO complète {data.doStats.doCompletCount}</p>
                   </div>
                   <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-                    <p className="text-gray-300 text-sm">CA DO (primes)</p>
+                    <p className="text-gray-200 text-sm">CA DO (primes)</p>
                     <p className="text-2xl font-bold text-emerald-400">{data.doStats.primesTotal.toLocaleString("fr-FR")} €</p>
                   </div>
                 </>
@@ -510,13 +510,13 @@ export default function GestionPage() {
                 </thead>
                 <tbody>
                   {filterUsersBySearch(data.users, searchQuery).length === 0 ? (
-                    <tr><td colSpan={4} className="p-4 text-gray-400">Aucun client</td></tr>
+                    <tr><td colSpan={4} className="p-4 text-gray-200">Aucun client</td></tr>
                   ) : (
                     filterUsersBySearch(data.users, searchQuery).map((u) => (
                       <tr key={u.id} className="border-b border-gray-700/50">
                         <td className="p-3 sm:p-4">{u.raisonSociale || "—"}</td>
                         <td className="p-3 sm:p-4">{u.email}</td>
-                        <td className="p-3 sm:p-4 font-mono text-gray-400 hidden sm:table-cell">{u.siret || "—"}</td>
+                        <td className="p-3 sm:p-4 font-mono text-gray-200 hidden sm:table-cell">{u.siret || "—"}</td>
                         <td className="p-3 sm:p-4">
                           <Link
                             href={`/gestion/clients/${u.id}`}
@@ -542,8 +542,8 @@ export default function GestionPage() {
                 <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 bg-[#252525] rounded-lg p-3 border border-amber-700/50">
                   <div>
                     <span className="font-mono text-white">{r.document.numero}</span>
-                    <span className="text-gray-400 ml-2">— {r.document.user.raisonSociale || r.document.user.email}</span>
-                    {r.motif && <span className="block text-sm text-gray-500 mt-1">Motif : {r.motif}</span>}
+                    <span className="text-gray-200 ml-2">— {r.document.user.raisonSociale || r.document.user.email}</span>
+                    {r.motif && <span className="block text-sm text-gray-200 mt-1">Motif : {r.motif}</span>}
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -627,7 +627,7 @@ export default function GestionPage() {
               </thead>
               <tbody>
                 {filterBySearch(data.payments, searchQuery).length === 0 ? (
-                  <tr><td colSpan={5} className="p-4 text-gray-400">Aucun paiement</td></tr>
+                  <tr><td colSpan={5} className="p-4 text-gray-200">Aucun paiement</td></tr>
                 ) : (
                   filterBySearch(data.payments, searchQuery).map((p) => (
                     <tr key={p.id} className="border-b border-gray-700/50">
@@ -639,7 +639,7 @@ export default function GestionPage() {
                           {p.status}
                         </span>
                       </td>
-                      <td className="p-3 sm:p-4 font-mono text-xs text-gray-400 hidden md:table-cell">{p.molliePaymentId}</td>
+                      <td className="p-3 sm:p-4 font-mono text-xs text-gray-200 hidden md:table-cell">{p.molliePaymentId}</td>
                     </tr>
                   ))
                 )}
@@ -676,12 +676,12 @@ export default function GestionPage() {
               </thead>
               <tbody>
                 {filterBySearch(attestations, searchQuery).length === 0 ? (
-                  <tr><td colSpan={6} className="p-4 text-gray-400">Aucune attestation</td></tr>
+                  <tr><td colSpan={6} className="p-4 text-gray-200">Aucune attestation</td></tr>
                 ) : (
                   filterBySearch(attestations, searchQuery).map((d) => (
                     <tr key={d.id} className="border-b border-gray-700/50">
                       <td className="p-3 sm:p-4">
-                        <span className="text-xs text-gray-400">{d.type === "attestation_do" ? "DO" : "Décennale"}</span>
+                        <span className="text-xs text-gray-200">{d.type === "attestation_do" ? "DO" : "Décennale"}</span>
                       </td>
                       <td className="p-3 sm:p-4 font-mono">{d.numero}</td>
                       <td className="p-3 sm:p-4">{d.user.raisonSociale || d.user.email}</td>
@@ -689,7 +689,7 @@ export default function GestionPage() {
                         <span className={`px-2 py-1 rounded text-xs ${
                           d.status === "valide" ? "bg-green-900/50 text-green-300" :
                           d.status === "suspendu" ? "bg-red-900/50 text-red-300" :
-                          d.status === "resilie" ? "bg-gray-700 text-gray-300" :
+                          d.status === "resilie" ? "bg-gray-700 text-gray-200" :
                           "bg-amber-900/50 text-amber-300"
                         }`}>
                           {d.status}
@@ -710,7 +710,7 @@ export default function GestionPage() {
                             </button>
                             <button
                               onClick={() => setResiliationModal({ docId: d.id, motif: "" })}
-                              className="text-gray-400 hover:text-gray-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
+                              className="text-gray-200 hover:text-white text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
                             >
                               Résilier
                             </button>
@@ -726,7 +726,7 @@ export default function GestionPage() {
                             </button>
                             <button
                               onClick={() => setResiliationModal({ docId: d.id, motif: "" })}
-                              className="text-gray-400 hover:text-gray-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
+                              className="text-gray-200 hover:text-white text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
                             >
                               Résilier
                             </button>
@@ -757,7 +757,7 @@ export default function GestionPage() {
               </thead>
               <tbody>
                 {filterBySearch(contrats, searchQuery).length === 0 ? (
-                  <tr><td colSpan={5} className="p-4 text-gray-400">Aucun contrat</td></tr>
+                  <tr><td colSpan={5} className="p-4 text-gray-200">Aucun contrat</td></tr>
                 ) : (
                   filterBySearch(contrats, searchQuery).map((d) => (
                     <tr key={d.id} className="border-b border-gray-700/50">
@@ -766,7 +766,7 @@ export default function GestionPage() {
                       <td className="p-3 sm:p-4">
                         <span className={`px-2 py-1 rounded text-xs ${
                           d.status === "valide" ? "bg-green-900/50 text-green-300" :
-                          d.status === "resilie" ? "bg-gray-700 text-gray-300" :
+                          d.status === "resilie" ? "bg-gray-700 text-gray-200" :
                           "bg-amber-900/50 text-amber-300"
                         }`}>
                           {d.status}
@@ -784,7 +784,7 @@ export default function GestionPage() {
                             </button>
                             <button
                               onClick={() => setResiliationModal({ docId: d.id, motif: "" })}
-                              className="text-gray-400 hover:text-gray-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2 ml-2"
+                              className="text-gray-200 hover:text-white text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2 ml-2"
                             >
                               Autoriser annulation
                             </button>
@@ -803,8 +803,8 @@ export default function GestionPage() {
         {data?.devisEtudeLeads && data.devisEtudeLeads.length > 0 && (
           <section>
             <h2 className="text-lg font-semibold text-white mb-4">Demandes d&apos;étude (remise personnalisée)</h2>
-            <p className="text-sm text-gray-300 mb-4">
-              Clients ayant demandé une étude approfondie (&gt;1 sinistre). Faire une remise pour leur envoyer une proposition avec prime personnalisée.
+            <p className="text-sm text-gray-200 mb-4">
+              Dossiers sinistres (&gt;1 sinistre) ou <strong className="text-gray-200">activité non listée</strong> (/etude/domaine). Faire une remise pour envoyer une proposition avec prime personnalisée.
             </p>
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0 mb-10">
               <table className="w-full text-sm min-w-[400px]">
@@ -819,17 +819,35 @@ export default function GestionPage() {
                 </thead>
                 <tbody>
                   {data.devisEtudeLeads.map((lead) => {
-                    let parsed: { chiffreAffaires?: number; sinistres?: number; activites?: string[] } = {}
+                    let parsed: {
+                      type?: string
+                      chiffreAffaires?: number
+                      sinistres?: number
+                      activites?: string[]
+                      descriptionActivite?: string
+                      chiffreAffairesApprox?: number
+                    } = {}
                     try {
                       parsed = JSON.parse(lead.data) as typeof parsed
                     } catch {
                       /* ignore */
                     }
+                    const estDomaine = parsed.type === "domaine_non_liste"
+                    const resume = estDomaine
+                      ? (parsed.descriptionActivite ?? "").slice(0, 80) + ((parsed.descriptionActivite?.length ?? 0) > 80 ? "…" : "")
+                      : `CA ${parsed.chiffreAffaires?.toLocaleString("fr-FR") ?? "—"} € · ${parsed.sinistres ?? 0} sinistre(s)`
                     return (
                       <tr key={lead.id} className="border-b border-gray-700/50">
-                        <td className="p-3 sm:p-4">{lead.email}</td>
+                        <td className="p-3 sm:p-4">
+                          {lead.email}
+                          {estDomaine && (
+                            <span className="ml-2 inline-block text-[10px] uppercase tracking-wide bg-amber-900/50 text-amber-200 px-1.5 py-0.5 rounded">
+                              Domaine
+                            </span>
+                          )}
+                        </td>
                         <td className="p-3 sm:p-4">{lead.raisonSociale || "—"}</td>
-                        <td className="p-3 sm:p-4 font-mono text-gray-400 hidden sm:table-cell">{lead.siret || "—"}</td>
+                        <td className="p-3 sm:p-4 font-mono text-gray-200 hidden sm:table-cell">{lead.siret || "—"}</td>
                         <td className="p-3 sm:p-4">{new Date(lead.createdAt).toLocaleDateString("fr-FR")}</td>
                         <td className="p-3 sm:p-4">
                           <button
@@ -843,8 +861,8 @@ export default function GestionPage() {
                           >
                             Faire une remise
                           </button>
-                          <span className="text-gray-500 text-xs ml-2">
-                            CA {parsed.chiffreAffaires?.toLocaleString("fr-FR") ?? "—"} € · {parsed.sinistres ?? 0} sinistre(s)
+                          <span className="text-gray-200 text-xs ml-2 block sm:inline mt-1 sm:mt-0" title={estDomaine ? parsed.descriptionActivite : undefined}>
+                            {resume}
                           </span>
                         </td>
                       </tr>
@@ -859,13 +877,13 @@ export default function GestionPage() {
         {/* Devis dommage ouvrage - ajout manuel */}
         <section>
           <h2 className="text-lg font-semibold text-white mb-4">Ajouter un devis dommage ouvrage</h2>
-          <p className="text-sm text-gray-300 mb-4">
-            Le devis sera ajouté à l&apos;espace client. Le client pourra signer électroniquement (Yousign) et payer par Mollie Pay by Bank.
+          <p className="text-sm text-gray-200 mb-4">
+            Le devis sera ajouté à l&apos;espace client. Le client pourra signer électroniquement (Yousign) et payer par virement bancaire (Mollie).
           </p>
           <form onSubmit={handleCreateDevisDo} className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 max-w-xl mb-10">
             {data.devisDoLeads && data.devisDoLeads.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Préremplir depuis une demande</label>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Préremplir depuis une demande</label>
                 <select
                   value={devisDoForm.leadId}
                   onChange={(e) => {
@@ -928,7 +946,7 @@ export default function GestionPage() {
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Client (doit avoir un compte)</label>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Client (doit avoir un compte)</label>
               <select
                 value={devisDoForm.userId}
                 onChange={(e) => setDevisDoForm((f) => ({ ...f, userId: e.target.value }))}
@@ -945,7 +963,7 @@ export default function GestionPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Prime annuelle (€)</label>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Prime annuelle (€)</label>
                 <input
                   type="number"
                   value={devisDoForm.primeAnnuelle}
@@ -956,7 +974,7 @@ export default function GestionPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Coût construction (€)</label>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Coût construction (€)</label>
                 <input
                   type="number"
                   value={devisDoForm.coutConstruction}
@@ -967,7 +985,7 @@ export default function GestionPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Téléphone du souscripteur</label>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Téléphone du souscripteur</label>
               <input
                 type="tel"
                 value={devisDoForm.telephone}
@@ -977,7 +995,7 @@ export default function GestionPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Adresse de l&apos;opération</label>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Adresse de l&apos;opération</label>
               <input
                 type="text"
                 value={devisDoForm.adresseOperation}
@@ -988,7 +1006,7 @@ export default function GestionPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Type de construction</label>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Type de construction</label>
                 <select
                   value={devisDoForm.typeConstruction}
                   onChange={(e) => setDevisDoForm((f) => ({ ...f, typeConstruction: e.target.value }))}
@@ -1004,7 +1022,7 @@ export default function GestionPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Clos et couvert</label>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Clos et couvert</label>
                 <select
                   value={devisDoForm.closCouvert}
                   onChange={(e) => setDevisDoForm((f) => ({ ...f, closCouvert: e.target.value }))}
@@ -1017,7 +1035,7 @@ export default function GestionPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Destination</label>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Destination</label>
               <select
                 value={devisDoForm.destination}
                 onChange={(e) => setDevisDoForm((f) => ({ ...f, destination: e.target.value }))}
@@ -1032,7 +1050,7 @@ export default function GestionPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Frais de gestion (€)</label>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Frais de gestion (€)</label>
                 <input
                   type="number"
                   value={devisDoForm.fraisGestion}
@@ -1043,7 +1061,7 @@ export default function GestionPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Frais de courtage (€)</label>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Frais de courtage (€)</label>
                 <input
                   type="number"
                   value={devisDoForm.fraisCourtage}
@@ -1134,7 +1152,7 @@ export default function GestionPage() {
           <h2 className="text-lg font-semibold text-white mb-4">Créer un avenant</h2>
           <form onSubmit={handleCreateAvenant} className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 max-w-xl">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Client (userId)</label>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Client (userId)</label>
               <select
                 value={avenantForm.userId}
                 onChange={(e) => setAvenantForm((f) => ({ ...f, userId: e.target.value }))}
@@ -1150,7 +1168,7 @@ export default function GestionPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">N° contrat</label>
+              <label className="block text-sm font-medium text-gray-200 mb-1">N° contrat</label>
               <select
                 value={avenantForm.contractNumero}
                 onChange={(e) => setAvenantForm((f) => ({ ...f, contractNumero: e.target.value }))}
@@ -1165,7 +1183,7 @@ export default function GestionPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Nouveau CA (€)</label>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Nouveau CA (€)</label>
                 <input
                   type="number"
                   value={avenantForm.chiffreAffaires}
@@ -1175,7 +1193,7 @@ export default function GestionPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Nouvelle prime (€)</label>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Nouvelle prime (€)</label>
                 <input
                   type="number"
                   value={avenantForm.primeAnnuelle}
@@ -1186,7 +1204,7 @@ export default function GestionPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Nouvelles activités (séparées par des virgules)</label>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Nouvelles activités (séparées par des virgules)</label>
               <input
                 type="text"
                 value={avenantForm.activites}
@@ -1196,7 +1214,7 @@ export default function GestionPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Motif</label>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Motif</label>
               <input
                 type="text"
                 value={avenantForm.motif}
@@ -1234,7 +1252,7 @@ export default function GestionPage() {
               </thead>
               <tbody>
                 {filterBySearch(data.documents.filter((d) => d.type === "avenant"), searchQuery).length === 0 ? (
-                  <tr><td colSpan={5} className="p-4 text-gray-400">Aucun avenant</td></tr>
+                  <tr><td colSpan={5} className="p-4 text-gray-200">Aucun avenant</td></tr>
                 ) : (
                   filterBySearch(data.documents.filter((d) => d.type === "avenant"), searchQuery)
                     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -1251,7 +1269,7 @@ export default function GestionPage() {
                         <tr key={d.id} className="border-b border-gray-700/50">
                           <td className="p-4 font-mono">{d.numero}</td>
                           <td className="p-4">{d.user.raisonSociale || d.user.email}</td>
-                          <td className="p-4 font-mono text-gray-300">{avenantData.contractNumero || "—"}</td>
+                          <td className="p-4 font-mono text-gray-200">{avenantData.contractNumero || "—"}</td>
                           <td className="p-4">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
                           <td className="p-4">
                             <button
@@ -1288,9 +1306,9 @@ export default function GestionPage() {
                   {data.adminActivityLogs.map((l) => (
                     <tr key={l.id} className="border-b border-gray-700/50">
                       <td className="p-4">{new Date(l.createdAt).toLocaleString("fr-FR")}</td>
-                      <td className="p-4 text-gray-400">{l.adminEmail}</td>
+                      <td className="p-4 text-gray-200">{l.adminEmail}</td>
                       <td className="p-4">{l.action}</td>
-                      <td className="p-4 text-gray-400">{l.targetType} {l.targetId ? `#${l.targetId.slice(-6)}` : ""}</td>
+                      <td className="p-4 text-gray-200">{l.targetType} {l.targetId ? `#${l.targetId.slice(-6)}` : ""}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1319,8 +1337,8 @@ export default function GestionPage() {
                       <td className="p-4">{new Date(r.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-4 font-mono">{r.document.numero} ({r.document.type})</td>
                       <td className="p-4">{r.document.user.raisonSociale || r.document.user.email}</td>
-                      <td className="p-4 text-gray-400">{r.adminEmail}</td>
-                      <td className="p-4 text-gray-400">{r.motif || "—"}</td>
+                      <td className="p-4 text-gray-200">{r.adminEmail}</td>
+                      <td className="p-4 text-gray-200">{r.motif || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1340,7 +1358,7 @@ export default function GestionPage() {
             <div className="space-y-4 mb-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Chiffre d&apos;affaires (€)</label>
+                  <label className="block text-sm font-medium text-gray-200 mb-1">Chiffre d&apos;affaires (€)</label>
                   <input
                     type="number"
                     value={editModal.form.chiffreAffaires}
@@ -1350,7 +1368,7 @@ export default function GestionPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Prime annuelle (€)</label>
+                  <label className="block text-sm font-medium text-gray-200 mb-1">Prime annuelle (€)</label>
                   <input
                     type="number"
                     value={editModal.form.primeAnnuelle}
@@ -1361,7 +1379,7 @@ export default function GestionPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Activités (séparées par des virgules)</label>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Activités (séparées par des virgules)</label>
                 <input
                   type="text"
                   value={editModal.form.activites}
@@ -1372,7 +1390,7 @@ export default function GestionPage() {
               </div>
               {editModal.type === "avenant" && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Motif avenant</label>
+                  <label className="block text-sm font-medium text-gray-200 mb-1">Motif avenant</label>
                   <input
                     type="text"
                     value={editModal.form.motifAvenant}
@@ -1384,7 +1402,7 @@ export default function GestionPage() {
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Date d&apos;effet</label>
+                  <label className="block text-sm font-medium text-gray-200 mb-1">Date d&apos;effet</label>
                   <input
                     type="text"
                     value={editModal.form.dateEffet}
@@ -1394,7 +1412,7 @@ export default function GestionPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Date d&apos;échéance</label>
+                  <label className="block text-sm font-medium text-gray-200 mb-1">Date d&apos;échéance</label>
                   <input
                     type="text"
                     value={editModal.form.dateEcheance}
@@ -1408,7 +1426,7 @@ export default function GestionPage() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setEditModal(null)}
-                className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700"
+                className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
               >
                 Annuler
               </button>
@@ -1429,11 +1447,11 @@ export default function GestionPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setResiliationModal(null)}>
           <div className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-white mb-4">Autoriser l&apos;annulation</h3>
-            <p className="text-sm text-gray-300 mb-4">
+            <p className="text-sm text-gray-200 mb-4">
               Le document sera marqué comme résilié. Un email de confirmation sera envoyé au client.
             </p>
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Motif (optionnel)</label>
+              <label className="block text-sm font-medium text-gray-200 mb-2">Motif (optionnel)</label>
               <input
                 type="text"
                 value={resiliationModal.motif}
@@ -1445,7 +1463,7 @@ export default function GestionPage() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setResiliationModal(null)}
-                className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700"
+                className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
               >
                 Annuler
               </button>
@@ -1465,11 +1483,11 @@ export default function GestionPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setEtudeMiseModal(null)}>
           <div className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-white mb-4">Faire une remise au client</h3>
-            <p className="text-sm text-gray-300 mb-4">
+            <p className="text-sm text-gray-200 mb-4">
               {etudeMiseModal.raisonSociale || etudeMiseModal.email} — Envoyez une proposition avec prime personnalisée. Le client recevra un email avec un lien pour finaliser sa souscription.
             </p>
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Prime annuelle personnalisée (€)</label>
+              <label className="block text-sm font-medium text-gray-200 mb-2">Prime annuelle personnalisée (€)</label>
               <input
                 type="number"
                 value={etudeMiseModal.primeAnnuelle}
@@ -1483,7 +1501,7 @@ export default function GestionPage() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setEtudeMiseModal(null)}
-                className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700"
+                className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
               >
                 Annuler
               </button>

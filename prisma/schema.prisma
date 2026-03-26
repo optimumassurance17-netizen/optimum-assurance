@@ -27,6 +27,29 @@ model User {
   resiliationRequests   ResiliationRequest[]
   clientNotes           ClientNote[]
   sinistres             Sinistre[]
+  sepaSubscription      SepaSubscription?
+}
+
+/// Abonnement prélèvements SEPA trimestriels (T2–T4) après 1er trimestre CB — Mollie Customer + mandate.
+model SepaSubscription {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mollieCustomerId    String
+  mollieMandateId     String?
+  primeAnnuelle       Float
+  /// Nombre de prélèvements SEPA déjà réussis (0 à 3)
+  trimestresSepaPayes Int       @default(0)
+  /// Date du 1er trimestre payé par carte (référence calendrier)
+  firstTrimesterPaidAt DateTime?
+  /// Prochaine échéance SEPA à traiter
+  nextSepaDue         DateTime?
+  status              String    @default("active") // active | completed | pending_mandate | failed | cancelled
+  lastError           String?
+  /// Prélèvement SEPA lancé, en attente du webhook Mollie (évite un doublon si le cron repasse)
+  sepaPendingPaymentId String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 model UserDocument {

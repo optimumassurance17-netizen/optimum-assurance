@@ -115,7 +115,7 @@ export function FactureDoTemplate({ numero, data }: FactureDoTemplateProps) {
       <p className="text-xs text-[#171717]">
         TVA non applicable, article 293 B du CGI. Optimum Assurance — Assurance dommage ouvrage.
       </p>
-      <p className="text-[10px] text-[#737373] mt-4 leading-tight">
+      <p className="text-[10px] text-[#333333] mt-4 leading-tight">
         En application du 2° de l&apos;article 261 C du CGI, sont exonérées de la taxe sur la valeur ajoutée (TVA) les opérations d&apos;assurance, de réassurance ainsi que les prestations de services afférentes à ces opérations effectuées par les courtiers et intermédiaires d&apos;assurance.
       </p>
       <p className="text-xs text-[#171717] mt-4">

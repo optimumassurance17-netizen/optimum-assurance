@@ -104,7 +104,7 @@ export function InstallPrompt() {
             )}
             <button
               onClick={handleDismiss}
-              className="p-2 text-[#737373] hover:text-[#0a0a0a] rounded-lg transition-colors"
+              className="p-2 text-[#333333] hover:text-[#0a0a0a] rounded-lg transition-colors"
               aria-label="Fermer"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

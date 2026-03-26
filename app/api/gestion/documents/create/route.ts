@@ -15,7 +15,7 @@ function generateVerificationToken(): string {
 /**
  * Création manuelle d'un document par l'admin (ex: devis dommage ouvrage).
  * Le document est ajouté à l'espace client du client cible.
- * Ensuite : signature électronique Yousign + paiement Mollie Pay by Bank.
+ * Ensuite : signature électronique Yousign + paiement par virement (Mollie).
  */
 export async function POST(request: NextRequest) {
   try {

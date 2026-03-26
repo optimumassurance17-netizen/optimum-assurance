@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
 /**
- * Enregistre une demande d'étude approfondie (client avec >1 sinistre)
+ * Enregistre une demande d'étude :
+ * - dossier sinistres (>1) depuis le devis (session /etude)
+ * - activité non listée depuis /etude/domaine (data.type === "domaine_non_liste")
  */
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +13,19 @@ export async function POST(request: NextRequest) {
 
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return NextResponse.json({ error: "Email valide requis" }, { status: 400 })
+    }
+
+    const dataObj = typeof data === "object" && data !== null ? data : {}
+    const MIN_DESC_DOMAINE = 20
+    if (
+      (dataObj as { type?: string }).type === "domaine_non_liste" &&
+      (!(dataObj as { descriptionActivite?: string }).descriptionActivite ||
+        String((dataObj as { descriptionActivite: string }).descriptionActivite).trim().length < MIN_DESC_DOMAINE)
+    ) {
+      return NextResponse.json(
+        { error: `Décrivez votre activité en au moins ${MIN_DESC_DOMAINE} caractères.` },
+        { status: 400 }
+      )
     }
 
     const emailNorm = email.trim().toLowerCase()

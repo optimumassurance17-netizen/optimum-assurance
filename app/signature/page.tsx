@@ -118,7 +118,21 @@ export default function SignaturePage() {
           </h3>
           <ul className="space-y-2 text-[#171717] text-sm">
             <li>Assuré : {souscription.raisonSociale}</li>
-            <li>Prime : {souscription.tarif?.primeMensuelle} € / mois</li>
+            <li>
+              Prime :{" "}
+              {souscription.tarif?.primeMensuelle != null
+                ? `${souscription.tarif.primeMensuelle.toLocaleString("fr-FR")} €/mois`
+                : souscription.tarif?.primeAnnuelle != null
+                  ? `${Math.round((souscription.tarif.primeAnnuelle / 12) * 100) / 100} €/mois`
+                  : "—"}{" "}
+              (équivalent
+              {souscription.tarif?.primeAnnuelle != null
+                ? ` · ${souscription.tarif.primeAnnuelle.toLocaleString("fr-FR")} €/an`
+                : ""}
+              ) — prélèvement{" "}
+              {souscription.tarif?.primeTrimestrielle ?? (souscription.tarif?.primeAnnuelle ? Math.round((souscription.tarif.primeAnnuelle / 4) * 100) / 100 : "—")}{" "}
+              €/trimestre
+            </li>
             <li>Activités : {souscription.activites?.join(", ") || "—"}</li>
           </ul>
         </div>

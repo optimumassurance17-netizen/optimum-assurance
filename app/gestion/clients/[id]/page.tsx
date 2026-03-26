@@ -84,15 +84,15 @@ export default function ClientDetailPage() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
-        <p className="text-gray-300">Chargement...</p>
+      <main className="gestion-app min-h-screen bg-[#1a1a1a] flex items-center justify-center">
+        <p className="text-gray-200">Chargement...</p>
       </main>
     )
   }
 
   if (error || !data) {
     return (
-      <main className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
+      <main className="gestion-app min-h-screen bg-[#1a1a1a] flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">{error || "Client introuvable"}</p>
           <Link href="/gestion" className="text-[#C65D3B] hover:underline">← Retour au dashboard</Link>
@@ -105,10 +105,10 @@ export default function ClientDetailPage() {
   const caTotal = payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0)
 
   return (
-    <main className="min-h-screen bg-[#1a1a1a] text-gray-200">
+    <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
       <header className="border-b border-gray-700 px-6 py-4">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <Link href="/gestion" className="text-gray-300 hover:text-white text-sm">← Dashboard</Link>
+          <Link href="/gestion" className="text-gray-200 hover:text-white text-sm">← Dashboard</Link>
         </div>
       </header>
 
@@ -136,30 +136,30 @@ export default function ClientDetailPage() {
           </div>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
-              <dt className="text-gray-400">Raison sociale</dt>
+              <dt className="text-gray-200">Raison sociale</dt>
               <dd className="text-white font-medium">{user.raisonSociale || "—"}</dd>
             </div>
             <div>
-              <dt className="text-gray-400">Email</dt>
+              <dt className="text-gray-200">Email</dt>
               <dd className="text-white">{user.email}</dd>
             </div>
             <div>
-              <dt className="text-gray-400">SIRET</dt>
+              <dt className="text-gray-200">SIRET</dt>
               <dd className="text-white font-mono">{user.siret || "—"}</dd>
             </div>
             <div>
-              <dt className="text-gray-400">Client depuis</dt>
+              <dt className="text-gray-200">Client depuis</dt>
               <dd className="text-white">{new Date(user.createdAt).toLocaleDateString("fr-FR")}</dd>
             </div>
             {user.adresse && (
               <div className="sm:col-span-2">
-                <dt className="text-gray-400">Adresse</dt>
+                <dt className="text-gray-200">Adresse</dt>
                 <dd className="text-white">{[user.adresse, user.codePostal, user.ville].filter(Boolean).join(", ")}</dd>
               </div>
             )}
             {user.telephone && (
               <div>
-                <dt className="text-gray-400">Téléphone</dt>
+                <dt className="text-gray-200">Téléphone</dt>
                 <dd className="text-white">{user.telephone}</dd>
               </div>
             )}
@@ -168,19 +168,19 @@ export default function ClientDetailPage() {
 
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-            <p className="text-gray-300 text-sm">Documents</p>
+            <p className="text-gray-200 text-sm">Documents</p>
             <p className="text-2xl font-bold text-white">{documents.length}</p>
           </div>
           <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-            <p className="text-gray-300 text-sm">Paiements</p>
+            <p className="text-gray-200 text-sm">Paiements</p>
             <p className="text-2xl font-bold text-white">{payments.length}</p>
           </div>
           <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-            <p className="text-gray-300 text-sm">CA total</p>
+            <p className="text-gray-200 text-sm">CA total</p>
             <p className="text-2xl font-bold text-green-400">{caTotal.toLocaleString("fr-FR")} €</p>
           </div>
           <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-            <p className="text-gray-300 text-sm">Frais avenant en attente</p>
+            <p className="text-gray-200 text-sm">Frais avenant en attente</p>
             <p className="text-2xl font-bold text-amber-400">{avenantFees.filter((f) => f.status === "pending").length}</p>
           </div>
         </section>
@@ -189,7 +189,7 @@ export default function ClientDetailPage() {
           <h2 className="text-lg font-semibold text-white mb-4">Documents</h2>
           <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
             {documents.length === 0 ? (
-              <p className="p-4 text-gray-400">Aucun document</p>
+              <p className="p-4 text-gray-200">Aucun document</p>
             ) : (
               <table className="w-full text-sm">
                 <thead>
@@ -210,7 +210,7 @@ export default function ClientDetailPage() {
                         <span className={`px-2 py-1 rounded text-xs ${
                           d.status === "valide" ? "bg-green-900/50 text-green-300" :
                           d.status === "suspendu" ? "bg-red-900/50 text-red-300" :
-                          d.status === "resilie" ? "bg-gray-700 text-gray-300" :
+                          d.status === "resilie" ? "bg-gray-700 text-gray-200" :
                           "bg-amber-900/50 text-amber-300"
                         }`}>
                           {d.status}
@@ -237,7 +237,7 @@ export default function ClientDetailPage() {
           <h2 className="text-lg font-semibold text-white mb-4">Sinistres</h2>
           <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
             {sinistres.length === 0 ? (
-              <p className="p-4 text-gray-400">Aucun sinistre enregistré</p>
+              <p className="p-4 text-gray-200">Aucun sinistre enregistré</p>
             ) : (
               <table className="w-full text-sm">
                 <thead>
@@ -305,12 +305,12 @@ export default function ClientDetailPage() {
             </form>
             <div className="space-y-2">
               {notes.length === 0 ? (
-                <p className="text-gray-400 text-sm">Aucune note</p>
+                <p className="text-gray-200 text-sm">Aucune note</p>
               ) : (
                 notes.map((n) => (
                   <div key={n.id} className="p-3 bg-[#1a1a1a] rounded-lg border border-gray-700">
                     <p className="text-white text-sm">{n.content}</p>
-                    <p className="text-gray-500 text-xs mt-1">{n.adminEmail} — {new Date(n.createdAt).toLocaleString("fr-FR")}</p>
+                    <p className="text-gray-200 text-xs mt-1">{n.adminEmail} — {new Date(n.createdAt).toLocaleString("fr-FR")}</p>
                   </div>
                 ))
               )}
@@ -322,7 +322,7 @@ export default function ClientDetailPage() {
           <h2 className="text-lg font-semibold text-white mb-4">Paiements</h2>
           <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
             {payments.length === 0 ? (
-              <p className="p-4 text-gray-400">Aucun paiement</p>
+              <p className="p-4 text-gray-200">Aucun paiement</p>
             ) : (
               <table className="w-full text-sm">
                 <thead>
@@ -384,7 +384,7 @@ export default function ClientDetailPage() {
               className="space-y-4 mb-6"
             >
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Date du sinistre *</label>
+                <label className="block text-sm text-gray-200 mb-1">Date du sinistre *</label>
                 <input
                   type="date"
                   required
@@ -394,7 +394,7 @@ export default function ClientDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Montant indemnisé (€)</label>
+                <label className="block text-sm text-gray-200 mb-1">Montant indemnisé (€)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -406,7 +406,7 @@ export default function ClientDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Description</label>
+                <label className="block text-sm text-gray-200 mb-1">Description</label>
                 <textarea
                   value={sinistreForm.description}
                   onChange={(e) => setSinistreForm((f) => ({ ...f, description: e.target.value }))}
@@ -416,7 +416,7 @@ export default function ClientDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Relevé de sinistralité</label>
+                <label className="block text-sm text-gray-200 mb-1">Relevé de sinistralité</label>
                 <select
                   value={sinistreForm.userDocumentId}
                   onChange={(e) => setSinistreForm((f) => ({ ...f, userDocumentId: e.target.value }))}
@@ -430,10 +430,10 @@ export default function ClientDetailPage() {
                     <option value="" disabled>Le client n&apos;a pas encore uploadé de relevé</option>
                   )}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Le client doit avoir déposé un relevé dans son espace GED</p>
+                <p className="text-xs text-gray-200 mt-1">Le client doit avoir déposé un relevé dans son espace GED</p>
               </div>
               <div className="flex gap-3 justify-end">
-                <button type="button" onClick={() => setSinistreModal(false)} className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700">
+                <button type="button" onClick={() => setSinistreModal(false)} className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700">
                   Annuler
                 </button>
                 <button
@@ -455,7 +455,7 @@ export default function ClientDetailPage() {
             <h3 className="text-lg font-semibold text-white mb-4">Envoyer un email à {data.user.email}</h3>
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Objet</label>
+                <label className="block text-sm text-gray-200 mb-1">Objet</label>
                 <input
                   type="text"
                   value={emailSubject}
@@ -465,7 +465,7 @@ export default function ClientDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Message</label>
+                <label className="block text-sm text-gray-200 mb-1">Message</label>
                 <textarea
                   value={emailBody}
                   onChange={(e) => setEmailBody(e.target.value)}
@@ -476,7 +476,7 @@ export default function ClientDetailPage() {
               </div>
             </div>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setEmailModal(false)} className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700"
+              <button onClick={() => setEmailModal(false)} className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
               >
                 Annuler
               </button>

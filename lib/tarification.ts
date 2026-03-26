@@ -21,6 +21,8 @@ export interface DevisInput {
 export interface DevisResult {
   primeAnnuelle: number
   primeMensuelle: number
+  /** Prime par trimestre (paiement en 4 fois / an) */
+  primeTrimestrielle: number
   franchise: number
   plafond: number
   reprisePasse?: boolean
@@ -34,11 +36,10 @@ export interface DevisResult {
   }
 }
 
-// Offre spécifique : Nettoyage toiture et peinture résine I3 à I5 — 1132 €/an
-const OFFRE_NETTOYAGE_TOITURE_PEINTURE_RESINE = {
-  primeAnnuelle: 1132,
-  primeMensuelle: Math.round((1132 / 12) * 100) / 100,
-}
+// Offre spécifique : Nettoyage toiture et peinture résine I3 à I5 — taux 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)
+const SEUIL_NETTOYAGE_TOITURE = 250_000
+const TAUX_NETTOYAGE_TOITURE_SOUS_250K = 1.7
+const TAUX_NETTOYAGE_TOITURE_AU_DESSUS_250K = 2
 
 function isOffreNettoyageToiturePeintureResine(activites: string[]): boolean {
   const normalized = activites.map((a) => a.toLowerCase().trim())
@@ -56,9 +57,11 @@ const REDUCTION_MAX = 0.3 // 30 % max
 export function calculerTarif(input: DevisInput): DevisResult {
   const { chiffreAffaires, sinistres, jamaisAssure, resilieNonPaiement, activites, reprisePasse } = input
 
-  // Offre spécifique : Nettoyage toiture + peinture résine I3 à I5 — prix fixe 1132 €/an
+  // Offre spécifique : Nettoyage toiture + peinture résine I3 à I5 — 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)
   if (isOffreNettoyageToiturePeintureResine(activites)) {
-    let primeAnnuelle = OFFRE_NETTOYAGE_TOITURE_PEINTURE_RESINE.primeAnnuelle
+    const taux = chiffreAffaires > SEUIL_NETTOYAGE_TOITURE ? TAUX_NETTOYAGE_TOITURE_AU_DESSUS_250K : TAUX_NETTOYAGE_TOITURE_SOUS_250K
+    const base = (chiffreAffaires * taux) / 100
+    let primeAnnuelle = base
     const majorationResilie = resilieNonPaiement
       ? Math.round(primeAnnuelle * MAJORATION_RESILIE_NON_PAIEMENT)
       : 0
@@ -69,15 +72,18 @@ export function calculerTarif(input: DevisInput): DevisResult {
       supplementReprisePasse = Math.round(primeMensuelle * (1 + MAJORATION_REPRISE_PASSE) * MOIS_REPRISE_PASSE * 100) / 100
       primeAnnuelle += supplementReprisePasse
     }
+    const primeAnnuelleRounded = Math.round(primeAnnuelle)
+    const primeTrimestrielle = Math.round((primeAnnuelleRounded / 4) * 100) / 100
     return {
-      primeAnnuelle: Math.round(primeAnnuelle),
-      primeMensuelle,
+      primeAnnuelle: primeAnnuelleRounded,
+      primeMensuelle: Math.round((primeAnnuelleRounded / 12) * 100) / 100,
+      primeTrimestrielle,
       franchise: 2500,
       plafond: Math.max(chiffreAffaires * 2, 100000),
       reprisePasse: reprisePasse && sinistres === 0,
       supplementReprisePasse,
       details: {
-        base: OFFRE_NETTOYAGE_TOITURE_PEINTURE_RESINE.primeAnnuelle,
+        base: Math.round(base),
         majorationSinistres: 0,
         majorationNouveau: 0,
         majorationActivites: 0,
@@ -127,8 +133,11 @@ export function calculerTarif(input: DevisInput): DevisResult {
   if (reprisePasse && sinistres === 0) {
     supplementReprisePasse = Math.round(primeMensuelle * (1 + MAJORATION_REPRISE_PASSE) * MOIS_REPRISE_PASSE * 100) / 100
     primeAnnuelle += supplementReprisePasse
+    primeAnnuelle = Math.round(primeAnnuelle)
     primeMensuelle = Math.round((primeAnnuelle / 12) * 100) / 100
   }
+
+  const primeTrimestrielle = Math.round((primeAnnuelle / 4) * 100) / 100
 
   // Franchise standard : 5% du CA ou 2500€ min
   const franchise = Math.max(2500, Math.round(chiffreAffaires * 0.05))
@@ -139,6 +148,7 @@ export function calculerTarif(input: DevisInput): DevisResult {
   return {
     primeAnnuelle,
     primeMensuelle,
+    primeTrimestrielle,
     franchise,
     plafond,
     reprisePasse: reprisePasse && sinistres === 0,

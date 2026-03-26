@@ -28,7 +28,7 @@ export function CookieBanner() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-[100] bg-white border-t border-[#e5e5e5] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] p-4 md:p-6"
+      className="fixed bottom-0 left-0 right-0 z-[100] bg-white border-t border-[#e5e5e5] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-4 pt-4 md:px-6 md:pt-6 pb-[max(1rem,env(safe-area-inset-bottom))] md:pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       role="dialog"
       aria-labelledby="cookie-title"
       aria-describedby="cookie-desc"

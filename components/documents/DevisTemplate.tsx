@@ -21,7 +21,10 @@ interface DevisTemplateProps {
     activites: string[]
     chiffreAffaires: number
     primeAnnuelle: number
-    primeMensuelle: number
+    /** Si absent, dérivé prime annuelle ÷ 12 */
+    primeMensuelle?: number
+    /** Si absent (anciens devis), dérivé de la prime annuelle */
+    primeTrimestrielle?: number
     franchise: number
     plafond: number
     dateCreation?: string
@@ -47,6 +50,10 @@ const COURTIER = {
 }
 
 export function DevisTemplate({ numero, data }: DevisTemplateProps) {
+  const primeTrimestrielle =
+    data.primeTrimestrielle ?? Math.round((data.primeAnnuelle / 4) * 100) / 100
+  const primeMensuelle =
+    data.primeMensuelle ?? Math.round((data.primeAnnuelle / 12) * 100) / 100
   const dateCreation = data.dateCreation || new Date().toLocaleDateString("fr-FR")
   const dateEffet = new Date().toLocaleDateString("fr-FR")
   const dateEcheance = new Date(new Date().getFullYear(), 11, 31).toLocaleDateString("fr-FR")
@@ -212,8 +219,12 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
               <td className="text-right font-bold text-lg">{data.primeAnnuelle.toLocaleString("fr-FR")} €</td>
             </tr>
             <tr>
-              <td className="py-2">Prime mensuelle TTC</td>
-              <td className="text-right font-semibold">{data.primeMensuelle.toLocaleString("fr-FR")} €</td>
+              <td className="py-2">Équivalent mensuel TTC (prime ÷ 12)</td>
+              <td className="text-right font-semibold">{primeMensuelle.toLocaleString("fr-FR")} €</td>
+            </tr>
+            <tr>
+              <td className="py-2">Prime trimestrielle TTC — montant par échéance (hors 1er paiement CB + frais)</td>
+              <td className="text-right font-semibold">{primeTrimestrielle.toLocaleString("fr-FR")} €</td>
             </tr>
             <tr>
               <td className="py-2">Période de garantie</td>
@@ -243,7 +254,7 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
         La prise d&apos;effet des garanties est conditionnée à l&apos;encaissement de la première cotisation et au retour
         de la proposition signée.
       </p>
-      <p className="text-[10px] text-[#737373] mt-4 leading-tight">
+      <p className="text-[10px] text-[#333333] mt-4 leading-tight">
         En application du 2° de l&apos;article 261 C du CGI, sont exonérées de la taxe sur la valeur ajoutée (TVA) les opérations d&apos;assurance, de réassurance ainsi que les prestations de services afférentes à ces opérations effectuées par les courtiers et intermédiaires d&apos;assurance.
       </p>
     </div>

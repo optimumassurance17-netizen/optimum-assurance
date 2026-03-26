@@ -8,6 +8,11 @@ import { FactureDoPDFPage } from "@/lib/pdf-pages"
 import { prisma } from "@/lib/prisma"
 import { getNextNumero } from "@/lib/documents"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import {
+  onSepaTrimestreFailed,
+  onSepaTrimestrePaid,
+  setupSepaSubscriptionAfterT1Card,
+} from "@/lib/mollie-sepa"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -140,11 +145,42 @@ export async function POST(request: NextRequest) {
             }
           }
         }
+      } else if (metadata.userId) {
+        user = await prisma.user.findUnique({
+          where: { id: metadata.userId },
+          select: { id: true, email: true, raisonSociale: true },
+        })
       } else if (email) {
         user = await prisma.user.findUnique({
           where: { email },
           select: { id: true, email: true, raisonSociale: true },
         })
+      }
+
+      // Mandat SEPA Mollie (T2–T4) après 1er trimestre CB — idempotent côté DB
+      if (
+        user &&
+        metadata.premierPaiementCarte === "true" &&
+        metadata.iban &&
+        metadata.type !== "devis_do"
+      ) {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+        const setup = await setupSepaSubscriptionAfterT1Card(mollieClient, {
+          userId: user.id,
+          email: metadata.email || user.email,
+          raisonSociale: metadata.raisonSociale || user.raisonSociale || "",
+          iban: metadata.iban,
+          titulaireCompte: metadata.titulaireCompte || metadata.raisonSociale || "",
+          primeAnnuelle: parseFloat(metadata.primeAnnuelle || "0") || 0,
+          baseUrl,
+        })
+        if (!setup.ok && setup.error) {
+          console.error("[webhook] SEPA setup:", setup.error)
+        }
+      }
+
+      if (metadata.type === "sepa_trimestre" && metadata.sepaSubscriptionId && !alreadyProcessed) {
+        await onSepaTrimestrePaid(metadata.sepaSubscriptionId)
       }
 
       if (user) {
@@ -178,7 +214,7 @@ export async function POST(request: NextRequest) {
             html: (template as { html?: string }).html,
             attachments: facturePdfAttachment ? [facturePdfAttachment] : undefined,
           })
-        } else {
+        } else if (metadata.type !== "sepa_trimestre") {
           const template = EMAIL_TEMPLATES.confirmationSouscription(
             metadata.raisonSociale || user.raisonSociale || user.email
           )
@@ -195,6 +231,12 @@ export async function POST(request: NextRequest) {
         where: { molliePaymentId: paymentId },
         data: { status: "failed" },
       })
+      if (metadata.type === "sepa_trimestre" && metadata.sepaSubscriptionId) {
+        const reason =
+          (payment as { details?: { failureReason?: string } }).details?.failureReason ||
+          "Échec du prélèvement SEPA"
+        await onSepaTrimestreFailed(metadata.sepaSubscriptionId, reason)
+      }
     }
 
     return NextResponse.json({ received: true })

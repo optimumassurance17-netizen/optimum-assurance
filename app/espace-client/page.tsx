@@ -112,7 +112,7 @@ export default function EspaceClientPage() {
         </p>
 
         {/* Onglets */}
-        <div className="flex gap-1 p-1 bg-[#ebebeb] rounded-xl mb-10 w-fit" role="tablist">
+        <div className="flex gap-1 p-1 bg-[#e4e4e4] rounded-xl mb-10 w-fit" role="tablist">
           <button
             role="tab"
             aria-selected={activeTab === "documents"}
@@ -185,7 +185,7 @@ export default function EspaceClientPage() {
                   <p>{[profile.adresse, profile.codePostal, profile.ville].filter(Boolean).join(", ")}</p>
                 )}
                 {profile?.telephone && <p>Tél. {profile.telephone}</p>}
-                {(!profile || (!profile.adresse && !profile.telephone)) && <p className="text-gray-500">Aucune coordonnée renseignée</p>}
+                {(!profile || (!profile.adresse && !profile.telephone)) && <p className="text-[#333333]">Aucune coordonnée renseignée</p>}
                 <button onClick={() => setProfileEditing(true)} className="text-[#C65D3B] font-medium hover:underline text-sm">
                   Modifier
                 </button>
@@ -219,25 +219,25 @@ export default function EspaceClientPage() {
               >
                 <div>
                   <label className="block text-sm font-medium text-[#0a0a0a] mb-1">SIRET</label>
-                  <input name="siret" defaultValue={profile?.siret} placeholder="14 chiffres" maxLength={14} className="w-full border border-[#d4d4d4] rounded-xl px-4 py-2 text-[#0a0a0a]" />
+                  <input name="siret" defaultValue={profile?.siret} placeholder="14 chiffres" maxLength={14} className="w-full border border-[#d4d4d4] rounded-xl px-4 py-2 bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#0a0a0a] mb-1">Adresse</label>
-                  <input name="adresse" defaultValue={profile?.adresse} className="w-full border border-[#d4d4d4] rounded-xl px-4 py-2 text-[#0a0a0a]" />
+                  <input name="adresse" defaultValue={profile?.adresse} className="w-full border border-[#d4d4d4] rounded-xl px-4 py-2 bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-[#0a0a0a] mb-1">Code postal</label>
-                    <input name="codePostal" defaultValue={profile?.codePostal} className="w-full border border-[#d4d4d4] rounded-xl px-4 py-2 text-[#0a0a0a]" />
+                    <input name="codePostal" defaultValue={profile?.codePostal} className="w-full border border-[#d4d4d4] rounded-xl px-4 py-2 bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-[#0a0a0a] mb-1">Ville</label>
-                    <input name="ville" defaultValue={profile?.ville} className="w-full border border-[#d4d4d4] rounded-xl px-4 py-2 text-[#0a0a0a]" />
+                    <input name="ville" defaultValue={profile?.ville} className="w-full border border-[#d4d4d4] rounded-xl px-4 py-2 bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#0a0a0a] mb-1">Téléphone</label>
-                  <input name="telephone" type="tel" defaultValue={profile?.telephone} className="w-full border border-[#d4d4d4] rounded-xl px-4 py-2 text-[#0a0a0a]" />
+                  <input name="telephone" type="tel" defaultValue={profile?.telephone} className="w-full border border-[#d4d4d4] rounded-xl px-4 py-2 bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]" />
                 </div>
                 <div className="flex gap-2">
                   <button type="submit" disabled={profileSaving} className="bg-[#C65D3B] text-white px-4 py-2 rounded-xl font-medium disabled:opacity-50">
@@ -367,7 +367,7 @@ export default function EspaceClientPage() {
                 <Link
                   key={doc.id}
                   href={`/espace-client/documents/${doc.id}`}
-                  className="flex items-center justify-between p-4 bg-[#ebebeb] rounded-xl hover:bg-[#FEF3F0] border border-[#d4d4d4] hover:border-[#C65D3B]/30 transition-all"
+                  className="flex items-center justify-between p-4 bg-[#e4e4e4] rounded-xl hover:bg-[#FEF3F0] border border-[#d4d4d4] hover:border-[#C65D3B]/30 transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{typeIcons[doc.type] || "📄"}</span>

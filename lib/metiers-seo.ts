@@ -3,13 +3,13 @@ export const METIERS_SEO = [
     slug: "plombier",
     nom: "Plombier",
     activite: "Plomberie",
-    prixMin: "70",
-    description: "Assurance décennale obligatoire pour plombiers et plombiers-chauffagistes. Devis en 3 minutes, attestation immédiate. Tarifs dès 70 €/mois.",
+    prixMin: "50",
+    description: "Assurance décennale obligatoire pour plombiers et plombiers-chauffagistes. Devis en 3 minutes, attestation immédiate. Tarifs dès 50 €/mois (équivalent), paiement trimestriel.",
     avantages: [
       "Tarifs adaptés au CA des plombiers",
       "Sociétés résiliées acceptées",
       "Attestation avec QR code de vérification",
-      "Prélèvement mensuel ou trimestriel",
+      "Prélèvement trimestriel (1er trimestre par carte + frais, puis SEPA)",
     ],
     faq: [
       { q: "Quel prix pour un plombier ?", r: "La prime dépend de votre chiffre d'affaires. Pour un CA de 80 000 €, comptez environ 840 €/an. Utilisez notre simulateur pour une estimation immédiate." },
@@ -20,8 +20,8 @@ export const METIERS_SEO = [
     slug: "electricien",
     nom: "Électricien",
     activite: "Électricité",
-    prixMin: "70",
-    description: "Assurance décennale pour électriciens : obligatoire pour exercer. Devis gratuit en 3 minutes, attestation immédiate. Dès 70 €/mois.",
+    prixMin: "50",
+    description: "Assurance décennale pour électriciens : obligatoire pour exercer. Devis gratuit en 3 minutes, attestation immédiate. Dès 50 €/mois (équivalent), paiement trimestriel.",
     avantages: [
       "Électricité bâtiment et spéciale",
       "Jusqu'à 30 % d'économies vs assureurs traditionnels",
@@ -30,19 +30,19 @@ export const METIERS_SEO = [
     ],
     faq: [
       { q: "L'électricien doit-il avoir une décennale ?", r: "Oui. Tout électricien intervenant sur un ouvrage avec contrat direct au maître d'ouvrage doit souscrire une assurance décennale (loi Spinetta)." },
-      { q: "Prix décennale électricien ?", r: "À partir de 600 €/an selon votre CA. Un électricien à 100 000 € de CA paie environ 1 050 €/an chez Optimum." },
+      { q: "Prix décennale électricien ?", r: "À partir de 600 €/an (soit environ 50 €/mois en équivalent) selon votre CA, prélèvement trimestriel. Un électricien à 100 000 € de CA paie environ 1 050 €/an chez Optimum." },
     ],
   },
   {
     slug: "peintre",
     nom: "Peintre",
     activite: "Peinture",
-    prixMin: "70",
-    description: "Assurance décennale peintre en bâtiment : obligatoire pour vos chantiers. Devis en ligne, attestation immédiate. Tarifs compétitifs.",
+    prixMin: "50",
+    description: "Assurance décennale peintre en bâtiment : obligatoire pour vos chantiers. Devis en ligne, attestation immédiate. Dès 50 €/mois (équivalent), paiement trimestriel.",
     avantages: [
       "Peinture bâtiment et ravalement",
       "Devis sans engagement",
-      "Paiement SEPA mensuel ou trimestriel",
+      "Paiement trimestriel par carte puis SEPA",
       "Jeunes entreprises acceptées",
     ],
     faq: [
@@ -54,8 +54,8 @@ export const METIERS_SEO = [
     slug: "carreleur",
     nom: "Carreleur",
     activite: "Carrelage",
-    prixMin: "70",
-    description: "Assurance décennale carreleur : obligatoire pour les poseurs de carrelage. Devis gratuit, attestation immédiate. Dès 70 €/mois.",
+    prixMin: "50",
+    description: "Assurance décennale carreleur : obligatoire pour les poseurs de carrelage. Devis gratuit, attestation immédiate. Dès 50 €/mois (équivalent), paiement trimestriel.",
     avantages: [
       "Carrelage et faïence couverts",
       "Tarification selon votre CA",
@@ -64,7 +64,7 @@ export const METIERS_SEO = [
     ],
     faq: [
       { q: "Le carrelage est-il couvert par la décennale ?", r: "Oui. Les travaux de carrelage font partie du second œuvre et sont couverts par l'assurance décennale obligatoire." },
-      { q: "Prix décennale carreleur ?", r: "À partir de 600 €/an. Utilisez notre simulateur avec votre chiffre d'affaires pour une estimation précise." },
+      { q: "Prix décennale carreleur ?", r: "À partir de 600 €/an (≈ 50 €/mois équivalent), prélèvement trimestriel. Utilisez notre simulateur avec votre chiffre d'affaires pour une estimation précise." },
     ],
   },
   {
@@ -72,7 +72,7 @@ export const METIERS_SEO = [
     nom: "Maçon",
     activite: "Maçonnerie",
     prixMin: "90",
-    description: "Assurance décennale maçon : gros œuvre obligatoire. Devis maçonnerie en 3 minutes. Tarifs adaptés aux entreprises de maçonnerie.",
+    description: "Assurance décennale maçon : gros œuvre obligatoire. Devis maçonnerie en 3 minutes. Tarifs adaptés aux entreprises de maçonnerie (affichage en équivalent mensuel, paiement trimestriel).",
     avantages: [
       "Maçonnerie et gros œuvre",
       "Fondations, béton, VRD",
@@ -89,7 +89,7 @@ export const METIERS_SEO = [
     nom: "Couvreur",
     activite: "Couverture",
     prixMin: "90",
-    description: "Assurance décennale couvreur : charpente et couverture. Obligatoire pour les travaux de toiture. Devis en ligne sous 24h si étude.",
+    description: "Assurance décennale couvreur : charpente et couverture. Obligatoire pour les travaux de toiture. Devis en ligne sous 24h si étude (équivalent mensuel, paiement trimestriel).",
     avantages: [
       "Couverture et étanchéité toiture",
       "Charpente couverte",
@@ -105,8 +105,8 @@ export const METIERS_SEO = [
     slug: "menuisier",
     nom: "Menuisier",
     activite: "Menuiserie",
-    prixMin: "70",
-    description: "Assurance décennale menuisier : menuiserie intérieure et extérieure. Devis gratuit, attestation immédiate. Dès 70 €/mois.",
+    prixMin: "50",
+    description: "Assurance décennale menuisier : menuiserie intérieure et extérieure. Devis gratuit, attestation immédiate. Dès 50 €/mois (équivalent), paiement trimestriel.",
     avantages: [
       "Menuiserie bois et PVC",
       "Pose de portes et fenêtres",
@@ -115,7 +115,7 @@ export const METIERS_SEO = [
     ],
     faq: [
       { q: "Menuisier et décennale ?", r: "Oui. La menuiserie extérieure (portes, fenêtres) est particulièrement concernée. La décennale couvre les dommages à la solidité de l'ouvrage." },
-      { q: "Combien pour un menuisier ?", r: "À partir de 600 €/an selon votre CA et vos activités. Devis en 3 minutes sur notre site." },
+      { q: "Combien pour un menuisier ?", r: "À partir de 600 €/an (≈ 50 €/mois équivalent), prélèvement trimestriel, selon votre CA et vos activités. Devis en 3 minutes sur notre site." },
     ],
   },
   {
@@ -123,7 +123,7 @@ export const METIERS_SEO = [
     nom: "Charpentier",
     activite: "Charpente",
     prixMin: "90",
-    description: "Assurance décennale charpentier : charpente bois et métallique. Obligatoire pour les travaux de structure. Devis personnalisé.",
+    description: "Assurance décennale charpentier : charpente bois et métallique. Obligatoire pour les travaux de structure. Devis personnalisé (équivalent mensuel, paiement trimestriel).",
     avantages: [
       "Charpente bois et métallique",
       "Gros œuvre structure",

@@ -54,15 +54,15 @@ export default function GestionDocumentPage() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
-        <p className="text-gray-300">Chargement...</p>
+      <main className="gestion-app min-h-screen bg-[#1a1a1a] flex items-center justify-center">
+        <p className="text-gray-200">Chargement...</p>
       </main>
     )
   }
 
   if (!document) {
     return (
-      <main className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
+      <main className="gestion-app min-h-screen bg-[#1a1a1a] flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">Document introuvable</p>
           <Link href="/gestion" className="text-[#C65D3B] hover:underline">← Retour au dashboard</Link>
@@ -72,10 +72,10 @@ export default function GestionDocumentPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#1a1a1a] text-gray-200">
+    <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
       <header className="border-b border-gray-700 px-6 py-4 print:hidden">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <Link href={`/gestion/clients/${document.userId}`} className="text-gray-300 hover:text-white text-sm">
+          <Link href={`/gestion/clients/${document.userId}`} className="text-gray-200 hover:text-white text-sm">
             ← Fiche client
           </Link>
           <div className="flex gap-3">
@@ -85,7 +85,7 @@ export default function GestionDocumentPage() {
             >
               Imprimer / PDF
             </button>
-            <Link href="/gestion" className="text-gray-300 hover:text-white text-sm">Dashboard</Link>
+            <Link href="/gestion" className="text-gray-200 hover:text-white text-sm">Dashboard</Link>
           </div>
         </div>
       </header>

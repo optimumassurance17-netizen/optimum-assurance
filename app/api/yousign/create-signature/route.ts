@@ -52,9 +52,14 @@ export async function POST(request: NextRequest) {
       chiffreAffaires: souscription.chiffreAffaires || 0,
       primeAnnuelle: souscription.tarif?.primeAnnuelle || 0,
       primeMensuelle: souscription.tarif?.primeMensuelle,
-      primeTrimestrielle: souscription.tarif ? souscription.tarif.primeAnnuelle / 4 : undefined,
+      primeTrimestrielle:
+        typeof souscription.tarif?.primeTrimestrielle === "number"
+          ? souscription.tarif.primeTrimestrielle
+          : souscription.tarif?.primeAnnuelle
+            ? Math.round((souscription.tarif.primeAnnuelle / 4) * 100) / 100
+            : undefined,
       modePaiement: "prelevement",
-      periodicitePrelevement: "mensuel",
+      periodicitePrelevement: "trimestriel",
       fraisGestionPrelevement: 60,
       franchise: souscription.tarif?.franchise || 2500,
       plafond: souscription.tarif?.plafond || 100000,

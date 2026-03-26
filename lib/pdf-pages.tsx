@@ -3,13 +3,13 @@
  * Chaque composant retourne un <Page> (sans Document) pour être combiné.
  */
 import React from "react"
-import { Page, Text, View, StyleSheet } from "@react-pdf/renderer"
+import { Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer"
 
 const sharedStyles = StyleSheet.create({
   page: { padding: 40, fontSize: 10 },
   header: { borderBottomWidth: 2, borderBottomColor: "#C65D3B", paddingBottom: 15, marginBottom: 20 },
   title: { fontSize: 18, color: "#C65D3B", marginBottom: 4 },
-  subtitle: { fontSize: 9, color: "#6B6560" },
+  subtitle: { fontSize: 9, color: "#333333" },
   h2: { fontSize: 14, marginBottom: 15, marginTop: 15 },
   h3: { fontSize: 11, marginBottom: 8, marginTop: 12 },
   p: { marginBottom: 6, lineHeight: 1.4 },
@@ -99,6 +99,8 @@ export function AttestationPDFPage({
     primeAnnuelle?: number
     dateEffet?: string
     dateEcheance?: string
+    verificationUrl?: string
+    verificationQrDataUri?: string
   }
   return (
     <Page size="A4" style={sharedStyles.page}>
@@ -120,6 +122,19 @@ export function AttestationPDFPage({
         </Text>
         <Text style={sharedStyles.p}>Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}</Text>
         <Text style={sharedStyles.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+        {d.verificationQrDataUri && (
+          <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
+            <Image src={d.verificationQrDataUri} style={{ width: 72, height: 72, marginRight: 10 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold" }}>
+                Vérification en ligne
+              </Text>
+              {d.verificationUrl ? (
+                <Text style={{ fontSize: 7, lineHeight: 1.35, color: "#333333" }}>{d.verificationUrl}</Text>
+              ) : null}
+            </View>
+          </View>
+        )}
       </View>
     </Page>
   )
@@ -141,6 +156,8 @@ export function AttestationDoPDFPage({
     primeAnnuelle?: number
     dateSignature?: string
     dateEcheance?: string
+    verificationUrl?: string
+    verificationQrDataUri?: string
   }
   const typeGarantie = d.closCouvert ? "Clos et couvert" : "DO complète"
   return (
@@ -160,6 +177,19 @@ export function AttestationDoPDFPage({
         <Text style={sharedStyles.p}>Type de garantie : {typeGarantie}</Text>
         <Text style={sharedStyles.p}>Validité : du {d.dateSignature ?? "—"} au {d.dateEcheance ?? "—"} (10 ans, non résiliable)</Text>
         <Text style={sharedStyles.p}>Prime : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+        {d.verificationQrDataUri && (
+          <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
+            <Image src={d.verificationQrDataUri} style={{ width: 72, height: 72, marginRight: 10 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold" }}>
+                Vérification en ligne
+              </Text>
+              {d.verificationUrl ? (
+                <Text style={{ fontSize: 7, lineHeight: 1.35, color: "#333333" }}>{d.verificationUrl}</Text>
+              ) : null}
+            </View>
+          </View>
+        )}
       </View>
     </Page>
   )
@@ -275,7 +305,7 @@ export function DocumentResumePDFPage({
       {d.raisonSociale && <Text style={sharedStyles.p}>Client : {d.raisonSociale}</Text>}
       {d.primeAnnuelle != null && <Text style={sharedStyles.p}>Prime : {d.primeAnnuelle.toLocaleString("fr-FR")} € TTC</Text>}
       {d.dateEffet && <Text style={sharedStyles.p}>Date d&apos;effet : {d.dateEffet}</Text>}
-      <Text style={[sharedStyles.p, { marginTop: 20, fontSize: 9, color: "#6B6560" }]}>
+      <Text style={[sharedStyles.p, { marginTop: 20, fontSize: 9, color: "#333333" }]}>
         Consultez ce document en ligne dans votre espace client pour les détails complets.
       </Text>
     </Page>

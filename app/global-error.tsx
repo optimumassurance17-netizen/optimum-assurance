@@ -14,7 +14,7 @@ export default function GlobalError({
       <body style={{ fontFamily: "system-ui, sans-serif", margin: 0, padding: "2rem", background: "#FDF8F3", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
         <h1 style={{ color: "#0a0a0a", marginBottom: "1rem" }}>Une erreur critique est survenue</h1>
         {process.env.NODE_ENV === "development" && error?.message && (
-          <p style={{ color: "#737373", fontSize: "0.85rem", marginBottom: "1rem", maxWidth: "400px", wordBreak: "break-word" }}>
+          <p style={{ color: "#333333", fontSize: "0.85rem", marginBottom: "1rem", maxWidth: "400px", wordBreak: "break-word" }}>
             {error.message}
           </p>
         )}

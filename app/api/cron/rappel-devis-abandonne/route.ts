@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { assertCronAuthorized } from "@/lib/cron-auth"
 
 /**
  * Cron : rappel devis abandonné 24-48h après envoi
  * Envoie un email aux leads qui n'ont pas souscrit
- * Protéger par CRON_SECRET
+ * Sécurisé par CRON_SECRET (voir `lib/cron-auth.ts`)
  */
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get("authorization")
-    const secret = process.env.CRON_SECRET
-    if (secret && authHeader !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-    }
+    const denied = assertCronAuthorized(request)
+    if (denied) return denied
 
     const now = new Date()
     const minAge = new Date(now.getTime() - 48 * 60 * 60 * 1000) // 48h

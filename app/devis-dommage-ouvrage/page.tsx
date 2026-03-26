@@ -62,11 +62,11 @@ export default function DevisDommageOuvragePage() {
           </div>
           <div className="flex flex-wrap gap-2 mt-4">
             <Link href="/dommage-ouvrage/auto-construction" className="text-sm text-[#C65D3B] font-medium hover:underline">Auto-construction</Link>
-            <span className="text-[#a3a3a3]">•</span>
+            <span className="text-[#333333]">•</span>
             <Link href="/dommage-ouvrage/particulier" className="text-sm text-[#C65D3B] font-medium hover:underline">Particulier</Link>
-            <span className="text-[#a3a3a3]">•</span>
+            <span className="text-[#333333]">•</span>
             <Link href="/dommage-ouvrage/constructeur-promoteur" className="text-sm text-[#C65D3B] font-medium hover:underline">Constructeur</Link>
-            <span className="text-[#a3a3a3]">•</span>
+            <span className="text-[#333333]">•</span>
             <Link href="/dommage-ouvrage/clos-et-couvert" className="text-sm text-[#C65D3B] font-medium hover:underline">Clos et couvert</Link>
           </div>
         </div>

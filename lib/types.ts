@@ -37,10 +37,12 @@ export const STORAGE_KEYS = {
   devis: "optimum-devis",
   souscription: "optimum-souscription",
   signature: "optimum-signature",
+  mandatSepa: "optimum-mandat-sepa",
   paiementOptions: "optimum-paiement-options",
 }
 
 export const FRAIS_GESTION_PRELEVEMENT = 60
 export const FRAIS_AVENANT = 60
 
-export type PeriodicitePrelevement = "mensuel" | "trimestriel"
+/** Unique mode : trimestriel (1er paiement CB + frais, puis prélèvements SEPA trimestriels). */
+export type PeriodicitePrelevement = "trimestriel"

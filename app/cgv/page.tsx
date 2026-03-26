@@ -18,7 +18,10 @@ export default function CGVPage() {
           </section>
           <section>
             <h2 className="text-xl font-semibold text-black">3. Paiement</h2>
-            <p>Paiement par prélèvement SEPA (mensuel ou trimestriel). Frais de gestion de 60 € sur le premier prélèvement. En cas d&apos;impayé, l&apos;attestation peut être suspendue. Régularisation possible par carte bancaire.</p>
+            <p>
+              Paiement : premier trimestre (avec frais de gestion de 60 €) par carte bancaire, puis prélèvements SEPA trimestriels sur l&apos;IBAN du mandat. Les montants de cotisation sont dus par échéances trimestrielles ; les éventuels montants présentés en « équivalent mensuel » sur le site (prime annuelle divisée par 12) sont indicatifs et ne modifient pas l&apos;échéancier contractuel.
+            </p>
+            <p>En cas d&apos;impayé, l&apos;attestation peut être suspendue. Régularisation possible par carte bancaire.</p>
           </section>
           <section>
             <h2 className="text-xl font-semibold text-black">3 bis. Avenants</h2>

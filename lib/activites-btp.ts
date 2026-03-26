@@ -18,3 +18,9 @@ export const ACTIVITES_BTP = [
 ] as const
 
 export type ActiviteBtp = (typeof ACTIVITES_BTP)[number]
+
+/** Activités avec taux et prime min — pour le simulateur (afficher les tarifs) */
+export const ACTIVITES_AVEC_TARIFS = [
+  ...ACTIVITES_PAR_CATEGORIE,
+  { activite: "Nettoyage toiture et peinture résine (I3 à I5)", categorie: "Spécialisé", taux_base: 1.7, prime_min: 0 }, // 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)
+] as const

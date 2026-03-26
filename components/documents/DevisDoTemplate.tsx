@@ -219,7 +219,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
           <div className="text-xs text-[#171717] mb-2 p-2 bg-[#F5E8E3] rounded">
             <p className="font-medium mb-1">Option clos et couvert : lots couverts</p>
             <p>{DO_LOTS_CLOS_COUVERT.map((l) => l.lot).join(", ")}</p>
-            <p className="mt-1 text-[#737373">Lots non couverts : {DO_LOTS_EXCLUS_CLOS_COUVERT.join(", ")}</p>
+            <p className="mt-1 text-[#333333]">Lots non couverts : {DO_LOTS_EXCLUS_CLOS_COUVERT.join(", ")}</p>
           </div>
         )}
         <p className="text-xs text-[#171717] italic">{ELEMENTS_DISSOCIABLES_NOTE}</p>
@@ -306,7 +306,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
           de couverture.
         </p>
       </div>
-      <p className="text-[10px] text-[#737373] mt-4 leading-tight">
+      <p className="text-[10px] text-[#333333] mt-4 leading-tight">
         En application du 2° de l&apos;article 261 C du CGI, sont exonérées de la taxe sur la valeur ajoutée (TVA) les opérations d&apos;assurance, de réassurance ainsi que les prestations de services afférentes à ces opérations effectuées par les courtiers et intermédiaires d&apos;assurance.
       </p>
     </div>

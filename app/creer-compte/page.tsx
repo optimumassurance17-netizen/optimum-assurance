@@ -94,6 +94,7 @@ export default function CreerComptePage() {
               chiffreAffaires: data.chiffreAffaires,
               primeAnnuelle: data.tarif.primeAnnuelle,
               primeMensuelle: data.tarif.primeMensuelle,
+              primeTrimestrielle: data.tarif.primeTrimestrielle,
               franchise: data.tarif.franchise,
               plafond: data.tarif.plafond,
               dateCreation: new Date().toLocaleDateString("fr-FR"),
@@ -156,7 +157,7 @@ export default function CreerComptePage() {
               onChange={(e) => setPassword(e.target.value)}
               minLength={8}
               required
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] focus:border-[#C65D3B] outline-none bg-[#ebebeb]"
+              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] focus:border-[#C65D3B] outline-none bg-[#e4e4e4]"
               placeholder="Minimum 8 caractères"
             />
           </div>
@@ -171,7 +172,7 @@ export default function CreerComptePage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               minLength={8}
               required
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] focus:border-[#C65D3B] outline-none bg-[#ebebeb]"
+              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] focus:border-[#C65D3B] outline-none bg-[#e4e4e4]"
             />
           </div>
 

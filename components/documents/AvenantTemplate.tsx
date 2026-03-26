@@ -56,7 +56,7 @@ export function AvenantTemplate({ numero, data }: AvenantTemplateProps) {
       <p className="text-sm mt-4">
         Pour Optimum Assurance
       </p>
-      <p className="text-[10px] text-[#737373] mt-6 leading-tight">
+      <p className="text-[10px] text-[#333333] mt-6 leading-tight">
         En application du 2° de l&apos;article 261 C du CGI, sont exonérées de la taxe sur la valeur ajoutée (TVA) les opérations d&apos;assurance, de réassurance ainsi que les prestations de services afférentes à ces opérations effectuées par les courtiers et intermédiaires d&apos;assurance.
       </p>
     </div>

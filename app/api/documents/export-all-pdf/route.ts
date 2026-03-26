@@ -5,6 +5,7 @@ import React from "react"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { DocumentsCombinedPDF } from "@/components/pdf/DocumentsCombinedPDF"
+import { qrCodePngDataUri } from "@/lib/qr-pdf"
 
 export async function GET() {
   try {
@@ -23,19 +24,35 @@ export async function GET() {
       return NextResponse.json({ error: "Aucun document à exporter" }, { status: 400 })
     }
 
-    const docsWithData = documents.map((doc) => {
-      const data = JSON.parse(doc.data) as Record<string, unknown>
-      if (doc.type === "devis_do" && doc.user) {
-        data.raisonSociale = doc.user.raisonSociale ?? data.raisonSociale
-        data.email = doc.user.email ?? data.email
-      }
-      return {
-        id: doc.id,
-        type: doc.type,
-        numero: doc.numero,
-        data,
-      }
-    })
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "")
+
+    const docsWithData = await Promise.all(
+      documents.map(async (doc) => {
+        const data = JSON.parse(doc.data) as Record<string, unknown>
+        if (doc.type === "devis_do" && doc.user) {
+          data.raisonSociale = doc.user.raisonSociale ?? data.raisonSociale
+          data.email = doc.user.email ?? data.email
+        }
+        if (
+          (doc.type === "attestation" || doc.type === "attestation_do") &&
+          doc.verificationToken
+        ) {
+          const verificationUrl = `${baseUrl}/v/${doc.verificationToken}`
+          data.verificationUrl = verificationUrl
+          try {
+            data.verificationQrDataUri = await qrCodePngDataUri(verificationUrl)
+          } catch (e) {
+            console.warn("[export-all-pdf] Génération QR:", e)
+          }
+        }
+        return {
+          id: doc.id,
+          type: doc.type,
+          numero: doc.numero,
+          data,
+        }
+      })
+    )
 
     const pdfElement = React.createElement(DocumentsCombinedPDF, { documents: docsWithData })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- renderToBuffer attend un Document react-pdf

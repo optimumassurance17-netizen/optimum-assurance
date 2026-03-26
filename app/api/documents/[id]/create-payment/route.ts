@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-import { createMollieClient } from "@mollie/api-client"
+import { createMollieClient, Locale, PaymentMethod } from "@mollie/api-client"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 /**
  * Crée un paiement Mollie pour un document devis_do.
- * Paiement unique par carte bancaire.
+ * Paiement par virement bancaire (banktransfer) — instructions RIB / référence sur la page Mollie.
+ * @see https://docs.mollie.com/payments/bank-transfer
  */
 export async function POST(
   request: NextRequest,
@@ -55,19 +56,36 @@ export async function POST(
       )
     }
 
+    const email = document.user.email?.trim()
+    if (!email) {
+      return NextResponse.json(
+        { error: "Email requis pour le paiement par virement (Mollie envoie les instructions)" },
+        { status: 400 }
+      )
+    }
+
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+
+    /** Échéance du virement (entre demain et J+100, exigence Mollie) */
+    const due = new Date()
+    due.setDate(due.getDate() + 14)
+    const dueDate = due.toISOString().slice(0, 10)
 
     const mollieClient = createMollieClient({ apiKey })
     const payment = await mollieClient.payments.create({
       amount: { currency: "EUR", value: String(amount.toFixed(2)) },
-      description: `Dommage ouvrage - Devis ${document.numero} - ${document.user.raisonSociale || document.user.email}`,
+      description: `Dommage ouvrage - Devis ${document.numero} - ${document.user.raisonSociale || email}`,
       redirectUrl: `${baseUrl}/confirmation`,
       webhookUrl: `${baseUrl}/api/mollie/webhook`,
+      method: PaymentMethod.banktransfer,
+      locale: Locale.fr_FR,
+      billingEmail: email,
+      dueDate,
       metadata: {
         type: "devis_do",
         documentId: document.id,
         documentNumero: document.numero,
-        email: document.user.email,
+        email,
         raisonSociale: document.user.raisonSociale || "",
       },
     })

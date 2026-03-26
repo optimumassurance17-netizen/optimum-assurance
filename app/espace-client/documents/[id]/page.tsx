@@ -189,7 +189,12 @@ export default function DocumentPage() {
           ]}
         />
         {document.type === "devis_do" && (
-          <div className="mb-6 print:hidden">
+          <div className="mb-6 print:hidden space-y-3">
+            <p className="text-sm text-[#333333]">
+              Le règlement se fait par <strong>virement bancaire</strong> via Mollie : vous serez redirigé vers une
+              page sécurisée avec les coordonnées bancaires et la référence à indiquer. L&apos;attestation sera
+              délivrée après réception du virement.
+            </p>
             <DevoirConseil
               produit="dommage-ouvrage"
               checkboxId="devoir-conseil-paiement-do"
@@ -212,7 +217,7 @@ export default function DocumentPage() {
                 disabled={payLoading || !devoirConseilAccepte}
                 className="bg-emerald-600 text-white px-6 py-2 rounded-xl hover:bg-emerald-700 font-medium disabled:opacity-50 disabled:bg-[#d4d4d4] disabled:cursor-not-allowed"
               >
-                {payLoading ? "Préparation..." : "Payer ce devis"}
+                {payLoading ? "Redirection vers Mollie..." : "Payer par virement (Mollie)"}
               </button>
             )}
             {canRequestResiliation && !resiliationRequested && (

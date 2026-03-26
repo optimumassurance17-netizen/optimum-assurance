@@ -48,8 +48,8 @@ export default function ContactPage() {
 
         {done ? (
           <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-2xl">
-            <p className="font-semibold text-emerald-800 mb-2">Message envoyé ✓</p>
-            <p className="text-emerald-700 text-sm">
+            <p className="font-semibold text-emerald-900 mb-2">Message envoyé ✓</p>
+            <p className="text-emerald-800 text-sm">
               Nous avons bien reçu votre message et vous répondrons à l&apos;adresse indiquée sous 24h.
             </p>
             <button
@@ -72,7 +72,7 @@ export default function ContactPage() {
                 value={nom}
                 onChange={(e) => setNom(e.target.value)}
                 required
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#ebebeb] text-[#0a0a0a] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#e4e4e4] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none"
                 placeholder="Votre nom ou société"
               />
             </div>
@@ -86,7 +86,7 @@ export default function ContactPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#ebebeb] text-[#0a0a0a] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#e4e4e4] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none"
                 placeholder="votre@email.com"
               />
             </div>
@@ -98,7 +98,7 @@ export default function ContactPage() {
                 id="sujet"
                 value={sujet}
                 onChange={(e) => setSujet(e.target.value)}
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#ebebeb] text-[#0a0a0a] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#e4e4e4] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none"
               >
                 <option value="">Sélectionnez un sujet</option>
                 <option value="Devis décennale">Devis décennale</option>
@@ -118,7 +118,7 @@ export default function ContactPage() {
                 onChange={(e) => setMessage(e.target.value)}
                 required
                 rows={5}
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#ebebeb] text-[#0a0a0a] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none resize-none"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#e4e4e4] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none resize-none"
                 placeholder="Décrivez votre demande..."
               />
             </div>

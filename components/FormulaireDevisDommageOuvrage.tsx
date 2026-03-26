@@ -15,6 +15,8 @@ import {
 } from "@/lib/dommage-ouvrage-types"
 import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
 import { DevoirConseil } from "@/components/DevoirConseil"
+import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
+import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 
 const STEPS = [
   { id: 1, label: "Souscripteur" },
@@ -24,7 +26,7 @@ const STEPS = [
   { id: 5, label: "Garanties & réalisateurs" },
 ]
 
-const inputClass = "w-full border border-[#d4d4d4] rounded-xl px-4 py-3.5 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#ebebeb] text-black font-medium placeholder:text-gray-600"
+const inputClass = `w-full rounded-xl px-4 py-3.5 font-semibold ${inputFieldBg} ${inputTextDark}`
 const labelClass = "block mb-2 font-semibold text-black"
 const sectionClass = "p-6 bg-[#f5f5f5] rounded-2xl border border-[#d4d4d4] shadow-sm"
 
@@ -174,7 +176,7 @@ export function FormulaireDevisDommageOuvrage() {
           <ol className="text-black text-sm space-y-1 list-decimal list-inside">
             <li>Le devis sera ajouté manuellement à votre espace client</li>
             <li>Signature électronique du contrat (Yousign)</li>
-            <li>Validation et paiement par Mollie Pay by Bank</li>
+            <li>Validation et paiement par virement bancaire (Mollie)</li>
           </ol>
         </div>
         <p className="text-sm text-black mb-2">
@@ -224,14 +226,14 @@ export function FormulaireDevisDommageOuvrage() {
               aria-label={`Étape ${s.id}: ${s.label}`}
               onClick={() => setStep(s.id)}
               className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition ${
-                step === s.id ? "bg-[#C65D3B] text-white" : "bg-[#ebebeb] border border-[#d4d4d4] text-black font-medium hover:border-[#C65D3B]/50"
+                step === s.id ? "bg-[#C65D3B] text-white" : "bg-[#e4e4e4] border border-[#d4d4d4] text-black font-medium hover:border-[#C65D3B]/50"
               }`}
             >
               {s.id}. {s.label}
             </button>
           ))}
         </div>
-        <div className="h-1.5 bg-[#ebebeb] rounded-full overflow-hidden" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={STEPS.length} aria-label="Progression">
+        <div className="h-1.5 bg-[#e4e4e4] rounded-full overflow-hidden" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={STEPS.length} aria-label="Progression">
           <div className="h-full bg-[#C65D3B] rounded-full transition-all duration-300" style={{ width: `${(step / STEPS.length) * 100}%` }} />
         </div>
       </div>
@@ -243,8 +245,9 @@ export function FormulaireDevisDommageOuvrage() {
             <h3 className="font-semibold text-black mb-4">1. Présentation du souscripteur</h3>
             <div className="space-y-4">
               <div>
-                <label className={labelClass}>Qualité du maître d&apos;ouvrage *</label>
+                <label htmlFor="do-qualite" className={labelClass}>Qualité du maître d&apos;ouvrage *</label>
                 <select
+                  id="do-qualite"
                   value={data.qualiteMaitreOuvrage || ""}
                   onChange={(e) => update("qualiteMaitreOuvrage", e.target.value as QualiteMaitreOuvrage)}
                   className={inputClass}
@@ -305,6 +308,15 @@ export function FormulaireDevisDommageOuvrage() {
                   {siretError && (
                     <p className="mt-2 text-sm text-red-600 font-medium">{siretError}</p>
                   )}
+                  <AdresseAutocomplete
+                    show={!!siretError}
+                    onPick={(a) => {
+                      update("adresse", a.adresse)
+                      update("codePostal", a.codePostal)
+                      update("ville", a.ville)
+                      setSiretError(null)
+                    }}
+                  />
                 </div>
               )}
               <div>
@@ -512,8 +524,9 @@ export function FormulaireDevisDommageOuvrage() {
             <h3 className="font-semibold text-black mb-4">3. Type d&apos;ouvrage</h3>
             <div className="space-y-4">
               <div>
-                <label className={labelClass}>Type d&apos;ouvrage *</label>
+                <label htmlFor="do-type-ouvrage" className={labelClass}>Type d&apos;ouvrage *</label>
                 <select
+                  id="do-type-ouvrage"
                   value={data.typeOuvrage || ""}
                   onChange={(e) => update("typeOuvrage", e.target.value as TypeOuvrage)}
                   className={inputClass}
@@ -756,7 +769,7 @@ export function FormulaireDevisDommageOuvrage() {
                   <div className="bg-[#FEF3F0] border border-[#C65D3B]/30 rounded-xl p-5">
                     <p className="font-semibold text-black mb-1">Prix approximatif (estimation)</p>
                     {tarif.remiseWeb != null && tarif.remiseWeb > 0 && (
-                      <p className="text-sm text-emerald-700 font-medium mb-1">Remise web 5 % sur DO : -{tarif.remiseWeb.toLocaleString("fr-FR")} €</p>
+                      <p className="text-sm text-emerald-800 font-medium mb-1">Remise web 5 % sur DO : -{tarif.remiseWeb.toLocaleString("fr-FR")} €</p>
                     )}
                     <p className="text-2xl font-bold text-[#C65D3B]">{tarif.primeAnnuelle.toLocaleString("fr-FR")} € <span className="text-base font-normal text-black">/ an</span></p>
                     {tarif.supplementTrc != null && tarif.supplementTrc > 0 && (
@@ -1086,8 +1099,9 @@ export function FormulaireDevisDommageOuvrage() {
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Type de contrôle</label>
+                    <label htmlFor="do-type-controle" className={labelClass}>Type de contrôle</label>
                     <select
+                      id="do-type-controle"
                       value={data.controleTechniqueType || ""}
                       onChange={(e) => update("controleTechniqueType", e.target.value as "L" | "L+E" | "A" | "E")}
                       className={inputClass}
@@ -1117,8 +1131,9 @@ export function FormulaireDevisDommageOuvrage() {
           <div className={sectionClass}>
             <h3 className="font-semibold text-black mb-4">Organisation des travaux</h3>
             <div>
-              <label className={labelClass}>L&apos;opération est confiée à</label>
+              <label htmlFor="do-type-contrat" className={labelClass}>L&apos;opération est confiée à</label>
               <select
+                id="do-type-contrat"
                 value={data.typeContrat || ""}
                 onChange={(e) => update("typeContrat", e.target.value as TypeContrat)}
                 className={inputClass}
@@ -1168,7 +1183,7 @@ export function FormulaireDevisDommageOuvrage() {
           type="button"
           onClick={() => setStep((s) => Math.max(1, s - 1))}
           disabled={step === 1}
-          className="px-6 py-3 rounded-xl border border-[#d4d4d4] font-semibold text-black disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#C65D3B]/50 transition bg-[#ebebeb]"
+          className="px-6 py-3 rounded-xl border border-[#d4d4d4] font-semibold text-black disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#C65D3B]/50 transition bg-[#e4e4e4]"
         >
           ← Précédent
         </button>

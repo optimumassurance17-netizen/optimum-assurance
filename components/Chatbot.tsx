@@ -71,7 +71,7 @@ export function Chatbot() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-[#C65D3B] text-white px-4 py-3 rounded-full shadow-lg hover:bg-[#B04F2F] transition-all hover:scale-105"
+        className="fixed z-50 flex items-center gap-2 bg-[#C65D3B] text-white px-4 py-3 rounded-full shadow-lg hover:bg-[#B04F2F] transition-all hover:scale-105 bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-[max(1.5rem,env(safe-area-inset-right))]"
         aria-label={open ? "Fermer le chat" : "Ouvrir l'assistant"}
       >
         <svg
@@ -92,7 +92,7 @@ export function Chatbot() {
 
       {open && (
         <div
-          className="fixed bottom-24 right-6 z-50 w-[calc(100vw-3rem)] sm:w-96 max-h-[70vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-[#e5e5e5] overflow-hidden"
+          className="fixed z-50 w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-96 sm:max-w-none max-h-[min(70vh,100dvh-8rem)] flex flex-col bg-white rounded-2xl shadow-2xl border border-[#e5e5e5] overflow-hidden bottom-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] right-[max(1rem,env(safe-area-inset-right))] sm:bottom-24 sm:right-6"
           role="dialog"
           aria-label="Chat assistant Optimum Assurance"
         >
@@ -189,7 +189,7 @@ export function Chatbot() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
                 placeholder="Posez votre question..."
-                className="flex-1 border border-[#d4d4d4] rounded-xl px-4 py-2.5 text-sm text-[#0a0a0a] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none"
+                className="flex-1 border border-[#d4d4d4] rounded-xl px-4 py-2.5 text-sm bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none"
               />
               <button
                 type="button"

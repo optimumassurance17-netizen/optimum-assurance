@@ -49,12 +49,14 @@ export async function POST(request: NextRequest) {
 
     const chiffreAffaires = Number(dataEtude.chiffreAffaires) || 40000
     const primeMensuelle = Math.round((primeAnnuelle / 12) * 100) / 100
+    const primeTrimestrielle = Math.round((primeAnnuelle / 4) * 100) / 100
     const franchise = Math.max(2500, Math.round(chiffreAffaires * 0.05))
     const plafond = chiffreAffaires * 2
 
     const tarif = {
       primeAnnuelle,
       primeMensuelle,
+      primeTrimestrielle,
       franchise,
       plafond,
       reprisePasse: false,

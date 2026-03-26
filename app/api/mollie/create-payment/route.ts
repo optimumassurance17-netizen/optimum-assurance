@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createMollieClient } from "@mollie/api-client"
+import { createMollieClient, Locale, PaymentMethod } from "@mollie/api-client"
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,10 +35,17 @@ export async function POST(request: NextRequest) {
 
     const mollieMethod =
       method === "sepa" || method === "directdebit"
-        ? ("directdebit" as const)
-        : method === "creditcard" || method === "cb"
-        ? ("creditcard" as const)
-        : (method as "directdebit" | "creditcard")
+        ? PaymentMethod.directdebit
+        : method === "creditcard" || method === "cb" || method === "carte"
+        ? PaymentMethod.creditcard
+        : method === "banktransfer" || method === "virement"
+        ? PaymentMethod.banktransfer
+        : PaymentMethod.directdebit
+
+    const isSepa =
+      mollieMethod === PaymentMethod.directdebit &&
+      (method === "sepa" || method === "directdebit")
+    const isCard = mollieMethod === PaymentMethod.creditcard
 
     const paymentParams = {
       amount: {
@@ -50,9 +57,10 @@ export async function POST(request: NextRequest) {
       webhookUrl: webhookUrl || `${baseUrl}/api/mollie/webhook`,
       metadata: metadata || {},
       method: mollieMethod,
+      ...(isCard && { locale: Locale.fr_FR }),
       ...(customerEmail && { consumerEmail: customerEmail }),
       ...(body.consumerName && { consumerName: body.consumerName }),
-      ...((method === "sepa" || method === "directdebit") &&
+      ...(isSepa &&
         body.consumerAccount && {
           consumerAccount: body.consumerAccount,
         }),

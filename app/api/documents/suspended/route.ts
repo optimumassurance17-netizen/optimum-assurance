@@ -22,15 +22,8 @@ export async function GET() {
     const result = attestations.map((a) => {
       const data = JSON.parse(a.data) as Record<string, unknown>
       const primeAnnuelle = (data.primeAnnuelle as number) ?? 0
-      const primeMensuelle = data.primeMensuelle as number | undefined
       const primeTrimestrielle = data.primeTrimestrielle as number | undefined
-      const periodicite = data.periodicitePrelevement as "mensuel" | "trimestriel" | undefined
-      const montantDu =
-        periodicite === "mensuel"
-          ? primeMensuelle ?? Math.round((primeAnnuelle / 12) * 100) / 100
-          : periodicite === "trimestriel"
-          ? primeTrimestrielle ?? Math.round((primeAnnuelle / 4) * 100) / 100
-          : Math.round((primeAnnuelle / 12) * 100) / 100
+      const montantDu = primeTrimestrielle ?? Math.round((primeAnnuelle / 4) * 100) / 100
 
       return {
         id: a.id,

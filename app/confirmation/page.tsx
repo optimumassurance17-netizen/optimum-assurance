@@ -22,6 +22,15 @@ export default function ConfirmationPage() {
 
   const [isRegularisation, setIsRegularisation] = useState(false)
   const [isDevisDo, setIsDevisDo] = useState(false)
+  const [isDevisDoFlow, setIsDevisDoFlow] = useState(false)
+  /** 1er trimestre payé par carte + suite en SEPA trimestriel */
+  const [decennalePremierTrimestreCarte, setDecennalePremierTrimestreCarte] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("mollie_payment_type") === "devis_do") {
+      setIsDevisDoFlow(true)
+    }
+  }, [])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -89,9 +98,12 @@ export default function ConfirmationPage() {
                   }
                 })()
                 const primeAnnuelle = souscription.tarif?.primeAnnuelle ?? 0
-                const periodicite = paiementOpts?.periodicite
-                const primeMensuelle = periodicite === "mensuel" ? Math.round((primeAnnuelle / 12) * 100) / 100 : undefined
-                const primeTrimestrielle = periodicite === "trimestriel" ? Math.round((primeAnnuelle / 4) * 100) / 100 : undefined
+                const periodicite = paiementOpts?.periodicite ?? "trimestriel"
+                const primeTrimestrielle = Math.round((primeAnnuelle / 4) * 100) / 100
+                const primeMensuelleCalc =
+                  primeAnnuelle > 0 ? Math.round((primeAnnuelle / 12) * 100) / 100 : undefined
+                const trimestrielCarte = paiementOpts?.premierPaiementCarte === true && periodicite === "trimestriel"
+                if (trimestrielCarte) setDecennalePremierTrimestreCarte(true)
                 const docData = souscription.yousignContractData
                   ? {
                       ...souscription.yousignContractData,
@@ -104,13 +116,17 @@ export default function ConfirmationPage() {
                       representantLegal: souscription.representantLegal,
                       civilite: souscription.civilite,
                       activites: souscription.activites,
-                      primeMensuelle: primeMensuelle ?? souscription.tarif?.primeMensuelle,
+                      primeMensuelle: undefined,
                       primeTrimestrielle,
                       modePaiement: paiementOpts ? "prelevement" : "unique",
                       periodicitePrelevement: periodicite,
                       fraisGestionPrelevement: paiementOpts ? 60 : undefined,
                       dateEffet,
                       dateEcheance,
+                      ...(trimestrielCarte && {
+                        premierTrimestrePayeParCarte: true,
+                        prelevementsSuivantsSepaTrimestriel: true,
+                      }),
                     }
                   : {
                       raisonSociale: souscription.raisonSociale,
@@ -124,7 +140,7 @@ export default function ConfirmationPage() {
                       activites: souscription.activites,
                       chiffreAffaires: souscription.chiffreAffaires,
                       primeAnnuelle: souscription.tarif?.primeAnnuelle,
-                      primeMensuelle: primeMensuelle ?? souscription.tarif?.primeMensuelle,
+                      primeMensuelle: souscription.tarif?.primeMensuelle ?? primeMensuelleCalc,
                       primeTrimestrielle,
                       modePaiement: paiementOpts ? "prelevement" : "unique",
                       periodicitePrelevement: periodicite,
@@ -133,6 +149,10 @@ export default function ConfirmationPage() {
                       plafond: souscription.tarif?.plafond,
                       dateEffet,
                       dateEcheance,
+                      ...(trimestrielCarte && {
+                        premierTrimestrePayeParCarte: true,
+                        prelevementsSuivantsSepaTrimestriel: true,
+                      }),
                     }
                 await fetch("/api/payments/record", {
                   method: "POST",
@@ -140,9 +160,7 @@ export default function ConfirmationPage() {
                   body: JSON.stringify({
                     molliePaymentId: paymentId,
                     amount: paiementOpts
-                      ? Math.round((paiementOpts.periodicite === "mensuel"
-                          ? primeAnnuelle / 12 + 60
-                          : primeAnnuelle / 4 + 60) * 100) / 100
+                      ? Math.round((primeAnnuelle / 4 + 60) * 100) / 100
                       : primeAnnuelle,
                     status: "paid",
                     metadata: {
@@ -150,6 +168,7 @@ export default function ConfirmationPage() {
                       siret: souscription.siret,
                       periodicite: paiementOpts?.periodicite,
                       fraisGestion: paiementOpts ? 60 : undefined,
+                      ...(trimestrielCarte && { premierPaiementCarte: true }),
                     },
                   }),
                 })
@@ -185,6 +204,7 @@ export default function ConfirmationPage() {
             sessionStorage.removeItem(STORAGE_KEYS.devis)
             sessionStorage.removeItem(STORAGE_KEYS.souscription)
             sessionStorage.removeItem(STORAGE_KEYS.signature)
+            sessionStorage.removeItem(STORAGE_KEYS.mandatSepa)
             sessionStorage.removeItem(STORAGE_KEYS.paiementOptions)
             sessionStorage.removeItem("mollie_payment_id")
           } else if (data.status === "pending" || data.status === "open") {
@@ -242,6 +262,13 @@ export default function ConfirmationPage() {
                 ? "Votre paiement pour le devis dommage ouvrage a été enregistré avec succès. Votre dossier sera traité en cours."
                 : isRegularisation
                 ? "Votre paiement a été enregistré. Votre attestation est à nouveau valide."
+                : decennalePremierTrimestreCarte
+                ? (
+                    <>
+                      Votre assurance décennale a été souscrite avec succès. Le <strong>premier trimestre</strong> a été réglé par carte bancaire. Les <strong>échéances suivantes</strong> seront prélevées
+                      par <strong>SEPA trimestriel</strong> sur l’IBAN du mandat. Vous recevrez votre attestation par email dans les prochaines minutes.
+                    </>
+                  )
                 : "Votre assurance décennale a été souscrite avec succès. Vous recevrez votre attestation par email dans les prochaines minutes."}
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
@@ -279,18 +306,39 @@ export default function ConfirmationPage() {
               </svg>
             </div>
             <h1 className="text-3xl font-semibold text-black mb-4">
-              Paiement en cours
+              {isDevisDoFlow ? "Virement en attente" : "Paiement en cours"}
             </h1>
             <p className="text-[#171717] mb-8">
-              Votre paiement est en cours de traitement. Vous recevrez une
-              confirmation par email une fois celui-ci finalisé.
+              {isDevisDoFlow ? (
+                <>
+                  Vous avez choisi un <strong>paiement par virement bancaire</strong> (Mollie). Effectuez le
+                  virement selon les coordonnées et la référence indiquées sur la page Mollie ou reçues par
+                  email. Votre attestation dommage ouvrage sera disponible après <strong>réception des fonds</strong>
+                  sur le compte Mollie. Vous recevrez un email de confirmation à ce moment-là.
+                </>
+              ) : (
+                <>
+                  Votre paiement est en cours de traitement. Vous recevrez une confirmation par email une fois
+                  celui-ci finalisé.
+                </>
+              )}
             </p>
-            <Link
-              href="/"
-              className="inline-block bg-[#C65D3B] text-white px-8 py-3 rounded-xl hover:bg-[#B04F2F] transition font-medium"
-            >
-              Retour à l&apos;accueil
-            </Link>
+            <div className="flex gap-4 justify-center flex-wrap">
+              {isDevisDoFlow && (
+                <Link
+                  href="/espace-client"
+                  className="inline-block border-2 border-[#C65D3B] text-[#C65D3B] px-8 py-3 rounded-xl hover:bg-[#F5E8E3] transition font-medium"
+                >
+                  Retour à l&apos;espace client
+                </Link>
+              )}
+              <Link
+                href="/"
+                className="inline-block bg-[#C65D3B] text-white px-8 py-3 rounded-xl hover:bg-[#B04F2F] transition font-medium"
+              >
+                Retour à l&apos;accueil
+              </Link>
+            </div>
           </>
         )}
 

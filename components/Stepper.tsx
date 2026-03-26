@@ -5,6 +5,7 @@ const STEPS = [
   { id: "souscription", label: "Souscription", path: "/souscription" },
   { id: "compte", label: "Compte", path: "/creer-compte" },
   { id: "signature", label: "Signature", path: "/signature" },
+  { id: "mandat-sepa", label: "IBAN & SEPA", path: "/mandat-sepa" },
   { id: "paiement", label: "Paiement", path: "/paiement" },
 ]
 
