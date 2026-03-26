@@ -27,7 +27,7 @@ export const faqs = [
     id: "parcours-decennale",
   },
   // FAQ parcours souscription
-  { q: "Quelles sont les étapes de la souscription ?", r: "Six étapes : devis → souscription → compte → signature Yousign → mandat SEPA (IBAN, prélèvement trimestriel) → paiement (1er trimestre + frais par carte, puis prélèvements trimestriels). Le détail pas à pas est dans la question « Quel est le parcours assurance décennale BTP ? ».", id: "souscription" },
+  { q: "Quelles sont les étapes de la souscription ?", r: "Sept étapes : devis → souscription → compte → signature Yousign → mandat SEPA (IBAN, prélèvement trimestriel) → paiement (1er trimestre + frais par carte, puis prélèvements trimestriels) → confirmation (attestation dans l'espace client). Le détail pas à pas est dans la question « Quel est le parcours assurance décennale BTP ? ».", id: "souscription" },
   { q: "Dois-je créer un compte pour souscrire ?", r: "Oui. Après avoir rempli le formulaire de souscription, vous créez un compte avec votre email et un mot de passe. Ce compte vous permet d'accéder à votre attestation, de gérer vos documents et de déclarer un sinistre. La création du compte est rapide et sécurisée." },
   { q: "Comment se déroule la signature électronique ?", r: "Après création de votre compte, vous recevez un lien pour signer le contrat électroniquement via Yousign. Vous cliquez sur le lien, vous consultez le document et vous signez en quelques clics. La signature est juridiquement valide. Vous êtes ensuite redirigé vers le paiement." },
   { q: "Quels moyens de paiement sont acceptés ?", r: "Pour la décennale : le premier trimestre (avec frais de gestion) est réglé par carte bancaire (Mollie), puis les trois trimestres suivants par prélèvement SEPA sur l'IBAN du mandat." },

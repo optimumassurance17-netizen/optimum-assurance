@@ -71,7 +71,7 @@ export const METIERS_SEO = [
     slug: "macon",
     nom: "Maçon",
     activite: "Maçonnerie",
-    prixMin: "90",
+    prixMin: "50",
     description: "Assurance décennale maçon : gros œuvre obligatoire. Devis maçonnerie en 3 minutes. Tarifs adaptés aux entreprises de maçonnerie (affichage en équivalent mensuel, paiement trimestriel).",
     avantages: [
       "Maçonnerie et gros œuvre",
@@ -88,8 +88,9 @@ export const METIERS_SEO = [
     slug: "couvreur",
     nom: "Couvreur",
     activite: "Couverture",
-    prixMin: "90",
-    description: "Assurance décennale couvreur : charpente et couverture. Obligatoire pour les travaux de toiture. Devis en ligne sous 24h si étude (équivalent mensuel, paiement trimestriel).",
+    prixMin: "50",
+    description:
+      "Assurance décennale couvreur : charpente et couverture. Obligatoire pour les travaux de toiture. Devis en 3 minutes, attestation immédiate. Dès 50 €/mois (équivalent), paiement trimestriel.",
     avantages: [
       "Couverture et étanchéité toiture",
       "Charpente couverte",
@@ -122,8 +123,9 @@ export const METIERS_SEO = [
     slug: "charpentier",
     nom: "Charpentier",
     activite: "Charpente",
-    prixMin: "90",
-    description: "Assurance décennale charpentier : charpente bois et métallique. Obligatoire pour les travaux de structure. Devis personnalisé (équivalent mensuel, paiement trimestriel).",
+    prixMin: "50",
+    description:
+      "Assurance décennale charpentier : charpente bois et métallique. Obligatoire pour les travaux de structure. Devis en 3 minutes, attestation immédiate. Dès 50 €/mois (équivalent), paiement trimestriel.",
     avantages: [
       "Charpente bois et métallique",
       "Gros œuvre structure",
