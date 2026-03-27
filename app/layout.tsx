@@ -7,6 +7,7 @@ import { ChatbotLazy } from "@/components/ChatbotLazy";
 import { Footer } from "@/components/Footer";
 import { CookieBanner } from "@/components/CookieBanner";
 import { ForceLightTheme } from "@/components/ForceLightTheme";
+import { Analytics } from "@vercel/analytics/next";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -98,6 +99,7 @@ export default function RootLayout({
           <ChatbotLazy />
           <CookieBanner />
         </SessionProvider>
+        <Analytics />
       </body>
     </html>
   );
