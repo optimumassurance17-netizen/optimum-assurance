@@ -13,6 +13,7 @@ import {
   onSepaTrimestrePaid,
   setupSepaSubscriptionAfterT1Card,
 } from "@/lib/mollie-sepa"
+import { processInsuranceContractPaymentSuccess } from "@/lib/insurance-contract-service"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -38,6 +39,32 @@ export async function POST(request: NextRequest) {
     const email = metadata.email || (payment as { consumerEmail?: string }).consumerEmail
 
     if (payment.status === "paid") {
+      if (metadata.type === "insurance_contract" && metadata.insuranceContractId) {
+        const amount = payment.amount?.value ? parseFloat(payment.amount.value) : 0
+        const result = await processInsuranceContractPaymentSuccess(
+          metadata.insuranceContractId as string,
+          paymentId,
+          amount
+        )
+        if (!result.ok) {
+          const noRetry =
+            result.error === "NOT_FOUND" ||
+            result.error === "INVALID_STATE_FOR_PAYMENT" ||
+            result.error === "AMOUNT_MISMATCH"
+          if (noRetry) {
+            console.warn("[webhook] insurance_contract (ack, pas de retry utile):", result.error)
+            return NextResponse.json({
+              received: true,
+              acknowledged: true,
+              insuranceContract: { error: result.error },
+            })
+          }
+          console.error("[webhook] insurance_contract (retry possible):", result.error)
+          return NextResponse.json({ error: result.error }, { status: 500 })
+        }
+        return NextResponse.json({ received: true })
+      }
+
       let user: { id: string; email: string; raisonSociale: string | null; adresse?: string | null; codePostal?: string | null; ville?: string | null } | null = null
       let facturePdfAttachment: { filename: string; content: Buffer } | undefined
 

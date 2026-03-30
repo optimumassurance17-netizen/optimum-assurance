@@ -54,7 +54,7 @@ export default function AvisPage() {
           <p className="text-[#171717] text-sm mt-1">/5 — Note moyenne</p>
           <div className="flex justify-center gap-1 mt-2" aria-hidden="true">
             {[1, 2, 3, 4, 5].map((i) => (
-              <span key={i} className="text-amber-400 text-xl">★</span>
+              <span key={i} className="text-yellow-500 text-xl">★</span>
             ))}
           </div>
           <p className="text-xs text-[#171717] mt-4">Avis vérifiés — Google & Trustpilot</p>
@@ -91,13 +91,13 @@ export default function AvisPage() {
         </div>
 
         <div className="mt-12 text-center">
-          <Link href="/devis" className="inline-block bg-[#C65D3B] text-white px-8 py-4 rounded-2xl hover:bg-[#B04F2F] font-semibold transition-all">
+          <Link href="/devis" className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-2xl hover:bg-[#1d4ed8] font-semibold transition-all">
             Obtenir mon devis
           </Link>
         </div>
 
         <p className="text-center mt-8">
-          <Link href="/" className="text-[#C65D3B] font-medium hover:underline">Retour à l&apos;accueil</Link>
+          <Link href="/" className="text-[#2563eb] font-medium hover:underline">Retour à l&apos;accueil</Link>
         </p>
       </div>
     </main>

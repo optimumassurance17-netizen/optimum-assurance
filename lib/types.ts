@@ -24,6 +24,29 @@ export interface SouscriptionData extends DevisData {
   telephone: string
   representantLegal: string
   civilite: "M" | "Mme" | "Mlle"
+  /** Parcours signature / récap (optionnel) */
+  insuranceProduct?: "decennale" | "do"
+  doProjectName?: string
+  doProjectAddress?: string
+}
+
+/** Souscription plateforme — dommage ouvrage (sessionStorage → création contrat + Paiement). */
+export interface DoSouscriptionInsurancePayload {
+  productType: "do"
+  siret: string
+  raisonSociale: string
+  adresse: string
+  codePostal: string
+  ville: string
+  email: string
+  telephone: string
+  representantLegal?: string
+  civilite?: "M" | "Mme" | "Mlle"
+  dateCreationSociete?: string
+  premium: number
+  projectName: string
+  projectAddress: string
+  constructionNature?: string
 }
 
 export interface MandatSepaData {
@@ -39,6 +62,12 @@ export const STORAGE_KEYS = {
   signature: "optimum-signature",
   mandatSepa: "optimum-mandat-sepa",
   paiementOptions: "optimum-paiement-options",
+  /** Contrat plateforme (Prisma) créé après souscription */
+  insuranceContract: "optimum-insurance-contract",
+  /** Id contrat déjà créé dans cet onglet — évite un doublon POST /contracts/create */
+  insuranceContractSessionCreatedId: "optimum-insurance-contract-session-created-id",
+  /** Brouillon souscription DO avant création de compte */
+  doSouscription: "optimum-do-souscription",
 }
 
 export const FRAIS_GESTION_PRELEVEMENT = 60

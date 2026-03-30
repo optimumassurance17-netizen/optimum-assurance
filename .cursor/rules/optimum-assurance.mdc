@@ -1,0 +1,21 @@
+---
+description: Contexte projet Optimum Assurance — déploiement, email, ce que l’IA ne peut pas faire
+alwaysApply: true
+---
+
+# Optimum Assurance (mémoire projet)
+
+- **Stack** : Next.js (App Router), Prisma/PostgreSQL, NextAuth, Mollie, Resend, Yousign, crons Vercel (`vercel.json`).
+- **Build prod** : `npm run vercel-build` = `prisma generate && next build` — **pas** de `migrate deploy` dans le build. Migrations : `npx prisma migrate deploy` sur la BDD prod (manuel ou CI dédié).
+- **Git / CI** : remote GitHub `optimumassurance17-netizen/optimum-assurance`, branche `main`. Workflow `.github/workflows/ci.yml` (lint + build). Vercel : déploiements auto si le dépôt est lié dans le dashboard Vercel.
+- **Resend** : API REST `https://api.resend.com/emails`, champ **`reply_to`** (snake_case), pas `replyTo`. Emails centralisés dans `lib/email.ts` (`sendEmail`).
+- **Health** : `GET /api/health` — DB + statut présence `RESEND_API_KEY` / `EMAIL_FROM` (sans tester l’API Resend).
+- **PWA** : `npm run icons:pwa` régénère `public/icon-192.png` et `icon-512.png`.
+
+## Hors périmètre assistant (à faire humain / dashboard)
+
+- Variables d’environnement sur Vercel, domaine, Mollie live, webhooks, `CRON_SECRET`, liaison Git↔Vercel dans l’UI, validation métier/juridique.
+
+## Préférences utilisateur
+
+- Réponses en **français**. Éviter les refactors hors sujet ; changements ciblés.

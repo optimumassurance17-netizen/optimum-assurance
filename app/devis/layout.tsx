@@ -1,38 +1,43 @@
 import type { Metadata } from "next"
+import { EQ_MENSUEL_MIN } from "@/lib/decennale-affichage-tarif"
+import { faqDevis } from "@/lib/garanties-data"
+import {
+  seoBreadcrumbListNode,
+  seoFaqPageNode,
+  seoJsonLdGraph,
+  seoWebPageNode,
+} from "@/lib/seo-jsonld-helpers"
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
 
-const breadcrumbJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Accueil", item: baseUrl },
-    { "@type": "ListItem", position: 2, name: "Devis assurance décennale", item: `${baseUrl}/devis` },
-  ],
-}
-
 export const metadata: Metadata = {
-  title: "Devis assurance décennale",
-  description:
-    "Obtenez votre devis d'assurance décennale BTP en 3 minutes. Tarification automatique, sans engagement. Plomberie, électricité, maçonnerie, peinture et plus.",
-  alternates: {
-    canonical: `${baseUrl}/devis`,
-  },
+  title: "Devis assurance décennale BTP en ligne — tarif immédiat",
+  description: `Simulateur décennale : tarif selon votre CA et vos activités. Dès ${EQ_MENSUEL_MIN} €/mois (équivalent), prélèvement trimestriel. Sans engagement.`,
+  alternates: { canonical: `${baseUrl}/devis` },
   openGraph: {
     url: `${baseUrl}/devis`,
-    title: "Devis assurance décennale | Optimum Assurance",
-    description: "Devis gratuit en 3 minutes. Tarification immédiate pour tous les métiers du BTP.",
+    title: "Devis assurance décennale BTP | Optimum Assurance",
+    description: `Tarif en quelques minutes. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
   },
 }
 
-export default function DevisLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+const devisJsonLd = seoJsonLdGraph([
+  seoBreadcrumbListNode([
+    { name: "Accueil", path: "/" },
+    { name: "Devis décennale", path: "/devis" },
+  ]),
+  seoWebPageNode({
+    path: "/devis",
+    name: "Devis assurance décennale BTP",
+    description: `Simulateur en ligne — tarif selon chiffre d'affaires et activités BTP. Dès ${EQ_MENSUEL_MIN} €/mois (équivalent).`,
+  }),
+  seoFaqPageNode(faqDevis),
+])
+
+export default function DevisLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(devisJsonLd) }} />
       {children}
     </>
   )

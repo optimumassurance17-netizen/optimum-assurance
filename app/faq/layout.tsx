@@ -1,47 +1,39 @@
 import type { Metadata } from "next"
 import { faqs } from "@/lib/faq-data"
+import { seoFaqPageNode, seoJsonLdGraph, seoBreadcrumbListNode, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
 
 export const metadata: Metadata = {
-  title: "FAQ Assurance Décennale BTP — Prix, Attestation, Obligation",
+  title: "FAQ — assurance décennale, dommage ouvrage, souscription",
   description:
-    "Questions fréquentes assurance décennale : obligation loi Spinetta, prix, attestation immédiate, sociétés résiliées, garanties, paiement SEPA, résiliation, déclaration sinistre.",
-  keywords: ["FAQ assurance décennale", "obligation décennale", "prix assurance décennale", "attestation décennale", "résiliation décennale"],
-  alternates: {
-    canonical: `${baseUrl}/faq`,
-  },
+    "Réponses sur la décennale BTP, le dommage ouvrage, les devis, la souscription, le paiement et l'espace client.",
+  alternates: { canonical: `${baseUrl}/faq` },
   openGraph: {
     url: `${baseUrl}/faq`,
-    title: "FAQ Assurance Décennale BTP | Optimum Assurance",
-    description: "Réponses sur l'obligation, le prix, l'attestation et la souscription décennale.",
+    title: "FAQ | Optimum Assurance",
+    description: "Questions fréquentes sur l'assurance décennale et le dommage ouvrage.",
   },
 }
 
-const faqJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: faqs.map((faq) => ({
-    "@type": "Question",
-    name: faq.q,
-    acceptedAnswer: {
-      "@type": "Answer",
-      text: faq.r,
-    },
-  })),
-}
+const faqPageJsonLd = seoJsonLdGraph([
+  seoBreadcrumbListNode([
+    { name: "Accueil", path: "/" },
+    { name: "FAQ", path: "/faq" },
+  ]),
+  seoWebPageNode({
+    path: "/faq",
+    name: "Questions fréquentes — assurance décennale et dommage ouvrage",
+    description:
+      "Réponses sur l'assurance décennale BTP, le dommage ouvrage, les parcours de souscription et le paiement.",
+  }),
+  seoFaqPageNode([...faqs]),
+])
 
-export default function FAQLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function FaqLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd) }} />
       {children}
     </>
   )

@@ -6,7 +6,7 @@ export const inputTextDark =
 
 /** Champ sur fond gris clair (#e4e4e4) — bordure + focus */
 export const inputFieldBg =
-  "border border-[#d4d4d4] rounded-xl bg-[#e4e4e4] focus:ring-2 focus:ring-[#C65D3B] focus:border-[#C65D3B] outline-none"
+  "border border-[#d4d4d4] rounded-xl bg-[#e4e4e4] focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] outline-none"
 
 /**
  * Texte secondaire sur fond clair : gris foncé (#333), lisible sur mobile (évite #525252 / #737373 trop pâles).

@@ -144,7 +144,7 @@ export default function PaiementPage() {
 
   if (!data || !mandat) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
         <p className="text-[#171717]">Chargement...</p>
       </main>
     )
@@ -153,7 +153,7 @@ export default function PaiementPage() {
   const ech = calculerEcheancierTrimestriel(data.tarif?.primeAnnuelle ?? 0)
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="max-w-2xl mx-auto px-6 py-12">
@@ -211,7 +211,7 @@ export default function PaiementPage() {
               <dd className="font-medium text-black">Trimestriel (4 échéances / an)</dd>
             </div>
           </dl>
-          <Link href="/mandat-sepa" className="text-sm text-[#C65D3B] font-medium hover:underline mt-3 inline-block">
+          <Link href="/mandat-sepa" className="text-sm text-[#2563eb] font-medium hover:underline mt-3 inline-block">
             Modifier les coordonnées bancaires
           </Link>
         </div>
@@ -242,7 +242,7 @@ export default function PaiementPage() {
           <button
             type="submit"
             disabled={loading || !mandat}
-            className="w-full bg-[#C65D3B] text-white py-4 rounded-xl hover:bg-[#B04F2F] transition font-medium disabled:bg-[#D4C4BC] disabled:cursor-not-allowed"
+            className="w-full bg-[#2563eb] text-white py-4 rounded-xl hover:bg-[#1d4ed8] transition font-medium disabled:bg-slate-300 disabled:cursor-not-allowed"
           >
             {loading ? "Redirection vers Mollie..." : "Payer le 1er trimestre par carte"}
           </button>

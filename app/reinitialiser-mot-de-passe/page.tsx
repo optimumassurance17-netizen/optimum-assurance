@@ -52,12 +52,12 @@ function ResetForm() {
 
   if (!token) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3]">
+      <main className="min-h-screen bg-slate-50">
         <Header />
         <div className="max-w-md mx-auto px-6 py-12 text-center">
           <h1 className="text-2xl font-semibold text-[#0a0a0a] mb-4">Lien invalide ou expiré</h1>
           <p className="text-[#171717] mb-6">Demandez un nouveau lien de réinitialisation.</p>
-          <Link href="/mot-de-passe-oublie" className="text-[#C65D3B] font-medium hover:underline">
+          <Link href="/mot-de-passe-oublie" className="text-[#2563eb] font-medium hover:underline">
             Mot de passe oublié
           </Link>
         </div>
@@ -67,7 +67,7 @@ function ResetForm() {
 
   if (done) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3]">
+      <main className="min-h-screen bg-slate-50">
         <Header />
         <div className="max-w-md mx-auto px-6 py-12 text-center">
           <p className="text-2xl mb-4">✓</p>
@@ -79,7 +79,7 @@ function ResetForm() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <Header />
       <div className="max-w-md mx-auto px-6 py-12">
         <h1 className="text-3xl font-semibold mb-2 text-[#0a0a0a]">Nouveau mot de passe</h1>
@@ -94,7 +94,7 @@ function ResetForm() {
               onChange={(e) => setPassword(e.target.value)}
               minLength={8}
               required
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] outline-none bg-[#e4e4e4]"
+              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb] outline-none bg-[#e4e4e4]"
             />
           </div>
           <div>
@@ -105,7 +105,7 @@ function ResetForm() {
               onChange={(e) => setConfirm(e.target.value)}
               minLength={8}
               required
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] outline-none bg-[#e4e4e4]"
+              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb] outline-none bg-[#e4e4e4]"
             />
           </div>
           {error && (
@@ -116,14 +116,14 @@ function ResetForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#C65D3B] text-white py-4 rounded-xl hover:bg-[#B04F2F] transition font-medium disabled:opacity-50"
+            className="w-full bg-[#2563eb] text-white py-4 rounded-xl hover:bg-[#1d4ed8] transition font-medium disabled:opacity-50"
           >
             {loading ? "Modification..." : "Modifier le mot de passe"}
           </button>
         </form>
 
         <p className="text-center text-sm text-[#171717] mt-8">
-          <Link href="/connexion" className="text-[#C65D3B] hover:underline">
+          <Link href="/connexion" className="text-[#2563eb] hover:underline">
             ← Retour à la connexion
           </Link>
         </p>
@@ -135,7 +135,7 @@ function ResetForm() {
 export default function ReinitialiserMotDePassePage() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
         <p className="text-[#171717]">Chargement...</p>
       </main>
     }>

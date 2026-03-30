@@ -1,6 +1,7 @@
 "use client"
 
 import { QRCodeSVG } from "qrcode.react"
+import { SITE_URL } from "@/lib/site-url"
 
 interface AttestationDoTemplateProps {
   numero: string
@@ -22,13 +23,13 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
 
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0">
-      <div className="border-b-2 border-[#C65D3B] pb-4 mb-8">
-        <h1 className="text-2xl font-bold text-[#C65D3B]">Optimum Assurance</h1>
+      <div className="border-b-2 border-[#2563eb] pb-4 mb-8">
+        <h1 className="text-2xl font-bold text-[#2563eb]">Optimum Assurance</h1>
         <p className="text-sm text-[#171717]">Assurance dommage ouvrage</p>
       </div>
 
       <h2 className="text-xl font-semibold mb-2 text-center">ATTESTATION D&apos;ASSURANCE</h2>
-      <p className="text-center font-semibold mb-8 text-[#C65D3B]">Dommage Ouvrage</p>
+      <p className="text-center font-semibold mb-8 text-[#2563eb]">Dommage Ouvrage</p>
 
       <p className="text-center mb-8">N° {numero}</p>
 
@@ -60,6 +61,11 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
 
       <p className="text-sm text-[#171717] mb-6">
         La présente attestation est délivrée pour justifier de l&apos;assurance obligatoire prévue aux articles L. 242-1 et L. 242-2 du Code des assurances.
+      </p>
+      <p className="text-xs text-[#171717] mb-6">
+        <a href={`${SITE_URL}/conditions-attestations`} className="text-[#2563eb] underline">
+          Conditions d&apos;émission et de validité des attestations
+        </a>
       </p>
 
       {verificationUrl && (

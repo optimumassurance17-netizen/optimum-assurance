@@ -57,14 +57,14 @@ if (modified) fs.writeFileSync(envPath, envContent)
 try {
   execSync("npx prisma generate", { cwd: root, stdio: "inherit" })
   console.log("✅ Prisma client généré")
-} catch (e) {
+} catch {
   console.log("⚠️  Prisma generate a échoué. Fermez le serveur dev et réessayez.")
 }
 
 try {
   execSync("npx prisma db push", { cwd: root, stdio: "inherit" })
   console.log("✅ Base de données prête")
-} catch (e) {
+} catch {
   console.log("⚠️  Base de données non créée. Vérifiez DATABASE_URL dans .env")
 }
 

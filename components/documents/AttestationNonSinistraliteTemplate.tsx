@@ -30,15 +30,15 @@ export function AttestationNonSinistraliteTemplate({
 
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0">
-      <div className="border-b-2 border-[#C65D3B] pb-4 mb-8">
-        <h1 className="text-2xl font-bold text-[#C65D3B]">Optimum Assurance</h1>
+      <div className="border-b-2 border-[#2563eb] pb-4 mb-8">
+        <h1 className="text-2xl font-bold text-[#2563eb]">Optimum Assurance</h1>
         <p className="text-sm text-[#171717]">Assurance décennale professionnelle</p>
       </div>
 
       <h2 className="text-xl font-semibold mb-2 text-center">
         ATTESTATION DE NON SINISTRALITÉ
       </h2>
-      <p className="text-center font-semibold mb-8 text-[#C65D3B]">
+      <p className="text-center font-semibold mb-8 text-[#2563eb]">
         Responsabilité Civile Décennale
       </p>
 

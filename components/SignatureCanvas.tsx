@@ -132,7 +132,7 @@ export function SignatureCanvas({
           type="button"
           onClick={save}
           disabled={!hasSignature}
-          className="px-4 py-2 bg-[#C65D3B] text-white rounded-xl hover:bg-[#B04F2F] disabled:bg-[#D4C4BC] disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-[#2563eb] text-white rounded-xl hover:bg-[#1d4ed8] disabled:bg-slate-300 disabled:cursor-not-allowed"
         >
           Valider la signature
         </button>

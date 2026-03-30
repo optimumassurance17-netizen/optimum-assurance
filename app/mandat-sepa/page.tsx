@@ -39,13 +39,15 @@ export default function MandatSepaPage() {
     }
     try {
       const parsed = JSON.parse(stored) as SouscriptionData
-      setData(parsed)
-      setTitulaire(parsed.representantLegal || parsed.raisonSociale)
-      if (mandatStored) {
-        const m = JSON.parse(mandatStored) as { iban?: string; titulaireCompte?: string }
-        if (m.iban) setIban(m.iban)
-        if (m.titulaireCompte) setTitulaire(m.titulaireCompte)
-      }
+      queueMicrotask(() => {
+        setData(parsed)
+        setTitulaire(parsed.representantLegal || parsed.raisonSociale)
+        if (mandatStored) {
+          const m = JSON.parse(mandatStored) as { iban?: string; titulaireCompte?: string }
+          if (m.iban) setIban(m.iban)
+          if (m.titulaireCompte) setTitulaire(m.titulaireCompte)
+        }
+      })
     } catch {
       router.replace("/devis")
     }
@@ -85,7 +87,7 @@ export default function MandatSepaPage() {
 
   if (!data) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
         <p className="text-[#171717]">Chargement...</p>
       </main>
     )
@@ -94,7 +96,7 @@ export default function MandatSepaPage() {
   const premierMontant = calculerPremierMontant(data.tarif?.primeAnnuelle ?? 0)
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="max-w-2xl mx-auto px-6 py-12">
@@ -128,7 +130,7 @@ export default function MandatSepaPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="p-4 bg-[#F9F6F0] rounded-xl border border-[#F0EBE3]">
+          <div className="p-4 bg-slate-100 rounded-xl border border-slate-200">
             <h3 className="font-medium text-black mb-2">Paiement trimestriel</h3>
             <p className="text-sm text-[#171717] mb-3">
               <strong>4 échéances par an</strong> : le <strong>1er trimestre</strong> (avec {FRAIS_GESTION_PRELEVEMENT} € de frais de gestion) est réglé par <strong>carte bancaire</strong> à l&apos;étape suivante. Les <strong>3 trimestres suivants</strong> sont prélevés par <strong>SEPA</strong> sur l&apos;IBAN ci-dessous (montant par trimestre : 1/4 de la prime annuelle).
@@ -138,7 +140,7 @@ export default function MandatSepaPage() {
             </p>
           </div>
 
-          <div className="p-4 bg-[#F9F6F0] rounded-xl border border-[#F0EBE3]">
+          <div className="p-4 bg-slate-100 rounded-xl border border-slate-200">
             <h3 className="font-medium text-black mb-3">Mandat SEPA</h3>
             <div>
               <label className="block mb-2 text-sm font-medium text-black">IBAN *</label>
@@ -166,7 +168,7 @@ export default function MandatSepaPage() {
                 id="sepa-mandat"
                 checked={accepteSepa}
                 onChange={(e) => setAccepteSepa(e.target.checked)}
-                className="w-5 h-5 mt-0.5 rounded border-[#E5E0D8] text-[#C65D3B] focus:ring-[#C65D3B]"
+                className="w-5 h-5 mt-0.5 rounded border-[#E5E0D8] text-[#2563eb] focus:ring-[#2563eb]"
               />
               <label htmlFor="sepa-mandat" className="text-sm text-black">
                 En signant ce mandat, vous autorisez Optimum Assurance à envoyer des instructions à votre banque pour débiter votre compte et votre banque à débiter votre compte conformément aux instructions d&apos;Optimum Assurance. Vous bénéficiez du droit d&apos;être remboursé par votre banque selon les conditions de votre accord avec elle.
@@ -182,14 +184,14 @@ export default function MandatSepaPage() {
 
           <button
             type="submit"
-            className="w-full bg-[#C65D3B] text-white py-4 rounded-xl hover:bg-[#B04F2F] transition font-medium"
+            className="w-full bg-[#2563eb] text-white py-4 rounded-xl hover:bg-[#1d4ed8] transition font-medium"
           >
             Continuer vers le paiement
           </button>
         </form>
 
         <p className="text-center text-sm text-[#171717] mt-6">
-          <Link href="/signature" className="text-[#C65D3B] hover:underline">
+          <Link href="/signature" className="text-[#2563eb] hover:underline">
             Retour à la signature
           </Link>
         </p>

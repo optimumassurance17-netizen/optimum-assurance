@@ -1,5 +1,7 @@
 "use client"
 
+import { SITE_URL } from "@/lib/site-url"
+
 interface ContratTemplateProps {
   numero: string
   data: {
@@ -29,8 +31,8 @@ interface ContratTemplateProps {
 export function ContratTemplate({ numero, data }: ContratTemplateProps) {
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0">
-      <div className="border-b-2 border-[#C65D3B] pb-4 mb-6">
-        <h1 className="text-2xl font-bold text-[#C65D3B]">Optimum Assurance</h1>
+      <div className="border-b-2 border-[#2563eb] pb-4 mb-6">
+        <h1 className="text-2xl font-bold text-[#2563eb]">Optimum Assurance</h1>
         <p className="text-sm text-[#171717]">Assurance décennale professionnelle</p>
       </div>
 
@@ -124,6 +126,15 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
 
         <p className="text-xs text-[#171717] mt-8">
           Les conditions générales du contrat sont annexées et font partie intégrante du présent contrat.
+        </p>
+        <p className="text-xs text-[#171717] mt-2">
+          <a href={`${SITE_URL}/cgv`} className="text-[#2563eb] underline">
+            CGV
+          </a>
+          {" — "}
+          <a href={`${SITE_URL}/conditions-attestations`} className="text-[#2563eb] underline">
+            Conditions d&apos;émission et de validité des attestations
+          </a>
         </p>
         <p className="text-[10px] text-[#333333] mt-4 leading-tight">
           En application du 2° de l&apos;article 261 C du CGI, sont exonérées de la taxe sur la valeur ajoutée (TVA) les opérations d&apos;assurance, de réassurance ainsi que les prestations de services afférentes à ces opérations effectuées par les courtiers et intermédiaires d&apos;assurance.

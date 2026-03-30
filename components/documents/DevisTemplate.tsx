@@ -9,6 +9,7 @@ import {
   OUVRAGES_EXCLUS_DECENNALE,
   TRAVAUX_ACCESSOIRES_NOTE,
 } from "@/lib/nomenclature-activites"
+import { SITE_URL } from "@/lib/site-url"
 
 interface DevisTemplateProps {
   numero: string
@@ -61,8 +62,8 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0 text-sm">
       {/* En-tête */}
-      <div className="border-b-2 border-[#C65D3B] pb-4 mb-6">
-        <h1 className="text-xl font-bold text-[#C65D3B]">PROPOSITION D&apos;ASSURANCE</h1>
+      <div className="border-b-2 border-[#2563eb] pb-4 mb-6">
+        <h1 className="text-xl font-bold text-[#2563eb]">PROPOSITION D&apos;ASSURANCE</h1>
         <p className="text-sm font-semibold text-[#171717] mt-1">PRODUIT RCD</p>
         <p className="text-xs text-[#171717] mt-0.5">
           (Responsabilité Civile Décennale, Responsabilité Civile Professionnelle)
@@ -152,7 +153,7 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
         </p>
         <table className="w-full border-collapse border border-[#e5e5e5]">
           <thead>
-            <tr className="bg-[#F5E8E3]">
+            <tr className="bg-[#dbeafe]">
               <th className="border border-[#e5e5e5] p-2 text-left text-xs">Garanties</th>
               <th className="border border-[#e5e5e5] p-2 text-left text-xs">Description</th>
               <th className="border border-[#e5e5e5] p-2 text-right text-xs">Plafond</th>
@@ -210,7 +211,7 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
       </div>
 
       {/* Prime annuelle */}
-      <div className="bg-[#F5E8E3] p-6 rounded-xl mb-6">
+      <div className="bg-[#dbeafe] p-6 rounded-xl mb-6">
         <h3 className="font-bold text-black mb-4">Prime annuelle</h3>
         <table className="w-full">
           <tbody>
@@ -253,6 +254,15 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
         Ce devis est valable 2 mois à compter de sa date d&apos;émission. Les conditions générales sont disponibles sur demande.
         La prise d&apos;effet des garanties est conditionnée à l&apos;encaissement de la première cotisation et au retour
         de la proposition signée.
+      </p>
+      <p className="text-xs text-[#171717] mt-2">
+        <a href={`${SITE_URL}/cgv`} className="text-[#2563eb] underline">
+          Conditions générales de vente (CGV)
+        </a>
+        {" — "}
+        <a href={`${SITE_URL}/conditions-attestations`} className="text-[#2563eb] underline">
+          Conditions d&apos;émission et de validité des attestations
+        </a>
       </p>
       <p className="text-[10px] text-[#333333] mt-4 leading-tight">
         En application du 2° de l&apos;article 261 C du CGI, sont exonérées de la taxe sur la valeur ajoutée (TVA) les opérations d&apos;assurance, de réassurance ainsi que les prestations de services afférentes à ces opérations effectuées par les courtiers et intermédiaires d&apos;assurance.

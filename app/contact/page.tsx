@@ -55,7 +55,7 @@ export default function ContactPage() {
             <button
               type="button"
               onClick={() => setDone(false)}
-              className="mt-4 text-[#C65D3B] font-medium hover:underline"
+              className="mt-4 text-[#2563eb] font-medium hover:underline"
             >
               Envoyer un autre message
             </button>
@@ -72,7 +72,7 @@ export default function ContactPage() {
                 value={nom}
                 onChange={(e) => setNom(e.target.value)}
                 required
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#e4e4e4] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#e4e4e4] focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none"
                 placeholder="Votre nom ou société"
               />
             </div>
@@ -86,7 +86,7 @@ export default function ContactPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#e4e4e4] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#e4e4e4] focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none"
                 placeholder="votre@email.com"
               />
             </div>
@@ -98,7 +98,7 @@ export default function ContactPage() {
                 id="sujet"
                 value={sujet}
                 onChange={(e) => setSujet(e.target.value)}
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#e4e4e4] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#e4e4e4] focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none"
               >
                 <option value="">Sélectionnez un sujet</option>
                 <option value="Devis décennale">Devis décennale</option>
@@ -118,7 +118,7 @@ export default function ContactPage() {
                 onChange={(e) => setMessage(e.target.value)}
                 required
                 rows={5}
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#e4e4e4] focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none resize-none"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 bg-[#e4e4e4] focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none resize-none"
                 placeholder="Décrivez votre demande..."
               />
             </div>
@@ -128,7 +128,7 @@ export default function ContactPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#C65D3B] text-white py-4 rounded-2xl hover:bg-[#B04F2F] font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="w-full bg-[#2563eb] text-white py-4 rounded-2xl hover:bg-[#1d4ed8] font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {loading ? "Envoi en cours..." : "Envoyer"}
             </button>
@@ -136,7 +136,7 @@ export default function ContactPage() {
         )}
 
         <p className="text-center text-sm text-[#171717] mt-8">
-          <Link href="/" className="text-[#C65D3B] font-medium hover:underline">
+          <Link href="/" className="text-[#2563eb] font-medium hover:underline">
             Retour à l&apos;accueil
           </Link>
         </p>

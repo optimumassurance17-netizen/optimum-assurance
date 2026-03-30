@@ -1,5 +1,7 @@
 "use client"
 
+import { SITE_URL } from "@/lib/site-url"
+
 interface AvenantTemplateProps {
   numero: string
   data: {
@@ -23,13 +25,13 @@ export function AvenantTemplate({ numero, data }: AvenantTemplateProps) {
 
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0">
-      <div className="border-b-2 border-[#C65D3B] pb-4 mb-8">
-        <h1 className="text-2xl font-bold text-[#C65D3B]">Optimum Assurance</h1>
+      <div className="border-b-2 border-[#2563eb] pb-4 mb-8">
+        <h1 className="text-2xl font-bold text-[#2563eb]">Optimum Assurance</h1>
         <p className="text-sm text-[#171717]">Assurance décennale professionnelle</p>
       </div>
 
       <h2 className="text-xl font-semibold mb-2 text-center">AVENANT</h2>
-      <p className="text-center font-semibold mb-8 text-[#C65D3B]">Modification du contrat d&apos;assurance</p>
+      <p className="text-center font-semibold mb-8 text-[#2563eb]">Modification du contrat d&apos;assurance</p>
 
       <p className="text-center mb-8">N° {numero}</p>
 
@@ -45,7 +47,7 @@ export function AvenantTemplate({ numero, data }: AvenantTemplateProps) {
           {modifications.length > 0 ? modifications.map((m, i) => <li key={i}>{m}</li>) : <li>Aucune modification détaillée</li>}
         </ul>
         <p className="text-sm">Date de l&apos;avenant : {data.dateAvenant || new Date().toLocaleDateString("fr-FR")}</p>
-        <p className="text-sm font-medium mt-4 text-[#C65D3B]">
+        <p className="text-sm font-medium mt-4 text-[#2563eb]">
           Frais d&apos;avenant : 60 € (reportés automatiquement sur la prochaine échéance de prélèvement)
         </p>
       </div>
@@ -55,6 +57,15 @@ export function AvenantTemplate({ numero, data }: AvenantTemplateProps) {
       </p>
       <p className="text-sm mt-4">
         Pour Optimum Assurance
+      </p>
+      <p className="text-xs text-[#171717] mt-4">
+        <a href={`${SITE_URL}/cgv`} className="text-[#2563eb] underline">
+          CGV
+        </a>
+        {" — "}
+        <a href={`${SITE_URL}/conditions-attestations`} className="text-[#2563eb] underline">
+          Conditions d&apos;émission et de validité des attestations
+        </a>
       </p>
       <p className="text-[10px] text-[#333333] mt-6 leading-tight">
         En application du 2° de l&apos;article 261 C du CGI, sont exonérées de la taxe sur la valeur ajoutée (TVA) les opérations d&apos;assurance, de réassurance ainsi que les prestations de services afférentes à ces opérations effectuées par les courtiers et intermédiaires d&apos;assurance.

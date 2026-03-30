@@ -7,19 +7,27 @@ import { readFileSync, existsSync } from "node:fs"
 import { resolve } from "node:path"
 
 const root = resolve(process.cwd())
-const envPath = resolve(root, ".env")
 
-// Charger .env manuellement (pas de dépendance dotenv)
-if (existsSync(envPath)) {
-  const content = readFileSync(envPath, "utf-8")
+function loadEnvFile(filePath, { override = false } = {}) {
+  if (!existsSync(filePath)) return
+  const content = readFileSync(filePath, "utf-8")
   for (const line of content.split("\n")) {
     const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/)
     if (m) {
+      const key = m[1]
       const val = m[2].replace(/^["']|["']$/g, "").trim()
-      if (val && !process.env[m[1]]) process.env[m[1]] = val
+      if (override) {
+        if (val) process.env[key] = val
+      } else if (val && !process.env[key]) {
+        process.env[key] = val
+      }
     }
   }
 }
+
+// Comme Next.js : .env puis .env.local (local surcharge)
+loadEnvFile(resolve(root, ".env"))
+loadEnvFile(resolve(root, ".env.local"), { override: true })
 
 const vars = [
   { key: "MOLLIE_API_KEY", required: true, hint: "Clé Mollie (test_ ou live_)" },
@@ -39,6 +47,8 @@ const vars = [
   { key: "INSEE_API_KEY_INTEGRATION", required: false, hint: "Optionnel - pré-remplissage SIRET (INSEE gratuit)" },
   { key: "CRON_SECRET", required: false, hint: "Recommandé - sécurise les crons Vercel (rappels)" },
   { key: "YOUSIGN_WEBHOOK_SECRET", required: false, hint: "Recommandé - vérifie la signature des webhooks YouSign" },
+  { key: "UPSTASH_REDIS_REST_URL", required: false, hint: "Optionnel - rate limit distribué (chat / contact) sur Vercel" },
+  { key: "UPSTASH_REDIS_REST_TOKEN", required: false, hint: "Avec UPSTASH_REDIS_REST_URL (console upstash.com)" },
 ]
 
 const okKeys = new Set(
@@ -68,4 +78,22 @@ if (requiredMissing.length === 0) {
 } else {
   console.log("\n💡 Copiez .env.example vers .env et renseignez les valeurs.\n")
   process.exit(1)
+}
+
+// Avertissements production (ne font pas échouer le script)
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "")
+const authUrl = (process.env.NEXTAUTH_URL || "").replace(/\/$/, "")
+if (appUrl.includes("localhost") || appUrl.includes("127.0.0.1")) {
+  console.log("⚠️  NEXT_PUBLIC_APP_URL pointe vers localhost — OK en dev, pas en production.\n")
+}
+if (appUrl && authUrl && appUrl !== authUrl) {
+  console.log("⚠️  NEXT_PUBLIC_APP_URL et NEXTAUTH_URL devraient être identiques (même origine).")
+  console.log("    APP :", appUrl)
+  console.log("    AUTH:", authUrl, "\n")
+}
+if (!process.env.CRON_SECRET) {
+  console.log("⚠️  CRON_SECRET vide — les crons /api/cron/* refuseront les appels (sécurité). À définir sur Vercel.\n")
+}
+if (!process.env.YOUSIGN_WEBHOOK_SECRET) {
+  console.log("⚠️  YOUSIGN_WEBHOOK_SECRET vide — vérifiez la config des webhooks Yousign en prod.\n")
 }

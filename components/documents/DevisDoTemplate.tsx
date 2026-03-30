@@ -1,5 +1,6 @@
 "use client"
 
+import { SITE_URL } from "@/lib/site-url"
 import {
   DO_GARANTIES_LEGALES,
   DO_EXCLUSIONS,
@@ -53,8 +54,8 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0 text-sm">
       {/* En-tête */}
-      <div className="border-b-2 border-[#C65D3B] pb-4 mb-6">
-        <h1 className="text-xl font-bold text-[#C65D3B]">PROPOSITION D&apos;ASSURANCE</h1>
+      <div className="border-b-2 border-[#2563eb] pb-4 mb-6">
+        <h1 className="text-xl font-bold text-[#2563eb]">PROPOSITION D&apos;ASSURANCE</h1>
         <p className="text-lg font-semibold text-[#171717] mt-1">Dommage Ouvrage</p>
         <p className="font-medium text-black mt-2">
           Proposition n° {numero} — valable 90 jours à partir du {dateCreation}
@@ -151,7 +152,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
       )}
 
       {/* Prime proposée */}
-      <div className="bg-[#F5E8E3] p-6 rounded-xl mb-6">
+      <div className="bg-[#dbeafe] p-6 rounded-xl mb-6">
         <h3 className="font-bold text-black mb-4">Prime proposée</h3>
         <p className="text-xs text-[#171717] mb-3">Récapitulatif Tarif TTC</p>
         <table className="w-full">
@@ -172,7 +173,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
                 <td className="text-right">{fraisCourtage.toLocaleString("fr-FR")} €</td>
               </tr>
             )}
-            <tr className="border-t-2 border-[#C65D3B]/50">
+            <tr className="border-t-2 border-[#2563eb]/50">
               <td className="py-3 font-bold">Montant total de l&apos;offre TTC</td>
               <td className="text-right font-bold text-lg">{totalTTC.toLocaleString("fr-FR")} €</td>
             </tr>
@@ -191,7 +192,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
         <p className="text-xs text-[#171717] mb-3">Validité : unique de 10 ans à partir de la signature. Non résiliable.</p>
         <table className="w-full border-collapse border border-[#e5e5e5] mb-3">
           <thead>
-            <tr className="bg-[#F5E8E3]">
+            <tr className="bg-[#dbeafe]">
               <th className="border border-[#e5e5e5] p-2 text-left text-xs">Garantie</th>
               <th className="border border-[#e5e5e5] p-2 text-left text-xs">Durée</th>
               <th className="border border-[#e5e5e5] p-2 text-left text-xs">Objet</th>
@@ -216,7 +217,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
           </tbody>
         </table>
         {data.closCouvert === true && (
-          <div className="text-xs text-[#171717] mb-2 p-2 bg-[#F5E8E3] rounded">
+          <div className="text-xs text-[#171717] mb-2 p-2 bg-[#dbeafe] rounded">
             <p className="font-medium mb-1">Option clos et couvert : lots couverts</p>
             <p>{DO_LOTS_CLOS_COUVERT.map((l) => l.lot).join(", ")}</p>
             <p className="mt-1 text-[#333333]">Lots non couverts : {DO_LOTS_EXCLUS_CLOS_COUVERT.join(", ")}</p>
@@ -304,6 +305,15 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
         <p>
           Dès réception du règlement et des pièces constituant le dossier de base, nous vous adresserons la (les) note(s)
           de couverture.
+        </p>
+        <p className="mt-2">
+          <a href={`${SITE_URL}/cgv`} className="text-[#2563eb] underline">
+            CGV
+          </a>
+          {" — "}
+          <a href={`${SITE_URL}/conditions-attestations`} className="text-[#2563eb] underline">
+            Conditions d&apos;émission et de validité des attestations
+          </a>
         </p>
       </div>
       <p className="text-[10px] text-[#333333] mt-4 leading-tight">

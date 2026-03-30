@@ -181,7 +181,7 @@ function docRow(
               href={`/api/documents/uploaded/${doc.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#C65D3B] font-medium text-sm hover:underline"
+              className="text-[#2563eb] font-medium text-sm hover:underline"
             >
               Voir
             </a>
@@ -206,7 +206,7 @@ function docRow(
               e.target.value = ""
             }}
           />
-          <span className="inline-block bg-[#C65D3B] text-white px-4 py-2 rounded-xl hover:bg-[#B04F2F] text-sm font-medium transition-all">
+          <span className="inline-block bg-[#2563eb] text-white px-4 py-2 rounded-xl hover:bg-[#1d4ed8] text-sm font-medium transition-all">
             {isUploading ? "Envoi..." : doc ? "Remplacer" : "Déposer"}
           </span>
         </label>

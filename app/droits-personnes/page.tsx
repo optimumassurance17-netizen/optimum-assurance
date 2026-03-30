@@ -48,14 +48,14 @@ export default function DroitsPersonnesPage() {
 
           <section>
             <h2 className="text-xl font-semibold text-[#0a0a0a] mb-4">Réclamation auprès de la CNIL</h2>
-            <p>Si vous estimez que le traitement de vos données porte atteinte au RGPD, vous pouvez introduire une réclamation auprès de la Commission Nationale de l&apos;Informatique et des Libertés (CNIL) : <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" className="text-[#C65D3B] hover:underline">www.cnil.fr</a></p>
+            <p>Si vous estimez que le traitement de vos données porte atteinte au RGPD, vous pouvez introduire une réclamation auprès de la Commission Nationale de l&apos;Informatique et des Libertés (CNIL) : <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" className="text-[#2563eb] hover:underline">www.cnil.fr</a></p>
           </section>
 
           <section className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6">
             <h2 className="text-xl font-semibold text-[#0a0a0a] mb-4">Exercer vos droits</h2>
             <p className="mb-4">Pour toute demande relative à vos données personnelles :</p>
             <ul className="list-disc pl-6 space-y-2">
-              <li>Par email : <a href={`mailto:${contactEmail}`} className="text-[#C65D3B] hover:underline">{contactEmail}</a></li>
+              <li>Par email : <a href={`mailto:${contactEmail}`} className="text-[#2563eb] hover:underline">{contactEmail}</a></li>
               <li>En précisant l&apos;objet de votre demande (accès, rectification, effacement, etc.)</li>
               <li>En joignant une copie d&apos;une pièce d&apos;identité pour vérifier votre identité</li>
             </ul>
@@ -64,13 +64,13 @@ export default function DroitsPersonnesPage() {
         </div>
 
         <div className="mt-10 flex flex-wrap gap-4">
-          <Link href="/confidentialite" className="text-[#C65D3B] font-medium hover:underline">
+          <Link href="/confidentialite" className="text-[#2563eb] font-medium hover:underline">
             Politique de confidentialité
           </Link>
-          <Link href="/mentions-legales" className="text-[#C65D3B] font-medium hover:underline">
+          <Link href="/mentions-legales" className="text-[#2563eb] font-medium hover:underline">
             Mentions légales
           </Link>
-          <Link href="/" className="text-[#C65D3B] font-medium hover:underline">
+          <Link href="/" className="text-[#2563eb] font-medium hover:underline">
             ← Retour à l&apos;accueil
           </Link>
         </div>

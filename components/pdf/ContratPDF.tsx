@@ -1,10 +1,11 @@
 import React from "react"
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
+import { pdfLegalLinksLine } from "@/lib/pdf-legal-links"
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10 },
-  header: { borderBottomWidth: 2, borderBottomColor: "#C65D3B", paddingBottom: 15, marginBottom: 20 },
-  title: { fontSize: 18, color: "#C65D3B", marginBottom: 4 },
+  header: { borderBottomWidth: 2, borderBottomColor: "#2563eb", paddingBottom: 15, marginBottom: 20 },
+  title: { fontSize: 18, color: "#2563eb", marginBottom: 4 },
   subtitle: { fontSize: 9, color: "#333333" },
   h2: { fontSize: 14, marginBottom: 15, marginTop: 15 },
   h3: { fontSize: 11, marginBottom: 8, marginTop: 12 },
@@ -143,6 +144,18 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
           <Text style={styles.p}>Signature du représentant légal :</Text>
           <Text style={[styles.p, { fontSize: 9, color: "#333333", marginTop: 8 }]}>
             {data.civilite || ""} {data.representantLegal || "—"}
+          </Text>
+        </View>
+
+        <View style={{ marginTop: 24, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#E5E0D8" }}>
+          <Text style={{ fontSize: 8, color: "#333333", lineHeight: 1.35, marginBottom: 4 }}>
+            Les conditions générales du contrat sont annexées et font partie intégrante du présent contrat.
+          </Text>
+          <Text style={{ fontSize: 8, color: "#555555", lineHeight: 1.35 }}>
+            {pdfLegalLinksLine()}
+          </Text>
+          <Text style={{ fontSize: 8, color: "#555555", marginTop: 6, lineHeight: 1.35 }}>
+            Optimum Courtage agit par délégation de Axcelrant Insurance.
           </Text>
         </View>
       </Page>

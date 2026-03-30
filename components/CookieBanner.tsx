@@ -11,7 +11,7 @@ export function CookieBanner() {
   useEffect(() => {
     if (typeof window === "undefined") return
     const consent = localStorage.getItem(STORAGE_KEY)
-    if (!consent) setVisible(true)
+    if (!consent) queueMicrotask(() => setVisible(true))
   }, [])
 
   const accept = () => {
@@ -28,7 +28,7 @@ export function CookieBanner() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-[100] bg-white border-t border-[#e5e5e5] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-4 pt-4 md:px-6 md:pt-6 pb-[max(1rem,env(safe-area-inset-bottom))] md:pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+      className="fixed bottom-0 left-0 right-0 z-[115] bg-white border-t border-[#e5e5e5] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] px-4 pt-4 md:px-6 md:pt-6 pb-[max(1rem,env(safe-area-inset-bottom))] md:pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       role="dialog"
       aria-labelledby="cookie-title"
       aria-describedby="cookie-desc"
@@ -41,7 +41,7 @@ export function CookieBanner() {
           <p id="cookie-desc" className="text-sm text-[#171717]">
             Nous utilisons des cookies techniques nécessaires au fonctionnement du site (session, authentification).
             Aucun cookie publicitaire.{" "}
-            <Link href="/confidentialite" className="text-[#C65D3B] font-medium hover:underline">
+            <Link href="/confidentialite" className="text-[#2563eb] font-medium hover:underline">
               En savoir plus
             </Link>
           </p>
@@ -57,7 +57,7 @@ export function CookieBanner() {
           <button
             type="button"
             onClick={accept}
-            className="px-5 py-2.5 bg-[#C65D3B] text-white rounded-xl font-medium hover:bg-[#B04F2F] transition-colors"
+            className="px-5 py-2.5 bg-[#2563eb] text-white rounded-xl font-medium hover:bg-[#1d4ed8] transition-colors"
           >
             Accepter
           </button>

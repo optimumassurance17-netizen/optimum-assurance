@@ -45,7 +45,7 @@ function ConnexionForm() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="max-w-md mx-auto px-6 py-12">
@@ -68,14 +68,14 @@ function ConnexionForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] focus:border-[#C65D3B] outline-none bg-[#e4e4e4]"
+              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] outline-none bg-[#e4e4e4]"
             />
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block font-medium text-black">Mot de passe</label>
-              <Link href="/mot-de-passe-oublie" className="text-sm text-[#C65D3B] hover:underline">
+              <Link href="/mot-de-passe-oublie" className="text-sm text-[#2563eb] hover:underline">
                 Mot de passe oublié ?
               </Link>
             </div>
@@ -84,7 +84,7 @@ function ConnexionForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] focus:border-[#C65D3B] outline-none bg-[#e4e4e4]"
+              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] outline-none bg-[#e4e4e4]"
             />
           </div>
 
@@ -97,14 +97,14 @@ function ConnexionForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#C65D3B] text-white py-4 rounded-xl hover:bg-[#B04F2F] transition font-medium disabled:bg-[#D4C4BC] disabled:cursor-not-allowed"
+            className="w-full bg-[#2563eb] text-white py-4 rounded-xl hover:bg-[#1d4ed8] transition font-medium disabled:bg-slate-300 disabled:cursor-not-allowed"
           >
             {loading ? "Connexion..." : "Se connecter"}
           </button>
         </form>
 
         <p className="text-center text-sm text-[#171717] mt-6">
-          <Link href="/" className="text-[#C65D3B] hover:underline">
+          <Link href="/" className="text-[#2563eb] hover:underline">
             Retour à l&apos;accueil
           </Link>
         </p>
@@ -116,7 +116,7 @@ function ConnexionForm() {
 export default function ConnexionPage() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
         <p className="text-[#171717]">Chargement...</p>
       </main>
     }>

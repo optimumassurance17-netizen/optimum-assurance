@@ -1,28 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --background: #FAFAF9;
-  --foreground: #000000;
-  --accent: #C65D3B;
-  --accent-hover: #B04F2F;
-  /* Couleur accessible (contraste WCAG AA 4.5:1) pour texte sur fond clair */
-  --accent-accessible: #A8482A;
-  --accent-light: #FEF3F0;
-  --muted: #171717;
-  --border: #d4d4d4;
-  --card: #f5f5f5;
-  /* Fond champs légèrement plus contrasté que l’ancien #ebebeb */
-  --input-bg: #e4e4e4;
+  /* Premium SaaS — slate + blue (Alan / Stripe / Linear) */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-accessible: #1d4ed8;
+  --accent-light: #eff6ff;
+  --muted: #334155;
+  --border: #e2e8f0;
+  --card: #ffffff;
+  --input-bg: #e2e8f0;
+  --success: #22c55e;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-orus: var(--accent);
-  --color-orus-hover: var(--accent-hover);
-  --color-orus-light: var(--accent-light);
-  --color-orus-cream: #F9F6F0;
-  --color-orus-muted: var(--muted);
+  --color-brand: var(--accent);
+  --color-brand-hover: var(--accent-hover);
+  --color-brand-light: var(--accent-light);
+  --color-brand-surface: #f1f5f9;
+  --color-brand-muted: var(--muted);
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -30,6 +30,11 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Texte secondaire lisible (éviter gris trop clair) */
+.text-muted-safe {
+  color: #334155;
 }
 
 /* Skip link — accessibilité clavier */
@@ -58,6 +63,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
   outline: 2px solid var(--accent);
+  outline-color: #2563eb;
   outline-offset: 2px;
 }
 

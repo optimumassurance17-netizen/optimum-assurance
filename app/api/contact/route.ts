@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
+import { rateLimitResponse } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
+  const limited = await rateLimitResponse(request, "contact")
+  if (limited) return limited
+
   try {
     const body = await request.json()
     const { nom, email, sujet, message } = body
@@ -46,7 +50,7 @@ Envoyé depuis optimum-assurance.fr
       body: JSON.stringify({
         from,
         to,
-        replyTo: email.trim(),
+        reply_to: email.trim(),
         subject: `Contact Optimum : ${sujet?.trim() || "Sans sujet"}`,
         text: contenu,
       }),

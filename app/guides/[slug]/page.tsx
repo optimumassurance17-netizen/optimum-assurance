@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { GUIDES_SEO } from "@/lib/guides-seo"
+import { buildGuideArticleJsonLdGraph } from "@/lib/seo-guide-article-jsonld"
 import { notFound } from "next/navigation"
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
@@ -24,7 +25,15 @@ export async function generateMetadata({
     description: data.description,
     alternates: { canonical: `${baseUrl}/guides/${data.slug}` },
     openGraph: {
+      type: "article",
+      locale: "fr_FR",
+      siteName: "Optimum Assurance",
       url: `${baseUrl}/guides/${data.slug}`,
+      title: data.title,
+      description: data.description,
+    },
+    twitter: {
+      card: "summary_large_image",
       title: data.title,
       description: data.description,
     },
@@ -40,28 +49,16 @@ export default async function GuidePage({
   const data = GUIDES_SEO.find((g) => g.slug === slug)
   if (!data) notFound()
 
-  const breadcrumbJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Accueil", item: baseUrl },
-      { "@type": "ListItem", position: 2, name: "Guides", item: `${baseUrl}/guides` },
-      { "@type": "ListItem", position: 3, name: data.title, item: `${baseUrl}/guides/${data.slug}` },
-    ],
-  }
-
-  const articleJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: data.title,
+  const guideJsonLd = buildGuideArticleJsonLdGraph({
+    slug: data.slug,
+    title: data.title,
     description: data.description,
-    author: { "@type": "Organization", name: "Optimum Assurance", url: baseUrl },
-  }
+    h1: data.h1,
+  })
 
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(guideJsonLd) }} />
       <Header />
 
       <article className="max-w-3xl mx-auto px-6 py-14">
@@ -97,20 +94,20 @@ export default async function GuidePage({
         <div className="mt-12 pt-8 border-t border-[#e5e5e5] flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             href="/devis"
-            className="inline-block bg-[#C65D3B] text-white px-8 py-4 rounded-2xl hover:bg-[#B04F2F] font-semibold text-center transition-all"
+            className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-2xl hover:bg-[#1d4ed8] font-semibold text-center transition-all"
           >
             Obtenir mon devis
           </Link>
           <Link
             href="/faq"
-            className="inline-block border-2 border-[#C65D3B] text-[#C65D3B] px-8 py-4 rounded-2xl hover:bg-[#FEF3F0] font-semibold text-center transition-all"
+            className="inline-block border-2 border-[#2563eb] text-[#2563eb] px-8 py-4 rounded-2xl hover:bg-[#eff6ff] font-semibold text-center transition-all"
           >
             Voir la FAQ
           </Link>
         </div>
 
         <p className="text-center mt-8">
-          <Link href="/guides" className="text-[#C65D3B] font-medium hover:underline">
+          <Link href="/guides" className="text-[#2563eb] font-medium hover:underline">
             ← Tous les guides
           </Link>
         </p>

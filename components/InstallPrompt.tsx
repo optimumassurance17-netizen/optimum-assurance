@@ -36,8 +36,10 @@ export function InstallPrompt() {
     const isMobile = window.innerWidth < 768 || ios || android
     if (!isMobile) return
 
-    setIsIOS(ios)
-    setIsAndroid(android)
+    queueMicrotask(() => {
+      setIsIOS(ios)
+      setIsAndroid(android)
+    })
 
     // Android : écouter beforeinstallprompt
     const handler = (e: Event) => {
@@ -70,7 +72,7 @@ export function InstallPrompt() {
   if (!visible) return null
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-6 md:max-w-sm">
+    <div className="fixed bottom-4 left-4 right-4 z-[105] md:left-auto md:right-6 md:max-w-sm">
       <div className="bg-white border border-[#d4d4d4] rounded-2xl p-4 shadow-xl shadow-black/10">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -97,7 +99,7 @@ export function InstallPrompt() {
             {deferredPrompt && (
               <button
                 onClick={handleInstall}
-                className="px-4 py-2 bg-[#C65D3B] text-white text-sm font-medium rounded-xl hover:bg-[#B04F2F] transition-colors"
+                className="px-4 py-2 bg-[#2563eb] text-white text-sm font-medium rounded-xl hover:bg-[#1d4ed8] transition-colors"
               >
                 Installer
               </button>

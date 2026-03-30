@@ -5,14 +5,14 @@ const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10 },
   header: {
     borderBottomWidth: 2,
-    borderBottomColor: "#C65D3B",
+    borderBottomColor: "#2563eb",
     paddingBottom: 15,
     marginBottom: 20,
   },
-  title: { fontSize: 18, color: "#C65D3B", marginBottom: 4 },
+  title: { fontSize: 18, color: "#2563eb", marginBottom: 4 },
   subtitle: { fontSize: 9, color: "#333333" },
   h2: { fontSize: 14, marginBottom: 8, marginTop: 8, textAlign: "center" },
-  h2sub: { fontSize: 11, marginBottom: 20, textAlign: "center", color: "#C65D3B" },
+  h2sub: { fontSize: 11, marginBottom: 20, textAlign: "center", color: "#2563eb" },
   numero: { textAlign: "center", marginBottom: 20 },
   p: { marginBottom: 6, lineHeight: 1.4 },
   section: {

@@ -65,7 +65,7 @@ export default function GestionDocumentPage() {
       <main className="gestion-app min-h-screen bg-[#1a1a1a] flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">Document introuvable</p>
-          <Link href="/gestion" className="text-[#C65D3B] hover:underline">← Retour au dashboard</Link>
+          <Link href="/gestion" className="text-[#2563eb] hover:underline">← Retour au dashboard</Link>
         </div>
       </main>
     )
@@ -81,7 +81,7 @@ export default function GestionDocumentPage() {
           <div className="flex gap-3">
             <button
               onClick={() => window.print()}
-              className="text-sm text-[#C65D3B] hover:text-[#B04F2F]"
+              className="text-sm text-[#2563eb] hover:text-[#1d4ed8]"
             >
               Imprimer / PDF
             </button>

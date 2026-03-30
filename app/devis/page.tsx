@@ -14,6 +14,7 @@ import { CA_MINIMUM } from "@/lib/tarification"
 import { faqDevis } from "@/lib/garanties-data"
 import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
+import { getMetierPrefillActivites } from "@/lib/metier-devis-prefill"
 
 function DevisPageContent() {
   const router = useRouter()
@@ -81,6 +82,19 @@ function DevisPageContent() {
   useEffect(() => {
     calculer()
   }, [calculer])
+
+  /** Préremplissage activité(s) depuis /assurance-decennale/[metier] (?metier=slug) */
+  useEffect(() => {
+    const slug = searchParams.get("metier")
+    if (!slug || typeof window === "undefined") return
+    const prefill = getMetierPrefillActivites(slug)
+    if (prefill.length === 0) return
+    setActivites((prev) => {
+      if (prev.length > 0) return prev
+      const merged = prefill.filter((a) => ACTIVITES_BTP.includes(a as (typeof ACTIVITES_BTP)[number]))
+      return merged.slice(0, 8)
+    })
+  }, [searchParams])
 
   useEffect(() => {
     if (searchParams.get("resume") === "1" && typeof window !== "undefined") {
@@ -177,13 +191,13 @@ function DevisPageContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--background)]">
+    <main className="min-h-screen bg-slate-50/80">
       <Header />
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-10 sm:py-14">
         <Breadcrumb items={[{ label: "Accueil", href: "/" }, { label: "Devis décennale" }]} />
         <Stepper currentStep="devis" />
-        <h1 className="text-3xl md:text-4xl font-bold mb-3 text-[#0a0a0a]">
+        <h1 className="text-3xl md:text-4xl font-bold mb-3 text-slate-900">
           Demande de devis décennale
         </h1>
         <p className="text-[#171717] mb-10 text-lg">
@@ -191,8 +205,8 @@ function DevisPageContent() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="p-6 bg-[#f5f5f5] rounded-2xl border border-[#d4d4d4] shadow-sm">
-            <label className="block mb-3 font-semibold text-[#0a0a0a]">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm">
+            <label className="block mb-3 font-semibold text-slate-900">
               Numéro SIRET
             </label>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -235,7 +249,7 @@ function DevisPageContent() {
                   }
                 }}
                 disabled={siret.length !== 14 || siretLoading}
-                className="bg-[#C65D3B] text-white px-5 py-3.5 rounded-xl hover:bg-[#B04F2F] disabled:bg-[#d4d4d4] font-semibold shrink-0 transition-all"
+                className="bg-blue-600 text-white px-5 py-3.5 rounded-xl hover:bg-blue-700 disabled:bg-slate-300 font-semibold shrink-0 transition-all"
               >
                 {siretLoading ? "..." : "Remplir"}
               </button>
@@ -282,8 +296,8 @@ function DevisPageContent() {
             )}
           </div>
 
-          <div className="p-6 bg-[#f5f5f5] rounded-2xl border border-[#d4d4d4] shadow-sm">
-            <label className="block mb-3 font-semibold text-[#0a0a0a]">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm">
+            <label className="block mb-3 font-semibold text-slate-900">
               Chiffre d&apos;affaires annuel (€)
             </label>
             <input
@@ -294,10 +308,10 @@ function DevisPageContent() {
               step="1000"
               className={`w-full rounded-xl px-4 py-3.5 transition-all ${inputFieldBg} ${inputTextDark}`}
             />
-            <p className="text-sm text-[#0a0a0a] mt-2">
+            <p className="text-sm text-slate-900 mt-2">
               Minimum déclaratif : 40 000 €
             </p>
-            <p className="text-sm text-[#0a0a0a] mt-1.5 italic">
+            <p className="text-sm text-slate-900 mt-1.5 italic">
               Les déclarations de CA sont contrôlées chaque année auprès du greffe et des impôts. Pour éviter les régularisations, pensez à bien indiquer votre CA réel.
             </p>
             {chiffreAffaires && Number(chiffreAffaires) > 0 && Number(chiffreAffaires) < CA_MINIMUM && (
@@ -307,8 +321,8 @@ function DevisPageContent() {
             )}
           </div>
 
-          <div className="p-6 bg-[#f5f5f5] rounded-2xl border border-[#d4d4d4] shadow-sm">
-            <label className="block mb-3 font-semibold text-[#0a0a0a]">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm">
+            <label className="block mb-3 font-semibold text-slate-900">
               Nombre de sinistres sur les 5 dernières années
             </label>
             <input
@@ -319,19 +333,19 @@ function DevisPageContent() {
               className={`w-full rounded-xl px-4 py-3.5 transition-all ${inputFieldBg} ${inputTextDark}`}
             />
             {besoinEtude && (
-              <p className="text-sm text-[#C65D3B] mt-1 font-medium">
+              <p className="text-sm text-blue-600 mt-1 font-medium">
                 Plus d&apos;un sinistre : votre dossier sera transmis à notre équipe pour une étude personnalisée. Pas de tarification immédiate.
               </p>
             )}
           </div>
 
           {aDesSinistres && (
-            <div className="space-y-5 p-6 bg-[#FEF3F0] rounded-2xl border border-[#C65D3B]/20">
-              <h3 className="font-semibold text-[#0a0a0a]">
+            <div className="space-y-5 p-6 bg-blue-50 rounded-2xl border border-blue-600/20">
+              <h3 className="font-semibold text-slate-900">
                 Informations sinistres requises
               </h3>
               <div>
-                <label className="block mb-2 text-sm font-medium text-[#0a0a0a]">
+                <label className="block mb-2 text-sm font-medium text-slate-900">
                   Montant total des indemnisations (€) *
                 </label>
                 <input
@@ -345,20 +359,20 @@ function DevisPageContent() {
                 />
               </div>
               <div>
-                <label className="block mb-2 text-sm font-medium text-[#0a0a0a]">
+                <label className="block mb-2 text-sm font-medium text-slate-900">
                   Relevé de sinistralité *
                 </label>
                 <input
                   type="file"
                   accept=".pdf"
                   onChange={(e) => setReleveSinistralite(e.target.files?.[0] ?? null)}
-                  className={`w-full rounded-xl px-4 py-3 ${inputFieldBg} ${inputTextDark} file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#C65D3B] file:text-white file:font-medium`}
+                  className={`w-full rounded-xl px-4 py-3 ${inputFieldBg} ${inputTextDark} file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:font-medium`}
                 />
                 <p className="text-xs text-[#171717] mt-1">
                   Document fourni par votre ancien assureur. Format PDF. Vous pourrez le transmettre à notre conseiller lors du contact.
                 </p>
                 {releveSinistralite && (
-                  <p className="text-sm text-[#C65D3B] mt-1 font-medium">
+                  <p className="text-sm text-blue-600 mt-1 font-medium">
                     ✓ {releveSinistralite.name}
                   </p>
                 )}
@@ -366,22 +380,22 @@ function DevisPageContent() {
             </div>
           )}
 
-          <div className="space-y-4 p-6 bg-[#f5f5f5] rounded-2xl border border-[#d4d4d4] shadow-sm">
+          <div className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm">
             <div className="flex items-center gap-3">
               <input
                 type="checkbox"
                 id="jamais"
                 checked={jamaisAssure}
                 onChange={(e) => setJamaisAssure(e.target.checked)}
-                className="w-5 h-5 rounded border-[#d4d4d4] text-[#C65D3B] focus:ring-[#C65D3B]"
+                className="w-5 h-5 rounded border-[#d4d4d4] text-blue-600 focus:ring-blue-600"
               />
-              <label htmlFor="jamais" className="text-[#0a0a0a] font-medium">
+              <label htmlFor="jamais" className="text-slate-900 font-medium">
                 Je n&apos;ai jamais été assuré
               </label>
             </div>
             {jamaisAssure && (
               <div className="ml-8 mt-2">
-                <label htmlFor="dateCreationSociete" className="block text-sm font-medium text-[#0a0a0a] mb-1">
+                <label htmlFor="dateCreationSociete" className="block text-sm font-medium text-slate-900 mb-1">
                   Date de création de votre société
                 </label>
                 <input
@@ -402,9 +416,9 @@ function DevisPageContent() {
                 id="resilie"
                 checked={resilieNonPaiement}
                 onChange={(e) => setResilieNonPaiement(e.target.checked)}
-                className="w-5 h-5 rounded border-[#d4d4d4] text-[#C65D3B] focus:ring-[#C65D3B]"
+                className="w-5 h-5 rounded border-[#d4d4d4] text-blue-600 focus:ring-blue-600"
               />
-              <label htmlFor="resilie" className="text-[#0a0a0a] font-medium">
+              <label htmlFor="resilie" className="text-slate-900 font-medium">
                 Ma société a été résiliée pour non-paiement
               </label>
             </div>
@@ -418,22 +432,22 @@ function DevisPageContent() {
                 checked={reprisePasse}
                 onChange={(e) => setReprisePasse(e.target.checked)}
                 disabled={nbSinistres > 0}
-                className="w-5 h-5 rounded border-[#d4d4d4] text-[#C65D3B] focus:ring-[#C65D3B] mt-0.5"
+                className="w-5 h-5 rounded border-[#d4d4d4] text-blue-600 focus:ring-blue-600 mt-0.5"
               />
               <div>
-                <label htmlFor="reprisePasse" className="text-[#0a0a0a] font-medium cursor-pointer">
+                <label htmlFor="reprisePasse" className="text-slate-900 font-medium cursor-pointer">
                   Reprise du passé (jusqu&apos;à 3 mois en arrière)
                 </label>
                 <p className="text-sm text-[#171717] mt-1">
                   Couverture rétroactive de vos ouvrages des 3 derniers mois, sous réserve de non sinistralité. Majoration de 40 % sur ces 3 mois.
                 </p>
                 {reprisePasse && nbSinistres === 0 && (
-                  <p className="text-sm text-[#C65D3B] mt-1 font-medium">
+                  <p className="text-sm text-blue-600 mt-1 font-medium">
                     Une attestation de non sinistralité sera générée automatiquement sur la période reprise (3 mois).
                   </p>
                 )}
                 {nbSinistres > 0 && (
-                  <p className="text-sm text-[#C65D3B] mt-1 font-medium">
+                  <p className="text-sm text-blue-600 mt-1 font-medium">
                     Non disponible en cas de sinistre déclaré
                   </p>
                 )}
@@ -441,8 +455,8 @@ function DevisPageContent() {
             </div>
           </div>
 
-          <div className="p-6 bg-[#f5f5f5] rounded-2xl border border-[#d4d4d4] shadow-sm">
-            <label htmlFor="activite-selection" className="block mb-4 font-semibold text-[#0a0a0a]">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm">
+            <label htmlFor="activite-selection" className="block mb-4 font-semibold text-slate-900">
               Activités à assurer (max 8)
             </label>
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -463,7 +477,7 @@ function DevisPageContent() {
                 type="button"
                 onClick={ajouterActivite}
                 disabled={!activiteSelectionnee || activites.length >= 8}
-                className="bg-[#C65D3B] text-white px-6 py-3.5 rounded-xl hover:bg-[#B04F2F] disabled:bg-[#d4d4d4] font-semibold transition-all min-h-[44px] shrink-0"
+                className="bg-blue-600 text-white px-6 py-3.5 rounded-xl hover:bg-blue-700 disabled:bg-slate-300 font-semibold transition-all min-h-[44px] shrink-0"
               >
                 Ajouter
               </button>
@@ -478,21 +492,21 @@ function DevisPageContent() {
                   <button
                     type="button"
                     onClick={() => supprimerActivite(index)}
-                    className="text-[#C65D3B] text-sm hover:underline py-2 px-3 -my-1 min-h-[44px] flex items-center"
+                    className="text-blue-600 text-sm hover:underline py-2 px-3 -my-1 min-h-[44px] flex items-center"
                   >
                     Supprimer
                   </button>
                 </div>
               ))}
             </div>
-            <div className="mt-5 p-4 rounded-xl border border-[#C65D3B]/30 bg-[#FEF3F0]">
-              <p className="text-sm font-semibold text-[#0a0a0a] mb-1">Vous ne trouvez pas votre activité dans la liste ?</p>
+            <div className="mt-5 p-4 rounded-xl border border-blue-600/30 bg-blue-50">
+              <p className="text-sm font-semibold text-slate-900 mb-1">Vous ne trouvez pas votre activité dans la liste ?</p>
               <p className="text-sm text-[#171717] mb-3">
                 Décrivez votre domaine : notre équipe étudie les cas spécifiques et vous recontacte sous 24 h.
               </p>
               <Link
                 href="/etude/domaine"
-                className="inline-flex items-center gap-2 text-[#C65D3B] font-semibold text-sm hover:underline"
+                className="inline-flex items-center gap-2 text-blue-600 font-semibold text-sm hover:underline"
               >
                 Faire une demande d&apos;étude pour une activité non listée
                 <span aria-hidden>→</span>
@@ -501,7 +515,7 @@ function DevisPageContent() {
           </div>
 
           {besoinEtude && chiffreAffaires && Number(chiffreAffaires) >= CA_MINIMUM && (
-            <div className="bg-[#FEF3F0] border border-[#C65D3B]/30 rounded-2xl p-6">
+            <div className="bg-blue-50 border border-blue-600/30 rounded-2xl p-6">
               <h3 className="font-semibold text-black mb-2">
                 Étude personnalisée requise
               </h3>
@@ -512,12 +526,12 @@ function DevisPageContent() {
           )}
 
           {!besoinEtude && tarif && chiffreAffaires && Number(chiffreAffaires) >= CA_MINIMUM && (
-            <div className="bg-[#FEF3F0] border-2 border-[#C65D3B]/30 rounded-2xl p-6 shadow-lg shadow-[#C65D3B]/10">
+            <div className="bg-blue-50 border-2 border-blue-600/30 rounded-2xl p-6 shadow-lg shadow-blue-600/10">
               <h3 className="font-semibold text-black mb-4">
                 Votre tarification
               </h3>
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-4xl font-bold text-[#C65D3B] tracking-tight">
+                <span className="text-4xl font-bold text-blue-600 tracking-tight">
                   {tarif.primeMensuelle.toLocaleString("fr-FR")} €
                 </span>
                 <span className="text-[#171717]">/ mois (équivalent)</span>
@@ -527,7 +541,7 @@ function DevisPageContent() {
                 <strong>{tarif.primeTrimestrielle.toLocaleString("fr-FR")} €</strong> / trimestre (hors 1er paiement CB + frais)
               </p>
               {tarif.reprisePasse && tarif.supplementReprisePasse && (
-                <p className="text-sm text-[#C65D3B] mb-2 font-medium">
+                <p className="text-sm text-blue-600 mb-2 font-medium">
                   Dont reprise du passé (3 mois à +40 %) : +{tarif.supplementReprisePasse.toLocaleString("fr-FR")} €
                 </p>
               )}
@@ -535,8 +549,8 @@ function DevisPageContent() {
                 <p>Franchise : {tarif.franchise.toLocaleString("fr-FR")} €</p>
                 <p>Plafond : {tarif.plafond.toLocaleString("fr-FR")} €</p>
               </div>
-              <div className="mt-4 pt-4 border-t border-[#C65D3B]/20">
-                <label htmlFor="email-devis-save" className="block text-sm font-medium text-[#0a0a0a] mb-2">Sauvegarder et recevoir un lien pour reprendre ce devis (valable 7 jours)</label>
+              <div className="mt-4 pt-4 border-t border-blue-600/20">
+                <label htmlFor="email-devis-save" className="block text-sm font-medium text-slate-900 mb-2">Sauvegarder et recevoir un lien pour reprendre ce devis (valable 7 jours)</label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     id="email-devis-save"
@@ -579,7 +593,7 @@ function DevisPageContent() {
                       }
                     }}
                     disabled={!emailDevis || sendEmailLoading}
-                    className="bg-[#C65D3B] text-white px-4 py-2.5 rounded-xl text-sm font-semibold disabled:bg-[#d4d4d4] transition-all"
+                    className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold disabled:bg-slate-300 transition-all"
                   >
                     {sendEmailLoading ? "Envoi..." : sendEmailDone ? "Envoyé ✓" : "Sauvegarder et recevoir le lien"}
                   </button>
@@ -596,7 +610,7 @@ function DevisPageContent() {
               (!besoinEtude && !tarif) ||
               (aDesSinistres && (!montantIndemnisations || !releveSinistralite))
             }
-            className="w-full bg-[#C65D3B] text-white py-4 rounded-2xl hover:bg-[#B04F2F] transition-all font-semibold disabled:bg-[#d4d4d4] disabled:cursor-not-allowed shadow-lg shadow-[#C65D3B]/20"
+            className="w-full bg-blue-600 text-white py-4 rounded-2xl hover:bg-blue-700 transition-all font-semibold disabled:bg-slate-300 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
           >
             {loading
               ? "Redirection..."
@@ -608,13 +622,13 @@ function DevisPageContent() {
 
         {/* Mini-FAQ */}
         <section className="mt-16 pt-8 border-t border-[#e5e5e5]">
-          <h2 className="text-xl font-bold text-[#0a0a0a] mb-6">Questions fréquentes</h2>
+          <h2 className="text-xl font-bold text-slate-900 mb-6">Questions fréquentes</h2>
           <div className="space-y-4">
             {faqDevis.map((faq, i) => (
               <details key={i} className="bg-white rounded-xl border border-[#e5e5e5] overflow-hidden group">
-                <summary className="px-5 py-4 font-medium text-[#0a0a0a] cursor-pointer list-none flex justify-between items-center hover:bg-[#FEF3F0]/50 transition-colors [&::-webkit-details-marker]:hidden">
+                <summary className="px-5 py-4 font-medium text-slate-900 cursor-pointer list-none flex justify-between items-center hover:bg-blue-50/50 transition-colors [&::-webkit-details-marker]:hidden">
                   {faq.q}
-                  <span className="text-[#C65D3B] text-lg group-open:rotate-180 transition-transform">▾</span>
+                  <span className="text-blue-600 text-lg group-open:rotate-180 transition-transform">▾</span>
                 </summary>
                 <div className="px-5 pb-4 text-[#171717] text-sm leading-relaxed">
                   {faq.r}
@@ -623,12 +637,12 @@ function DevisPageContent() {
             ))}
           </div>
           <p className="text-center mt-6">
-            <Link href="/faq" className="text-[#C65D3B] font-medium hover:underline">Voir toutes les questions →</Link>
+            <Link href="/faq" className="text-blue-600 font-medium hover:underline">Voir toutes les questions →</Link>
           </p>
         </section>
 
         <p className="text-center text-sm text-[#171717] mt-8">
-          <Link href="/" className="text-[#C65D3B] font-medium hover:underline">
+          <Link href="/" className="text-blue-600 font-medium hover:underline">
             Retour à l&apos;accueil
           </Link>
         </p>

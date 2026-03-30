@@ -11,6 +11,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/espace-client/", "/gestion", "/confirmation", "/paiement", "/souscription", "/signature", "/api/"],
       },
     ],
+    host: baseUrl.replace(/\/$/, ""),
     sitemap: `${baseUrl}/sitemap.xml`,
   }
 }

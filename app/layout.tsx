@@ -6,6 +6,7 @@ import { SessionProvider } from "@/components/SessionProvider";
 import { ChatbotLazy } from "@/components/ChatbotLazy";
 import { Footer } from "@/components/Footer";
 import { CookieBanner } from "@/components/CookieBanner";
+import { StickyMobileCta } from "@/components/StickyMobileCta";
 import { ForceLightTheme } from "@/components/ForceLightTheme";
 
 export const viewport: Viewport = {
@@ -25,6 +26,7 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
+  applicationName: "Optimum Assurance",
   title: {
     default: "Assurance Décennale BTP en Ligne | Devis 3 min | Optimum Assurance",
     template: "%s | Optimum Assurance",
@@ -68,7 +70,13 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-    googleBot: "index, follow",
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
   ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
@@ -97,6 +105,7 @@ export default function RootLayout({
           <Footer />
           <ChatbotLazy />
           <CookieBanner />
+          <StickyMobileCta />
         </SessionProvider>
       </body>
     </html>

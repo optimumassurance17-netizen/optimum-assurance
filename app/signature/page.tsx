@@ -10,10 +10,13 @@ import { Breadcrumb } from "@/components/Breadcrumb"
 import { DevoirConseil } from "@/components/DevoirConseil"
 import type { SouscriptionData } from "@/lib/types"
 import { STORAGE_KEYS } from "@/lib/types"
+import { InsuranceContractParcoursBanner } from "@/components/insurance/InsuranceContractParcoursBanner"
+import type { InsuranceContractSnapshot } from "@/lib/insurance-contract-types"
 
 export default function SignaturePage() {
   const router = useRouter()
   const { status } = useSession()
+  const [insuranceSnapshot, setInsuranceSnapshot] = useState<InsuranceContractSnapshot | null>(null)
   const [souscription, setSouscription] = useState<SouscriptionData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,6 +31,17 @@ export default function SignaturePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    try {
+      const insRaw = sessionStorage.getItem(STORAGE_KEYS.insuranceContract)
+      if (insRaw) {
+        const parsed = JSON.parse(insRaw) as InsuranceContractSnapshot
+        if (parsed?.contractId && parsed?.contractNumber && parsed?.status) {
+          setInsuranceSnapshot(parsed)
+        }
+      }
+    } catch {
+      /* ignore */
+    }
     const stored = sessionStorage.getItem(STORAGE_KEYS.signature) || sessionStorage.getItem(STORAGE_KEYS.souscription)
     if (!stored) {
       router.replace("/devis")
@@ -51,7 +65,10 @@ export default function SignaturePage() {
       await fetch("/api/devoir-conseil/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ page: "signature", produit: "decennale" }),
+        body: JSON.stringify({
+          page: "signature",
+          produit: souscription.insuranceProduct === "do" ? "dommage-ouvrage" : "decennale",
+        }),
       })
     } catch {
       /* non bloquant */
@@ -92,25 +109,29 @@ export default function SignaturePage() {
 
   if (status === "loading" || !souscription) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
         <p className="text-[#171717]">Chargement...</p>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="max-w-2xl mx-auto px-6 py-12">
         <Breadcrumb items={[{ label: "Accueil", href: "/" }, { label: "Devis", href: "/devis" }, { label: "Souscription", href: "/souscription" }, { label: "Signature" }]} />
         <Stepper currentStep="signature" />
         <h1 className="text-3xl font-semibold mb-2 text-black">
-          Signature numérique
+          {souscription.insuranceProduct === "do" ? "Prochaine étape" : "Signature numérique"}
         </h1>
         <p className="text-[#171717] mb-8">
-          Signez électroniquement votre contrat d&apos;assurance décennale avec Yousign, solution certifiée eIDAS.
+          {souscription.insuranceProduct === "do"
+            ? "Votre dossier dommage ouvrage est pris en charge. Le contrat plateforme et les paiements sont gérés depuis votre espace client."
+            : "Signez électroniquement votre contrat d&apos;assurance décennale avec Yousign, solution certifiée eIDAS."}
         </p>
+
+        {insuranceSnapshot ? <InsuranceContractParcoursBanner snapshot={insuranceSnapshot} /> : null}
 
         <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-8">
           <h3 className="font-medium text-black mb-4">
@@ -118,6 +139,12 @@ export default function SignaturePage() {
           </h3>
           <ul className="space-y-2 text-[#171717] text-sm">
             <li>Assuré : {souscription.raisonSociale}</li>
+            {souscription.insuranceProduct === "do" && souscription.doProjectName ? (
+              <>
+                <li>Chantier : {souscription.doProjectName}</li>
+                {souscription.doProjectAddress ? <li>Adresse chantier : {souscription.doProjectAddress}</li> : null}
+              </>
+            ) : null}
             <li>
               Prime :{" "}
               {souscription.tarif?.primeMensuelle != null
@@ -129,33 +156,54 @@ export default function SignaturePage() {
               {souscription.tarif?.primeAnnuelle != null
                 ? ` · ${souscription.tarif.primeAnnuelle.toLocaleString("fr-FR")} €/an`
                 : ""}
-              ) — prélèvement{" "}
-              {souscription.tarif?.primeTrimestrielle ?? (souscription.tarif?.primeAnnuelle ? Math.round((souscription.tarif.primeAnnuelle / 4) * 100) / 100 : "—")}{" "}
-              €/trimestre
+              )
+              {souscription.insuranceProduct === "do"
+                ? " — indicative (contrat plateforme)"
+                : ` — prélèvement ${souscription.tarif?.primeTrimestrielle ?? (souscription.tarif?.primeAnnuelle ? Math.round((souscription.tarif.primeAnnuelle / 4) * 100) / 100 : "—")} €/trimestre`}
             </li>
-            <li>Activités : {souscription.activites?.join(", ") || "—"}</li>
+            {souscription.insuranceProduct !== "do" ? (
+              <li>Activités : {souscription.activites?.join(", ") || "—"}</li>
+            ) : (
+              <li>Produit : dommage ouvrage (plateforme)</li>
+            )}
           </ul>
         </div>
 
+        {souscription.insuranceProduct === "do" ? (
+          <div className="bg-[#ebe6e0] border border-[#d4d4d4] rounded-2xl p-6 mb-8">
+            <p className="text-sm text-[#171717]">
+              La signature Yousign ci-dessous concerne le modèle de contrat historique décennale BTP. Pour le dommage
+              ouvrage, suivez votre contrat et les attestations dans l&apos;espace client après validation assureur et
+              paiement.
+            </p>
+          </div>
+        ) : null}
+
         <DevoirConseil
-          produit="decennale"
+          produit={souscription.insuranceProduct === "do" ? "dommage-ouvrage" : "decennale"}
           checkboxId="devoir-conseil-signature"
           checked={devoirConseilAccepte}
           onCheckedChange={setDevoirConseilAccepte}
-          labelCheckbox="Je confirme avoir pris connaissance du récapitulatif, des garanties et exclusions avant de signer."
+          labelCheckbox={
+            souscription.insuranceProduct === "do"
+              ? "Je confirme avoir pris connaissance du récapitulatif et des informations sur la suite du dossier dommage ouvrage."
+              : "Je confirme avoir pris connaissance du récapitulatif, des garanties et exclusions avant de signer."
+          }
         />
 
         <div className="bg-[#ebe6e0] border border-[#d4d4d4] rounded-2xl p-6 mb-8 mt-6">
           <p className="text-sm text-[#171717] mb-4">
-            Vous serez redirigé vers la plateforme Yousign pour signer votre contrat. La signature électronique a la même valeur juridique qu&apos;une signature manuscrite.
+            {souscription.insuranceProduct === "do"
+              ? "Vous pouvez signer le contrat type décennale ci-dessous si votre conseiller vous y a invité ; sinon rendez-vous dans l&apos;espace client pour le dossier dommage ouvrage."
+              : "Vous serez redirigé vers la plateforme Yousign pour signer votre contrat. La signature électronique a la même valeur juridique qu&apos;une signature manuscrite."}
           </p>
           <button
             type="button"
             onClick={handleSignWithYousign}
             disabled={loading || !devoirConseilAccepte}
-            className="w-full bg-[#C65D3B] text-white py-4 rounded-xl hover:bg-[#B04F2F] transition font-medium disabled:bg-[#D4C4BC] disabled:cursor-not-allowed"
+            className="w-full bg-[#2563eb] text-white py-4 rounded-xl hover:bg-[#1d4ed8] transition font-medium disabled:bg-slate-300 disabled:cursor-not-allowed"
           >
-            {loading ? "Préparation en cours..." : "Signer avec Yousign"}
+            {loading ? "Préparation en cours..." : "Signer avec Yousign (contrat type)"}
           </button>
         </div>
 
@@ -166,7 +214,7 @@ export default function SignaturePage() {
         )}
 
         <p className="text-center text-sm text-[#171717]">
-          <Link href="/souscription" className="text-[#C65D3B] hover:underline">
+          <Link href="/souscription" className="text-[#2563eb] hover:underline">
             Retour à la souscription
           </Link>
         </p>

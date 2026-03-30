@@ -17,7 +17,7 @@ export default function Image() {
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "#FAFAF9",
-          background: "linear-gradient(135deg, #FEF3F0 0%, #FAFAF9 50%, #F5F5F4 100%)",
+          background: "linear-gradient(135deg, #eff6ff 0%, #FAFAF9 50%, #F5F5F4 100%)",
         }}
       >
         <div
@@ -33,7 +33,7 @@ export default function Image() {
               width: 60,
               height: 60,
               borderRadius: 12,
-              backgroundColor: "#C65D3B",
+              backgroundColor: "#2563eb",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

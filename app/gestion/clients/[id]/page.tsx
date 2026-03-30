@@ -95,7 +95,7 @@ export default function ClientDetailPage() {
       <main className="gestion-app min-h-screen bg-[#1a1a1a] flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">{error || "Client introuvable"}</p>
-          <Link href="/gestion" className="text-[#C65D3B] hover:underline">← Retour au dashboard</Link>
+          <Link href="/gestion" className="text-[#2563eb] hover:underline">← Retour au dashboard</Link>
         </div>
       </main>
     )
@@ -122,13 +122,13 @@ export default function ClientDetailPage() {
                   setSinistreForm({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
                   setSinistreModal(true)
                 }}
-                className="text-sm text-[#C65D3B] hover:text-[#B04F2F] font-medium"
+                className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium"
               >
                 Sinistre
               </button>
               <button
                 onClick={() => setEmailModal(true)}
-                className="text-sm text-[#C65D3B] hover:text-[#B04F2F] font-medium"
+                className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium"
               >
                 Envoyer un email
               </button>
@@ -181,7 +181,7 @@ export default function ClientDetailPage() {
           </div>
           <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
             <p className="text-gray-200 text-sm">Frais avenant en attente</p>
-            <p className="text-2xl font-bold text-amber-400">{avenantFees.filter((f) => f.status === "pending").length}</p>
+            <p className="text-2xl font-bold text-sky-400">{avenantFees.filter((f) => f.status === "pending").length}</p>
           </div>
         </section>
 
@@ -211,7 +211,7 @@ export default function ClientDetailPage() {
                           d.status === "valide" ? "bg-green-900/50 text-green-300" :
                           d.status === "suspendu" ? "bg-red-900/50 text-red-300" :
                           d.status === "resilie" ? "bg-gray-700 text-gray-200" :
-                          "bg-amber-900/50 text-amber-300"
+                          "bg-blue-900/50 text-sky-200"
                         }`}>
                           {d.status}
                         </span>
@@ -220,7 +220,7 @@ export default function ClientDetailPage() {
                       <td className="p-4">
                         <Link
                           href={`/gestion/documents/${d.id}`}
-                          className="text-[#C65D3B] hover:text-[#B04F2F] text-sm"
+                          className="text-[#2563eb] hover:text-[#1d4ed8] text-sm"
                         >
                           Voir
                         </Link>
@@ -298,7 +298,7 @@ export default function ClientDetailPage() {
               <button
                 type="submit"
                 disabled={noteLoading || !noteInput.trim()}
-                className="bg-[#C65D3B] text-white px-4 py-2 rounded-lg hover:bg-[#B04F2F] disabled:opacity-50 font-medium"
+                className="bg-[#2563eb] text-white px-4 py-2 rounded-lg hover:bg-[#1d4ed8] disabled:opacity-50 font-medium"
               >
                 {noteLoading ? "..." : "Ajouter"}
               </button>
@@ -338,7 +338,7 @@ export default function ClientDetailPage() {
                       <td className="p-4">{new Date(p.paidAt || p.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-4">{p.amount.toLocaleString("fr-FR")} €</td>
                       <td className="p-4">
-                        <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-green-900/50 text-green-300" : "bg-amber-900/50 text-amber-300"}`}>
+                        <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-green-900/50 text-green-300" : "bg-blue-900/50 text-sky-200"}`}>
                           {p.status}
                         </span>
                       </td>
@@ -439,7 +439,7 @@ export default function ClientDetailPage() {
                 <button
                   type="submit"
                   disabled={sinistreLoading || !sinistreForm.dateSinistre}
-                  className="px-4 py-2 rounded-lg bg-[#C65D3B] text-white hover:bg-[#B04F2F] disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-50"
                 >
                   {sinistreLoading ? "Enregistrement..." : "Enregistrer"}
                 </button>
@@ -500,7 +500,7 @@ export default function ClientDetailPage() {
                   }
                 }}
                 disabled={emailLoading || !emailSubject.trim() || !emailBody.trim()}
-                className="px-4 py-2 rounded-lg bg-[#C65D3B] text-white hover:bg-[#B04F2F] disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-50"
               >
                 {emailLoading ? "Envoi..." : "Envoyer"}
               </button>

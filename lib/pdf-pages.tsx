@@ -4,11 +4,12 @@
  */
 import React from "react"
 import { Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer"
+import { pdfLegalLinksLine } from "@/lib/pdf-legal-links"
 
 const sharedStyles = StyleSheet.create({
   page: { padding: 40, fontSize: 10 },
-  header: { borderBottomWidth: 2, borderBottomColor: "#C65D3B", paddingBottom: 15, marginBottom: 20 },
-  title: { fontSize: 18, color: "#C65D3B", marginBottom: 4 },
+  header: { borderBottomWidth: 2, borderBottomColor: "#2563eb", paddingBottom: 15, marginBottom: 20 },
+  title: { fontSize: 18, color: "#2563eb", marginBottom: 4 },
   subtitle: { fontSize: 9, color: "#333333" },
   h2: { fontSize: 14, marginBottom: 15, marginTop: 15 },
   h3: { fontSize: 11, marginBottom: 8, marginTop: 12 },
@@ -124,6 +125,7 @@ export function AttestationPDFPage({
         <Text style={sharedStyles.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         {d.verificationQrDataUri && (
           <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
             <Image src={d.verificationQrDataUri} style={{ width: 72, height: 72, marginRight: 10 }} />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold" }}>
@@ -136,6 +138,12 @@ export function AttestationPDFPage({
           </View>
         )}
       </View>
+      <Text style={{ fontSize: 8, color: "#333333", marginTop: 12, lineHeight: 1.35 }}>
+        {pdfLegalLinksLine()}
+      </Text>
+      <Text style={{ fontSize: 8, color: "#555555", marginTop: 4, lineHeight: 1.35 }}>
+        Optimum Courtage agit par délégation de Axcelrant Insurance.
+      </Text>
     </Page>
   )
 }
@@ -167,7 +175,7 @@ export function AttestationDoPDFPage({
         <Text style={sharedStyles.subtitle}>Assurance dommage ouvrage</Text>
       </View>
       <Text style={[sharedStyles.h2, { textAlign: "center" }]}>ATTESTATION D&apos;ASSURANCE</Text>
-      <Text style={[sharedStyles.p, { textAlign: "center", color: "#C65D3B", marginBottom: 20 }]}>Dommage Ouvrage — N° {numero}</Text>
+      <Text style={[sharedStyles.p, { textAlign: "center", color: "#2563eb", marginBottom: 20 }]}>Dommage Ouvrage — N° {numero}</Text>
       <View style={[sharedStyles.section, { borderWidth: 2, borderColor: "#E5E0D8", padding: 20 }]}>
         <Text style={sharedStyles.p}>La société Optimum Assurance atteste que :</Text>
         <Text style={[sharedStyles.p, { fontFamily: "Helvetica-Bold" }]}>{d.raisonSociale ?? "—"}</Text>
@@ -179,6 +187,7 @@ export function AttestationDoPDFPage({
         <Text style={sharedStyles.p}>Prime : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         {d.verificationQrDataUri && (
           <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
             <Image src={d.verificationQrDataUri} style={{ width: 72, height: 72, marginRight: 10 }} />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold" }}>
@@ -191,6 +200,12 @@ export function AttestationDoPDFPage({
           </View>
         )}
       </View>
+      <Text style={{ fontSize: 8, color: "#333333", marginTop: 12, lineHeight: 1.35 }}>
+        {pdfLegalLinksLine()}
+      </Text>
+      <Text style={{ fontSize: 8, color: "#555555", marginTop: 4, lineHeight: 1.35 }}>
+        Optimum Courtage agit par délégation de Axcelrant Insurance.
+      </Text>
     </Page>
   )
 }
@@ -237,6 +252,12 @@ export function FactureDoPDFPage({
           <Text style={sharedStyles.cellRight}>{(d.totalTTC ?? d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} €</Text>
         </View>
       </View>
+      <Text style={{ fontSize: 8, color: "#333333", marginTop: 16, lineHeight: 1.35 }}>
+        {pdfLegalLinksLine()}
+      </Text>
+      <Text style={{ fontSize: 8, color: "#555555", marginTop: 4, lineHeight: 1.35 }}>
+        Optimum Courtage agit par délégation de Axcelrant Insurance.
+      </Text>
     </Page>
   )
 }
@@ -307,6 +328,12 @@ export function DocumentResumePDFPage({
       {d.dateEffet && <Text style={sharedStyles.p}>Date d&apos;effet : {d.dateEffet}</Text>}
       <Text style={[sharedStyles.p, { marginTop: 20, fontSize: 9, color: "#333333" }]}>
         Consultez ce document en ligne dans votre espace client pour les détails complets.
+      </Text>
+      <Text style={{ fontSize: 8, color: "#333333", marginTop: 14, lineHeight: 1.35 }}>
+        {pdfLegalLinksLine()}
+      </Text>
+      <Text style={{ fontSize: 8, color: "#555555", marginTop: 6, lineHeight: 1.35 }}>
+        Optimum Courtage agit par délégation de Axcelrant Insurance.
       </Text>
     </Page>
   )

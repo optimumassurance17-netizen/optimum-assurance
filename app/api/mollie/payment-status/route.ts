@@ -18,10 +18,13 @@ export async function GET(request: NextRequest) {
     const mollieClient = createMollieClient({ apiKey })
     const payment = await mollieClient.payments.get(paymentId)
 
+    const metadata = (payment.metadata as Record<string, string>) || {}
+
     return NextResponse.json({
       id: payment.id,
       status: payment.status,
       amount: payment.amount?.value ? parseFloat(payment.amount.value) : undefined,
+      metadata,
     })
   } catch (error) {
     console.error("Erreur statut paiement:", error)

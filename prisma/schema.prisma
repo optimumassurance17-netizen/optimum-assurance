@@ -28,6 +28,68 @@ model User {
   clientNotes           ClientNote[]
   sinistres             Sinistre[]
   sepaSubscription      SepaSubscription?
+  insuranceContracts    InsuranceContract[]
+}
+
+/// Cycle de vie assurance (plateforme SaaS — décennale | DO). DB : PostgreSQL (URL Supabase possible).
+model InsuranceContract {
+  id                 String   @id @default(cuid())
+  contractNumber     String   @unique
+  userId             String?
+  user               User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  productType        String
+  clientName         String
+  siret              String?
+  address            String
+  activitiesJson     String?
+  projectName        String?
+  projectAddress     String?
+  constructionNature String?
+  premium            Float
+  status             String
+  paidAt             DateTime?
+  validFrom          DateTime?
+  validUntil         DateTime?
+  insurerValidatedAt DateTime?
+  riskScore          Int?
+  rejectedReason     String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  storedDocuments    ContractStoredDocument[]
+  lifecyclePayments  ContractLifecyclePayment[]
+  actionLogs         ContractActionLog[]
+}
+
+model ContractStoredDocument {
+  id         String            @id @default(cuid())
+  contractId String
+  contract   InsuranceContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  type       String
+  url        String
+  createdAt  DateTime          @default(now())
+
+  @@unique([contractId, type])
+}
+
+model ContractLifecyclePayment {
+  id              String            @id @default(cuid())
+  contractId      String
+  contract        InsuranceContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  molliePaymentId String            @unique
+  amount          Float
+  status          String
+  paidAt          DateTime?
+  createdAt       DateTime          @default(now())
+}
+
+model ContractActionLog {
+  id         String            @id @default(cuid())
+  contractId String
+  contract   InsuranceContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  action     String
+  details    String?
+  actorEmail String?
+  createdAt  DateTime          @default(now())
 }
 
 /// Abonnement prélèvements SEPA trimestriels (T2–T4) après 1er trimestre CB — Mollie Customer + mandate.
@@ -222,4 +284,23 @@ model AdminActivityLog {
   targetId   String?
   details    String?  // JSON
   createdAt  DateTime @default(now())
+}
+
+/// Compteur séquentiel par année et produit pour numéros OPT-DEC-YYYY-NNNN / OPT-DO-YYYY-NNNN
+model ContractCounter {
+  year    Int
+  product String
+  lastSeq Int    @default(0)
+  @@id([year, product])
+}
+
+/// Journal des PDF générés via /api/pdf/*
+model PdfGenerationLog {
+  id             String   @id @default(cuid())
+  contractNumber String
+  productType    String
+  documentType   String
+  userId         String?
+  generatedAt    DateTime @default(now())
+  metadata       String?
 }

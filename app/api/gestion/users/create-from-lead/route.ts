@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const template = {
       subject: "Votre compte Optimum Assurance a été créé",
       text: `Bonjour,\n\nVotre compte a été créé pour accéder à votre espace client.\n\nEmail : ${user.email}\nMot de passe temporaire : ${tempPassword}\n\nConnectez-vous et changez votre mot de passe dès que possible : ${process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"}/connexion\n\nCordialement,\nOptimum Assurance`,
-      html: `<p>Bonjour,</p><p>Votre compte a été créé pour accéder à votre espace client.</p><p><strong>Email :</strong> ${user.email}<br><strong>Mot de passe temporaire :</strong> ${tempPassword}</p><p><a href="${process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"}/connexion" style="color:#C65D3B;font-weight:bold">Se connecter à mon espace client</a></p><p>Pensez à changer votre mot de passe dès la première connexion.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+      html: `<p>Bonjour,</p><p>Votre compte a été créé pour accéder à votre espace client.</p><p><strong>Email :</strong> ${user.email}<br><strong>Mot de passe temporaire :</strong> ${tempPassword}</p><p><a href="${process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"}/connexion" style="color:#2563eb;font-weight:bold">Se connecter à mon espace client</a></p><p>Pensez à changer votre mot de passe dès la première connexion.</p><p>Cordialement,<br>Optimum Assurance</p>`,
     }
 
     await sendEmail({

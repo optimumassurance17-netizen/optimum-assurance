@@ -93,7 +93,7 @@ export function AdresseAutocomplete({ show, onPick, title }: Props) {
   return (
     <div
       ref={wrapRef}
-      className="mt-4 p-4 rounded-xl border border-[#C65D3B]/30 bg-[#FEF9F6] text-left"
+      className="mt-4 p-4 rounded-xl border border-[#2563eb]/30 bg-[#f8fafc] text-left"
       role="search"
     >
       <p className="text-sm font-medium text-[#0a0a0a] mb-2">
@@ -110,7 +110,7 @@ export function AdresseAutocomplete({ show, onPick, title }: Props) {
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => results.length > 0 && setOpen(true)}
         placeholder="Ex : 12 rue de Rivoli Paris"
-        className={`w-full rounded-xl px-4 py-3 text-sm bg-white border border-[#d4d4d4] ${inputTextDark} focus:ring-2 focus:ring-[#C65D3B] focus:border-[#C65D3B] outline-none`}
+        className={`w-full rounded-xl px-4 py-3 text-sm bg-white border border-[#d4d4d4] ${inputTextDark} focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] outline-none`}
       />
       {loading && (
         <p className="text-xs text-black mt-2" aria-live="polite">
@@ -123,10 +123,10 @@ export function AdresseAutocomplete({ show, onPick, title }: Props) {
           role="listbox"
         >
           {results.map((r, i) => (
-            <li key={`${r.label}-${i}`} role="option">
+            <li key={`${r.label}-${i}`} role="option" aria-selected={false}>
               <button
                 type="button"
-                className="w-full text-left px-3 py-2.5 text-sm hover:bg-[#F5E8E3] border-b border-[#f0f0f0] last:border-0 text-black"
+                className="w-full text-left px-3 py-2.5 text-sm hover:bg-[#dbeafe] border-b border-[#f0f0f0] last:border-0 text-black"
                 onClick={() => {
                   onPick(r)
                   setOpen(false)

@@ -84,18 +84,18 @@ export default function RegularisationPage() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
         <p className="text-[#171717]">Chargement...</p>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="max-w-2xl mx-auto px-6 py-12">
-        <Link href="/espace-client" className="text-[#C65D3B] hover:underline mb-6 inline-block">
+        <Link href="/espace-client" className="text-[#2563eb] hover:underline mb-6 inline-block">
           ← Retour à l&apos;espace client
         </Link>
 
@@ -107,11 +107,11 @@ export default function RegularisationPage() {
         </p>
 
         {attestations.length === 0 ? (
-          <div className="bg-white border border-[#F0EBE3] rounded-2xl p-8 text-center">
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
             <p className="text-[#171717] mb-4">
               Aucune attestation en attente de régularisation.
             </p>
-            <Link href="/espace-client" className="text-[#C65D3B] hover:underline font-medium">
+            <Link href="/espace-client" className="text-[#2563eb] hover:underline font-medium">
               Retour à l&apos;espace client
             </Link>
           </div>
@@ -120,19 +120,19 @@ export default function RegularisationPage() {
             {attestations.map((att) => (
               <div
                 key={att.id}
-                className="bg-white border border-[#F0EBE3] rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
               >
                 <div>
                   <p className="font-semibold text-black">{att.raisonSociale}</p>
                   <p className="text-sm text-[#171717]">Attestation {att.numero}</p>
-                  <p className="text-lg font-bold text-[#C65D3B] mt-2">
+                  <p className="text-lg font-bold text-[#2563eb] mt-2">
                     {att.montantDu.toLocaleString("fr-FR")} € à régler
                   </p>
                 </div>
                 <button
                   onClick={() => handlePay(att)}
                   disabled={payingId !== null}
-                  className="bg-[#C65D3B] text-white px-6 py-3 rounded-xl hover:bg-[#B04F2F] font-medium disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                  className="bg-[#2563eb] text-white px-6 py-3 rounded-xl hover:bg-[#1d4ed8] font-medium disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                 >
                   {payingId === att.id ? "Redirection..." : "Payer par CB"}
                 </button>

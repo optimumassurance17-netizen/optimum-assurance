@@ -32,7 +32,7 @@ export default function ConfidentialitePage() {
             <h2 className="text-xl font-semibold text-black">6. Vos droits (RGPD)</h2>
             <p>Vous disposez d&apos;un droit d&apos;accès, de rectification, d&apos;effacement, de limitation, de portabilité et d&apos;opposition. Contactez-nous pour les exercer. Vous pouvez également introduire une réclamation auprès de la CNIL.</p>
             <p className="mt-4">
-              <Link href="/droits-personnes" className="text-[#C65D3B] font-medium hover:underline">
+              <Link href="/droits-personnes" className="text-[#2563eb] font-medium hover:underline">
                 → Voir le détail de vos droits et comment les exercer
               </Link>
             </p>
@@ -43,7 +43,7 @@ export default function ConfidentialitePage() {
           </section>
         </div>
         <p className="mt-8">
-          <Link href="/" className="text-[#C65D3B] hover:underline">← Retour à l&apos;accueil</Link>
+          <Link href="/" className="text-[#2563eb] hover:underline">← Retour à l&apos;accueil</Link>
         </p>
       </div>
     </main>

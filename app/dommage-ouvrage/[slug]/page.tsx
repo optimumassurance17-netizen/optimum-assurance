@@ -28,7 +28,15 @@ export async function generateMetadata({
     ],
     alternates: { canonical: `${baseUrl}/dommage-ouvrage/${data.slug}` },
     openGraph: {
+      type: "website",
+      locale: "fr_FR",
+      siteName: "Optimum Assurance",
       url: `${baseUrl}/dommage-ouvrage/${data.slug}`,
+      title: `Dommage Ouvrage ${data.nom} | Optimum Assurance`,
+      description: data.description,
+    },
+    twitter: {
+      card: "summary_large_image",
       title: `Dommage Ouvrage ${data.nom} | Optimum Assurance`,
       description: data.description,
     },
@@ -72,14 +80,14 @@ export default async function DommageOuvragePage({
 
       <div className="max-w-3xl mx-auto px-6 py-14">
         <nav aria-label="Fil d'Ariane" className="text-sm mb-8">
-          <Link href="/" className="text-[#C65D3B] hover:underline">Accueil</Link>
+          <Link href="/" className="text-[#2563eb] hover:underline">Accueil</Link>
           <span className="text-[#333333] mx-2">/</span>
-          <Link href="/devis-dommage-ouvrage" className="text-[#C65D3B] hover:underline">Dommage ouvrage</Link>
+          <Link href="/devis-dommage-ouvrage" className="text-[#2563eb] hover:underline">Dommage ouvrage</Link>
           <span className="text-[#333333] mx-2">/</span>
           <span className="text-[#0a0a0a] font-medium">{data.nom}</span>
         </nav>
 
-        <span className="inline-block bg-[#FEF3F0] text-[#C65D3B] text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+        <span className="inline-block bg-[#eff6ff] text-[#2563eb] text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
           Dommage ouvrage — Produit principal
         </span>
 
@@ -90,12 +98,12 @@ export default async function DommageOuvragePage({
           {data.description}
         </p>
 
-        <div className="bg-[#FEF3F0] border border-[#C65D3B]/30 rounded-2xl p-6 mb-10">
+        <div className="bg-[#eff6ff] border border-[#2563eb]/30 rounded-2xl p-6 mb-10">
           <p className="font-semibold text-[#0a0a0a] mb-4">Pourquoi choisir Optimum ?</p>
           <ul className="space-y-2 text-[#171717]">
             {data.avantages.map((a, i) => (
               <li key={i} className="flex items-center gap-2">
-                <span className="text-[#C65D3B]">✓</span>
+                <span className="text-[#2563eb]">✓</span>
                 {a}
               </li>
             ))}
@@ -117,7 +125,7 @@ export default async function DommageOuvragePage({
         <div className="text-center space-y-4">
           <Link
             href="/devis-dommage-ouvrage"
-            className="inline-block bg-[#C65D3B] text-white px-10 py-4 rounded-2xl hover:bg-[#B04F2F] font-semibold shadow-lg shadow-[#C65D3B]/25 transition-all"
+            className="inline-block bg-[#2563eb] text-white px-10 py-4 rounded-2xl hover:bg-[#1d4ed8] font-semibold shadow-lg shadow-[#2563eb]/25 transition-all"
           >
             Devis dommage ouvrage
           </Link>
@@ -127,7 +135,7 @@ export default async function DommageOuvragePage({
         </div>
 
         <p className="text-center mt-10">
-          <Link href="/" className="text-[#C65D3B] font-medium hover:underline">
+          <Link href="/" className="text-[#2563eb] font-medium hover:underline">
             ← Retour à l&apos;accueil
           </Link>
         </p>

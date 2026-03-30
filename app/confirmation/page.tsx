@@ -23,25 +23,60 @@ export default function ConfirmationPage() {
   const [isRegularisation, setIsRegularisation] = useState(false)
   const [isDevisDo, setIsDevisDo] = useState(false)
   const [isDevisDoFlow, setIsDevisDoFlow] = useState(false)
+  /** Retour Mollie pour contrat plateforme (Prisma / webhook) */
+  const [isInsuranceContractFlow, setIsInsuranceContractFlow] = useState(false)
   /** 1er trimestre payé par carte + suite en SEPA trimestriel */
   const [decennalePremierTrimestreCarte, setDecennalePremierTrimestreCarte] = useState(false)
 
   useEffect(() => {
-    if (typeof window !== "undefined" && sessionStorage.getItem("mollie_payment_type") === "devis_do") {
-      setIsDevisDoFlow(true)
+    if (typeof window === "undefined") return
+    if (sessionStorage.getItem("mollie_payment_type") === "devis_do") {
+      queueMicrotask(() => setIsDevisDoFlow(true))
     }
   }, [])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const paymentId = params.get("payment_id") || sessionStorage.getItem("mollie_payment_id")
+    const paymentId =
+      params.get("payment_id") ||
+      params.get("paymentId") ||
+      params.get("id") ||
+      sessionStorage.getItem("mollie_payment_id")
     const paymentType = sessionStorage.getItem("mollie_payment_type")
 
     const checkStatus = async () => {
       if (paymentId) {
         try {
-          const res = await fetch(`/api/mollie/payment-status?id=${paymentId}`)
-          const data = await res.json()
+          const res = await fetch(`/api/mollie/payment-status?id=${encodeURIComponent(paymentId)}`)
+          const data = (await res.json()) as {
+            status?: string
+            amount?: number
+            metadata?: Record<string, string>
+          }
+
+          const insuranceMeta =
+            data.metadata?.type === "insurance_contract" || paymentType === "insurance_contract"
+          if (insuranceMeta) {
+            setIsInsuranceContractFlow(true)
+            if (data.status === "paid") {
+              setStatus("success")
+              sessionStorage.removeItem("mollie_payment_id")
+              sessionStorage.removeItem("mollie_payment_type")
+              sessionStorage.removeItem(STORAGE_KEYS.insuranceContract)
+              return
+            }
+            if (data.status === "pending" || data.status === "open" || data.status === "authorized") {
+              setStatus("pending")
+              return
+            }
+            if (data.status === "failed" || data.status === "expired" || data.status === "canceled") {
+              setStatus("failed")
+              return
+            }
+            setStatus("pending")
+            return
+          }
+
           if (data.status === "paid") {
             const isDoPayment = paymentType === "devis_do"
             if (isDoPayment) {
@@ -225,7 +260,7 @@ export default function ConfirmationPage() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="max-w-xl mx-auto px-6 py-16 text-center">
@@ -251,18 +286,25 @@ export default function ConfirmationPage() {
               </svg>
             </div>
             <h1 className="text-3xl font-semibold text-black mb-4">
-              {isDevisDo
-                ? "Paiement confirmé"
-                : isRegularisation
-                ? "Régularisation confirmée"
-                : "Souscription confirmée"}
+              {isInsuranceContractFlow
+                ? "Paiement enregistré"
+                : isDevisDo
+                  ? "Paiement confirmé"
+                  : isRegularisation
+                    ? "Régularisation confirmée"
+                    : "Souscription confirmée"}
             </h1>
             <p className="text-[#171717] mb-8">
-              {isDevisDo
-                ? "Votre paiement pour le devis dommage ouvrage a été enregistré avec succès. Votre dossier sera traité en cours."
-                : isRegularisation
-                ? "Votre paiement a été enregistré. Votre attestation est à nouveau valide."
-                : decennalePremierTrimestreCarte
+              {isInsuranceContractFlow ? (
+                <>
+                  Votre virement lié au contrat plateforme a été enregistré par Mollie. Le contrat sera activé après réception effective des
+                  fonds ; vous recevrez alors vos documents (attestation, facture) et pourrez les télécharger depuis votre espace client.
+                </>
+              ) : isDevisDo ? (
+                "Votre paiement pour le devis dommage ouvrage a été enregistré avec succès. Votre dossier sera traité en cours."
+              ) : isRegularisation ? (
+                "Votre paiement a été enregistré. Votre attestation est à nouveau valide."
+              ) : decennalePremierTrimestreCarte
                 ? (
                     <>
                       Votre assurance décennale a été souscrite avec succès. Le <strong>premier trimestre</strong> a été réglé par carte bancaire. Les <strong>échéances suivantes</strong> seront prélevées
@@ -274,13 +316,13 @@ export default function ConfirmationPage() {
             <div className="flex gap-4 justify-center flex-wrap">
               <Link
                 href="/espace-client"
-                className="inline-block bg-[#C65D3B] text-white px-8 py-3 rounded-xl hover:bg-[#B04F2F] transition font-medium"
+                className="inline-block bg-[#2563eb] text-white px-8 py-3 rounded-xl hover:bg-[#1d4ed8] transition font-medium"
               >
                 Accéder à mon espace client
               </Link>
               <Link
                 href="/"
-                className="inline-block border-2 border-[#C65D3B] text-[#C65D3B] px-8 py-3 rounded-xl hover:bg-[#F5E8E3] transition font-medium"
+                className="inline-block border-2 border-[#2563eb] text-[#2563eb] px-8 py-3 rounded-xl hover:bg-[#dbeafe] transition font-medium"
               >
                 Retour à l&apos;accueil
               </Link>
@@ -290,9 +332,9 @@ export default function ConfirmationPage() {
 
         {status === "pending" && (
           <>
-            <div className="w-20 h-20 bg-[#F5E8E3] rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 bg-[#dbeafe] rounded-full flex items-center justify-center mx-auto mb-6">
               <svg
-                className="w-10 h-10 text-[#C65D3B]"
+                className="w-10 h-10 text-[#2563eb]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -306,10 +348,19 @@ export default function ConfirmationPage() {
               </svg>
             </div>
             <h1 className="text-3xl font-semibold text-black mb-4">
-              {isDevisDoFlow ? "Virement en attente" : "Paiement en cours"}
+              {isInsuranceContractFlow
+                ? "Virement en attente"
+                : isDevisDoFlow
+                  ? "Virement en attente"
+                  : "Paiement en cours"}
             </h1>
             <p className="text-[#171717] mb-8">
-              {isDevisDoFlow ? (
+              {isInsuranceContractFlow ? (
+                <>
+                  Votre dossier concerne le <strong>contrat plateforme</strong> (virement Mollie). Les fonds sont en cours de
+                  réception. Votre contrat sera activé automatiquement après encaissement ; vous serez informé par email.
+                </>
+              ) : isDevisDoFlow ? (
                 <>
                   Vous avez choisi un <strong>paiement par virement bancaire</strong> (Mollie). Effectuez le
                   virement selon les coordonnées et la référence indiquées sur la page Mollie ou reçues par
@@ -324,17 +375,17 @@ export default function ConfirmationPage() {
               )}
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
-              {isDevisDoFlow && (
+              {(isDevisDoFlow || isInsuranceContractFlow) && (
                 <Link
                   href="/espace-client"
-                  className="inline-block border-2 border-[#C65D3B] text-[#C65D3B] px-8 py-3 rounded-xl hover:bg-[#F5E8E3] transition font-medium"
+                  className="inline-block border-2 border-[#2563eb] text-[#2563eb] px-8 py-3 rounded-xl hover:bg-[#dbeafe] transition font-medium"
                 >
                   Retour à l&apos;espace client
                 </Link>
               )}
               <Link
                 href="/"
-                className="inline-block bg-[#C65D3B] text-white px-8 py-3 rounded-xl hover:bg-[#B04F2F] transition font-medium"
+                className="inline-block bg-[#2563eb] text-white px-8 py-3 rounded-xl hover:bg-[#1d4ed8] transition font-medium"
               >
                 Retour à l&apos;accueil
               </Link>
@@ -344,9 +395,9 @@ export default function ConfirmationPage() {
 
         {status === "unknown" && (
           <>
-            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-blue-100">
               <svg
-                className="w-10 h-10 text-amber-600"
+                className="h-10 w-10 text-blue-600"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -367,7 +418,7 @@ export default function ConfirmationPage() {
             </p>
             <Link
               href="/"
-              className="inline-block bg-[#C65D3B] text-white px-8 py-3 rounded-xl hover:bg-[#B04F2F] transition font-medium"
+              className="inline-block bg-[#2563eb] text-white px-8 py-3 rounded-xl hover:bg-[#1d4ed8] transition font-medium"
             >
               Retour à l&apos;accueil
             </Link>
@@ -399,14 +450,20 @@ export default function ConfirmationPage() {
               ou choisir un autre mode de paiement.
             </p>
             <Link
-              href={isDevisDo ? "/espace-client" : "/paiement"}
-              className="inline-block bg-[#C65D3B] text-white px-8 py-3 rounded-xl hover:bg-[#B04F2F] transition font-medium"
+              href={isDevisDo || isInsuranceContractFlow ? "/espace-client" : "/paiement"}
+              className="inline-block bg-[#2563eb] text-white px-8 py-3 rounded-xl hover:bg-[#1d4ed8] transition font-medium"
             >
-              {isDevisDo ? "Retour à l'espace client" : "Réessayer le paiement"}
+              {isDevisDo || isInsuranceContractFlow ? "Retour à l'espace client" : "Réessayer le paiement"}
             </Link>
             {isDevisDo && (
               <p className="text-sm text-[#171717] mt-4">
                 Vous pourrez réessayer le paiement depuis votre espace client en cliquant sur le devis dommage ouvrage.
+              </p>
+            )}
+            {isInsuranceContractFlow && (
+              <p className="text-sm text-[#171717] mt-4 max-w-md mx-auto">
+                Depuis l&apos;espace client, section contrats plateforme, vous pouvez relancer le virement Mollie tant que le contrat est
+                en statut « approuvé ».
               </p>
             )}
           </>

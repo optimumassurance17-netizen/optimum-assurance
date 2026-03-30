@@ -89,7 +89,7 @@ export default async function VerificationPage({
             justifyContent: "center",
             padding: "20px",
             fontFamily: "system-ui, sans-serif",
-            background: "#FDF8F3",
+            background: "#f8fafc",
           }}
         >
           <div

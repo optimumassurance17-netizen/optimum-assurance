@@ -31,7 +31,7 @@ export default function MotDePasseOubliePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="max-w-md mx-auto px-6 py-12">
@@ -48,7 +48,7 @@ export default function MotDePasseOubliePage() {
             <p className="text-sm text-emerald-700">
               Si un compte existe pour {email}, vous recevrez un lien par email. Vérifiez vos spams.
             </p>
-            <Link href="/connexion" className="inline-block mt-4 text-[#C65D3B] font-medium hover:underline">
+            <Link href="/connexion" className="inline-block mt-4 text-[#2563eb] font-medium hover:underline">
               Retour à la connexion
             </Link>
           </div>
@@ -61,7 +61,7 @@ export default function MotDePasseOubliePage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] focus:border-[#C65D3B] outline-none bg-[#e4e4e4]"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] outline-none bg-[#e4e4e4]"
               />
             </div>
 
@@ -74,7 +74,7 @@ export default function MotDePasseOubliePage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#C65D3B] text-white py-4 rounded-xl hover:bg-[#B04F2F] transition font-medium disabled:opacity-50"
+              className="w-full bg-[#2563eb] text-white py-4 rounded-xl hover:bg-[#1d4ed8] transition font-medium disabled:opacity-50"
             >
               {loading ? "Envoi..." : "Envoyer le lien"}
             </button>
@@ -82,7 +82,7 @@ export default function MotDePasseOubliePage() {
         )}
 
         <p className="text-center text-sm text-[#171717] mt-8">
-          <Link href="/connexion" className="text-[#C65D3B] hover:underline">
+          <Link href="/connexion" className="text-[#2563eb] hover:underline">
             ← Retour à la connexion
           </Link>
         </p>

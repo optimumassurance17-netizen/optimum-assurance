@@ -9,6 +9,10 @@ import { Breadcrumb } from "@/components/Breadcrumb"
 import { SkeletonCard, SkeletonDocumentRow } from "@/components/Skeleton"
 import { GedUpload } from "@/components/GedUpload"
 import { InstallPrompt } from "@/components/InstallPrompt"
+import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import type { InsuranceContractListItem } from "@/lib/insurance-contract-types"
+import { PayInsuranceContractButton } from "@/components/insurance/PayInsuranceContractButton"
+import { InsuranceContractPdfLinks } from "@/components/insurance/InsuranceContractPdfLinks"
 
 interface DocumentItem {
   id: string
@@ -59,20 +63,26 @@ export default function EspaceClientPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<"documents" | "paiements" | "profil">("documents")
   const [exportingPdf, setExportingPdf] = useState(false)
+  const [insuranceContracts, setInsuranceContracts] = useState<InsuranceContractListItem[]>([])
 
   useEffect(() => {
     if (status !== "authenticated") return
 
     const fetchData = async () => {
       try {
-        const [docsRes, summaryRes, paymentsRes] = await Promise.all([
+        const [docsRes, summaryRes, paymentsRes, insRes] = await Promise.all([
           fetch("/api/documents/list"),
           fetch("/api/client/summary"),
           fetch("/api/client/payments"),
+          fetch("/api/client/insurance-contracts"),
         ])
         if (docsRes.ok) setDocuments(await docsRes.json())
         if (summaryRes.ok) setSummary(await summaryRes.json())
         if (paymentsRes.ok) setPayments(await paymentsRes.json())
+        if (insRes.ok) {
+          const j = (await insRes.json()) as { contracts?: InsuranceContractListItem[] }
+          setInsuranceContracts(Array.isArray(j.contracts) ? j.contracts : [])
+        }
         const profileRes = await fetch("/api/client/profile")
         if (profileRes.ok) setProfile(await profileRes.json())
       } catch {
@@ -167,12 +177,54 @@ export default function EspaceClientPage() {
               <p className="text-sm font-medium text-[#171717] mb-1">Attestations</p>
               <p className="text-3xl font-bold text-[#0a0a0a]">{summary.attestationsCount}</p>
             </div>
-            <div className="bg-[#f5f5f5] border-2 border-[#C65D3B]/30 rounded-2xl p-6 shadow-lg shadow-[#C65D3B]/10">
+            <div className="bg-[#f5f5f5] border-2 border-[#2563eb]/30 rounded-2xl p-6 shadow-lg shadow-[#2563eb]/10">
               <p className="text-sm font-medium text-[#171717] mb-1">Total payé</p>
-              <p className="text-3xl font-bold text-[#C65D3B]">{summary.paidTotal.toLocaleString("fr-FR")} €</p>
+              <p className="text-3xl font-bold text-[#2563eb]">{summary.paidTotal.toLocaleString("fr-FR")} €</p>
             </div>
           </div>
         ) : null}
+
+        {!loading && insuranceContracts.length > 0 && (
+          <div className="mb-10 p-6 bg-[#eff6ff] border border-[#2563eb]/25 rounded-2xl">
+            <h2 className="font-bold text-[#0a0a0a] text-lg mb-4">Contrats plateforme (souscription en ligne)</h2>
+            <ul className="space-y-4">
+              {insuranceContracts.map((c) => (
+                <li
+                  key={c.id}
+                  className="p-4 rounded-xl bg-white border border-[#e5e5e5] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                >
+                  <div>
+                    <p className="font-mono text-sm text-[#0a0a0a]">{c.contractNumber}</p>
+                    <p className="text-sm text-[#171717]">{c.clientName}</p>
+                    <p className="text-xs text-[#666] mt-1">
+                      {c.productType === "do" ? "Dommages-ouvrage" : "Décennale"} ·{" "}
+                      {c.premium.toLocaleString("fr-FR")} € / an ·{" "}
+                      <span className="font-medium">{c.status}</span>
+                    </p>
+                    {c.status === CONTRACT_STATUS.rejected && c.rejectedReason && (
+                      <p className="text-xs text-red-700 mt-2">{c.rejectedReason}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-3 sm:items-end sm:text-right">
+                    <InsuranceContractPdfLinks
+                      contractId={c.id}
+                      contractNumber={c.contractNumber}
+                      status={c.status}
+                    />
+                    {c.status === CONTRACT_STATUS.approved && (
+                      <PayInsuranceContractButton contractId={c.id} label="Payer (virement Mollie)" />
+                    )}
+                    {c.status === CONTRACT_STATUS.pending_validation && (
+                      <span className="inline-block rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-blue-900">
+                        En examen assureur
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Onglet Profil */}
         {activeTab === "profil" && !loading && status === "authenticated" && (
@@ -186,7 +238,7 @@ export default function EspaceClientPage() {
                 )}
                 {profile?.telephone && <p>Tél. {profile.telephone}</p>}
                 {(!profile || (!profile.adresse && !profile.telephone)) && <p className="text-[#333333]">Aucune coordonnée renseignée</p>}
-                <button onClick={() => setProfileEditing(true)} className="text-[#C65D3B] font-medium hover:underline text-sm">
+                <button onClick={() => setProfileEditing(true)} className="text-[#2563eb] font-medium hover:underline text-sm">
                   Modifier
                 </button>
               </div>
@@ -240,7 +292,7 @@ export default function EspaceClientPage() {
                   <input name="telephone" type="tel" defaultValue={profile?.telephone} className="w-full border border-[#d4d4d4] rounded-xl px-4 py-2 bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]" />
                 </div>
                 <div className="flex gap-2">
-                  <button type="submit" disabled={profileSaving} className="bg-[#C65D3B] text-white px-4 py-2 rounded-xl font-medium disabled:opacity-50">
+                  <button type="submit" disabled={profileSaving} className="bg-[#2563eb] text-white px-4 py-2 rounded-xl font-medium disabled:opacity-50">
                     {profileSaving ? "Enregistrement..." : "Enregistrer"}
                   </button>
                   <button type="button" onClick={() => setProfileEditing(false)} className="border border-[#d4d4d4] px-4 py-2 rounded-xl text-[#171717]">
@@ -254,14 +306,14 @@ export default function EspaceClientPage() {
 
         {/* Onglet Documents */}
         {activeTab === "documents" && !loading && documents.some((d) => d.type === "attestation" && d.status === "suspendu") && (
-          <div className="mb-8 p-6 bg-amber-50 border border-amber-200 rounded-2xl">
-            <p className="font-medium text-amber-800 mb-2">Paiement en attente</p>
-            <p className="text-sm text-amber-700 mb-3">
+          <div className="mb-8 rounded-2xl border border-blue-200 bg-blue-50 p-6">
+            <p className="mb-2 font-medium text-blue-900">Paiement en attente</p>
+            <p className="mb-3 text-sm text-blue-800">
               Une ou plusieurs attestations sont suspendues pour défaut de paiement. Régularisez par carte bancaire.
             </p>
             <Link
               href="/espace-client/regularisation"
-              className="inline-block bg-[#C65D3B] text-white px-4 py-2 rounded-xl hover:bg-[#B04F2F] font-medium text-sm"
+              className="inline-block bg-[#2563eb] text-white px-4 py-2 rounded-xl hover:bg-[#1d4ed8] font-medium text-sm"
             >
               Régulariser le paiement par CB
             </Link>
@@ -304,7 +356,7 @@ export default function EspaceClientPage() {
                       <td className="py-3 text-[#171717]">{new Date(p.paidAt || p.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="py-3 font-medium text-[#0a0a0a]">{p.amount.toLocaleString("fr-FR")} €</td>
                       <td className="py-3">
-                        <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                        <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-900"}`}>
                           {p.status === "paid" ? "Payé" : p.status === "pending" ? "En attente" : "Échoué"}
                         </span>
                       </td>
@@ -345,7 +397,7 @@ export default function EspaceClientPage() {
                     setExportingPdf(false)
                   }
                 }}
-                className="inline-flex items-center gap-2 bg-[#C65D3B] text-white px-4 py-2.5 rounded-xl hover:bg-[#B04F2F] font-medium text-sm transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 bg-[#2563eb] text-white px-4 py-2.5 rounded-xl hover:bg-[#1d4ed8] font-medium text-sm transition-colors disabled:opacity-50"
               >
                 {exportingPdf ? "Génération..." : "Télécharger tout en PDF"}
               </button>
@@ -367,7 +419,7 @@ export default function EspaceClientPage() {
                 <Link
                   key={doc.id}
                   href={`/espace-client/documents/${doc.id}`}
-                  className="flex items-center justify-between p-4 bg-[#e4e4e4] rounded-xl hover:bg-[#FEF3F0] border border-[#d4d4d4] hover:border-[#C65D3B]/30 transition-all"
+                  className="flex items-center justify-between p-4 bg-[#e4e4e4] rounded-xl hover:bg-[#eff6ff] border border-[#d4d4d4] hover:border-[#2563eb]/30 transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{typeIcons[doc.type] || "📄"}</span>
@@ -376,7 +428,7 @@ export default function EspaceClientPage() {
                       <p className="text-sm text-[#171717]">{doc.numero}</p>
                     </div>
                   </div>
-                  <span className="text-[#C65D3B] font-medium">Voir →</span>
+                  <span className="text-[#2563eb] font-medium">Voir →</span>
                 </Link>
               ))}
             </div>
@@ -388,13 +440,13 @@ export default function EspaceClientPage() {
           <div className="flex flex-wrap gap-4">
             <Link
               href="/devis"
-              className="inline-block bg-[#C65D3B] text-white px-8 py-4 rounded-2xl hover:bg-[#B04F2F] transition-all font-semibold shadow-lg shadow-[#C65D3B]/20"
+              className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-2xl hover:bg-[#1d4ed8] transition-all font-semibold shadow-lg shadow-[#2563eb]/20"
             >
               Devis décennale BTP
             </Link>
             <Link
               href="/devis-dommage-ouvrage"
-              className="inline-block border-2 border-[#C65D3B] text-[#C65D3B] px-8 py-4 rounded-2xl hover:bg-[#FEF3F0] transition-all font-semibold"
+              className="inline-block border-2 border-[#2563eb] text-[#2563eb] px-8 py-4 rounded-2xl hover:bg-[#eff6ff] transition-all font-semibold"
             >
               Devis dommage ouvrage
             </Link>

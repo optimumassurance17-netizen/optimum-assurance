@@ -14,6 +14,8 @@ import {
   type TypeContrat,
 } from "@/lib/dommage-ouvrage-types"
 import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
+import { buildDoSouscriptionInsurancePayload } from "@/lib/build-do-souscription-payload"
+import { STORAGE_KEYS } from "@/lib/types"
 import { DevoirConseil } from "@/components/DevoirConseil"
 import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
@@ -81,6 +83,7 @@ export function FormulaireDevisDommageOuvrage() {
   const [devoirConseilAccepte, setDevoirConseilAccepte] = useState(false)
   const [siretLoading, setSiretLoading] = useState(false)
   const [siretError, setSiretError] = useState<string | null>(null)
+  const [eligibleOnlineDo, setEligibleOnlineDo] = useState(false)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -155,7 +158,16 @@ export function FormulaireDevisDommageOuvrage() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || "Erreur")
-      if (typeof window !== "undefined") localStorage.removeItem(STORAGE_KEY)
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(STORAGE_KEY)
+        const doPayload = buildDoSouscriptionInsurancePayload(data as DevisDommageOuvrageData, coutTotal)
+        setEligibleOnlineDo(!!doPayload)
+        if (doPayload) {
+          sessionStorage.setItem(STORAGE_KEYS.doSouscription, JSON.stringify(doPayload))
+        } else {
+          sessionStorage.removeItem(STORAGE_KEYS.doSouscription)
+        }
+      }
       setSubmitted(true)
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Erreur lors de l'envoi")
@@ -171,14 +183,39 @@ export function FormulaireDevisDommageOuvrage() {
         <p className="text-black mb-4">
           Votre demande de devis dommage ouvrage a bien été enregistrée. Notre équipe vous transmettra le prix définitif sous 24h après étude de votre dossier.
         </p>
-        <div className="bg-[#F5E8E3] border border-[#E8D5CF] rounded-xl p-4 mb-6">
+        <div className="bg-[#dbeafe] border border-[#E8D5CF] rounded-xl p-4 mb-6">
           <p className="font-semibold text-black mb-2">Prochaines étapes :</p>
           <ol className="text-black text-sm space-y-1 list-decimal list-inside">
-            <li>Le devis sera ajouté manuellement à votre espace client</li>
-            <li>Signature électronique du contrat (Yousign)</li>
-            <li>Validation et paiement par virement bancaire (Mollie)</li>
+            {eligibleOnlineDo ? (
+              <>
+                <li>Création de compte et souscription en ligne (contrat plateforme, paiement sécurisé)</li>
+                <li>Signature et documents selon votre dossier</li>
+              </>
+            ) : (
+              <>
+                <li>Le devis sera ajouté manuellement à votre espace client</li>
+                <li>Signature électronique du contrat (Yousign)</li>
+                <li>Validation et paiement par virement bancaire (Mollie)</li>
+              </>
+            )}
           </ol>
+          {!eligibleOnlineDo ? (
+            <p className="text-sm text-black mt-3">
+              La souscription en ligne avec paiement immédiat nécessite un <strong>SIRET à 14 chiffres</strong> et un coût
+              de travaux renseigné. Sinon, notre équipe vous recontacte sous 24h.
+            </p>
+          ) : null}
         </div>
+        {eligibleOnlineDo ? (
+          <div className="mb-6">
+            <Link
+              href="/souscription-dommage-ouvrage"
+              className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#2563eb] text-white font-semibold hover:bg-[#1d4ed8] transition"
+            >
+              Finaliser la souscription en ligne
+            </Link>
+          </div>
+        ) : null}
         <p className="text-sm text-black mb-2">
           Coût prévisionnel déclaré : <strong>{coutTotal.toLocaleString("fr-FR")} €</strong>
         </p>
@@ -198,10 +235,10 @@ export function FormulaireDevisDommageOuvrage() {
           </p>
         )}
         <div className="flex gap-4">
-          <Link href="/" className="text-[#C65D3B] font-medium hover:underline">
+          <Link href="/" className="text-[#2563eb] font-medium hover:underline">
             Retour à l&apos;accueil
           </Link>
-          <Link href="/devis" className="text-[#C65D3B] font-medium hover:underline">
+          <Link href="/devis" className="text-[#2563eb] font-medium hover:underline">
             Devis décennale BTP
           </Link>
         </div>
@@ -226,7 +263,7 @@ export function FormulaireDevisDommageOuvrage() {
               aria-label={`Étape ${s.id}: ${s.label}`}
               onClick={() => setStep(s.id)}
               className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition ${
-                step === s.id ? "bg-[#C65D3B] text-white" : "bg-[#e4e4e4] border border-[#d4d4d4] text-black font-medium hover:border-[#C65D3B]/50"
+                step === s.id ? "bg-[#2563eb] text-white" : "bg-[#e4e4e4] border border-[#d4d4d4] text-black font-medium hover:border-[#2563eb]/50"
               }`}
             >
               {s.id}. {s.label}
@@ -234,7 +271,7 @@ export function FormulaireDevisDommageOuvrage() {
           ))}
         </div>
         <div className="h-1.5 bg-[#e4e4e4] rounded-full overflow-hidden" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={STEPS.length} aria-label="Progression">
-          <div className="h-full bg-[#C65D3B] rounded-full transition-all duration-300" style={{ width: `${(step / STEPS.length) * 100}%` }} />
+          <div className="h-full bg-[#2563eb] rounded-full transition-all duration-300" style={{ width: `${(step / STEPS.length) * 100}%` }} />
         </div>
       </div>
 
@@ -297,7 +334,7 @@ export function FormulaireDevisDommageOuvrage() {
                         }
                       }}
                       disabled={(data.siret || "").replace(/\s/g, "").length !== 14 || siretLoading}
-                      className="bg-[#C65D3B] text-white px-5 py-3.5 rounded-xl hover:bg-[#B04F2F] disabled:bg-[#d4d4d4] font-semibold shrink-0 transition-all"
+                      className="bg-[#2563eb] text-white px-5 py-3.5 rounded-xl hover:bg-[#1d4ed8] disabled:bg-[#d4d4d4] font-semibold shrink-0 transition-all"
                     >
                       {siretLoading ? "..." : "Remplir"}
                     </button>
@@ -402,7 +439,7 @@ export function FormulaireDevisDommageOuvrage() {
                   id="moSouscripteur"
                   checked={data.maitreOuvrageEstSouscripteur ?? true}
                   onChange={(e) => update("maitreOuvrageEstSouscripteur", e.target.checked)}
-                  className="w-5 h-5 rounded border-[#d4d4d4] text-[#C65D3B]"
+                  className="w-5 h-5 rounded border-[#d4d4d4] text-[#2563eb]"
                 />
                 <label htmlFor="moSouscripteur" className="text-black font-semibold cursor-pointer">
                   Le maître d&apos;ouvrage est le souscripteur
@@ -586,7 +623,7 @@ export function FormulaireDevisDommageOuvrage() {
                         name="destination"
                         checked={data.destinationConstruction === d}
                         onChange={() => update("destinationConstruction", d)}
-                        className="text-[#C65D3B]"
+                        className="text-[#2563eb]"
                       />
                       <span className="text-black capitalize">{d === "exploitation_directe" ? "Exploitation directe" : d}</span>
                     </label>
@@ -599,7 +636,7 @@ export function FormulaireDevisDommageOuvrage() {
                     type="checkbox"
                     checked={data.operationClosCouvert ?? false}
                     onChange={(e) => update("operationClosCouvert", e.target.checked)}
-                    className="w-5 h-5 rounded text-[#C65D3B]"
+                    className="w-5 h-5 rounded text-[#2563eb]"
                   />
                   <span>Opération clos et couvert</span>
                 </label>
@@ -608,7 +645,7 @@ export function FormulaireDevisDommageOuvrage() {
                     type="checkbox"
                     checked={data.habitationPrincipaleSecondaire ?? true}
                     onChange={(e) => update("habitationPrincipaleSecondaire", e.target.checked)}
-                    className="w-5 h-5 rounded text-[#C65D3B]"
+                    className="w-5 h-5 rounded text-[#2563eb]"
                   />
                   <span>Habitation principale ou secondaire</span>
                 </label>
@@ -617,7 +654,7 @@ export function FormulaireDevisDommageOuvrage() {
                     type="checkbox"
                     checked={data.piscines ?? false}
                     onChange={(e) => update("piscines", e.target.checked)}
-                    className="w-5 h-5 rounded text-[#C65D3B]"
+                    className="w-5 h-5 rounded text-[#2563eb]"
                   />
                   <span>Piscine(s)</span>
                 </label>
@@ -626,7 +663,7 @@ export function FormulaireDevisDommageOuvrage() {
                     type="checkbox"
                     checked={data.photovoltaiques ?? false}
                     onChange={(e) => update("photovoltaiques", e.target.checked)}
-                    className="w-5 h-5 rounded text-[#C65D3B]"
+                    className="w-5 h-5 rounded text-[#2563eb]"
                   />
                   <span>Photovoltaïques</span>
                 </label>
@@ -668,7 +705,7 @@ export function FormulaireDevisDommageOuvrage() {
                       type="checkbox"
                       checked={data.garages ?? false}
                       onChange={(e) => update("garages", e.target.checked)}
-                      className="w-5 h-5 rounded text-[#C65D3B]"
+                      className="w-5 h-5 rounded text-[#2563eb]"
                     />
                     <span>Garages</span>
                   </label>
@@ -677,7 +714,7 @@ export function FormulaireDevisDommageOuvrage() {
                       type="checkbox"
                       checked={data.caves ?? false}
                       onChange={(e) => update("caves", e.target.checked)}
-                      className="w-5 h-5 rounded text-[#C65D3B]"
+                      className="w-5 h-5 rounded text-[#2563eb]"
                     />
                     <span>Caves</span>
                   </label>
@@ -753,11 +790,11 @@ export function FormulaireDevisDommageOuvrage() {
                   id="tvaIncluse"
                   checked={data.coutTvaIncluse ?? true}
                   onChange={(e) => update("coutTvaIncluse", e.target.checked)}
-                  className="w-5 h-5 rounded text-[#C65D3B]"
+                  className="w-5 h-5 rounded text-[#2563eb]"
                 />
                 <label htmlFor="tvaIncluse" className="text-black font-semibold cursor-pointer">Les montants comprennent la TVA</label>
               </div>
-              <div className="bg-[#F5E8E3] border border-[#E8D5CF] rounded-xl p-4">
+              <div className="bg-[#dbeafe] border border-[#E8D5CF] rounded-xl p-4">
                 <p className="font-semibold text-black">
                   Coût total : {coutTotal.toLocaleString("fr-FR")} € {data.coutTvaIncluse ? "TTC" : "HT"}
                 </p>
@@ -766,12 +803,12 @@ export function FormulaireDevisDommageOuvrage() {
                 const tarif = calculerTarifDommageOuvrage(coutTotal, { garanties: (data.garanties as GarantieSouhaitee[]) ?? [] })
                 if (!tarif) return null
                 return (
-                  <div className="bg-[#FEF3F0] border border-[#C65D3B]/30 rounded-xl p-5">
+                  <div className="bg-[#eff6ff] border border-[#2563eb]/30 rounded-xl p-5">
                     <p className="font-semibold text-black mb-1">Prix approximatif (estimation)</p>
                     {tarif.remiseWeb != null && tarif.remiseWeb > 0 && (
                       <p className="text-sm text-emerald-800 font-medium mb-1">Remise web 5 % sur DO : -{tarif.remiseWeb.toLocaleString("fr-FR")} €</p>
                     )}
-                    <p className="text-2xl font-bold text-[#C65D3B]">{tarif.primeAnnuelle.toLocaleString("fr-FR")} € <span className="text-base font-normal text-black">/ an</span></p>
+                    <p className="text-2xl font-bold text-[#2563eb]">{tarif.primeAnnuelle.toLocaleString("fr-FR")} € <span className="text-base font-normal text-black">/ an</span></p>
                     {tarif.supplementTrc != null && tarif.supplementTrc > 0 && (
                       <p className="text-sm text-black mt-1">Dont TRC (+0,4 % du chantier) : +{tarif.supplementTrc.toLocaleString("fr-FR")} €</p>
                     )}
@@ -811,7 +848,7 @@ export function FormulaireDevisDommageOuvrage() {
                         name={key}
                         checked={(data[key] as boolean) === true}
                         onChange={() => update(key, true)}
-                        className="text-[#C65D3B]"
+                        className="text-[#2563eb]"
                       />
                       <span>Oui</span>
                     </label>
@@ -821,7 +858,7 @@ export function FormulaireDevisDommageOuvrage() {
                         name={key}
                         checked={(data[key] as boolean) === false}
                         onChange={() => update(key, false)}
-                        className="text-[#C65D3B]"
+                        className="text-[#2563eb]"
                       />
                       <span>Non</span>
                     </label>
@@ -854,7 +891,7 @@ export function FormulaireDevisDommageOuvrage() {
                         name={key}
                         checked={(data[key] as boolean) === true}
                         onChange={() => update(key, true)}
-                        className="text-[#C65D3B]"
+                        className="text-[#2563eb]"
                       />
                       <span>Oui</span>
                     </label>
@@ -864,7 +901,7 @@ export function FormulaireDevisDommageOuvrage() {
                         name={key}
                         checked={(data[key] as boolean) === false}
                         onChange={() => update(key, false)}
-                        className="text-[#C65D3B]"
+                        className="text-[#2563eb]"
                       />
                       <span>Non</span>
                     </label>
@@ -883,7 +920,7 @@ export function FormulaireDevisDommageOuvrage() {
                   name="existants"
                   checked={(data.travauxNeufsAvecExistants as boolean) === true}
                   onChange={() => update("travauxNeufsAvecExistants", true)}
-                  className="text-[#C65D3B]"
+                  className="text-[#2563eb]"
                 />
                 <span>Oui</span>
               </label>
@@ -893,7 +930,7 @@ export function FormulaireDevisDommageOuvrage() {
                   name="existants"
                   checked={(data.travauxNeufsAvecExistants as boolean) === false}
                   onChange={() => update("travauxNeufsAvecExistants", false)}
-                  className="text-[#C65D3B]"
+                  className="text-[#2563eb]"
                 />
                 <span>Non</span>
               </label>
@@ -919,7 +956,7 @@ export function FormulaireDevisDommageOuvrage() {
                     type="checkbox"
                     checked={(data.garanties as GarantieSouhaitee[])?.includes(g)}
                     onChange={() => toggleGarantie(g)}
-                    className="w-5 h-5 rounded text-[#C65D3B]"
+                    className="w-5 h-5 rounded text-[#2563eb]"
                   />
                   <span>{GARANTIES_LABELS[g]}</span>
                 </label>
@@ -930,7 +967,7 @@ export function FormulaireDevisDommageOuvrage() {
                     type="checkbox"
                     checked={data.dommagesBiensEquipement ?? false}
                     onChange={(e) => update("dommagesBiensEquipement", e.target.checked)}
-                    className="w-5 h-5 rounded text-[#C65D3B]"
+                    className="w-5 h-5 rounded text-[#2563eb]"
                   />
                   <span>Dommages aux biens d&apos;équipement</span>
                 </label>
@@ -939,7 +976,7 @@ export function FormulaireDevisDommageOuvrage() {
                     type="checkbox"
                     checked={data.dommagesExistants ?? false}
                     onChange={(e) => update("dommagesExistants", e.target.checked)}
-                    className="w-5 h-5 rounded text-[#C65D3B]"
+                    className="w-5 h-5 rounded text-[#2563eb]"
                   />
                   <span>Dommages aux existants</span>
                 </label>
@@ -950,7 +987,7 @@ export function FormulaireDevisDommageOuvrage() {
                     type="checkbox"
                     checked={data.reprisePasse ?? false}
                     onChange={(e) => update("reprisePasse", e.target.checked)}
-                    className="w-5 h-5 rounded text-[#C65D3B] mt-0.5"
+                    className="w-5 h-5 rounded text-[#2563eb] mt-0.5"
                   />
                   <div>
                     <span>Reprise du passé (jusqu&apos;à 2 ans en arrière)</span>
@@ -958,7 +995,7 @@ export function FormulaireDevisDommageOuvrage() {
                       Couverture rétroactive des ouvrages jusqu&apos;à 2 ans en arrière, sous réserve de non sinistralité. <strong>Soumis à étude</strong> — pas de tarification immédiate.
                     </p>
                     {data.reprisePasse && (
-                      <p className="text-sm text-[#C65D3B] font-medium mt-1">
+                      <p className="text-sm text-[#2563eb] font-medium mt-1">
                         Vous devrez fournir une attestation de non sinistralité sur la période (à déposer dans votre espace client GED).
                       </p>
                     )}
@@ -1027,7 +1064,7 @@ export function FormulaireDevisDommageOuvrage() {
                     type="checkbox"
                     checked={data.maitriseOeuvreConception ?? false}
                     onChange={(e) => update("maitriseOeuvreConception", e.target.checked)}
-                    className="w-5 h-5 rounded text-[#C65D3B]"
+                    className="w-5 h-5 rounded text-[#2563eb]"
                   />
                   <span>Conception</span>
                 </label>
@@ -1036,7 +1073,7 @@ export function FormulaireDevisDommageOuvrage() {
                     type="checkbox"
                     checked={data.maitriseOeuvreDirectionSurveillance ?? false}
                     onChange={(e) => update("maitriseOeuvreDirectionSurveillance", e.target.checked)}
-                    className="w-5 h-5 rounded text-[#C65D3B]"
+                    className="w-5 h-5 rounded text-[#2563eb]"
                   />
                   <span>Direction et surveillance</span>
                 </label>
@@ -1045,7 +1082,7 @@ export function FormulaireDevisDommageOuvrage() {
                     type="checkbox"
                     checked={data.maitriseOeuvreMissionComplete ?? true}
                     onChange={(e) => update("maitriseOeuvreMissionComplete", e.target.checked)}
-                    className="w-5 h-5 rounded text-[#C65D3B]"
+                    className="w-5 h-5 rounded text-[#2563eb]"
                   />
                   <span>Mission complète</span>
                 </label>
@@ -1056,7 +1093,7 @@ export function FormulaireDevisDommageOuvrage() {
                   id="moRealiseTravaux"
                   checked={data.maitreOuvrageRealiseTravaux ?? false}
                   onChange={(e) => update("maitreOuvrageRealiseTravaux", e.target.checked)}
-                  className="w-5 h-5 rounded text-[#C65D3B]"
+                  className="w-5 h-5 rounded text-[#2563eb]"
                 />
                 <label htmlFor="moRealiseTravaux" className="text-black font-semibold cursor-pointer">Le maître d&apos;ouvrage réalise-t-il lui-même certains travaux ?</label>
               </div>
@@ -1083,7 +1120,7 @@ export function FormulaireDevisDommageOuvrage() {
                   id="ct"
                   checked={data.controleTechnique ?? true}
                   onChange={(e) => update("controleTechnique", e.target.checked)}
-                  className="w-5 h-5 rounded text-[#C65D3B]"
+                  className="w-5 h-5 rounded text-[#2563eb]"
                 />
                 <label htmlFor="ct" className="text-black font-semibold cursor-pointer">Intervention d&apos;un contrôleur technique</label>
               </div>
@@ -1121,7 +1158,7 @@ export function FormulaireDevisDommageOuvrage() {
                   id="etudeSol"
                   checked={data.etudeSol ?? true}
                   onChange={(e) => update("etudeSol", e.target.checked)}
-                  className="w-5 h-5 rounded text-[#C65D3B]"
+                  className="w-5 h-5 rounded text-[#2563eb]"
                 />
                 <label htmlFor="etudeSol" className="text-black font-semibold cursor-pointer">Une étude de sol est réalisée</label>
               </div>
@@ -1183,7 +1220,7 @@ export function FormulaireDevisDommageOuvrage() {
           type="button"
           onClick={() => setStep((s) => Math.max(1, s - 1))}
           disabled={step === 1}
-          className="px-6 py-3 rounded-xl border border-[#d4d4d4] font-semibold text-black disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#C65D3B]/50 transition bg-[#e4e4e4]"
+          className="px-6 py-3 rounded-xl border border-[#d4d4d4] font-semibold text-black disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#2563eb]/50 transition bg-[#e4e4e4]"
         >
           ← Précédent
         </button>
@@ -1191,7 +1228,7 @@ export function FormulaireDevisDommageOuvrage() {
           <button
             type="button"
             onClick={() => setStep((s) => Math.min(5, s + 1))}
-            className="px-6 py-3 bg-[#C65D3B] text-white rounded-xl hover:bg-[#B04F2F] font-semibold transition"
+            className="px-6 py-3 bg-[#2563eb] text-white rounded-xl hover:bg-[#1d4ed8] font-semibold transition"
           >
             Suivant →
           </button>
@@ -1199,7 +1236,7 @@ export function FormulaireDevisDommageOuvrage() {
           <button
             type="submit"
             disabled={!devoirConseilAccepte}
-            className="px-8 py-3 bg-[#C65D3B] text-white rounded-xl hover:bg-[#B04F2F] font-semibold transition shadow-md shadow-[#C65D3B]/20 disabled:bg-[#d4d4d4] disabled:cursor-not-allowed"
+            className="px-8 py-3 bg-[#2563eb] text-white rounded-xl hover:bg-[#1d4ed8] font-semibold transition shadow-md shadow-[#2563eb]/20 disabled:bg-[#d4d4d4] disabled:cursor-not-allowed"
           >
             Envoyer ma demande
           </button>

@@ -16,7 +16,7 @@ export default function Error({
   }, [error])
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3] flex flex-col">
+    <main className="min-h-screen bg-slate-50 flex flex-col">
       <Header />
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-16">
         <p className="text-6xl mb-4" aria-hidden>⚠️</p>
@@ -27,13 +27,13 @@ export default function Error({
         <div className="flex flex-wrap gap-4 justify-center">
           <button
             onClick={reset}
-            className="bg-[#C65D3B] text-white px-8 py-3 rounded-xl hover:bg-[#B04F2F] transition font-medium"
+            className="bg-[#2563eb] text-white px-8 py-3 rounded-xl hover:bg-[#1d4ed8] transition font-medium"
           >
             Réessayer
           </button>
           <Link
             href="/"
-            className="border-2 border-[#C65D3B] text-[#C65D3B] px-8 py-3 rounded-xl hover:bg-[#FEF3F0] transition font-medium"
+            className="border-2 border-[#2563eb] text-[#2563eb] px-8 py-3 rounded-xl hover:bg-[#eff6ff] transition font-medium"
           >
             Accueil
           </Link>

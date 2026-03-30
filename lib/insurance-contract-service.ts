@@ -1,0 +1,320 @@
+import type { InsuranceContract } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
+import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
+import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import { calculateRiskScore, requiresManualReview } from "@/lib/risk-scoring"
+import { renderContractPdf } from "@/lib/insurance-contract-pdf"
+import { SITE_URL } from "@/lib/site-url"
+
+export type CreateContractInput = {
+  productType: "decennale" | "do"
+  clientName: string
+  siret?: string
+  address: string
+  activities?: string[]
+  projectName?: string
+  projectAddress?: string
+  constructionNature?: string
+  premium: number
+  userId?: string
+  missingDocuments?: boolean
+  companyAgeMonths?: number | null
+}
+
+export async function logContractAction(
+  contractId: string,
+  action: string,
+  details?: Record<string, unknown>,
+  actorEmail?: string
+) {
+  await prisma.contractActionLog.create({
+    data: {
+      contractId,
+      action,
+      details: details ? JSON.stringify(details) : undefined,
+      actorEmail,
+    },
+  })
+}
+
+export async function createInsuranceContract(input: CreateContractInput) {
+  const risk = calculateRiskScore({
+    siret: input.siret,
+    activities: input.activities,
+    missingDocuments: input.missingDocuments,
+    companyAgeMonths: input.companyAgeMonths,
+  })
+
+  if (risk.reject) {
+    const contractNumber = await allocateNextContractNumber(input.productType)
+    const c = await prisma.insuranceContract.create({
+      data: {
+        contractNumber,
+        userId: input.userId,
+        productType: input.productType,
+        clientName: input.clientName,
+        siret: input.siret,
+        address: input.address,
+        activitiesJson: input.activities?.length ? JSON.stringify(input.activities) : undefined,
+        projectName: input.projectName,
+        projectAddress: input.projectAddress,
+        constructionNature: input.constructionNature,
+        premium: input.premium,
+        status: CONTRACT_STATUS.rejected,
+        riskScore: risk.score,
+        rejectedReason: risk.reasons.join("; "),
+      },
+    })
+    await logContractAction(c.id, "created_rejected", { risk })
+    return { contract: c, risk }
+  }
+
+  const contractNumber = await allocateNextContractNumber(input.productType)
+  const status = requiresManualReview(risk.score)
+    ? CONTRACT_STATUS.pending_validation
+    : CONTRACT_STATUS.approved
+
+  const c = await prisma.insuranceContract.create({
+    data: {
+      contractNumber,
+      userId: input.userId,
+      productType: input.productType,
+      clientName: input.clientName,
+      siret: input.siret ?? undefined,
+      address: input.address,
+      activitiesJson: input.activities?.length ? JSON.stringify(input.activities) : undefined,
+      projectName: input.projectName,
+      projectAddress: input.projectAddress,
+      constructionNature: input.constructionNature,
+      premium: input.premium,
+      status,
+      riskScore: risk.score,
+      insurerValidatedAt: status === CONTRACT_STATUS.approved ? new Date() : null,
+    },
+  })
+
+  await logContractAction(c.id, "created", { status, riskScore: risk.score })
+
+  const baseUrl = `${SITE_URL}/api/contracts/${c.id}/pdf`
+  for (const type of ["quote", "policy"] as const) {
+    await prisma.contractStoredDocument.upsert({
+      where: {
+        contractId_type: { contractId: c.id, type },
+      },
+      create: { contractId: c.id, type, url: `${baseUrl}/${type}` },
+      update: { url: `${baseUrl}/${type}` },
+    })
+  }
+
+  return { contract: c, risk }
+}
+
+export async function approveInsuranceContract(contractId: string, actorEmail: string) {
+  const c = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
+  if (!c) throw new Error("NOT_FOUND")
+  if (c.status !== CONTRACT_STATUS.pending_validation) {
+    throw new Error("INVALID_STATE")
+  }
+  const updated = await prisma.insuranceContract.update({
+    where: { id: contractId },
+    data: {
+      status: CONTRACT_STATUS.approved,
+      insurerValidatedAt: new Date(),
+    },
+  })
+  await logContractAction(contractId, "approved", {}, actorEmail)
+  return updated
+}
+
+export async function rejectInsuranceContract(contractId: string, reason: string, actorEmail: string) {
+  const c = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
+  if (!c) throw new Error("NOT_FOUND")
+  if (c.status === CONTRACT_STATUS.active) {
+    throw new Error("INVALID_STATE")
+  }
+  const updated = await prisma.insuranceContract.update({
+    where: { id: contractId },
+    data: {
+      status: CONTRACT_STATUS.rejected,
+      rejectedReason: reason,
+    },
+  })
+  await logContractAction(contractId, "rejected", { reason }, actorEmail)
+  return updated
+}
+
+function addYears(d: Date, years: number): Date {
+  const x = new Date(d)
+  x.setFullYear(x.getFullYear() + years)
+  return x
+}
+
+/** Tolérance ~1 centime pour arrondis Mollie / float. */
+const PREMIUM_PAYMENT_EPS = 0.02
+
+export function premiumMatchesMollieAmount(contractPremium: number, paidAmount: number): boolean {
+  const exp = Math.round(contractPremium * 100) / 100
+  const got = Math.round(paidAmount * 100) / 100
+  return Math.abs(exp - got) <= PREMIUM_PAYMENT_EPS
+}
+
+async function generatePostPaymentPdfs(contractId: string, fresh: InsuranceContract): Promise<void> {
+  const certBytes = await renderContractPdf(fresh, "certificate")
+  const invBytes = await renderContractPdf(fresh, "invoice")
+  const baseUrl = `${SITE_URL}/api/contracts/${contractId}/pdf`
+  await prisma.contractStoredDocument.deleteMany({
+    where: { contractId, type: { in: ["certificate", "invoice"] } },
+  })
+  await prisma.contractStoredDocument.createMany({
+    data: [
+      { contractId, type: "certificate", url: `${baseUrl}/certificate` },
+      { contractId, type: "invoice", url: `${baseUrl}/invoice` },
+    ],
+  })
+  await logContractAction(contractId, "pdfs_generated", {
+    certificateBytes: certBytes.byteLength,
+    invoiceBytes: invBytes.byteLength,
+  })
+}
+
+/** Si paiement enregistré mais PDF attestation/facture absents (retry webhook ou panne). */
+export async function ensurePostPaymentPdfsIfMissing(contractId: string): Promise<void> {
+  const c = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
+  if (!c || c.status !== CONTRACT_STATUS.active || !c.paidAt) return
+  const hasCert = await prisma.contractStoredDocument.findFirst({
+    where: { contractId, type: "certificate" },
+  })
+  if (hasCert) return
+  const fresh = await prisma.insuranceContract.findUniqueOrThrow({ where: { id: contractId } })
+  try {
+    await generatePostPaymentPdfs(contractId, fresh)
+  } catch (e) {
+    console.error("[ensurePostPaymentPdfsIfMissing]", e)
+    await logContractAction(contractId, "pdf_generation_failed", {
+      message: e instanceof Error ? e.message : String(e),
+    })
+  }
+}
+
+export type ProcessInsurancePaymentResult =
+  | { ok: true; contract: InsuranceContract; idempotent: boolean }
+  | {
+      ok: false
+      error:
+        | "NOT_FOUND"
+        | "INVALID_STATE_FOR_PAYMENT"
+        | "AMOUNT_MISMATCH"
+        | "PDF_GENERATION_FAILED"
+    }
+
+export async function processInsuranceContractPaymentSuccess(
+  contractId: string,
+  molliePaymentId: string,
+  amount: number
+): Promise<ProcessInsurancePaymentResult> {
+  const existing = await prisma.contractLifecyclePayment.findUnique({
+    where: { molliePaymentId },
+  })
+  if (existing?.status === "paid") {
+    const c = await prisma.insuranceContract.findUnique({ where: { id: existing.contractId } })
+    if (c) {
+      await ensurePostPaymentPdfsIfMissing(c.id)
+      return { ok: true, contract: c, idempotent: true }
+    }
+  }
+
+  const c = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
+  if (!c) return { ok: false, error: "NOT_FOUND" }
+
+  if (c.status === CONTRACT_STATUS.active && c.paidAt) {
+    await ensurePostPaymentPdfsIfMissing(c.id)
+    return { ok: true, contract: c, idempotent: true }
+  }
+
+  if (c.status !== CONTRACT_STATUS.approved) {
+    return { ok: false, error: "INVALID_STATE_FOR_PAYMENT" }
+  }
+
+  if (!premiumMatchesMollieAmount(c.premium, amount)) {
+    await logContractAction(contractId, "payment_amount_mismatch", {
+      molliePaymentId,
+      expectedPremium: c.premium,
+      paidAmount: amount,
+    })
+    return { ok: false, error: "AMOUNT_MISMATCH" }
+  }
+
+  const paidAt = new Date()
+  const validFrom = paidAt
+  const validUntil =
+    c.productType === "do"
+      ? addYears(paidAt, 10)
+      : addYears(paidAt, 1)
+
+  await prisma.$transaction(async (tx) => {
+    await tx.contractLifecyclePayment.upsert({
+      where: { molliePaymentId },
+      create: {
+        contractId,
+        molliePaymentId,
+        amount,
+        status: "paid",
+        paidAt,
+      },
+      update: {
+        status: "paid",
+        paidAt,
+      },
+    })
+
+    await tx.insuranceContract.update({
+      where: { id: contractId },
+      data: {
+        status: CONTRACT_STATUS.active,
+        paidAt,
+        validFrom,
+        validUntil,
+      },
+    })
+
+    await tx.contractActionLog.create({
+      data: {
+        contractId,
+        action: "payment_paid",
+        details: JSON.stringify({ molliePaymentId, amount }),
+      },
+    })
+  })
+
+  const fresh = await prisma.insuranceContract.findUniqueOrThrow({ where: { id: contractId } })
+
+  try {
+    await generatePostPaymentPdfs(contractId, fresh)
+  } catch (e) {
+    console.error("[insurance-contract] PDF generation:", e)
+    await logContractAction(contractId, "pdf_generation_failed", {
+      message: e instanceof Error ? e.message : String(e),
+    })
+    return { ok: false, error: "PDF_GENERATION_FAILED" }
+  }
+
+  return { ok: true, contract: fresh, idempotent: false }
+}
+
+/**
+ * Contrôle que les PDF se génèrent (modèles OK). Ne met pas à jour `ContractStoredDocument`
+ * ni les fichiers distants — pour un vrai rafraîchissement stocké, compléter avec la même
+ * logique que `generatePostPaymentPdfs` / devis–CP.
+ */
+export async function regenerateContractPdfs(contractId: string, actorEmail: string) {
+  const c = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
+  if (!c) throw new Error("NOT_FOUND")
+  for (const t of ["quote", "policy", "certificate", "invoice"] as const) {
+    try {
+      await renderContractPdf(c, t)
+    } catch {
+      /* cert / invoice requièrent paiement + validation */
+    }
+  }
+  await logContractAction(contractId, "pdfs_regenerated", {}, actorEmail)
+}

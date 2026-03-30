@@ -64,4 +64,30 @@ test.describe("Parcours devis → paiement → attestation", () => {
     await expect(page.locator("h1")).toContainText("confidentialité")
     await expect(page.getByRole("heading", { name: /RGPD/ })).toBeVisible()
   })
+
+  test("Devis avec préremplissage métier (?metier=plombier)", async ({ page }) => {
+    await page.goto("/devis?metier=plombier")
+    await expect(page.locator("h1")).toContainText("Demande de devis décennale")
+    await expect(page.getByText("Plomberie sanitaire")).toBeVisible()
+  })
+
+  test("Page assurance décennale métier — lien devis avec query metier", async ({ page }) => {
+    await page.goto("/assurance-decennale/plombier")
+    const link = page.getByRole("link", { name: /Devis Plombier en 3 minutes/i })
+    await expect(link).toHaveAttribute("href", /metier=plombier/)
+  })
+
+  test("API verify JSON minimal sans detail", async ({ request }) => {
+    const res = await request.get("/api/verify/OPT-DEC-2099-0001")
+    expect(res.ok()).toBeTruthy()
+    const data = (await res.json()) as Record<string, unknown>
+    expect(data).toHaveProperty("valid")
+    expect(data).toHaveProperty("displayStatus")
+    expect(data).not.toHaveProperty("clientName")
+  })
+
+  test("Souscription DO sans brouillon session → retour devis DO", async ({ page }) => {
+    await page.goto("/souscription-dommage-ouvrage")
+    await expect(page).toHaveURL(/devis-dommage-ouvrage/, { timeout: 15000 })
+  })
 })

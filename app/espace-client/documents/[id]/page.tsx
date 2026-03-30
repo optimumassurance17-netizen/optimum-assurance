@@ -154,7 +154,7 @@ export default function DocumentPage() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
         <p className="text-[#171717]">Chargement...</p>
       </main>
     )
@@ -162,11 +162,11 @@ export default function DocumentPage() {
 
   if (!document) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3]">
+      <main className="min-h-screen bg-slate-50">
         <Header />
         <div className="max-w-2xl mx-auto px-6 py-12 text-center">
           <p className="text-[#171717] mb-6">Document introuvable</p>
-          <Link href="/espace-client" className="text-[#C65D3B] hover:underline">
+          <Link href="/espace-client" className="text-[#2563eb] hover:underline">
             Retour à l&apos;espace client
           </Link>
         </div>
@@ -175,7 +175,7 @@ export default function DocumentPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <div className="print:hidden">
         <Header />
       </div>
@@ -207,7 +207,7 @@ export default function DocumentPage() {
         )}
 
         <div className="flex flex-wrap justify-between items-center gap-3 mb-6 print:hidden">
-          <Link href="/espace-client" className="text-[#C65D3B] hover:underline">
+          <Link href="/espace-client" className="text-[#2563eb] hover:underline">
             ← Retour
           </Link>
           <div className="flex gap-3">
@@ -230,11 +230,11 @@ export default function DocumentPage() {
               </button>
             )}
             {resiliationRequested && (
-              <span className="text-sm text-amber-600 font-medium">Demande de résiliation envoyée</span>
+              <span className="text-sm font-medium text-blue-700">Demande de résiliation envoyée</span>
             )}
             <button
               onClick={handlePrint}
-              className="bg-[#C65D3B] text-white px-6 py-2 rounded-xl hover:bg-[#B04F2F] font-medium"
+              className="bg-[#2563eb] text-white px-6 py-2 rounded-xl hover:bg-[#1d4ed8] font-medium"
             >
               Imprimer / PDF
             </button>

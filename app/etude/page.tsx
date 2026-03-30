@@ -66,25 +66,25 @@ export default function EtudePage() {
 
   if (!donnees && !submitted) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3]">
+      <main className="min-h-screen bg-slate-50">
         <Header />
         <div className="max-w-2xl mx-auto px-6 py-12">
-          <div className="bg-white border border-[#F0EBE3] rounded-2xl p-8 shadow-sm text-center">
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center">
             <p className="text-[#171717] mb-4">
               Aucune donnée enregistrée. Pour une étude « sinistres », passez d&apos;abord par le{" "}
-              <Link href="/devis" className="text-[#C65D3B] font-medium hover:underline">
+              <Link href="/devis" className="text-[#2563eb] font-medium hover:underline">
                 formulaire de devis
               </Link>
               .
             </p>
             <p className="text-[#171717] mb-6 text-sm">
               Votre activité n&apos;est pas dans la liste ?{" "}
-              <Link href="/etude/domaine" className="text-[#C65D3B] font-medium hover:underline">
+              <Link href="/etude/domaine" className="text-[#2563eb] font-medium hover:underline">
                 Demande d&apos;étude pour une activité non listée
               </Link>
               .
             </p>
-            <Link href="/devis" className="inline-block bg-[#C65D3B] text-white py-3 px-6 rounded-xl hover:bg-[#B04F2F] transition font-medium">
+            <Link href="/devis" className="inline-block bg-[#2563eb] text-white py-3 px-6 rounded-xl hover:bg-[#1d4ed8] transition font-medium">
               Aller au devis décennale
             </Link>
           </div>
@@ -95,10 +95,10 @@ export default function EtudePage() {
 
   if (submitted) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3]">
+      <main className="min-h-screen bg-slate-50">
         <Header />
         <div className="max-w-2xl mx-auto px-6 py-12">
-          <div className="bg-white border border-[#F0EBE3] rounded-2xl p-8 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -108,7 +108,7 @@ export default function EtudePage() {
             <p className="text-[#171717] text-center mb-8">
               Votre dossier a bien été transmis à notre équipe. Un conseiller vous contactera sous 24 h avec une proposition personnalisée à l&apos;adresse {email}.
             </p>
-            <Link href="/" className="block w-full bg-[#C65D3B] text-white py-3 rounded-xl hover:bg-[#B04F2F] transition text-center font-medium">
+            <Link href="/" className="block w-full bg-[#2563eb] text-white py-3 rounded-xl hover:bg-[#1d4ed8] transition text-center font-medium">
               Retour à l&apos;accueil
             </Link>
           </div>
@@ -118,13 +118,13 @@ export default function EtudePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="max-w-2xl mx-auto px-6 py-12">
-        <div className="bg-white border border-[#F0EBE3] rounded-2xl p-8 shadow-sm">
-          <div className="w-16 h-16 bg-[#F5E8E3] rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-8 h-8 text-[#C65D3B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+          <div className="w-16 h-16 bg-[#dbeafe] rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8 text-[#2563eb]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
@@ -138,7 +138,7 @@ export default function EtudePage() {
           </p>
 
           {donnees && (
-            <div className="bg-[#F9F6F0] rounded-xl p-4 mb-6 text-sm">
+            <div className="bg-slate-100 rounded-xl p-4 mb-6 text-sm">
               <p className="font-medium text-black mb-2">Récapitulatif :</p>
               <ul className="text-[#171717] space-y-1">
                 <li>SIRET : {donnees.siret || "—"}</li>
@@ -163,20 +163,20 @@ export default function EtudePage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="votre@email.com"
                 required
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]"
               />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-[#C65D3B] text-white py-3 rounded-xl hover:bg-[#B04F2F] disabled:bg-gray-400 transition font-medium"
+              className="w-full bg-[#2563eb] text-white py-3 rounded-xl hover:bg-[#1d4ed8] disabled:bg-gray-400 transition font-medium"
             >
               {submitting ? "Envoi..." : "Transmettre ma demande"}
             </button>
           </form>
 
-          <Link href="/" className="block text-center text-[#171717] text-sm mt-6 hover:text-[#C65D3B]">
+          <Link href="/" className="block text-center text-[#171717] text-sm mt-6 hover:text-[#2563eb]">
             Retour à l&apos;accueil
           </Link>
         </div>

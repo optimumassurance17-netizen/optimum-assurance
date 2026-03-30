@@ -11,7 +11,7 @@ export default function GlobalError({
 }) {
   return (
     <html lang="fr">
-      <body style={{ fontFamily: "system-ui, sans-serif", margin: 0, padding: "2rem", background: "#FDF8F3", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <body style={{ fontFamily: "system-ui, sans-serif", margin: 0, padding: "2rem", background: "#f8fafc", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
         <h1 style={{ color: "#0a0a0a", marginBottom: "1rem" }}>Une erreur critique est survenue</h1>
         {process.env.NODE_ENV === "development" && error?.message && (
           <p style={{ color: "#333333", fontSize: "0.85rem", marginBottom: "1rem", maxWidth: "400px", wordBreak: "break-word" }}>
@@ -24,7 +24,7 @@ export default function GlobalError({
         <button
           onClick={reset}
           style={{
-            background: "#C65D3B",
+            background: "#2563eb",
             color: "white",
             border: "none",
             padding: "12px 24px",
@@ -40,7 +40,7 @@ export default function GlobalError({
           href="/"
           style={{
             marginTop: "1rem",
-            color: "#C65D3B",
+            color: "#2563eb",
             textDecoration: "underline",
             fontSize: "0.9rem",
           }}

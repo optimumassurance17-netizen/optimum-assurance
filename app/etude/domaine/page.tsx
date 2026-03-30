@@ -60,10 +60,10 @@ export default function EtudeDomainePage() {
 
   if (submitted) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3]">
+      <main className="min-h-screen bg-slate-50">
         <Header />
         <div className="max-w-2xl mx-auto px-6 py-12">
-          <div className="bg-white border border-[#F0EBE3] rounded-2xl p-8 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -76,7 +76,7 @@ export default function EtudeDomainePage() {
             </p>
             <Link
               href="/"
-              className="block w-full bg-[#C65D3B] text-white py-3 rounded-xl hover:bg-[#B04F2F] transition text-center font-medium"
+              className="block w-full bg-[#2563eb] text-white py-3 rounded-xl hover:bg-[#1d4ed8] transition text-center font-medium"
             >
               Retour à l&apos;accueil
             </Link>
@@ -87,25 +87,25 @@ export default function EtudeDomainePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
         <nav className="text-sm text-[#333333] mb-6">
-          <Link href="/" className="text-[#C65D3B] hover:underline">
+          <Link href="/" className="text-[#2563eb] hover:underline">
             Accueil
           </Link>
           <span className="mx-2">/</span>
-          <Link href="/devis" className="text-[#C65D3B] hover:underline">
+          <Link href="/devis" className="text-[#2563eb] hover:underline">
             Devis décennale
           </Link>
           <span className="mx-2">/</span>
           <span className="text-[#0a0a0a]">Activité non listée</span>
         </nav>
 
-        <div className="bg-white border border-[#F0EBE3] rounded-2xl p-6 sm:p-8 shadow-sm">
-          <div className="w-14 h-14 bg-[#F5E8E3] rounded-full flex items-center justify-center mb-5">
-            <svg className="w-7 h-7 text-[#C65D3B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+          <div className="w-14 h-14 bg-[#dbeafe] rounded-full flex items-center justify-center mb-5">
+            <svg className="w-7 h-7 text-[#2563eb]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -124,7 +124,7 @@ export default function EtudeDomainePage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label htmlFor="desc" className="block text-sm font-medium text-black mb-2">
-                Décrivez votre activité ou métier <span className="text-[#C65D3B]">*</span>
+                Décrivez votre activité ou métier <span className="text-[#2563eb]">*</span>
               </label>
               <textarea
                 id="desc"
@@ -134,14 +134,14 @@ export default function EtudeDomainePage() {
                 required
                 minLength={MIN_DESCRIPTION}
                 placeholder="Ex. : installation de panneaux solaires sur toiture, rénovation de monuments historiques, activité mixte gros œuvre / second œuvre…"
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]"
               />
               <p className="text-xs text-[#333333] mt-1">Minimum {MIN_DESCRIPTION} caractères.</p>
             </div>
 
             <div>
               <label htmlFor="email-domaine" className="block text-sm font-medium text-black mb-2">
-                Email professionnel <span className="text-[#C65D3B]">*</span>
+                Email professionnel <span className="text-[#2563eb]">*</span>
               </label>
               <input
                 id="email-domaine"
@@ -150,7 +150,7 @@ export default function EtudeDomainePage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#e4e4e4] text-[#0a0a0a]"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none bg-[#e4e4e4] text-[#0a0a0a]"
               />
             </div>
 
@@ -164,7 +164,7 @@ export default function EtudeDomainePage() {
                 value={telephone}
                 onChange={(e) => setTelephone(e.target.value)}
                 autoComplete="tel"
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#e4e4e4] text-[#0a0a0a]"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none bg-[#e4e4e4] text-[#0a0a0a]"
               />
             </div>
 
@@ -178,7 +178,7 @@ export default function EtudeDomainePage() {
                   type="text"
                   value={raisonSociale}
                   onChange={(e) => setRaisonSociale(e.target.value)}
-                  className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#e4e4e4] text-[#0a0a0a]"
+                  className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none bg-[#e4e4e4] text-[#0a0a0a]"
                 />
               </div>
               <div>
@@ -191,7 +191,7 @@ export default function EtudeDomainePage() {
                   inputMode="numeric"
                   value={siret}
                   onChange={(e) => setSiret(e.target.value.replace(/\D/g, "").slice(0, 14))}
-                  className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#e4e4e4] text-[#0a0a0a] font-mono"
+                  className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none bg-[#e4e4e4] text-[#0a0a0a] font-mono"
                 />
               </div>
             </div>
@@ -207,7 +207,7 @@ export default function EtudeDomainePage() {
                 value={chiffreAffairesApprox}
                 onChange={(e) => setChiffreAffairesApprox(e.target.value.replace(/[^\d\s]/g, ""))}
                 placeholder="Ex. 120000"
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#e4e4e4] text-[#0a0a0a]"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none bg-[#e4e4e4] text-[#0a0a0a]"
               />
             </div>
 
@@ -221,7 +221,7 @@ export default function EtudeDomainePage() {
                 onChange={(e) => setCommentaire(e.target.value)}
                 rows={3}
                 placeholder="Contexte du chantier, zone d'intervention, contraintes particulières…"
-                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B]/50 focus:border-[#C65D3B] outline-none bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]"
+                className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none bg-[#e4e4e4] text-[#0a0a0a] placeholder:text-[#404040]"
               />
             </div>
 
@@ -230,7 +230,7 @@ export default function EtudeDomainePage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-[#C65D3B] text-white py-3.5 rounded-xl hover:bg-[#B04F2F] disabled:bg-gray-400 transition font-semibold"
+              className="w-full bg-[#2563eb] text-white py-3.5 rounded-xl hover:bg-[#1d4ed8] disabled:bg-gray-400 transition font-semibold"
             >
               {submitting ? "Envoi en cours…" : "Envoyer ma demande d&apos;étude"}
             </button>
@@ -240,7 +240,7 @@ export default function EtudeDomainePage() {
             En envoyant ce formulaire, vous acceptez d&apos;être recontacté par Optimum Assurance concernant votre demande.
           </p>
 
-          <Link href="/devis" className="block text-center text-[#C65D3B] text-sm mt-6 font-medium hover:underline">
+          <Link href="/devis" className="block text-center text-[#2563eb] text-sm mt-6 font-medium hover:underline">
             ← Retour au devis décennale
           </Link>
         </div>

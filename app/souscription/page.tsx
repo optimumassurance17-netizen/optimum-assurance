@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
 import { Header } from "@/components/Header"
 import { Stepper } from "@/components/Stepper"
 import { Breadcrumb } from "@/components/Breadcrumb"
@@ -11,13 +12,16 @@ import type { DevisData, SouscriptionData } from "@/lib/types"
 import { STORAGE_KEYS } from "@/lib/types"
 import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
+import { runInsuranceContractStepAfterSouscription } from "@/lib/souscription-insurance-contract"
 
 export default function SouscriptionPage() {
   const router = useRouter()
+  const { status: sessionStatus } = useSession()
   const [devis, setDevis] = useState<DevisData | null>(null)
   const [devoirConseilAccepte, setDevoirConseilAccepte] = useState(false)
   const [siretLoading, setSiretLoading] = useState(false)
   const [siretError, setSiretError] = useState<string | null>(null)
+  const [insuranceLoading, setInsuranceLoading] = useState(false)
   const [form, setForm] = useState<Partial<SouscriptionData>>({
     raisonSociale: "",
     adresse: "",
@@ -108,19 +112,35 @@ export default function SouscriptionPage() {
       civilite: (form.civilite as "M" | "Mme" | "Mlle") || "M",
     }
     sessionStorage.setItem(STORAGE_KEYS.souscription, JSON.stringify(souscription))
+
+    if (sessionStatus === "authenticated") {
+      setInsuranceLoading(true)
+      try {
+        const ins = await runInsuranceContractStepAfterSouscription(souscription)
+        if (ins.outcome === "mollie_redirect") {
+          window.location.href = ins.checkoutUrl
+          return
+        }
+      } finally {
+        setInsuranceLoading(false)
+      }
+      router.push("/signature")
+      return
+    }
+
     router.push("/creer-compte")
   }
 
   if (!devis) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+      <main className="min-h-screen bg-slate-50/80 flex items-center justify-center">
         <p className="text-[#171717]">Chargement...</p>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50/80">
       <Header />
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
@@ -150,7 +170,7 @@ export default function SouscriptionPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="p-4 bg-[#f5f5f5] rounded-2xl border border-[#d4d4d4]">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm">
             <label className="block mb-2 font-medium text-black">
               SIRET — Remplir depuis l&apos;API Sirene
             </label>
@@ -167,7 +187,7 @@ export default function SouscriptionPage() {
                 type="button"
                 onClick={remplirDepuisSirene}
                 disabled={((form.siret ?? devis.siret) || "").replace(/\D/g, "").length !== 14 || siretLoading}
-                className="bg-[#C65D3B] text-white px-5 py-3 rounded-xl hover:bg-[#B04F2F] disabled:bg-[#d4d4d4] font-semibold shrink-0 transition-all"
+                className="bg-blue-600 text-white px-5 py-3 rounded-xl hover:bg-[#1d4ed8] disabled:bg-slate-300 font-semibold shrink-0 transition-all"
               >
                 {siretLoading ? "..." : "Remplir"}
               </button>
@@ -320,19 +340,25 @@ export default function SouscriptionPage() {
 
           <button
             type="submit"
-            disabled={!devoirConseilAccepte}
-            className="w-full bg-[#C65D3B] text-white py-4 rounded-xl hover:bg-[#B04F2F] transition font-medium disabled:bg-[#d4d4d4] disabled:cursor-not-allowed disabled:hover:bg-[#d4d4d4]"
+            disabled={!devoirConseilAccepte || insuranceLoading || sessionStatus === "loading"}
+            className="w-full rounded-xl bg-blue-600 py-4 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:bg-slate-300"
           >
-            Continuer vers la signature
+            {sessionStatus === "loading"
+              ? "Vérification de la session…"
+              : insuranceLoading
+                ? "Création du contrat…"
+                : sessionStatus === "authenticated"
+                  ? "Continuer (compte connecté)"
+                  : "Continuer vers la signature"}
           </button>
         </form>
 
         <p className="text-center text-sm text-[#171717] mt-6 space-x-4">
-          <Link href="/devis" className="text-[#C65D3B] hover:underline">
+          <Link href="/devis" className="text-blue-600 hover:underline">
             Modifier mon devis
           </Link>
           <span>·</span>
-          <Link href="/faq#souscription" className="text-[#C65D3B] hover:underline">
+          <Link href="/faq#souscription" className="text-blue-600 hover:underline">
             FAQ parcours souscription
           </Link>
         </p>

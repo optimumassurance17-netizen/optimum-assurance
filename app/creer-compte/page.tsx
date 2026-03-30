@@ -6,12 +6,16 @@ import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
 import { Stepper } from "@/components/Stepper"
+import type { DoSouscriptionInsurancePayload, SouscriptionData } from "@/lib/types"
 import { STORAGE_KEYS } from "@/lib/types"
-import type { SouscriptionData } from "@/lib/types"
+import { doPayloadToSouscriptionShim } from "@/lib/build-do-souscription-payload"
+import { isDoSouscriptionPayload, runInsuranceContractStepAfterSouscription } from "@/lib/souscription-insurance-contract"
 
 export default function CreerComptePage() {
   const router = useRouter()
-  const [data, setData] = useState<(SouscriptionData & { signature?: string }) | null>(null)
+  const [data, setData] = useState<
+    (SouscriptionData & { signature?: string }) | (DoSouscriptionInsurancePayload & { signature?: string }) | null
+  >(null)
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -19,6 +23,19 @@ export default function CreerComptePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    const doRaw = sessionStorage.getItem(STORAGE_KEYS.doSouscription)
+    if (doRaw) {
+      try {
+        const parsed = JSON.parse(doRaw) as DoSouscriptionInsurancePayload
+        if (parsed.productType === "do" && parsed.email) {
+          sessionStorage.setItem(STORAGE_KEYS.souscription, JSON.stringify(doPayloadToSouscriptionShim(parsed)))
+          setData(parsed)
+          return
+        }
+      } catch {
+        /* fall through */
+      }
+    }
     const stored =
       sessionStorage.getItem(STORAGE_KEYS.signature) ||
       sessionStorage.getItem(STORAGE_KEYS.souscription)
@@ -77,8 +94,8 @@ export default function CreerComptePage() {
         throw new Error("Compte créé mais connexion échouée")
       }
 
-      // Sauvegarder le devis dans l'espace client (modèle type Optimum)
-      if (data.tarif) {
+      // Sauvegarder le devis dans l'espace client (modèle type Optimum) — parcours décennale uniquement
+      if (!isDoSouscriptionPayload(data) && data.tarif) {
         await fetch("/api/documents/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -111,6 +128,18 @@ export default function CreerComptePage() {
         })
       }
 
+      if (isDoSouscriptionPayload(data)) {
+        sessionStorage.setItem(STORAGE_KEYS.souscription, JSON.stringify(doPayloadToSouscriptionShim(data)))
+      }
+
+      const ins = await runInsuranceContractStepAfterSouscription(
+        isDoSouscriptionPayload(data) ? data : (data as SouscriptionData)
+      )
+      if (ins.outcome === "mollie_redirect") {
+        window.location.href = ins.checkoutUrl
+        return
+      }
+
       router.push("/signature")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur")
@@ -121,14 +150,14 @@ export default function CreerComptePage() {
 
   if (!data) {
     return (
-      <main className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
         <p className="text-[#171717]">Chargement...</p>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="max-w-2xl mx-auto px-6 py-12">
@@ -157,7 +186,7 @@ export default function CreerComptePage() {
               onChange={(e) => setPassword(e.target.value)}
               minLength={8}
               required
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] focus:border-[#C65D3B] outline-none bg-[#e4e4e4]"
+              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] outline-none bg-[#e4e4e4]"
               placeholder="Minimum 8 caractères"
             />
           </div>
@@ -172,7 +201,7 @@ export default function CreerComptePage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               minLength={8}
               required
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#C65D3B] focus:border-[#C65D3B] outline-none bg-[#e4e4e4]"
+              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] outline-none bg-[#e4e4e4]"
             />
           </div>
 
@@ -185,18 +214,21 @@ export default function CreerComptePage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#C65D3B] text-white py-4 rounded-xl hover:bg-[#B04F2F] transition font-medium disabled:bg-[#D4C4BC] disabled:cursor-not-allowed"
+            className="w-full bg-[#2563eb] text-white py-4 rounded-xl hover:bg-[#1d4ed8] transition font-medium disabled:bg-slate-300 disabled:cursor-not-allowed"
           >
             {loading ? "Création en cours..." : "Créer mon espace et continuer"}
           </button>
         </form>
 
         <p className="text-center text-sm text-[#171717] mt-6 space-x-4">
-          <Link href="/souscription" className="text-[#C65D3B] hover:underline">
+          <Link
+            href={data && isDoSouscriptionPayload(data) ? "/souscription-dommage-ouvrage" : "/souscription"}
+            className="text-[#2563eb] hover:underline"
+          >
             Retour à la souscription
           </Link>
           <span>·</span>
-          <Link href="/faq#souscription" className="text-[#C65D3B] hover:underline">
+          <Link href="/faq#souscription" className="text-[#2563eb] hover:underline">
             FAQ parcours
           </Link>
         </p>

@@ -1,0 +1,46 @@
+"use client"
+
+import Link from "next/link"
+import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+
+type Props = {
+  contractId: string
+  contractNumber: string
+  status: string
+  className?: string
+}
+
+const linkClass =
+  "text-sm text-[#2563eb] font-medium hover:underline"
+
+/**
+ * Liens PDF authentifiés (session) — pas de doublon d’URL ailleurs.
+ */
+export function InsuranceContractPdfLinks({ contractId, contractNumber, status, className }: Props) {
+  const base = `/api/contracts/${contractId}/pdf`
+  const isActive = status === CONTRACT_STATUS.active
+
+  return (
+    <div className={`flex flex-wrap gap-x-4 gap-y-2 items-center ${className ?? ""}`}>
+      <a href={`${base}/quote`} target="_blank" rel="noreferrer" className={linkClass}>
+        Devis PDF
+      </a>
+      <a href={`${base}/policy`} target="_blank" rel="noreferrer" className={linkClass}>
+        Conditions (CP)
+      </a>
+      {isActive ? (
+        <>
+          <a href={`${base}/certificate`} target="_blank" rel="noreferrer" className={linkClass}>
+            Attestation
+          </a>
+          <a href={`${base}/invoice`} target="_blank" rel="noreferrer" className={linkClass}>
+            Facture
+          </a>
+        </>
+      ) : null}
+      <Link href={`/verify/${encodeURIComponent(contractNumber)}`} className={linkClass}>
+        Vérification publique
+      </Link>
+    </div>
+  )
+}

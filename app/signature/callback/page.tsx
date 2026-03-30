@@ -1,40 +1,20 @@
 "use client"
 
-import { Suspense, useEffect, useState } from "react"
+import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/Header"
 
 function SignatureCallbackContent() {
   const searchParams = useSearchParams()
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
-
-  useEffect(() => {
-    const success = searchParams.get("success") === "1"
-    const error = searchParams.get("error") === "1"
-
-    if (error) {
-      setStatus("error")
-      return
-    }
-
-    if (success) {
-      setStatus("success")
-      return
-    }
-
-    setStatus("success")
-  }, [searchParams])
+  const error = searchParams.get("error") === "1"
+  const status: "success" | "error" = error ? "error" : "success"
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3]">
+    <main className="min-h-screen bg-slate-50">
       <Header />
 
       <div className="max-w-xl mx-auto px-6 py-16 text-center">
-        {status === "loading" && (
-          <p className="text-[#171717]">Vérification de votre signature...</p>
-        )}
-
         {status === "success" && (
           <>
             <div className="w-20 h-20 bg-[#E8F5E9] rounded-full flex items-center justify-center mx-auto mb-6">
@@ -60,7 +40,7 @@ function SignatureCallbackContent() {
             </p>
             <Link
               href="/mandat-sepa"
-              className="inline-block bg-[#C65D3B] text-white px-8 py-3 rounded-xl hover:bg-[#B04F2F] transition font-medium"
+              className="inline-block bg-[#2563eb] text-white px-8 py-3 rounded-xl hover:bg-[#1d4ed8] transition font-medium"
             >
               IBAN et mandat SEPA →
             </Link>
@@ -92,7 +72,7 @@ function SignatureCallbackContent() {
             </p>
             <Link
               href="/signature"
-              className="inline-block bg-[#C65D3B] text-white px-8 py-3 rounded-xl hover:bg-[#B04F2F] transition font-medium"
+              className="inline-block bg-[#2563eb] text-white px-8 py-3 rounded-xl hover:bg-[#1d4ed8] transition font-medium"
             >
               Réessayer
             </Link>
@@ -106,7 +86,7 @@ function SignatureCallbackContent() {
 export default function SignatureCallbackPage() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Header />
         <p className="text-[#171717]">Chargement...</p>
       </main>

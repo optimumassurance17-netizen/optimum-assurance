@@ -8,14 +8,13 @@ import { Header } from "@/components/Header"
 export default function DevisResumePage() {
   const params = useParams()
   const router = useRouter()
-  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading")
+  const token = params.token as string | undefined
+  const [status, setStatus] = useState<"loading" | "ok" | "error">(() =>
+    token ? "loading" : "error",
+  )
 
   useEffect(() => {
-    const token = params.token as string
-    if (!token) {
-      setStatus("error")
-      return
-    }
+    if (!token) return
 
     const load = async () => {
       try {
@@ -35,15 +34,15 @@ export default function DevisResumePage() {
     }
 
     load()
-  }, [params.token, router])
+  }, [token, router])
 
   if (status === "error") {
     return (
-      <main className="min-h-screen bg-[#FDF8F3]">
+      <main className="min-h-screen bg-slate-50">
         <Header />
         <div className="max-w-xl mx-auto px-6 py-16 text-center">
           <p className="text-lg text-[#171717] mb-6">Ce lien a expiré ou n&apos;est plus valide.</p>
-          <Link href="/devis" className="text-[#C65D3B] font-semibold hover:underline">
+          <Link href="/devis" className="text-[#2563eb] font-semibold hover:underline">
             Recommencer un devis
           </Link>
         </div>
@@ -52,7 +51,7 @@ export default function DevisResumePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center">
       <Header />
       <p className="text-[#171717]">Chargement de votre devis...</p>
     </main>

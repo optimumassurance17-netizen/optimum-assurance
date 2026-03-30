@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { CHATBOT_SYSTEM_PROMPT, findBestFaqMatch } from "@/lib/chatbot-context"
+import { rateLimitResponse } from "@/lib/rate-limit"
 
 const FALLBACK_REPLY =
   "Je n'ai pas trouvé de réponse précise à votre question. Pour une réponse personnalisée, contactez-nous par email à contact@optimum-assurance.fr — nous répondons sous 24h. Vous pouvez aussi consulter notre FAQ : /faq"
@@ -13,6 +14,9 @@ function getFaqReply(message: string): string | null {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = await rateLimitResponse(req, "chat")
+  if (limited) return limited
+
   try {
     const { message } = await req.json()
     if (!message || typeof message !== "string") {

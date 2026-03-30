@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
           html: `
             <p>Bonjour,</p>
             <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
-            <p><a href="${resetUrl}" style="color:#C65D3B;font-weight:bold">Cliquez ici pour réinitialiser</a></p>
+            <p><a href="${resetUrl}" style="color:#2563eb;font-weight:bold">Cliquez ici pour réinitialiser</a></p>
             <p>Ce lien expire dans 1 heure. Si vous n'avez pas fait cette demande, ignorez cet email.</p>
             <p>— Optimum Assurance</p>
           `,

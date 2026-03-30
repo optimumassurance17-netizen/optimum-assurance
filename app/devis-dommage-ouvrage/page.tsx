@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { FormulaireDevisDommageOuvrage } from "@/components/FormulaireDevisDommageOuvrage"
+import { seoBreadcrumbListNode, seoJsonLdGraph, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
 
@@ -18,26 +19,30 @@ export const metadata = {
   },
 }
 
-const breadcrumbJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Accueil", item: baseUrl },
-    { "@type": "ListItem", position: 2, name: "Devis dommage ouvrage", item: `${baseUrl}/devis-dommage-ouvrage` },
-  ],
-}
+const doDevisJsonLd = seoJsonLdGraph([
+  seoBreadcrumbListNode([
+    { name: "Accueil", path: "/" },
+    { name: "Devis dommage ouvrage", path: "/devis-dommage-ouvrage" },
+  ]),
+  seoWebPageNode({
+    path: "/devis-dommage-ouvrage",
+    name: "Devis assurance dommage ouvrage en ligne",
+    description:
+      "Formulaire dommage ouvrage pour maîtres d'ouvrage : auto-construction, clos et couvert, devis sous 24h après étude.",
+  }),
+])
 
 export default function DevisDommageOuvragePage() {
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(doDevisJsonLd) }} />
       <Header />
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-14 text-black">
         <Breadcrumb items={[{ label: "Accueil", href: "/" }, { label: "Devis dommage ouvrage" }]} />
 
         <div className="mb-8">
-          <span className="inline-block bg-[#FEF3F0] text-[#C65D3B] text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+          <span className="inline-block bg-[#eff6ff] text-[#2563eb] text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
             Dommage ouvrage — Devis en ligne
           </span>
           <h1 className="text-2xl md:text-3xl font-bold text-black mb-3">
@@ -46,7 +51,7 @@ export default function DevisDommageOuvragePage() {
           <p className="text-black leading-relaxed mb-4">
             L&apos;assurance dommage ouvrage est obligatoire pour les maîtres d&apos;ouvrage (constructeurs, promoteurs). Elle couvre les dommages matériels affectant la solidité du bâtiment pendant la construction et jusqu&apos;à 10 ans après réception.
           </p>
-          <div className="bg-[#FEF3F0] border border-[#C65D3B]/20 rounded-xl p-5">
+          <div className="bg-[#eff6ff] border border-[#2563eb]/20 rounded-xl p-5">
             <p className="font-semibold text-black mb-2">✓ Ce que nous acceptons :</p>
             <ul className="text-black space-y-1 text-sm">
               <li>• <strong>Auto-construction</strong> — Particuliers faisant construire pour leur compte (habitation, locatif, revente)</li>
@@ -61,13 +66,13 @@ export default function DevisDommageOuvragePage() {
           </p>
           </div>
           <div className="flex flex-wrap gap-2 mt-4">
-            <Link href="/dommage-ouvrage/auto-construction" className="text-sm text-[#C65D3B] font-medium hover:underline">Auto-construction</Link>
+            <Link href="/dommage-ouvrage/auto-construction" className="text-sm text-[#2563eb] font-medium hover:underline">Auto-construction</Link>
             <span className="text-[#333333]">•</span>
-            <Link href="/dommage-ouvrage/particulier" className="text-sm text-[#C65D3B] font-medium hover:underline">Particulier</Link>
+            <Link href="/dommage-ouvrage/particulier" className="text-sm text-[#2563eb] font-medium hover:underline">Particulier</Link>
             <span className="text-[#333333]">•</span>
-            <Link href="/dommage-ouvrage/constructeur-promoteur" className="text-sm text-[#C65D3B] font-medium hover:underline">Constructeur</Link>
+            <Link href="/dommage-ouvrage/constructeur-promoteur" className="text-sm text-[#2563eb] font-medium hover:underline">Constructeur</Link>
             <span className="text-[#333333]">•</span>
-            <Link href="/dommage-ouvrage/clos-et-couvert" className="text-sm text-[#C65D3B] font-medium hover:underline">Clos et couvert</Link>
+            <Link href="/dommage-ouvrage/clos-et-couvert" className="text-sm text-[#2563eb] font-medium hover:underline">Clos et couvert</Link>
           </div>
         </div>
 

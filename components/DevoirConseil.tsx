@@ -4,20 +4,31 @@ import Link from "next/link"
 
 type Produit = "decennale" | "dommage-ouvrage"
 
-const TEXTE_DECENNALE = {
+type TexteDevoirConseil = {
+  titre: string
+  contenu: string
+  lienCgv: string
+  lienAttestations: string
+  lienFaq: string
+  lienGuide: string
+}
+
+const TEXTE_DECENNALE: TexteDevoirConseil = {
   titre: "Devoir de conseil",
   contenu:
     "En souscrivant, vous confirmez avoir pris connaissance des garanties, exclusions et franchises de votre contrat. Le devis a été établi selon les informations que vous avez fournies. Si votre situation change ou si vous avez des questions, contactez-nous avant de signer.",
   lienCgv: "/cgv",
+  lienAttestations: "/conditions-attestations",
   lienFaq: "/faq",
   lienGuide: "/guides/obligation-decennale",
 }
 
-const TEXTE_DO = {
+const TEXTE_DO: TexteDevoirConseil = {
   titre: "Devoir de conseil",
   contenu:
     "En validant cette demande, vous confirmez avoir pris connaissance des garanties, exclusions et conditions de l'assurance dommage ouvrage. Le devis sera établi selon les informations fournies. Consultez nos guides et la FAQ si vous avez des questions avant de vous engager.",
   lienCgv: "/cgv",
+  lienAttestations: "/conditions-attestations",
   lienFaq: "/faq",
   lienGuide: "/guides/obligation-dommage-ouvrage",
 }
@@ -45,7 +56,7 @@ export function DevoirConseil({
 
   return (
     <div
-      className={`rounded-xl border-2 ${checked ? "border-[#C65D3B]/40 bg-[#FEF3F0]/50" : "border-amber-300 bg-amber-50/80"} p-4`}
+      className={`rounded-xl border-2 ${checked ? "border-[#2563eb]/40 bg-[#eff6ff]/50" : "border-slate-300 bg-slate-50"} p-4`}
       role="region"
       aria-labelledby={`${checkboxId}-title`}
     >
@@ -55,7 +66,7 @@ export function DevoirConseil({
           id={checkboxId}
           checked={checked}
           onChange={(e) => onCheckedChange(e.target.checked)}
-          className="mt-1 w-5 h-5 shrink-0 rounded text-[#C65D3B] focus:ring-[#C65D3B]"
+          className="mt-1 w-5 h-5 shrink-0 rounded text-[#2563eb] focus:ring-[#2563eb]"
           aria-describedby={`${checkboxId}-desc`}
         />
         <div className="min-w-0">
@@ -66,15 +77,19 @@ export function DevoirConseil({
             {texte.contenu}
           </p>
           <p className="mt-2 text-sm">
-            <Link href={texte.lienCgv} className="text-[#C65D3B] font-medium hover:underline">
+            <Link href={texte.lienCgv} className="text-[#2563eb] font-medium hover:underline">
               CGV
             </Link>
             {" · "}
-            <Link href={texte.lienFaq} className="text-[#C65D3B] font-medium hover:underline">
+            <Link href={texte.lienAttestations} className="text-[#2563eb] font-medium hover:underline">
+              Attestations
+            </Link>
+            {" · "}
+            <Link href={texte.lienFaq} className="text-[#2563eb] font-medium hover:underline">
               FAQ
             </Link>
             {" · "}
-            <Link href={texte.lienGuide} className="text-[#C65D3B] font-medium hover:underline">
+            <Link href={texte.lienGuide} className="text-[#2563eb] font-medium hover:underline">
               Guide obligation
             </Link>
           </p>

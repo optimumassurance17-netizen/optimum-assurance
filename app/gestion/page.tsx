@@ -360,7 +360,7 @@ export default function GestionPage() {
       <main className="gestion-app min-h-screen bg-[#1a1a1a] flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">{error}</p>
-          <Link href="/" className="text-[#C65D3B] hover:underline">Retour</Link>
+          <Link href="/" className="text-[#2563eb] hover:underline">Retour</Link>
         </div>
       </main>
     )
@@ -445,7 +445,7 @@ export default function GestionPage() {
             <section className="grid grid-cols-2 md:grid-cols-6 gap-4">
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">Clients</p>
-                <Link href="#clients" className="text-2xl font-bold text-white hover:text-[#C65D3B] block">
+                <Link href="#clients" className="text-2xl font-bold text-white hover:text-[#2563eb] block">
                   {filterUsersBySearch(data.users, searchQuery).length}
                 </Link>
               </div>
@@ -467,13 +467,13 @@ export default function GestionPage() {
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">Frais avenant en attente</p>
-                <p className="text-2xl font-bold text-amber-400">{data.avenantFees?.length ?? 0}</p>
+                <p className="text-2xl font-bold text-sky-400">{data.avenantFees?.length ?? 0}</p>
                 <p className="text-xs text-gray-200 mt-1">{(data.avenantFees?.reduce((a, f) => a + f.amount, 0) ?? 0).toLocaleString("fr-FR")} € à reporter</p>
               </div>
               {(data.devisEtudeLeads?.length ?? 0) > 0 && (
                 <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                   <p className="text-gray-200 text-sm">Demandes d&apos;étude</p>
-                  <p className="text-2xl font-bold text-[#C65D3B]">{data.devisEtudeLeads?.length ?? 0}</p>
+                  <p className="text-2xl font-bold text-[#2563eb]">{data.devisEtudeLeads?.length ?? 0}</p>
                   <p className="text-xs text-gray-200 mt-1">À traiter (remise personnalisée)</p>
                 </div>
               )}
@@ -520,7 +520,7 @@ export default function GestionPage() {
                         <td className="p-3 sm:p-4">
                           <Link
                             href={`/gestion/clients/${u.id}`}
-                            className="text-[#C65D3B] hover:text-[#B04F2F] text-sm font-medium"
+                            className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium"
                           >
                             Fiche client →
                           </Link>
@@ -535,11 +535,11 @@ export default function GestionPage() {
         )}
 
         {data?.resiliationRequests && data.resiliationRequests.length > 0 && (
-          <div className="p-4 bg-amber-900/30 border border-amber-700 rounded-xl">
-            <p className="font-medium text-amber-300">Demandes de résiliation en attente</p>
+          <div className="p-4 bg-blue-950/40 border border-blue-600 rounded-xl">
+            <p className="font-medium text-sky-300">Demandes de résiliation en attente</p>
             <div className="mt-3 space-y-2">
               {data.resiliationRequests.map((r) => (
-                <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 bg-[#252525] rounded-lg p-3 border border-amber-700/50">
+                <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 bg-[#252525] rounded-lg p-3 border border-blue-600/50">
                   <div>
                     <span className="font-mono text-white">{r.document.numero}</span>
                     <span className="text-gray-200 ml-2">— {r.document.user.raisonSociale || r.document.user.email}</span>
@@ -601,12 +601,12 @@ export default function GestionPage() {
           </div>
         )}
         {data && (data.avenantFees?.length ?? 0) > 0 && (
-          <div className="p-4 bg-amber-900/30 border border-amber-700 rounded-xl">
-            <p className="font-medium text-amber-300">Frais d&apos;avenant en attente</p>
-            <p className="text-sm text-amber-200 mt-1">
+          <div className="p-4 bg-blue-950/40 border border-blue-600 rounded-xl">
+            <p className="font-medium text-sky-300">Frais d&apos;avenant en attente</p>
+            <p className="text-sm text-sky-200 mt-1">
               {(data.avenantFees?.length ?? 0)} frais à reporter sur le prochain prélèvement ({(data.avenantFees?.reduce((a, f) => a + f.amount, 0) ?? 0).toLocaleString("fr-FR")} € total).
             </p>
-            <p className="text-xs text-amber-200/80 mt-2">
+            <p className="text-xs text-sky-200/80 mt-2">
               Clients : {data.avenantFees?.map((f) => f.user.raisonSociale || f.user.email).join(", ")}
             </p>
           </div>
@@ -635,7 +635,7 @@ export default function GestionPage() {
                       <td className="p-3 sm:p-4">{p.user.raisonSociale || p.user.email}</td>
                       <td className="p-3 sm:p-4">{p.amount.toLocaleString("fr-FR")} €</td>
                       <td className="p-3 sm:p-4">
-                        <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-green-900/50 text-green-300" : "bg-amber-900/50 text-amber-300"}`}>
+                        <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-green-900/50 text-green-300" : "bg-blue-900/50 text-sky-300"}`}>
                           {p.status}
                         </span>
                       </td>
@@ -690,14 +690,14 @@ export default function GestionPage() {
                           d.status === "valide" ? "bg-green-900/50 text-green-300" :
                           d.status === "suspendu" ? "bg-red-900/50 text-red-300" :
                           d.status === "resilie" ? "bg-gray-700 text-gray-200" :
-                          "bg-amber-900/50 text-amber-300"
+                          "bg-blue-900/50 text-sky-300"
                         }`}>
                           {d.status}
                         </span>
                       </td>
                       <td className="p-3 sm:p-4 hidden sm:table-cell">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-3 sm:p-4">
-                        <Link href={`/gestion/documents/${d.id}`} className="text-[#C65D3B] hover:text-[#B04F2F] text-sm mr-2">
+                        <Link href={`/gestion/documents/${d.id}`} className="text-[#2563eb] hover:text-[#1d4ed8] text-sm mr-2">
                           Voir
                         </Link>
                         {d.type === "attestation" && d.status === "valide" && (
@@ -767,7 +767,7 @@ export default function GestionPage() {
                         <span className={`px-2 py-1 rounded text-xs ${
                           d.status === "valide" ? "bg-green-900/50 text-green-300" :
                           d.status === "resilie" ? "bg-gray-700 text-gray-200" :
-                          "bg-amber-900/50 text-amber-300"
+                          "bg-blue-900/50 text-sky-300"
                         }`}>
                           {d.status}
                         </span>
@@ -778,7 +778,7 @@ export default function GestionPage() {
                           <>
                             <button
                               onClick={() => openEditModal(d)}
-                              className="text-amber-400 hover:text-amber-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
+                              className="text-sky-400 hover:text-sky-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
                             >
                               Modifier
                             </button>
@@ -841,7 +841,7 @@ export default function GestionPage() {
                         <td className="p-3 sm:p-4">
                           {lead.email}
                           {estDomaine && (
-                            <span className="ml-2 inline-block text-[10px] uppercase tracking-wide bg-amber-900/50 text-amber-200 px-1.5 py-0.5 rounded">
+                            <span className="ml-2 inline-block text-[10px] uppercase tracking-wide bg-blue-900/50 text-sky-200 px-1.5 py-0.5 rounded">
                               Domaine
                             </span>
                           )}
@@ -857,7 +857,7 @@ export default function GestionPage() {
                               raisonSociale: lead.raisonSociale,
                               primeAnnuelle: "",
                             })}
-                            className="text-[#C65D3B] hover:text-[#B04F2F] text-sm font-medium"
+                            className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium"
                           >
                             Faire une remise
                           </button>
@@ -1075,7 +1075,7 @@ export default function GestionPage() {
             <button
               type="submit"
               disabled={devisDoSubmitting}
-              className="bg-[#C65D3B] text-white px-6 py-2 rounded-xl hover:bg-[#B04F2F] disabled:opacity-50 font-medium"
+              className="bg-[#2563eb] text-white px-6 py-2 rounded-xl hover:bg-[#1d4ed8] disabled:opacity-50 font-medium"
             >
               {devisDoSubmitting ? "Création..." : "Ajouter le devis à l'espace client"}
             </button>
@@ -1109,7 +1109,7 @@ export default function GestionPage() {
                           {matchingUser ? (
                             <span className="text-green-400">✓ Compte existant</span>
                           ) : (
-                            <span className="text-amber-400">Créer le compte</span>
+                            <span className="text-sky-400">Créer le compte</span>
                           )}
                         </td>
                         <td className="p-3 sm:p-4">
@@ -1132,7 +1132,7 @@ export default function GestionPage() {
                                   setToast({ message: err instanceof Error ? err.message : "Erreur", type: "error" })
                                 }
                               }}
-                              className="text-sm text-[#C65D3B] hover:text-[#B04F2F] font-medium min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 py-2 -m-1"
+                              className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 py-2 -m-1"
                             >
                               Créer le compte
                             </button>
@@ -1223,13 +1223,13 @@ export default function GestionPage() {
                 className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
               />
             </div>
-            <p className="text-sm text-amber-400/90">
+            <p className="text-sm text-sky-400/90">
               Frais d&apos;avenant : 60 € — reportés automatiquement sur la prochaine échéance de prélèvement.
             </p>
             <button
               type="submit"
               disabled={avenantSubmitting}
-              className="bg-[#C65D3B] text-white px-6 py-2 rounded-xl hover:bg-[#B04F2F] disabled:opacity-50 font-medium"
+              className="bg-[#2563eb] text-white px-6 py-2 rounded-xl hover:bg-[#1d4ed8] disabled:opacity-50 font-medium"
             >
               {avenantSubmitting ? "Création..." : "Créer l'avenant"}
             </button>
@@ -1274,7 +1274,7 @@ export default function GestionPage() {
                           <td className="p-4">
                             <button
                               onClick={() => openEditModal(d)}
-                              className="text-amber-400 hover:text-amber-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
+                              className="text-sky-400 hover:text-sky-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
                             >
                               Modifier
                             </button>
@@ -1433,7 +1433,7 @@ export default function GestionPage() {
               <button
                 onClick={handleSaveEdit}
                 disabled={editSubmitting}
-                className="px-4 py-2 rounded-lg bg-[#C65D3B] text-white hover:bg-[#B04F2F] disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-50"
               >
                 {editSubmitting ? "Enregistrement..." : "Enregistrer"}
               </button>
@@ -1469,7 +1469,7 @@ export default function GestionPage() {
               </button>
               <button
                 onClick={() => handleStatusChange(resiliationModal.docId, "resilie", resiliationModal.motif)}
-                className="px-4 py-2 rounded-lg bg-[#C65D3B] text-white hover:bg-[#B04F2F]"
+                className="px-4 py-2 rounded-lg bg-[#2563eb] text-white hover:bg-[#1d4ed8]"
               >
                 Confirmer la résiliation
               </button>
@@ -1529,7 +1529,7 @@ export default function GestionPage() {
                   }
                 }}
                 disabled={etudeMiseSubmitting || !etudeMiseModal.primeAnnuelle || Number(etudeMiseModal.primeAnnuelle) <= 0}
-                className="px-4 py-2 rounded-lg bg-[#C65D3B] text-white hover:bg-[#B04F2F] disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-50"
               >
                 {etudeMiseSubmitting ? "Envoi..." : "Envoyer la remise"}
               </button>

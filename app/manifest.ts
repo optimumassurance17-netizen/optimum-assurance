@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/espace-client",
     display: "standalone",
     background_color: "#ffffff",
-    theme_color: "#C65D3B",
+    theme_color: "#2563eb",
     orientation: "portrait-primary",
     scope: "/",
     icons: [
