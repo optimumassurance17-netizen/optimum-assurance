@@ -20,7 +20,7 @@ export function buildHomePageJsonLdGraph() {
     "@type": "InsuranceAgency",
     "@id": `${baseUrl}/#organization`,
     name: "Optimum Assurance",
-    description: `Assurance décennale BTP en ligne. Devis en 3 minutes, attestation immédiate. Plombier, électricien, peintre, maçon. Dès ${EQ_MENSUEL_MIN} €/mois (équivalent, min. 600 €/an). Paiement trimestriel.`,
+    description: `Assurance décennale BTP et dommage ouvrage en ligne. Devis en quelques minutes, attestation pour artisans et entreprises. Plombier, électricien, peintre, maçon… Dès ${EQ_MENSUEL_MIN} €/mois équivalent (min. 600 €/an), prélèvement trimestriel.`,
     url: baseUrl,
     logo: `${baseUrl}/icon-512.png`,
     image: `${baseUrl}/opengraph-image`,

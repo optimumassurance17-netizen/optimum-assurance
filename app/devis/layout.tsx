@@ -12,8 +12,8 @@ import { SITE_URL } from "@/lib/site-url"
 const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
-  title: "Devis assurance décennale BTP en ligne — tarif immédiat",
-  description: `Simulateur décennale : tarif selon votre CA et vos activités. Dès ${EQ_MENSUEL_MIN} €/mois (équivalent), prélèvement trimestriel. Sans engagement.`,
+  title: "Devis assurance décennale BTP gratuit — tarif immédiat en ligne",
+  description: `Simulateur assurance décennale : tarif selon votre chiffre d’affaires et vos activités BTP (plombier, électricien, maçon…). Dès ${EQ_MENSUEL_MIN} €/mois équivalent, prélèvement trimestriel. Sans engagement, 100 % en ligne.`,
   alternates: { canonical: `${baseUrl}/devis` },
   openGraph: {
     url: `${baseUrl}/devis`,

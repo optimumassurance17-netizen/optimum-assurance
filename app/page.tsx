@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { Header } from "@/components/Header"
@@ -34,6 +35,7 @@ const HomeQrSection = dynamic(
     ),
   },
 )
+import { SITE_URL } from "@/lib/site-url"
 import {
   EQ_MENSUEL_MIN,
   EQ_MENSUEL_EXEMPLE_NETTOYAGE_TOITURE,
@@ -52,6 +54,30 @@ import {
 
 const reviewsUrl = process.env.NEXT_PUBLIC_REVIEWS_URL || "/avis"
 const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
+
+export const metadata: Metadata = {
+  title: {
+    absolute:
+      "Assurance décennale BTP en ligne | Devis 3 min & attestation | Optimum Assurance",
+  },
+  description: `Assurance décennale obligatoire (loi Spinetta) : devis en ligne en quelques minutes, attestation pour artisans et entreprises du BTP. Plomberie, électricité, maçonnerie… Dès ${EQ_MENSUEL_MIN} €/mois équivalent, prélèvement trimestriel. Sans engagement.`,
+  alternates: { canonical: SITE_URL },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    title: "Assurance décennale BTP en ligne | Devis et attestation | Optimum Assurance",
+    description: `Devis décennale immédiat, documents conformes, 100 % en ligne. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
+    locale: "fr_FR",
+    siteName: "Optimum Assurance",
+    images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance — assurance décennale BTP" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Assurance décennale BTP en ligne | Optimum Assurance",
+    description: `Devis en quelques minutes, attestation rapide. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
+    images: [`${SITE_URL}/opengraph-image`],
+  },
+}
 
 export default function Home() {
   return (
