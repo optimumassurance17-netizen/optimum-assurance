@@ -79,9 +79,14 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
-    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
-    : {}),
+  verification: {
+    ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+      : {}),
+    other: {
+      "msvalidate.01": "598C36744C75A2CCE965C0F02D9BD0D4",
+    },
+  },
 };
 
 export default function RootLayout({
