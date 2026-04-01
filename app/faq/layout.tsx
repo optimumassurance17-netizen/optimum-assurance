@@ -1,8 +1,9 @@
 import type { Metadata } from "next"
 import { faqs } from "@/lib/faq-data"
 import { seoFaqPageNode, seoJsonLdGraph, seoBreadcrumbListNode, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
+import { SITE_URL } from "@/lib/site-url"
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
   title: "FAQ — assurance décennale, dommage ouvrage, souscription",
@@ -13,6 +14,15 @@ export const metadata: Metadata = {
     url: `${baseUrl}/faq`,
     title: "FAQ | Optimum Assurance",
     description: "Questions fréquentes sur l'assurance décennale et le dommage ouvrage.",
+    locale: "fr_FR",
+    siteName: "Optimum Assurance",
+    type: "website",
+    images: [{ url: `${baseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FAQ | Optimum Assurance",
+    images: [`${baseUrl}/opengraph-image`],
   },
 }
 

@@ -11,10 +11,25 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@react-pdf/renderer", "pdf-lib"],
   outputFileTracingRoot: path.join(process.cwd()),
   experimental: {
+    inlineCss: true,
     optimizePackageImports: ["qrcode.react"],
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
+  },
+  async redirects() {
+    return [
+      {
+        source: "/sitemap",
+        destination: "/sitemap.xml",
+        permanent: true,
+      },
+      {
+        source: "/sitemap/",
+        destination: "/sitemap.xml",
+        permanent: true,
+      },
+    ];
   },
   async headers() {
     return [

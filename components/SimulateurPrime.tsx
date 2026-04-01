@@ -52,7 +52,7 @@ export function SimulateurPrime() {
             <select
               value={activite}
               onChange={(e) => { setResultat(null); setActivite(e.target.value) }}
-              className="mt-2 block w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none transition-all text-[#0a0a0a] font-medium bg-[#e4e4e4]"
+              className="mt-2 block w-full border border-[#d4d4d4] rounded-xl px-4 py-3.5 text-base focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none transition-all text-[#0a0a0a] font-medium bg-[#e4e4e4] touch-manipulation min-h-[48px]"
             >
             {ACTIVITES_AVEC_TARIFS.map((t) => (
               <option key={t.activite} value={t.activite}>
@@ -69,7 +69,7 @@ export function SimulateurPrime() {
         <button
           type="button"
           onClick={calculer}
-          className="w-full rounded-xl bg-blue-600 py-4 font-bold text-white shadow-md shadow-blue-600/20 transition-all hover:bg-blue-700"
+          className="w-full touch-manipulation rounded-xl bg-blue-600 py-4 font-bold text-white shadow-md shadow-blue-600/20 transition-all hover:bg-blue-700"
         >
           Estimer ma prime
         </button>

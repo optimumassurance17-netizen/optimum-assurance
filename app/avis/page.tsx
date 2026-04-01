@@ -1,7 +1,8 @@
 import Link from "next/link"
 import { Header } from "@/components/Header"
+import { SITE_URL } from "@/lib/site-url"
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+const baseUrl = SITE_URL
 
 export const metadata = {
   title: "Avis Clients Assurance Décennale — Note 4,9/5 | Optimum",
@@ -13,6 +14,15 @@ export const metadata = {
     url: `${baseUrl}/avis`,
     title: "Avis Clients | Optimum Assurance",
     description: "Note 4,9/5. Témoignages de plombiers, électriciens, peintres.",
+    locale: "fr_FR",
+    siteName: "Optimum Assurance",
+    type: "website",
+    images: [{ url: `${baseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Avis Clients | Optimum Assurance",
+    images: [`${baseUrl}/opengraph-image`],
   },
 }
 

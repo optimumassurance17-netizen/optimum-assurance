@@ -3,8 +3,9 @@ import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { FormulaireDevisDommageOuvrage } from "@/components/FormulaireDevisDommageOuvrage"
 import { seoBreadcrumbListNode, seoJsonLdGraph, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
+import { SITE_URL } from "@/lib/site-url"
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+const baseUrl = SITE_URL
 
 export const metadata = {
   title: "Devis Dommage Ouvrage en Ligne — Auto-construction | Optimum",
@@ -16,6 +17,15 @@ export const metadata = {
     url: `${baseUrl}/devis-dommage-ouvrage`,
     title: "Devis Dommage Ouvrage | Optimum Assurance",
     description: "Assurance obligatoire maîtres d'ouvrage. Auto-construction, clos et couvert. Devis sous 24h.",
+    locale: "fr_FR",
+    siteName: "Optimum Assurance",
+    type: "website",
+    images: [{ url: `${baseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Devis Dommage Ouvrage | Optimum Assurance",
+    images: [`${baseUrl}/opengraph-image`],
   },
 }
 

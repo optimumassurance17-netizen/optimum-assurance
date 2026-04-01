@@ -90,7 +90,7 @@ export default function Home() {
                 <DelegationLegalLine className="max-w-xl" />
               </div>
               <div className="flex flex-wrap gap-2 mb-6">
-                <span className="inline-flex items-center rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm">
+                <span className="inline-flex items-center rounded-full bg-emerald-800 px-3 py-1.5 text-xs font-bold text-white shadow-sm">
                   Attestation rapide
                 </span>
                 <span className="inline-flex items-center rounded-full bg-slate-900 px-3 py-1.5 text-xs font-bold text-white">
@@ -464,7 +464,7 @@ export default function Home() {
           <p className="text-[#171717] text-center mb-12 text-sm">
             Transparence totale — pas de frais cachés
           </p>
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="overflow-x-auto overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0 rounded-xl border border-slate-200/90 bg-white shadow-sm touch-pan-x">
             <table className="w-full text-sm min-w-[500px]">
               <thead>
                 <tr className="border-b-2 border-blue-600">

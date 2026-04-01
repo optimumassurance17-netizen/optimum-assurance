@@ -2,8 +2,9 @@ import { MetadataRoute } from "next"
 import { METIERS_SEO } from "@/lib/metiers-seo"
 import { DO_SEO } from "@/lib/dommage-ouvrage-seo"
 import { GUIDES_SEO } from "@/lib/guides-seo"
+import { SITE_URL } from "@/lib/site-url"
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+const baseUrl = SITE_URL
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const metiers = METIERS_SEO.map((m) => ({
@@ -52,5 +53,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/etude`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
     { url: `${baseUrl}/etude/domaine`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.45 },
     { url: `${baseUrl}/creer-compte`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.35 },
+    { url: `${baseUrl}/droits-personnes`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.25 },
+    { url: `${baseUrl}/mandat-sepa`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.25 },
+    { url: `${baseUrl}/mot-de-passe-oublie`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
   ]
 }

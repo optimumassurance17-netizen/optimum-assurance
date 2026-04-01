@@ -3,6 +3,8 @@
  * Utilise Resend (RESEND_API_KEY) ou autre fournisseur
  */
 
+import { SITE_URL as APP_URL } from "@/lib/site-url"
+
 const FROM = process.env.EMAIL_FROM || "Optimum Assurance <noreply@optimum-assurance.fr>"
 
 export async function sendEmail(params: {
@@ -51,8 +53,6 @@ export async function sendEmail(params: {
 
   return res.ok
 }
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
 
 export const EMAIL_TEMPLATES = {
   confirmationSouscription: (raisonSociale: string) => ({

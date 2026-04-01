@@ -6,6 +6,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
+import { SITE_URL } from "@/lib/site-url"
 
 function generateTempPassword(): string {
   const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
@@ -70,8 +71,8 @@ export async function POST(request: NextRequest) {
 
     const template = {
       subject: "Votre compte Optimum Assurance a été créé",
-      text: `Bonjour,\n\nVotre compte a été créé pour accéder à votre espace client.\n\nEmail : ${user.email}\nMot de passe temporaire : ${tempPassword}\n\nConnectez-vous et changez votre mot de passe dès que possible : ${process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"}/connexion\n\nCordialement,\nOptimum Assurance`,
-      html: `<p>Bonjour,</p><p>Votre compte a été créé pour accéder à votre espace client.</p><p><strong>Email :</strong> ${user.email}<br><strong>Mot de passe temporaire :</strong> ${tempPassword}</p><p><a href="${process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"}/connexion" style="color:#2563eb;font-weight:bold">Se connecter à mon espace client</a></p><p>Pensez à changer votre mot de passe dès la première connexion.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+      text: `Bonjour,\n\nVotre compte a été créé pour accéder à votre espace client.\n\nEmail : ${user.email}\nMot de passe temporaire : ${tempPassword}\n\nConnectez-vous et changez votre mot de passe dès que possible : ${SITE_URL}/connexion\n\nCordialement,\nOptimum Assurance`,
+      html: `<p>Bonjour,</p><p>Votre compte a été créé pour accéder à votre espace client.</p><p><strong>Email :</strong> ${user.email}<br><strong>Mot de passe temporaire :</strong> ${tempPassword}</p><p><a href="${SITE_URL}/connexion" style="color:#2563eb;font-weight:bold">Se connecter à mon espace client</a></p><p>Pensez à changer votre mot de passe dès la première connexion.</p><p>Cordialement,<br>Optimum Assurance</p>`,
     }
 
     await sendEmail({

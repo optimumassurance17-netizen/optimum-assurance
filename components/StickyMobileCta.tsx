@@ -17,9 +17,9 @@ export function StickyMobileCta() {
     if (hidden || typeof document === "undefined") return
     const main = document.getElementById("main-content")
     if (!main) return
-    main.classList.add("pb-[5.5rem]", "md:pb-0")
+    main.classList.add("pb-[6.75rem]", "md:pb-0")
     return () => {
-      main.classList.remove("pb-[5.5rem]", "md:pb-0")
+      main.classList.remove("pb-[6.75rem]", "md:pb-0")
     }
   }, [hidden, pathname])
 

@@ -4,8 +4,6 @@ import { Breadcrumb } from "@/components/Breadcrumb"
 import { GUIDES_SEO } from "@/lib/guides-seo"
 import { seoBaseUrl, seoBreadcrumbListNode, seoJsonLdGraph } from "@/lib/seo-jsonld-helpers"
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
-
 const guidesIndexJsonLd = seoJsonLdGraph([
   seoBreadcrumbListNode([
     { name: "Accueil", path: "/" },
@@ -28,10 +26,21 @@ export const metadata = {
   title: "Guides Assurance Décennale et Dommage Ouvrage | Optimum",
   description:
     "Guides pratiques : obligation décennale, résiliation, sinistre, dommage ouvrage, auto-construction, garantie clos et couvert. Décennale BTP et DO.",
-  alternates: { canonical: `${baseUrl}/guides` },
+  alternates: { canonical: `${seoBaseUrl}/guides` },
   openGraph: {
-    url: `${baseUrl}/guides`,
+    url: `${seoBaseUrl}/guides`,
     title: "Guides Décennale & Dommage Ouvrage | Optimum Assurance",
+    description:
+      "Obligation décennale, résiliation, sinistre, dommage ouvrage, auto-construction, garantie clos et couvert.",
+    locale: "fr_FR",
+    siteName: "Optimum Assurance",
+    type: "website",
+    images: [{ url: `${seoBaseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Guides Décennale & Dommage Ouvrage | Optimum Assurance",
+    images: [`${seoBaseUrl}/opengraph-image`],
   },
 }
 

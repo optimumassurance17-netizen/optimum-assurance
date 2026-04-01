@@ -7,9 +7,11 @@ import {
   seoJsonLdGraph,
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
+import { SITE_URL } from "@/lib/site-url"
 import { notFound } from "next/navigation"
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+const baseUrl = SITE_URL
+const defaultOgImage = { url: `${baseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance" }
 
 export async function generateStaticParams() {
   return METIERS_SEO.map((m) => ({ metier: m.slug }))
@@ -40,11 +42,13 @@ export async function generateMetadata({
       url: `${baseUrl}/assurance-decennale/${data.slug}`,
       title: `Assurance Décennale ${data.nom} | Optimum Assurance`,
       description: data.description,
+      images: [defaultOgImage],
     },
     twitter: {
       card: "summary_large_image",
       title: `Assurance Décennale ${data.nom} | Optimum Assurance`,
       description: data.description,
+      images: [`${baseUrl}/opengraph-image`],
     },
   }
 }

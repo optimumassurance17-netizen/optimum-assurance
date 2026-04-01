@@ -40,6 +40,7 @@ const vars = [
   { key: "EMAIL_FROM", required: true, hint: "Email expéditeur" },
   { key: "YOUSIGN_API_KEY", required: true, hint: "Clé Yousign" },
   { key: "YOUSIGN_ENV", required: true, hint: "sandbox ou production" },
+  { key: "NEXT_PUBLIC_SITE_CANONICAL", required: false, hint: "Optionnel — URL canonique forcée SEO (ex. https://www.optimum-assurance.fr)" },
   { key: "NEXT_PUBLIC_PHONE", required: false, hint: "Téléphone affiché" },
   { key: "NEXT_PUBLIC_EMAIL", required: false, hint: "Email de contact" },
   { key: "NEXT_PUBLIC_WHATSAPP", required: false, hint: "WhatsApp (sans espaces)" },

@@ -4,7 +4,7 @@
 # 1. Vercel → Add New Project → importer ce dépôt Git (GitHub/GitLab/Bitbucket).
 # 2. Root directory : racine du repo ; Build : npm run vercel-build (déjà dans vercel.json).
 # 3. Variables d’environnement : copier depuis .env.example / Vercel Settings.
-# Chaque push sur la branche « Production » déclenche un déploiement ; les PR ont des Preview URLs.
+# Chaque push sur main déclenche un déploiement Vercel (si le dépôt est lié) + ce CI ; les PR ont des Preview URLs.
 #
 name: CI
 

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma"
 import crypto from "crypto"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+import { SITE_URL as APP_URL } from "@/lib/site-url"
 const DRAFT_EXPIRY_DAYS = 7
 
 /**

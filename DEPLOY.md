@@ -29,6 +29,8 @@ Projet Vercel → **Settings → Environment Variables** : copier depuis `.env.e
 
 **Recommandé :** `CRON_SECRET` (crons Vercel), `YOUSIGN_WEBHOOK_SECRET`, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`.
 
+**SEO :** `NEXT_PUBLIC_APP_URL` et `NEXTAUTH_URL` = URL publique finale (ex. `https://www.optimum-assurance.fr`). Optionnel : `NEXT_PUBLIC_SITE_CANONICAL` pour forcer la même URL dans robots, sitemap et métadonnées si `NEXT_PUBLIC_APP_URL` pointe encore vers un domaine Vercel en preview.
+
 ## 3. Commande de build Vercel
 
 Le fichier **`vercel.json`** à la racine définit déjà :

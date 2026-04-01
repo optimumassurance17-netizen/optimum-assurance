@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
+import { SITE_URL } from "@/lib/site-url"
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
   title: "Contact Assurance Décennale | Optimum Assurance",
@@ -10,6 +11,17 @@ export const metadata: Metadata = {
   openGraph: {
     url: `${baseUrl}/contact`,
     title: "Contact | Optimum Assurance",
+    description:
+      "Questions décennale BTP, dommage ouvrage, sinistre. Réponse sous 24h.",
+    locale: "fr_FR",
+    siteName: "Optimum Assurance",
+    type: "website",
+    images: [{ url: `${baseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contact | Optimum Assurance",
+    images: [`${baseUrl}/opengraph-image`],
   },
 }
 

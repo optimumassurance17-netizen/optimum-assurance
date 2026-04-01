@@ -1,9 +1,11 @@
 import Link from "next/link"
 import { Header } from "@/components/Header"
 import { DO_SEO } from "@/lib/dommage-ouvrage-seo"
+import { SITE_URL } from "@/lib/site-url"
 import { notFound } from "next/navigation"
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+const baseUrl = SITE_URL
+const defaultOgImage = { url: `${baseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance" }
 
 export async function generateStaticParams() {
   return DO_SEO.map((m) => ({ slug: m.slug }))
@@ -34,11 +36,13 @@ export async function generateMetadata({
       url: `${baseUrl}/dommage-ouvrage/${data.slug}`,
       title: `Dommage Ouvrage ${data.nom} | Optimum Assurance`,
       description: data.description,
+      images: [defaultOgImage],
     },
     twitter: {
       card: "summary_large_image",
       title: `Dommage Ouvrage ${data.nom} | Optimum Assurance`,
       description: data.description,
+      images: [`${baseUrl}/opengraph-image`],
     },
   }
 }
@@ -56,7 +60,7 @@ export default async function DommageOuvragePage({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Accueil", item: baseUrl },
+      { "@type": "ListItem", position: 1, name: "Accueil", item: `${baseUrl}/` },
       { "@type": "ListItem", position: 2, name: "Dommage ouvrage", item: `${baseUrl}/devis-dommage-ouvrage` },
       { "@type": "ListItem", position: 3, name: data.nom, item: `${baseUrl}/dommage-ouvrage/${data.slug}` },
     ],

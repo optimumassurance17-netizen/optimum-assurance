@@ -5,9 +5,9 @@ import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
 import { ChatbotLazy } from "@/components/ChatbotLazy";
 import { Footer } from "@/components/Footer";
-import { CookieBanner } from "@/components/CookieBanner";
-import { StickyMobileCta } from "@/components/StickyMobileCta";
+import { CookieBanner, StickyMobileCta } from "@/components/LayoutDeferredUi";
 import { ForceLightTheme } from "@/components/ForceLightTheme";
+import { SITE_URL } from "@/lib/site-url";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -22,7 +22,7 @@ const plusJakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -66,6 +66,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Assurance Décennale BTP en Ligne | Optimum Assurance",
     description: `Devis en 3 minutes, attestation immédiate. Dès ${EQ_MENSUEL_MIN} €/mois équivalent, prélèvement trimestriel.`,
+    images: [{ url: `${baseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance" }],
   },
   robots: {
     index: true,

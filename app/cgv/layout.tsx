@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
+import { SITE_URL } from "@/lib/site-url"
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
   title: "Conditions générales de vente",

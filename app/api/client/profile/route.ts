@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { SITE_URL } from "@/lib/site-url"
 
 export async function GET() {
   try {
@@ -65,8 +66,6 @@ export async function PATCH(request: NextRequest) {
         where: { userId: session.user.id, type: "attestation", status: "valide" },
       })
 
-      const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
-
       for (const att of attestations) {
         const data = JSON.parse(att.data || "{}") as Record<string, unknown>
         data.adresse = user.adresse ?? data.adresse
@@ -80,7 +79,7 @@ export async function PATCH(request: NextRequest) {
         })
 
         const raisonSociale = (data.raisonSociale as string) || user.raisonSociale || user.email
-        const documentUrl = `${APP_URL}/espace-client/documents/${att.id}`
+        const documentUrl = `${SITE_URL}/espace-client/documents/${att.id}`
         const template = EMAIL_TEMPLATES.attestationMiseAJour(raisonSociale, att.numero, documentUrl)
         await sendEmail({
           to: user.email,

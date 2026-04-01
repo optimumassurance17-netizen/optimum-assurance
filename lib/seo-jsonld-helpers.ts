@@ -2,7 +2,9 @@
  * Helpers JSON-LD réutilisables — composition en @graph pour éviter les scripts dupliqués.
  */
 
-export const seoBaseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+import { SITE_URL as seoBaseUrl } from "@/lib/site-url"
+
+export { seoBaseUrl }
 
 export const seoOrgId = `${seoBaseUrl}/#organization`
 export const seoWebsiteId = `${seoBaseUrl}/#website`

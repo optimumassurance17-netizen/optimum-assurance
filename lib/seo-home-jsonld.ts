@@ -1,6 +1,5 @@
 import { EQ_MENSUEL_MIN } from "@/lib/decennale-affichage-tarif"
-
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+import { SITE_URL as baseUrl } from "@/lib/site-url"
 
 /** Profils sociaux (optionnel) — ex. NEXT_PUBLIC_SEO_SAME_AS="https://linkedin.com/...,https://..." */
 function sameAsFromEnv(): string[] | undefined {

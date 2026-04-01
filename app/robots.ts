@@ -1,8 +1,17 @@
 import { MetadataRoute } from "next"
+import { SITE_URL } from "@/lib/site-url"
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://optimum-assurance.fr"
+function sitemapEntries(baseUrl: string): string | string[] {
+  const primary = `${baseUrl}/sitemap.xml`
+  const www = /^https:\/\/www\.([^/]+)$/i.exec(baseUrl)
+  if (www) {
+    return [primary, `https://${www[1]}/sitemap.xml`]
+  }
+  return primary
+}
 
 export default function robots(): MetadataRoute.Robots {
+  const baseUrl = SITE_URL
   return {
     rules: [
       {
@@ -11,7 +20,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/espace-client/", "/gestion", "/confirmation", "/paiement", "/souscription", "/signature", "/api/"],
       },
     ],
-    host: baseUrl.replace(/\/$/, ""),
-    sitemap: `${baseUrl}/sitemap.xml`,
+    host: baseUrl,
+    sitemap: sitemapEntries(baseUrl),
   }
 }

@@ -2,13 +2,50 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { useSession } from "next-auth/react"
 
+function IconMenu({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function IconClose({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function HeaderClient() {
+  const pathname = usePathname()
   const { data: session, status } = useSession()
   const [devisOpen, setDevisOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const devisRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    queueMicrotask(() => setMobileOpen(false))
+  }, [pathname])
+
+  useEffect(() => {
+    if (!mobileOpen) return
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false)
+    }
+    document.addEventListener("keydown", onEscape)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.removeEventListener("keydown", onEscape)
+      document.body.style.overflow = prev
+    }
+  }, [mobileOpen])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -21,16 +58,17 @@ export function HeaderClient() {
   }, [])
 
   return (
-    <header className="relative z-50 overflow-visible border-b border-slate-200/90 bg-white/95 px-4 py-4 backdrop-blur-sm sm:px-6 md:px-8 sm:py-5">
-      <div className="max-w-7xl mx-auto flex justify-between items-center gap-2">
-        <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-md shadow-blue-600/25 sm:h-10 sm:w-10">
-            <span className="font-bold text-white">O</span>
-          </div>
-          <span className="truncate text-lg font-bold tracking-tight text-slate-900 sm:text-xl md:text-2xl">
-            Optimum
-          </span>
-        </Link>
+    <header className="relative z-50 overflow-visible border-b border-slate-200/90 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6 md:px-8 sm:py-4">
+      <div className="max-w-7xl mx-auto flex flex-col gap-0">
+        <div className="flex justify-between items-center gap-3 min-w-0">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-md shadow-blue-600/25 sm:h-10 sm:w-10">
+              <span className="font-bold text-white">O</span>
+            </div>
+            <span className="truncate text-lg font-bold tracking-tight text-slate-900 sm:text-xl md:text-2xl">
+              Optimum
+            </span>
+          </Link>
 
         {/* Desktop nav — uniquement sur grands écrans (lg+) pour éviter le dropdown buggé sur mobile/tablette */}
         <nav className="hidden lg:flex items-center gap-2 sm:gap-4 shrink-0" aria-label="Navigation principale">
@@ -104,47 +142,73 @@ export function HeaderClient() {
           </div>
         </nav>
 
-        {/* Mobile/Tablette: Décennale, DO, Espace client — scroll horizontal si débordement */}
-        <nav className="flex lg:hidden items-center gap-2 min-w-0 flex-1 justify-start overflow-x-auto scrollbar-hide py-1 -mx-1 flex-nowrap" aria-label="Navigation mobile">
-          <Link
-            href="/devis"
-            className="flex min-h-[44px] shrink-0 items-center whitespace-nowrap rounded-lg bg-blue-600 px-2.5 py-2 text-xs font-semibold text-white"
+          <button
+            type="button"
+            className="lg:hidden flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm touch-manipulation"
+            onClick={() => setMobileOpen((o) => !o)}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav-menu"
+            aria-label={mobileOpen ? "Fermer le menu" : "Ouvrir le menu"}
           >
-            Décennale
-          </Link>
-          <Link
-            href="/devis-dommage-ouvrage"
-            className="flex min-h-[44px] shrink-0 items-center whitespace-nowrap rounded-lg bg-blue-600 px-2.5 py-2 text-xs font-semibold text-white"
-          >
-            DO
-          </Link>
-          <Link
-            href="/faq"
-            className="text-[#171717] font-medium text-xs px-2 py-2 rounded-lg min-h-[44px] flex items-center shrink-0 whitespace-nowrap"
-          >
-            FAQ
-          </Link>
-          <Link
-            href="/guides"
-            className="text-[#171717] font-medium text-xs px-2 py-2 rounded-lg min-h-[44px] flex items-center shrink-0 whitespace-nowrap"
-          >
-            Guides
-          </Link>
-          <Link
-            href="/espace-client"
-            className="flex min-h-[44px] shrink-0 items-center whitespace-nowrap rounded-lg border-2 border-blue-600 px-2.5 py-2 text-xs font-semibold text-blue-600"
-          >
-            Espace client
-          </Link>
-          {status === "authenticated" && session && (
-            <button
-              type="button"
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="min-h-[44px] shrink-0 rounded-lg px-2 py-2 text-xs font-medium text-slate-600 hover:text-blue-600"
+            {mobileOpen ? <IconClose className="h-6 w-6" /> : <IconMenu className="h-6 w-6" />}
+          </button>
+        </div>
+
+        {/* Mobile / tablette : menu vertical (lisible, sans scroll horizontal dans le header) */}
+        <nav
+          id="mobile-nav-menu"
+          className={`lg:hidden border-t border-slate-200/90 bg-white ${mobileOpen ? "max-h-[min(85vh,560px)] overflow-y-auto py-3" : "hidden"}`}
+          aria-hidden={!mobileOpen}
+        >
+          <div className="flex flex-col gap-1 pt-1">
+            <Link
+              href="/devis"
+              className="rounded-xl bg-blue-600 px-4 py-3.5 text-center text-base font-semibold text-white active:bg-blue-700"
+              onClick={() => setMobileOpen(false)}
             >
-              Déconnexion
-            </button>
-          )}
+              Devis décennale
+            </Link>
+            <Link
+              href="/devis-dommage-ouvrage"
+              className="rounded-xl bg-blue-50 px-4 py-3.5 text-center text-base font-semibold text-blue-700 active:bg-blue-100"
+              onClick={() => setMobileOpen(false)}
+            >
+              Dommage ouvrage
+            </Link>
+            <Link
+              href="/faq"
+              className="rounded-xl px-4 py-3.5 text-base font-medium text-slate-800 active:bg-slate-50"
+              onClick={() => setMobileOpen(false)}
+            >
+              FAQ
+            </Link>
+            <Link
+              href="/guides"
+              className="rounded-xl px-4 py-3.5 text-base font-medium text-slate-800 active:bg-slate-50"
+              onClick={() => setMobileOpen(false)}
+            >
+              Guides
+            </Link>
+            <Link
+              href="/espace-client"
+              className="rounded-xl border-2 border-blue-600 px-4 py-3.5 text-center text-base font-semibold text-blue-600 active:bg-blue-50"
+              onClick={() => setMobileOpen(false)}
+            >
+              Espace client
+            </Link>
+            {status === "authenticated" && session && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileOpen(false)
+                  signOut({ callbackUrl: "/" })
+                }}
+                className="rounded-xl px-4 py-3.5 text-left text-base font-medium text-slate-600 active:bg-slate-50"
+              >
+                Déconnexion
+              </button>
+            )}
+          </div>
         </nav>
       </div>
 
