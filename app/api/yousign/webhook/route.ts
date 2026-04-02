@@ -1,17 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createHmac, timingSafeEqual } from "crypto"
 import { prisma } from "@/lib/prisma"
-import { getNextNumero } from "@/lib/documents"
-
-/**
- * Calcule la date 3 mois avant une date ISO (AAAA-MM-JJ)
- */
-function dateMoins3Mois(dateIso: string): string {
-  const [y, m, d] = dateIso.split("-").map(Number)
-  const date = new Date(y, m - 1, d)
-  date.setMonth(date.getMonth() - 3)
-  return date.toISOString().split("T")[0]
-}
+import { applyPendingFinalize } from "@/lib/yousign-finalize-pending"
 
 /**
  * Vérifie la signature HMAC SHA-256 du webhook YouSign
@@ -62,71 +52,20 @@ export async function POST(request: NextRequest) {
         })
 
         if (pending) {
-          const contractData = JSON.parse(pending.contractData) as Record<string, unknown>
-
-          // Créer le document contrat en BDD
-          await prisma.document.create({
-            data: {
+          const duplicate = await prisma.document.findFirst({
+            where: {
               userId: pending.userId,
               type: "contrat",
               numero: pending.contractNumero,
-              data: JSON.stringify(contractData),
-              status: "valide",
             },
           })
-
-          // Créer attestation de non sinistralité si jamais assuré ou reprise du passé
-          const jamaisAssure = Boolean(contractData.jamaisAssure)
-          const reprisePasse = Boolean(contractData.reprisePasse)
-          const dateEffetIso = contractData.dateEffetIso as string | undefined
-          const dateCreationSociete = contractData.dateCreationSociete as string | undefined
-
-          const doitCreerAttestation =
-            dateEffetIso &&
-            ((jamaisAssure && dateCreationSociete) || reprisePasse)
-
-          if (doitCreerAttestation) {
-            let dateDebut: string
-            let motif: "jamais_assure" | "reprise_passe"
-
-            if (jamaisAssure && dateCreationSociete) {
-              dateDebut = dateCreationSociete
-              motif = "jamais_assure"
-            } else {
-              dateDebut = dateMoins3Mois(dateEffetIso)
-              motif = "reprise_passe"
-            }
-
-            const attestationData = {
-              raisonSociale: contractData.raisonSociale,
-              siret: contractData.siret || "",
-              adresse: contractData.adresse,
-              codePostal: contractData.codePostal,
-              ville: contractData.ville,
-              dateDebut,
-              dateFin: dateEffetIso,
-              motif,
-            }
-
-            const numeroAns = await getNextNumero("attestation_non_sinistralite")
-            await prisma.document.create({
-              data: {
-                userId: pending.userId,
-                type: "attestation_non_sinistralite",
-                numero: numeroAns,
-                data: JSON.stringify(attestationData),
-                status: "valide",
-              },
-            })
-            console.log(`[Yousign Webhook] Attestation non sinistralité ${numeroAns} créée pour userId ${pending.userId}`)
+          if (duplicate) {
+            await prisma.pendingSignature.deleteMany({ where: { signatureRequestId } })
+            console.log(`[Yousign Webhook] Doublon évité, pending supprimé: ${signatureRequestId}`)
+          } else {
+            await applyPendingFinalize(pending)
+            console.log(`[Yousign Webhook] Contrat ${pending.contractNumero} créé pour userId ${pending.userId}`)
           }
-
-          // Supprimer la pending signature (évite doublons)
-          await prisma.pendingSignature.delete({
-            where: { signatureRequestId },
-          })
-
-          console.log(`[Yousign Webhook] Contrat ${pending.contractNumero} créé pour userId ${pending.userId}`)
         } else {
           console.log(`[Yousign Webhook] Signature complétée mais pending introuvable: ${signatureRequestId}`)
         }
