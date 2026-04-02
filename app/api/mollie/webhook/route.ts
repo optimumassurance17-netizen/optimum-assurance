@@ -20,9 +20,13 @@ function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
 }
 
-/** Sonde URL (certains outils envoient GET avant d’enregistrer le webhook). */
+/** Sondes (validation d’URL côté Mollie / CDN). */
 export function GET() {
   return NextResponse.json({ ok: true, path: "mollie-webhook" })
+}
+
+export function HEAD() {
+  return new NextResponse(null, { status: 200 })
 }
 
 export async function POST(request: NextRequest) {
@@ -30,20 +34,20 @@ export async function POST(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     let paymentId = searchParams.get("id")
 
-    /** Classique Mollie : corps `id=tr_…` (form-urlencoded) ; dashboard : JSON event. */
+    /** Classique Mollie : corps `id=tr_…` (form-urlencoded) ; next-gen : JSON event ou `{"testmode":…}`. */
     if (!paymentId) {
       const raw = await request.text()
       const trimmed = raw.trim()
-      /** Bouton « Tester » Mollie : POST souvent sans corps — il faut répondre 200. */
       if (!trimmed) {
         return NextResponse.json({ received: true, ping: true })
       }
       if (trimmed.startsWith("{")) {
         try {
-          const body = JSON.parse(trimmed) as { resource?: string; type?: string }
-          if (body?.resource === "event" || body?.type) {
+          const body = JSON.parse(trimmed) as Record<string, unknown>
+          if (body?.resource === "event" || typeof body?.type === "string") {
             return NextResponse.json({ received: true, acknowledged: "event_payload" })
           }
+          return NextResponse.json({ received: true, acknowledged: "json_body" })
         } catch {
           /* JSON invalide */
         }
