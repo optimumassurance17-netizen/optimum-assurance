@@ -28,19 +28,31 @@ export async function POST(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const paymentId = searchParams.get("id")
+    let paymentId = searchParams.get("id")
 
-    /** Paiements : `?id=tr_…`. Events API (dashboard) : JSON sans id → 200 sans traitement métier. */
+    /** Classique Mollie : corps `id=tr_…` (form-urlencoded) ; dashboard : JSON event. */
     if (!paymentId) {
-      try {
-        const body = (await request.clone().json()) as { resource?: string; type?: string }
-        if (body?.resource === "event" || body?.type) {
-          return NextResponse.json({ received: true, acknowledged: "event_payload" })
+      const raw = await request.text()
+      const trimmed = raw.trim()
+      if (trimmed.startsWith("{")) {
+        try {
+          const body = JSON.parse(trimmed) as { resource?: string; type?: string }
+          if (body?.resource === "event" || body?.type) {
+            return NextResponse.json({ received: true, acknowledged: "event_payload" })
+          }
+        } catch {
+          /* JSON invalide */
         }
-      } catch {
-        /* pas du JSON */
+      } else if (trimmed) {
+        paymentId = new URLSearchParams(trimmed).get("id")
       }
-      return NextResponse.json({ error: "ID manquant (webhook paiement attend ?id=tr_…)" }, { status: 400 })
+    }
+
+    if (!paymentId) {
+      return NextResponse.json(
+        { error: "ID manquant — attendu id=tr_… (corps form-urlencoded ou query)" },
+        { status: 400 }
+      )
     }
 
     const mollieClient = createMollieClient({ apiKey })
