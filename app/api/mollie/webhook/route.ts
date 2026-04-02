@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     /** Classique Mollie : corps `id=tr_…` (form-urlencoded) ; next-gen : JSON event ou `{"testmode":…}`. */
     if (!paymentId) {
-      const raw = await request.text()
+      const raw = (await request.text()).replace(/^\uFEFF/, "")
       const trimmed = raw.trim()
       if (!trimmed) {
         return NextResponse.json({ received: true, ping: true })
@@ -47,9 +47,14 @@ export async function POST(request: NextRequest) {
           if (body?.resource === "event" || typeof body?.type === "string") {
             return NextResponse.json({ received: true, acknowledged: "event_payload" })
           }
-          return NextResponse.json({ received: true, acknowledged: "json_body" })
+          const jsonId = typeof body.id === "string" ? body.id.trim() : ""
+          if (/^tr_[A-Za-z0-9]+$/.test(jsonId)) {
+            paymentId = jsonId
+          } else {
+            return NextResponse.json({ received: true, acknowledged: "json_body" })
+          }
         } catch {
-          /* JSON invalide */
+          return NextResponse.json({ received: true, acknowledged: "json_unparsed" })
         }
       } else {
         paymentId = new URLSearchParams(trimmed).get("id")
@@ -69,7 +74,14 @@ export async function POST(request: NextRequest) {
     }
 
     const mollieClient = createMollieClient({ apiKey })
-    const payment = await mollieClient.payments.get(paymentId)
+    let payment
+    try {
+      payment = await mollieClient.payments.get(paymentId)
+    } catch (e) {
+      /** Doc Mollie : répondre 200 même si l’ID est inconnu (tests, ping, faux appels). */
+      console.warn("[webhook] payments.get impossible:", paymentId, e)
+      return NextResponse.json({ received: true, acknowledged: "payment_unavailable" })
+    }
     const metadata = (payment.metadata as Record<string, string>) || {}
     const email = metadata.email || (payment as { consumerEmail?: string }).consumerEmail
 
