@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { premiumMatchesMollieAmount } from "@/lib/insurance-contract-service"
 import { insuranceContractPayLockKeys } from "@/lib/insurance-contract-pay-lock"
+import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 
 /** Statuts Mollie pour lesquels le client peut encore utiliser le même paiement. */
 const MOLLIE_REUSABLE_STATUSES = new Set(["open", "pending", "authorized"])
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email requis" }, { status: 400 })
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const baseUrl = getMolliePublicBaseUrl()
     const due = new Date()
     due.setDate(due.getDate() + 14)
     const dueDate = due.toISOString().slice(0, 10)

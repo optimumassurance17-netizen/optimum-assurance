@@ -31,6 +31,11 @@ loadEnvFile(resolve(root, ".env.local"), { override: true })
 
 const vars = [
   { key: "MOLLIE_API_KEY", required: true, hint: "Clé Mollie (test_ ou live_)" },
+  {
+    key: "MOLLIE_PUBLIC_BASE_URL",
+    required: false,
+    hint: "Optionnel — URL HTTPS publique pour webhooks Mollie (ex. ngrok en local) ; sinon NEXT_PUBLIC_APP_URL",
+  },
   { key: "NEXT_PUBLIC_APP_URL", required: true, hint: "URL du site" },
   { key: "DATABASE_URL", required: true, hint: "Connexion base de données" },
   { key: "NEXTAUTH_URL", required: true, hint: "URL NextAuth" },

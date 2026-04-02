@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createMollieClient, Locale, PaymentMethod } from "@mollie/api-client"
+import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const mollieClient = createMollieClient({ apiKey })
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const baseUrl = getMolliePublicBaseUrl()
 
     const mollieMethod =
       method === "sepa" || method === "directdebit"

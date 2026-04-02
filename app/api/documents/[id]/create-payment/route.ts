@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { createMollieClient, Locale, PaymentMethod } from "@mollie/api-client"
+import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
@@ -64,7 +65,7 @@ export async function POST(
       )
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const baseUrl = getMolliePublicBaseUrl()
 
     /** Échéance du virement (entre demain et J+100, exigence Mollie) */
     const due = new Date()

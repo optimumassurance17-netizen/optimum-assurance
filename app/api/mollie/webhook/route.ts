@@ -14,6 +14,7 @@ import {
   setupSepaSubscriptionAfterT1Card,
 } from "@/lib/mollie-sepa"
 import { processInsuranceContractPaymentSuccess } from "@/lib/insurance-contract-service"
+import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -191,7 +192,7 @@ export async function POST(request: NextRequest) {
         metadata.iban &&
         metadata.type !== "devis_do"
       ) {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+        const baseUrl = getMolliePublicBaseUrl()
         const setup = await setupSepaSubscriptionAfterT1Card(mollieClient, {
           userId: user.id,
           email: metadata.email || user.email,

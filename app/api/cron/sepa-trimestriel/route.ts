@@ -7,6 +7,7 @@ import {
   refreshMandateStatus,
 } from "@/lib/mollie-sepa"
 import { prisma } from "@/lib/prisma"
+import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 
 /**
  * Déclenche les prélèvements SEPA trimestriels (T2–T4) lorsque `nextSepaDue` est atteint.
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "MOLLIE_API_KEY manquant" }, { status: 500 })
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const baseUrl = getMolliePublicBaseUrl()
     const webhookUrl = `${baseUrl}/api/mollie/webhook`
     const redirectUrl = `${baseUrl}/espace-client`
 
