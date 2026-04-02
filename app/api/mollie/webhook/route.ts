@@ -32,7 +32,7 @@ export function HEAD() {
 export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    let paymentId = searchParams.get("id")
+    let paymentId = searchParams.get("id")?.trim() || null
 
     /** Classique Mollie : corps `id=tr_…` (form-urlencoded) ; next-gen : JSON event ou `{"testmode":…}`. */
     if (!paymentId) {
@@ -57,20 +57,19 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ received: true, acknowledged: "json_unparsed" })
         }
       } else {
-        paymentId = new URLSearchParams(trimmed).get("id")
+        paymentId = new URLSearchParams(trimmed).get("id")?.trim() || null
       }
     }
 
+    /** Toujours 2xx si pas d’id : doc Mollie (pas de fuite + tests dashboard / corps inattendus). */
     if (!paymentId) {
-      return NextResponse.json(
-        { error: "ID manquant — attendu id=tr_… (corps form-urlencoded ou query)" },
-        { status: 400 }
-      )
+      return NextResponse.json({ received: true, acknowledged: "no_payment_id" })
     }
 
     const apiKey = process.env.MOLLIE_API_KEY
     if (!apiKey) {
-      return NextResponse.json({ error: "Non configuré" }, { status: 500 })
+      console.error("[webhook] MOLLIE_API_KEY manquant — configurez Vercel pour les vrais webhooks")
+      return NextResponse.json({ received: true, acknowledged: "no_mollie_api_key" })
     }
 
     const mollieClient = createMollieClient({ apiKey })
