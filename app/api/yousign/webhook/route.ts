@@ -33,7 +33,8 @@ function verifyYousignSignature(rawBody: string, signature: string | null, secre
 /**
  * Webhook Yousign - notifications signature complétée
  * Configurer dans le dashboard Yousign : https://app.yousign.com
- * Événements : signature_request.completed, signature_request.declined
+ * Événements Yousign v3 : signature_request.done (terminé), signature_request.declined ;
+ *   alias legacy : signature_request.completed
  * Sécurité : vérification X-Yousign-Signature-256 si YOUSIGN_WEBHOOK_SECRET est défini
  */
 export async function POST(request: NextRequest) {
@@ -50,7 +51,10 @@ export async function POST(request: NextRequest) {
     const body = JSON.parse(rawBody) as { event_name?: string; data?: { signature_request?: { id?: string } } }
     const { event_name, data } = body
 
-    if (event_name === "signature_request.completed") {
+    if (
+      event_name === "signature_request.done" ||
+      event_name === "signature_request.completed"
+    ) {
       const signatureRequestId = data?.signature_request?.id
       if (signatureRequestId) {
         const pending = await prisma.pendingSignature.findUnique({
