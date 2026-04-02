@@ -17,16 +17,23 @@ import { hash } from "bcryptjs"
 import { PrismaClient } from "@prisma/client"
 
 const root = resolve(process.cwd())
-const envPath = resolve(root, ".env")
-if (existsSync(envPath)) {
-  for (const line of readFileSync(envPath, "utf-8").split("\n")) {
+
+function loadEnvFile(filePath, { override = false } = {}) {
+  if (!existsSync(filePath)) return
+  for (const line of readFileSync(filePath, "utf-8").split("\n")) {
     const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/)
-    if (m && !process.env[m[1]]) {
+    if (m) {
+      const key = m[1]
       const val = m[2].replace(/^["']|["']$/g, "").trim()
-      if (val) process.env[m[1]] = val
+      if (val && (override || !process.env[key])) {
+        process.env[key] = val
+      }
     }
   }
 }
+
+loadEnvFile(resolve(root, ".env"))
+loadEnvFile(resolve(root, ".env.local"), { override: true })
 
 const emailArg = process.argv[2]
 const passwordFromArgv = process.argv[3]
@@ -42,6 +49,11 @@ if (!emailArg || !emailArg.includes("@")) {
 
 if (!password || password.length < 8) {
   console.error("\n❌ Mot de passe requis (min. 8 caractères), via CREATE_ADMIN_PASSWORD ou 2e argument.\n")
+  process.exit(1)
+}
+
+if (!process.env.DATABASE_URL?.trim()) {
+  console.error("\n❌ DATABASE_URL manquant. Ajoutez-la dans .env ou .env.local, ou exportez-la (URL Postgres prod depuis Vercel).\n")
   process.exit(1)
 }
 
