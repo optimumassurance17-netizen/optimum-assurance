@@ -20,13 +20,13 @@ function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
 }
 
+/** Sonde URL (certains outils envoient GET avant d’enregistrer le webhook). */
+export function GET() {
+  return NextResponse.json({ ok: true, path: "mollie-webhook" })
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.MOLLIE_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: "Non configuré" }, { status: 500 })
-    }
-
     const { searchParams } = new URL(request.url)
     let paymentId = searchParams.get("id")
 
@@ -34,6 +34,10 @@ export async function POST(request: NextRequest) {
     if (!paymentId) {
       const raw = await request.text()
       const trimmed = raw.trim()
+      /** Bouton « Tester » Mollie : POST souvent sans corps — il faut répondre 200. */
+      if (!trimmed) {
+        return NextResponse.json({ received: true, ping: true })
+      }
       if (trimmed.startsWith("{")) {
         try {
           const body = JSON.parse(trimmed) as { resource?: string; type?: string }
@@ -43,7 +47,7 @@ export async function POST(request: NextRequest) {
         } catch {
           /* JSON invalide */
         }
-      } else if (trimmed) {
+      } else {
         paymentId = new URLSearchParams(trimmed).get("id")
       }
     }
@@ -53,6 +57,11 @@ export async function POST(request: NextRequest) {
         { error: "ID manquant — attendu id=tr_… (corps form-urlencoded ou query)" },
         { status: 400 }
       )
+    }
+
+    const apiKey = process.env.MOLLIE_API_KEY
+    if (!apiKey) {
+      return NextResponse.json({ error: "Non configuré" }, { status: 500 })
     }
 
     const mollieClient = createMollieClient({ apiKey })
