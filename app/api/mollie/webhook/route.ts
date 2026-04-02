@@ -30,8 +30,17 @@ export async function POST(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const paymentId = searchParams.get("id")
 
+    /** Paiements : `?id=tr_…`. Events API (dashboard) : JSON sans id → 200 sans traitement métier. */
     if (!paymentId) {
-      return NextResponse.json({ error: "ID manquant" }, { status: 400 })
+      try {
+        const body = (await request.clone().json()) as { resource?: string; type?: string }
+        if (body?.resource === "event" || body?.type) {
+          return NextResponse.json({ received: true, acknowledged: "event_payload" })
+        }
+      } catch {
+        /* pas du JSON */
+      }
+      return NextResponse.json({ error: "ID manquant (webhook paiement attend ?id=tr_…)" }, { status: 400 })
     }
 
     const mollieClient = createMollieClient({ apiKey })
