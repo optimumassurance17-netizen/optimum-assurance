@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/Header"
+import { readResponseJson } from "@/lib/read-response-json"
 
 interface SuspendedAttestation {
   id: string
@@ -32,7 +33,7 @@ export default function RegularisationPage() {
       try {
         const res = await fetch("/api/documents/suspended")
         if (res.ok) {
-          const data = await res.json()
+          const data = await readResponseJson<SuspendedAttestation[]>(res)
           setAttestations(data)
         }
       } catch {
@@ -66,10 +67,14 @@ export default function RegularisationPage() {
           method: "creditcard",
         }),
       })
-      const result = await res.json()
+      const result = await readResponseJson<{
+        error?: string
+        checkoutUrl?: string
+        id?: string
+      }>(res)
       if (!res.ok) throw new Error(result.error || "Erreur")
       if (result.checkoutUrl) {
-        sessionStorage.setItem("mollie_payment_id", result.id)
+        sessionStorage.setItem("mollie_payment_id", result.id ?? "")
         sessionStorage.setItem("mollie_regularisation_attestation", att.id)
         window.location.href = result.checkoutUrl
       } else {

@@ -19,6 +19,7 @@ import { STORAGE_KEYS } from "@/lib/types"
 import { DevoirConseil } from "@/components/DevoirConseil"
 import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
+import { readResponseJson } from "@/lib/read-response-json"
 
 const STEPS = [
   { id: 1, label: "Souscripteur" },
@@ -156,7 +157,7 @@ export function FormulaireDevisDommageOuvrage() {
           coutTotal,
         }),
       })
-      const json = await res.json()
+      const json = await readResponseJson<{ error?: string }>(res)
       if (!res.ok) throw new Error(json.error || "Erreur")
       if (typeof window !== "undefined") {
         localStorage.removeItem(STORAGE_KEY)
@@ -318,7 +319,13 @@ export function FormulaireDevisDommageOuvrage() {
                         setSiretError(null)
                         try {
                           const res = await fetch(`/api/siret?siret=${s}`)
-                          const d = await res.json()
+                          const d = await readResponseJson<{
+                            error?: string
+                            raisonSociale?: string
+                            adresse?: string
+                            codePostal?: string
+                            ville?: string
+                          }>(res)
                           if (res.ok && d.raisonSociale) {
                             update("raisonSociale", d.raisonSociale)
                             update("adresse", d.adresse || "")

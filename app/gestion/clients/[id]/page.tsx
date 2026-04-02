@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
+import { readResponseJson } from "@/lib/read-response-json"
 
 interface ClientData {
   user: { id: string; email: string; raisonSociale: string | null; siret: string | null; adresse?: string | null; codePostal?: string | null; ville?: string | null; telephone?: string | null; createdAt: string }
@@ -67,7 +68,7 @@ export default function ClientDetailPage() {
           return
         }
         if (!res.ok) throw new Error("Erreur chargement")
-        const json = await res.json()
+        const json = await readResponseJson<ClientData>(res)
         setData(json)
         setNotes(json.notes ?? [])
         setSinistres(json.sinistres ?? [])
@@ -278,7 +279,12 @@ export default function ClientDetailPage() {
                     body: JSON.stringify({ content: noteInput }),
                   })
                   if (res.ok) {
-                    const note = await res.json()
+                    const note = await readResponseJson<{
+                      id: string
+                      content: string
+                      adminEmail: string
+                      createdAt: string
+                    }>(res)
                     setNotes((n) => [note, ...n])
                     setNoteInput("")
                   }
@@ -372,7 +378,13 @@ export default function ClientDetailPage() {
                     }),
                   })
                   if (res.ok) {
-                    const created = await res.json()
+                    const created = await readResponseJson<{
+                      id: string
+                      dateSinistre: string
+                      montantIndemnisation: number | null
+                      description: string | null
+                      userDocument: { id: string; filename: string; type: string } | null
+                    }>(res)
                     setSinistres((prev) => [created, ...prev])
                     setSinistreModal(false)
                     setSinistreForm({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })

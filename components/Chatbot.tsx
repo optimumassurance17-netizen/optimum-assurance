@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 
+import { readResponseJson } from "@/lib/read-response-json"
+
 const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
 
 export function Chatbot() {
@@ -48,7 +50,7 @@ export function Chatbot() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: trimmed }),
       })
-      const data = await res.json()
+      const data = await readResponseJson<{ reply?: string }>(res)
       const reply = data.reply || "Désolé, je n'ai pas pu répondre. Écrivez-nous à " + contactEmail
       setMessages((m) => [...m, { role: "assistant", content: reply }])
     } catch {

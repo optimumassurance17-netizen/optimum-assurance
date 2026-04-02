@@ -12,6 +12,7 @@ import type { SouscriptionData } from "@/lib/types"
 import { STORAGE_KEYS } from "@/lib/types"
 import { InsuranceContractParcoursBanner } from "@/components/insurance/InsuranceContractParcoursBanner"
 import type { InsuranceContractSnapshot } from "@/lib/insurance-contract-types"
+import { readResponseJson } from "@/lib/read-response-json"
 
 export default function SignaturePage() {
   const router = useRouter()
@@ -81,7 +82,13 @@ export default function SignaturePage() {
         body: JSON.stringify({ souscription }),
       })
 
-      const result = await res.json()
+      const result = await readResponseJson<{
+        error?: string
+        signatureRequestId?: string
+        contractNumero?: string
+        contractData?: string
+        signatureLink?: string
+      }>(res)
 
       if (!res.ok) {
         throw new Error(result.error || "Erreur lors de la création de la signature")
@@ -128,7 +135,7 @@ export default function SignaturePage() {
         <p className="text-[#171717] mb-8">
           {souscription.insuranceProduct === "do"
             ? "Votre dossier dommage ouvrage est pris en charge. Le contrat plateforme et les paiements sont gérés depuis votre espace client."
-            : "Signez électroniquement votre contrat d&apos;assurance décennale avec Yousign, solution certifiée eIDAS."}
+            : "Signez électroniquement votre contrat d'assurance décennale avec Yousign, solution certifiée eIDAS."}
         </p>
 
         {insuranceSnapshot ? <InsuranceContractParcoursBanner snapshot={insuranceSnapshot} /> : null}
@@ -194,8 +201,8 @@ export default function SignaturePage() {
         <div className="bg-[#ebe6e0] border border-[#d4d4d4] rounded-2xl p-6 mb-8 mt-6">
           <p className="text-sm text-[#171717] mb-4">
             {souscription.insuranceProduct === "do"
-              ? "Vous pouvez signer le contrat type décennale ci-dessous si votre conseiller vous y a invité ; sinon rendez-vous dans l&apos;espace client pour le dossier dommage ouvrage."
-              : "Vous serez redirigé vers la plateforme Yousign pour signer votre contrat. La signature électronique a la même valeur juridique qu&apos;une signature manuscrite."}
+              ? "Vous pouvez signer le contrat type décennale ci-dessous si votre conseiller vous y a invité ; sinon rendez-vous dans l'espace client pour le dossier dommage ouvrage."
+              : "Vous serez redirigé vers la plateforme Yousign pour signer votre contrat. La signature électronique a la même valeur juridique qu'une signature manuscrite."}
           </p>
           <button
             type="button"

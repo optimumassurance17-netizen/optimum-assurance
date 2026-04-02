@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/Header"
+import { readResponseJson } from "@/lib/read-response-json"
 
 export default function DevisResumePage() {
   const params = useParams()
@@ -19,11 +20,12 @@ export default function DevisResumePage() {
     const load = async () => {
       try {
         const res = await fetch(`/api/devis/draft/${token}`)
+        const payload = await readResponseJson<{ email?: string; data?: unknown }>(res)
         if (!res.ok) {
           setStatus("error")
           return
         }
-        const { email, data } = await res.json()
+        const { email, data } = payload
         if (data && typeof window !== "undefined") {
           sessionStorage.setItem("optimum-devis-resume", JSON.stringify({ ...data, email }))
         }

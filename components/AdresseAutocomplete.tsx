@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { inputTextDark } from "@/lib/form-input-styles"
+import { readResponseJson } from "@/lib/read-response-json"
 
 export type AdressePick = {
   adresse: string
@@ -37,7 +38,7 @@ export function AdresseAutocomplete({ show, onPick, title }: Props) {
     setLoading(true)
     try {
       const res = await fetch(`/api/adresse/search?q=${encodeURIComponent(q.trim())}`)
-      const data = await res.json()
+      const data = await readResponseJson<{ suggestions?: unknown }>(res)
       if (!res.ok) {
         setResults([])
         return

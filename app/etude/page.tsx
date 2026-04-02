@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
+import { readResponseJson } from "@/lib/read-response-json"
 
 interface DonneesEtude {
   siret?: string
@@ -53,7 +54,7 @@ export default function EtudePage() {
           data: donnees,
         }),
       })
-      const json = await res.json()
+      const json = await readResponseJson<{ error?: string }>(res)
       if (!res.ok) throw new Error(json.error || "Erreur")
       setSubmitted(true)
       if (typeof window !== "undefined") sessionStorage.removeItem("optimum-etude")

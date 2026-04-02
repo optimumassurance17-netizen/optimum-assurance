@@ -13,6 +13,7 @@ import { STORAGE_KEYS } from "@/lib/types"
 import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { runInsuranceContractStepAfterSouscription } from "@/lib/souscription-insurance-contract"
+import { readResponseJson } from "@/lib/read-response-json"
 
 export default function SouscriptionPage() {
   const router = useRouter()
@@ -56,7 +57,13 @@ export default function SouscriptionPage() {
     setSiretError(null)
     try {
       const res = await fetch(`/api/siret?siret=${s}`)
-      const data = await res.json()
+      const data = await readResponseJson<{
+        error?: string
+        raisonSociale?: string
+        adresse?: string
+        codePostal?: string
+        ville?: string
+      }>(res)
       if (res.ok && data.raisonSociale) {
         setForm((f) => ({
           ...f,

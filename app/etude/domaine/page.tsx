@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
+import { readResponseJson } from "@/lib/read-response-json"
 
 const MIN_DESCRIPTION = 20
 
@@ -48,8 +49,8 @@ export default function EtudeDomainePage() {
           },
         }),
       })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || "Erreur")
+      const json = await readResponseJson<{ error?: string }>(res)
+      if (!res.ok) throw new Error(json.error || "Erreur lors de l'envoi")
       setSubmitted(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'envoi")
@@ -232,7 +233,7 @@ export default function EtudeDomainePage() {
               disabled={submitting}
               className="w-full bg-[#2563eb] text-white py-3.5 rounded-xl hover:bg-[#1d4ed8] disabled:bg-gray-400 transition font-semibold"
             >
-              {submitting ? "Envoi en cours…" : "Envoyer ma demande d&apos;étude"}
+              {submitting ? "Envoi en cours…" : "Envoyer ma demande d'étude"}
             </button>
           </form>
 

@@ -6,6 +6,7 @@ import {
   DOC_TYPES_DO,
   UPLOAD_DOC_LABELS,
 } from "@/lib/user-document-types"
+import { readResponseJson } from "@/lib/read-response-json"
 
 interface UploadedDoc {
   id: string
@@ -40,7 +41,7 @@ export function GedUpload() {
     try {
       const res = await fetch("/api/documents/uploaded/list")
       if (res.ok) {
-        const data = await res.json()
+        const data = await readResponseJson<UploadedDoc[]>(res)
         setUploaded(data)
       }
     } catch {
@@ -67,7 +68,7 @@ export function GedUpload() {
         body: formData,
       })
 
-      const data = await res.json()
+      const data = await readResponseJson<{ error?: string }>(res)
       if (!res.ok) {
         setError(data.error || "Erreur lors de l'upload")
         return

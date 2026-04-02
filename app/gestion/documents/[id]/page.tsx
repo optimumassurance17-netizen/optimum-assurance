@@ -5,6 +5,7 @@ import dynamic from "next/dynamic"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
+import { readResponseJson } from "@/lib/read-response-json"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
 const DevisDoTemplate = dynamic(() => import("@/components/documents/DevisDoTemplate").then((m) => m.DevisDoTemplate), { ssr: false })
@@ -39,8 +40,15 @@ export default function GestionDocumentPage() {
     const fetchDoc = async () => {
       try {
         const res = await fetch(`/api/gestion/documents/${params.id}`)
+        const data = await readResponseJson<{
+          id: string
+          type: string
+          numero: string
+          data: Record<string, unknown>
+          userId: string
+          verificationToken?: string | null
+        }>(res)
         if (!res.ok) throw new Error("Document introuvable")
-        const data = await res.json()
         setDocument(data)
       } catch {
         setDocument(null)

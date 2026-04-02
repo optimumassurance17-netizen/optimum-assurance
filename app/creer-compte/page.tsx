@@ -10,6 +10,7 @@ import type { DoSouscriptionInsurancePayload, SouscriptionData } from "@/lib/typ
 import { STORAGE_KEYS } from "@/lib/types"
 import { doPayloadToSouscriptionShim } from "@/lib/build-do-souscription-payload"
 import { isDoSouscriptionPayload, runInsuranceContractStepAfterSouscription } from "@/lib/souscription-insurance-contract"
+import { readResponseJson } from "@/lib/read-response-json"
 
 export default function CreerComptePage() {
   const router = useRouter()
@@ -78,7 +79,7 @@ export default function CreerComptePage() {
         }),
       })
 
-      const result = await res.json()
+      const result = await readResponseJson<{ error?: string }>(res)
 
       if (!res.ok) {
         throw new Error(result.error || "Erreur lors de la création du compte")

@@ -15,6 +15,7 @@ import { faqDevis } from "@/lib/garanties-data"
 import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { getMetierPrefillActivites } from "@/lib/metier-devis-prefill"
+import { readResponseJson } from "@/lib/read-response-json"
 
 function DevisPageContent() {
   const router = useRouter()
@@ -227,7 +228,14 @@ function DevisPageContent() {
                   setSiretError(null)
                   try {
                     const res = await fetch(`/api/siret?siret=${siret}`)
-                    const data = await res.json()
+                    const data = await readResponseJson<{
+                      error?: string
+                      raisonSociale?: string
+                      adresse?: string
+                      codePostal?: string
+                      ville?: string
+                      dateCreationSociete?: string
+                    }>(res)
                     if (res.ok && data.raisonSociale) {
                       setSiretPrefill({
                         raisonSociale: data.raisonSociale,

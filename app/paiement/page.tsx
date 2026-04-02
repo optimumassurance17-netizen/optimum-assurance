@@ -9,6 +9,7 @@ import { Breadcrumb } from "@/components/Breadcrumb"
 import type { SouscriptionData } from "@/lib/types"
 import { STORAGE_KEYS, FRAIS_GESTION_PRELEVEMENT } from "@/lib/types"
 import type { PeriodicitePrelevement } from "@/lib/types"
+import { readResponseJson } from "@/lib/read-response-json"
 
 /** Échéancier trimestriel uniquement : 1er trimestre + frais (CB), puis 3 × trimestre en SEPA. */
 function calculerEcheancierTrimestriel(primeAnnuelle: number) {
@@ -123,14 +124,18 @@ export default function PaiementPage() {
         body: JSON.stringify(payload),
       })
 
-      const result = await res.json()
+      const result = await readResponseJson<{
+        error?: string
+        checkoutUrl?: string
+        id?: string
+      }>(res)
 
       if (!res.ok) {
         throw new Error(result.error || "Erreur paiement")
       }
 
       if (result.checkoutUrl) {
-        sessionStorage.setItem("mollie_payment_id", result.id)
+        sessionStorage.setItem("mollie_payment_id", result.id ?? "")
         window.location.href = result.checkoutUrl
       } else {
         setError("Pas d'URL de paiement reçue")

@@ -28,6 +28,7 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Toast } from "@/components/Toast"
+import { readResponseJson } from "@/lib/read-response-json"
 
 interface DashboardData {
   users: { id: string; email: string; raisonSociale: string | null; siret: string | null; createdAt: string }[]
@@ -183,11 +184,12 @@ export default function GestionPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ data: modifications }),
       })
-      if (!res.ok) throw new Error((await res.json()).error || "Erreur")
+      const patchBody = await readResponseJson<{ error?: string }>(res)
+      if (!res.ok) throw new Error(patchBody.error || "Erreur")
       setEditModal(null)
       setToast({ message: "Modification enregistrée", type: "success" })
       const dashRes = await fetch("/api/gestion/dashboard")
-      if (dashRes.ok) setData(await dashRes.json())
+      if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : "Erreur", type: "error" })
     } finally {
@@ -233,7 +235,7 @@ export default function GestionPage() {
           return
         }
         if (!res.ok) throw new Error("Erreur chargement")
-        const json = await res.json()
+        const json = await readResponseJson<DashboardData>(res)
         setData(json)
       } catch {
         setError("Erreur de chargement")
@@ -302,12 +304,12 @@ export default function GestionPage() {
           })(),
         }),
       })
-      const result = await res.json()
+      const result = await readResponseJson<{ error?: string; numero?: string }>(res)
       if (!res.ok) throw new Error(result.error || "Erreur")
       setToast({ message: `Devis DO ${result.numero} créé. Email envoyé au client.`, type: "success" })
       setDevisDoForm({ leadId: "", userId: "", primeAnnuelle: "", coutConstruction: "", telephone: "", adresseOperation: "", typeConstruction: "", destination: "", closCouvert: "", fraisGestion: "", fraisCourtage: "" })
       const dashRes = await fetch("/api/gestion/dashboard")
-      if (dashRes.ok) setData(await dashRes.json())
+      if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : "Erreur création devis DO", type: "error" })
     } finally {
@@ -334,12 +336,12 @@ export default function GestionPage() {
           motif: avenantForm.motif || undefined,
         }),
       })
-      const result = await res.json()
+      const result = await readResponseJson<{ error?: string; numero?: string }>(res)
       if (!res.ok) throw new Error(result.error || "Erreur")
       setToast({ message: `Avenant ${result.numero} créé`, type: "success" })
       setAvenantForm({ userId: "", contractNumero: "", chiffreAffaires: "", primeAnnuelle: "", activites: "", motif: "" })
       const dashRes = await fetch("/api/gestion/dashboard")
-      if (dashRes.ok) setData(await dashRes.json())
+      if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : "Erreur création avenant", type: "error" })
     } finally {
@@ -1123,11 +1125,11 @@ export default function GestionPage() {
                                     headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({ leadId: d.id }),
                                   })
-                                  const json = await res.json()
+                                  const json = await readResponseJson<{ error?: string; email?: string }>(res)
                                   if (!res.ok) throw new Error(json.error || "Erreur")
                                   setToast({ message: `Compte créé pour ${json.email}`, type: "success" })
                                   const dashRes = await fetch("/api/gestion/dashboard")
-                                  if (dashRes.ok) setData(await dashRes.json())
+                                  if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
                                 } catch (err) {
                                   setToast({ message: err instanceof Error ? err.message : "Erreur", type: "error" })
                                 }
@@ -1516,12 +1518,12 @@ export default function GestionPage() {
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ etudeLeadId: etudeMiseModal.id, primeAnnuelle: prime }),
                     })
-                    const json = await res.json()
+                    const json = await readResponseJson<{ error?: string }>(res)
                     if (!res.ok) throw new Error(json.error || "Erreur")
                     setToast({ message: "Remise envoyée au client par email.", type: "success" })
                     setEtudeMiseModal(null)
                     const dashRes = await fetch("/api/gestion/dashboard")
-                    if (dashRes.ok) setData(await dashRes.json())
+                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
                   } catch (err) {
                     setToast({ message: err instanceof Error ? err.message : "Erreur", type: "error" })
                   } finally {

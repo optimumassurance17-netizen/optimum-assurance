@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
+import { readResponseJson } from "@/lib/read-response-json"
 
 export default function MotDePasseOubliePage() {
   const [email, setEmail] = useState("")
@@ -20,7 +21,7 @@ export default function MotDePasseOubliePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       })
-      const data = await res.json()
+      const data = await readResponseJson<{ error?: string }>(res)
       if (!res.ok) throw new Error(data.error || "Erreur")
       setSent(true)
     } catch (err) {

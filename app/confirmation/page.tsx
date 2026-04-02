@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
 import { STORAGE_KEYS } from "@/lib/types"
+import { readResponseJson } from "@/lib/read-response-json"
 
 async function sendConfirmationEmail(raisonSociale: string, email: string) {
   try {
@@ -48,11 +49,11 @@ export default function ConfirmationPage() {
       if (paymentId) {
         try {
           const res = await fetch(`/api/mollie/payment-status?id=${encodeURIComponent(paymentId)}`)
-          const data = (await res.json()) as {
+          const data = await readResponseJson<{
             status?: string
             amount?: number
             metadata?: Record<string, string>
-          }
+          }>(res)
 
           const insuranceMeta =
             data.metadata?.type === "insurance_contract" || paymentType === "insurance_contract"

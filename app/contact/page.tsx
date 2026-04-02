@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
+import { readResponseJson } from "@/lib/read-response-json"
 
 export default function ContactPage() {
   const [nom, setNom] = useState("")
@@ -23,7 +24,7 @@ export default function ContactPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nom, email, sujet, message }),
       })
-      const data = await res.json()
+      const data = await readResponseJson<{ error?: string }>(res)
       if (!res.ok) throw new Error(data.error || "Erreur")
       setDone(true)
       setNom("")

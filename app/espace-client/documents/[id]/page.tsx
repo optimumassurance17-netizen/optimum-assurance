@@ -9,6 +9,7 @@ import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { Toast } from "@/components/Toast"
 import { DevoirConseil } from "@/components/DevoirConseil"
+import { readResponseJson } from "@/lib/read-response-json"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
 const DevisDoTemplate = dynamic(() => import("@/components/documents/DevisDoTemplate").then((m) => m.DevisDoTemplate), { ssr: false })
@@ -48,8 +49,15 @@ export default function DocumentPage() {
     const fetchDoc = async () => {
       try {
         const res = await fetch(`/api/documents/${params.id}`)
+        const data = await readResponseJson<{
+          id: string
+          type: string
+          numero: string
+          status?: string
+          data: Record<string, unknown>
+          verificationToken?: string | null
+        }>(res)
         if (!res.ok) throw new Error("Document introuvable")
-        const data = await res.json()
         setDocument(data)
       } catch {
         setDocument(null)
@@ -110,7 +118,7 @@ export default function DocumentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ documentId: document.id }),
       })
-      const result = await res.json()
+      const result = await readResponseJson<{ error?: string }>(res)
       if (!res.ok) throw new Error(result.error || "Erreur")
       setResiliationRequested(true)
       setToast({ message: "Demande envoyée. Vous serez informé par email.", type: "success" })
@@ -135,10 +143,14 @@ export default function DocumentPage() {
     }
     try {
       const res = await fetch(`/api/documents/${document.id}/create-payment`, { method: "POST" })
-      const result = await res.json()
+      const result = await readResponseJson<{
+        error?: string
+        checkoutUrl?: string
+        id?: string
+      }>(res)
       if (!res.ok) throw new Error(result.error || "Erreur")
       if (result.checkoutUrl) {
-        sessionStorage.setItem("mollie_payment_id", result.id)
+        sessionStorage.setItem("mollie_payment_id", result.id ?? "")
         sessionStorage.setItem("mollie_payment_type", "devis_do")
         sessionStorage.setItem("mollie_payment_document_id", document.id)
         window.location.href = result.checkoutUrl
