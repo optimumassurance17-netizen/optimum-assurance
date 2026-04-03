@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { JsonLd } from "@/components/JsonLd"
 import { EQ_MENSUEL_MIN } from "@/lib/decennale-affichage-tarif"
 import { faqDevis } from "@/lib/garanties-data"
 import {
@@ -47,7 +48,7 @@ const devisJsonLd = seoJsonLdGraph([
 export default function DevisLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(devisJsonLd) }} />
+      <JsonLd id="jsonld-devis" data={devisJsonLd} />
       {children}
     </>
   )

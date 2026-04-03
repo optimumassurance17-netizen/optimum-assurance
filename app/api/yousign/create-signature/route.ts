@@ -7,6 +7,7 @@ import { ContratPDF } from "@/components/pdf/ContratPDF"
 import { createSignatureRequest } from "@/lib/yousign"
 import { getNextNumero } from "@/lib/documents"
 import { prisma } from "@/lib/prisma"
+import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
       modePaiement: "prelevement",
       periodicitePrelevement: "trimestriel",
       fraisGestionPrelevement: 60,
-      franchise: souscription.tarif?.franchise || 2500,
+      franchise: souscription.tarif?.franchise ?? FRANCHISE_DECENNALE_EUR,
       plafond: souscription.tarif?.plafond || 100000,
       dateEffet,
       dateEffetIso,

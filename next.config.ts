@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(process.cwd()),
   experimental: {
     inlineCss: true,
-    optimizePackageImports: ["qrcode.react"],
+    optimizePackageImports: ["qrcode.react", "next-auth/react"],
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
@@ -33,6 +33,10 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      {
+        source: "/sitemap.xml",
+        headers: [{ key: "Content-Type", value: "application/xml; charset=utf-8" }],
+      },
       {
         source: "/:path*",
         headers: [

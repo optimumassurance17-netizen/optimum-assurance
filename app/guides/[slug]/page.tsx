@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { GUIDES_SEO } from "@/lib/guides-seo"
@@ -62,7 +63,7 @@ export default async function GuidePage({
 
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(guideJsonLd) }} />
+      <JsonLd id={`jsonld-guide-${data.slug}`} data={guideJsonLd} />
       <Header />
 
       <article className="max-w-3xl mx-auto px-6 py-14">

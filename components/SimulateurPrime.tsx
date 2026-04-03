@@ -7,8 +7,26 @@ import { equivMensuelDepuisAnnuel, formatEurosFR } from "@/lib/decennale-afficha
 import { CA_MINIMUM } from "@/lib/tarification"
 import { ACTIVITES_AVEC_TARIFS } from "@/lib/activites-btp"
 
+/** Ordre stable des catégories (évite un <select> à ~110 options : DOM plus léger, audits Lighthouse). */
+const CATEGORIES_SIMULATEUR: string[] = (() => {
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const t of ACTIVITES_AVEC_TARIFS) {
+    if (!seen.has(t.categorie)) {
+      seen.add(t.categorie)
+      out.push(t.categorie)
+    }
+  }
+  return out
+})()
+
+function activitesDansCategorie(categorie: string) {
+  return ACTIVITES_AVEC_TARIFS.filter((t) => t.categorie === categorie)
+}
+
 export function SimulateurPrime() {
   const [chiffreAffaires, setChiffreAffaires] = useState<string>("80000")
+  const [categorie, setCategorie] = useState<string>(ACTIVITES_AVEC_TARIFS[0].categorie)
   const [activite, setActivite] = useState<string>(ACTIVITES_AVEC_TARIFS[0].activite)
   const [resultat, setResultat] = useState<{ prime: number; economie: number } | null>(null)
 
@@ -48,21 +66,43 @@ export function SimulateurPrime() {
         </div>
         <div>
           <label className="block text-sm font-semibold text-slate-900 mb-2">
+            Catégorie
+            <select
+              value={categorie}
+              onChange={(e) => {
+                const cat = e.target.value
+                setResultat(null)
+                setCategorie(cat)
+                const liste = activitesDansCategorie(cat)
+                if (liste[0]) setActivite(liste[0].activite)
+              }}
+              className="mt-2 block w-full border border-[#d4d4d4] rounded-xl px-4 py-3.5 text-base focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none transition-all text-[#0a0a0a] font-medium bg-[#e4e4e4] touch-manipulation min-h-[48px]"
+            >
+              {CATEGORIES_SIMULATEUR.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-slate-900 mb-2">
             Activité (taux et prime min du PDF)
             <select
               value={activite}
               onChange={(e) => { setResultat(null); setActivite(e.target.value) }}
               className="mt-2 block w-full border border-[#d4d4d4] rounded-xl px-4 py-3.5 text-base focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none transition-all text-[#0a0a0a] font-medium bg-[#e4e4e4] touch-manipulation min-h-[48px]"
             >
-            {ACTIVITES_AVEC_TARIFS.map((t) => (
-              <option key={t.activite} value={t.activite}>
-                {t.activite} — {t.activite === "Nettoyage toiture et peinture résine (I3 à I5)"
-                  ? "1.7% / 2% au-dessus de 250k€"
-                  : t.taux_base > 0
-                    ? `${t.taux_base} % (min ${t.prime_min} €/an)`
-                    : `forfait ${t.prime_min} €/an`}
-              </option>
-            ))}
+              {activitesDansCategorie(categorie).map((t) => (
+                <option key={t.activite} value={t.activite}>
+                  {t.activite} — {t.activite === "Nettoyage toiture et peinture résine (I3 à I5)"
+                    ? "1.7% / 2% au-dessus de 250k€"
+                    : t.taux_base > 0
+                      ? `${t.taux_base} % (min ${t.prime_min} €/an)`
+                      : `forfait ${t.prime_min} €/an`}
+                </option>
+              ))}
             </select>
           </label>
         </div>
@@ -75,7 +115,7 @@ export function SimulateurPrime() {
         </button>
         {resultat && (
           <div className="rounded-2xl border border-blue-200 bg-blue-50/80 p-5">
-            <p className="text-2xl font-bold text-blue-700">
+            <p className="text-2xl font-bold text-blue-700 tabular-nums min-h-[1.35em]">
               {formatEurosFR(equivMensuelDepuisAnnuel(resultat.prime), {
                 minFrac: 0,
                 maxFrac: 2,

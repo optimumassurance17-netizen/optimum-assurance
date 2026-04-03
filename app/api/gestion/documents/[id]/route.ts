@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
+import { IDENTITY_DOC_KEYS, syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
 
 /**
  * GET - Récupérer un document (admin uniquement, pour consultation)
@@ -81,7 +82,7 @@ export async function PATCH(
     const allowedKeys = [
       "chiffreAffaires", "primeAnnuelle", "activites", "motifAvenant",
       "dateEffet", "dateEcheance", "raisonSociale", "siret", "adresse",
-      "codePostal", "ville", "email", "representantLegal", "civilite",
+      "codePostal", "ville", "email", "telephone", "representantLegal", "civilite",
       "primeMensuelle", "primeTrimestrielle", "modePaiement",
       "periodicitePrelevement", "fraisGestionPrelevement", "franchise", "plafond",
     ]
@@ -104,6 +105,22 @@ export async function PATCH(
       where: { id },
       data: { data: JSON.stringify(mergedData) },
     })
+
+    const identityTouched = IDENTITY_DOC_KEYS.filter((k) => k in filteredModifications)
+    if (identityTouched.length > 0) {
+      const subset: Record<string, unknown> = {}
+      for (const k of identityTouched) {
+        subset[k] = mergedData[k]
+      }
+      const sync = await syncUserFromDocumentMergedData(document.userId, subset)
+      if (!sync.ok) {
+        await prisma.document.update({
+          where: { id },
+          data: { data: JSON.stringify(currentData) },
+        })
+        return NextResponse.json({ error: sync.error }, { status: sync.status })
+      }
+    }
 
     await logAdminActivity({
       adminEmail: session.user.email || "admin",

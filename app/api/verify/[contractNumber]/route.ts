@@ -17,13 +17,23 @@ export async function GET(
   const contractNumber = decodeURIComponent(raw)
   const detail = request.nextUrl.searchParams.get("detail") === "1"
 
-  const contract = await prisma.insuranceContract.findUnique({
-    where: { contractNumber },
-  })
+  let contract
+  try {
+    contract = await prisma.insuranceContract.findUnique({
+      where: { contractNumber },
+    })
+  } catch {
+    return NextResponse.json({
+      valid: false,
+      displayStatus: "inactive",
+      message: "Vérification temporairement indisponible",
+    })
+  }
 
   if (!contract) {
     return NextResponse.json({
       valid: false,
+      displayStatus: "inactive",
       message: "Attestation invalide ou contrat non actif",
     })
   }

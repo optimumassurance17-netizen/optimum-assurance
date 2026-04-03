@@ -50,9 +50,10 @@ export async function generateDOPolicy(data: InsuranceData): Promise<Uint8Array>
     data.constructionNature ? `Nature de la construction : ${data.constructionNature}.` : "",
     `Période couverte : du ${data.startDate} au ${data.endDate}.`,
     `Prime TTC : ${formatEuro(data.premium)}.`,
+    "Franchise : aucune (garantie obligatoire dommages-ouvrage).",
     "Paiement : selon modalités contractuelles (virement ou prélèvement selon proposition).",
     "Le souscripteur atteste l’exactitude des informations techniques. La garantie est subordonnée à l’étude du dossier et à l’acceptation du risque par l’assureur.",
-    `Références légales : ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`,
+    `Références : ${SITE_URL}/conditions-generales-dommage-ouvrage — ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`,
   ].filter(Boolean) as string[]
 
   for (const c of clauses) {

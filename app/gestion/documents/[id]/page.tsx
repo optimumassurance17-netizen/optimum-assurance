@@ -86,8 +86,17 @@ export default function GestionDocumentPage() {
           <Link href={`/gestion/clients/${document.userId}`} className="text-gray-200 hover:text-white text-sm">
             ← Fiche client
           </Link>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3 items-center justify-end">
+            {(document.type === "contrat" || document.type === "avenant") && (
+              <Link
+                href={`/gestion?editDoc=${document.id}`}
+                className="text-sm font-medium text-amber-400 hover:text-amber-300"
+              >
+                Modifier les données
+              </Link>
+            )}
             <button
+              type="button"
               onClick={() => window.print()}
               className="text-sm text-[#2563eb] hover:text-[#1d4ed8]"
             >

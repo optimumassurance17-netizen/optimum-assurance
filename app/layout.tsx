@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { EQ_MENSUEL_MIN } from "@/lib/decennale-affichage-tarif";
 import "./globals.css";
@@ -20,6 +21,9 @@ const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
+  /** Réduit le délai d’affichage LCP (texte) vs police web — métriques de secours plus proches. */
+  adjustFontFallback: true,
+  preload: true,
 });
 
 const baseUrl = SITE_URL
@@ -97,11 +101,9 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={`${plusJakarta.variable} font-sans antialiased`}>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){document.documentElement.classList.remove("dark");try{localStorage.removeItem("theme");}catch(e){}})();`,
-          }}
-        />
+        <Script id="force-light-theme" strategy="beforeInteractive">
+          {`(function(){document.documentElement.classList.remove("dark");try{localStorage.removeItem("theme");}catch(e){}})();`}
+        </Script>
         <ForceLightTheme />
         <a href="#main-content" className="skip-link">Aller au contenu principal</a>
         <SessionProvider>

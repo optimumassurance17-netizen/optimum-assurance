@@ -55,6 +55,13 @@ const vars = [
   { key: "YOUSIGN_WEBHOOK_SECRET", required: false, hint: "Recommandé - vérifie la signature des webhooks YouSign" },
   { key: "UPSTASH_REDIS_REST_URL", required: false, hint: "Optionnel - rate limit distribué (chat / contact) sur Vercel" },
   { key: "UPSTASH_REDIS_REST_TOKEN", required: false, hint: "Avec UPSTASH_REDIS_REST_URL (console upstash.com)" },
+  { key: "NEXT_PUBLIC_SUPABASE_URL", required: false, hint: "Optionnel — Supabase + intégration Vercel (URL projet .supabase.co)" },
+  { key: "NEXT_PUBLIC_SUPABASE_ANON_KEY", required: false, hint: "Optionnel — clé anon (API Supabase)" },
+  {
+    key: "SUPABASE_SERVICE_ROLE_KEY",
+    required: false,
+    hint: "Obligatoire si signature MVP /api/sign — souvent à ajouter à la main sur Vercel (pas seulement l’intégration)",
+  },
 ]
 
 const okKeys = new Set(

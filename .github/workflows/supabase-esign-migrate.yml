@@ -1,0 +1,31 @@
+# Déclenchement manuel : applique les migrations dans supabase/migrations/ sur la base Postgres du projet.
+#
+# Prérequis (GitHub → Settings → Secrets → Actions) :
+#   SUPABASE_DATABASE_URL = URI Postgres du projet (Supabase Dashboard → Project Settings → Database → URI, mode pooler ou direct, avec mot de passe).
+#
+# L’agent / Cursor ne peut pas remplir ce secret à votre place.
+
+name: Supabase — migrations (signature)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Appliquer les migrations
+        env:
+          SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+        run: |
+          if [ -z "$SUPABASE_DATABASE_URL" ]; then
+            echo "Secret SUPABASE_DATABASE_URL manquant (URI Postgres Supabase)."
+            exit 1
+          fi
+          supabase db push --db-url "$SUPABASE_DATABASE_URL"

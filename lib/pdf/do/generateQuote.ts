@@ -109,6 +109,14 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
     font: fontBold,
     color: PDF_COLORS.primary,
   })
+  y -= 16
+  page.drawText("Franchise : aucune (garantie obligatoire DO).", {
+    x: PDF_PAGE.marginX,
+    y,
+    size: 9,
+    font,
+    color: PDF_COLORS.muted,
+  })
   y -= 20
 
   page.drawText(`Validité du devis : ${QUOTE_VALIDITY_DAYS} jours à compter de la date d’émission.`, {
@@ -135,7 +143,7 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
   y -= 14
   y = drawWrappedText(
     page,
-    `Références : ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`,
+    `CG dommage ouvrage : ${SITE_URL}/conditions-generales-dommage-ouvrage — CGV : ${SITE_URL}/cgv — attestations : ${SITE_URL}/conditions-attestations`,
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,

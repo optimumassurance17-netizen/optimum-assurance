@@ -2,11 +2,26 @@ import { MetadataRoute } from "next"
 import { METIERS_SEO } from "@/lib/metiers-seo"
 import { DO_SEO } from "@/lib/dommage-ouvrage-seo"
 import { GUIDES_SEO } from "@/lib/guides-seo"
+import { fetchProgrammaticSitemapUrls } from "@/lib/seo-programmatic/queries"
 import { SITE_URL } from "@/lib/site-url"
 
 const baseUrl = SITE_URL
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  let programmatic: Awaited<ReturnType<typeof fetchProgrammaticSitemapUrls>> = []
+  try {
+    programmatic = await fetchProgrammaticSitemapUrls()
+  } catch (e) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[sitemap] fetchProgrammaticSitemapUrls:", e)
+    }
+  }
+  const programmaticEntries: MetadataRoute.Sitemap = programmatic.map((p) => ({
+    url: `${baseUrl}${p.path}`,
+    lastModified: new Date(),
+    changeFrequency: p.changeFrequency,
+    priority: p.priority,
+  }))
   const metiers = METIERS_SEO.map((m) => ({
     url: `${baseUrl}/assurance-decennale/${m.slug}`,
     lastModified: new Date(),
@@ -44,8 +59,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/avis`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
     ...metiers,
     ...doPages,
+    ...programmaticEntries,
     { url: `${baseUrl}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.75 },
     { url: `${baseUrl}/cgv`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+    {
+      url: `${baseUrl}/conditions-generales-dommage-ouvrage`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.45,
+    },
     { url: `${baseUrl}/conditions-attestations`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.35 },
     { url: `${baseUrl}/mentions-legales`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
     { url: `${baseUrl}/confidentialite`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },

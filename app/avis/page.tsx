@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
 import { SITE_URL } from "@/lib/site-url"
 
@@ -51,7 +52,7 @@ const jsonLdReview = {
 export default function AvisPage() {
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdReview) }} />
+      <JsonLd id="jsonld-avis" data={jsonLdReview} />
       <Header />
       <div className="max-w-2xl mx-auto px-6 py-14">
         <h1 className="text-3xl font-bold text-[#0a0a0a] mb-2">Avis clients</h1>

@@ -7,6 +7,7 @@ import crypto from "crypto"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 
 import { SITE_URL as APP_URL } from "@/lib/site-url"
+import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 const DRAFT_EXPIRY_DAYS = 7
 
 /**
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
     const chiffreAffaires = Number(dataEtude.chiffreAffaires) || 40000
     const primeMensuelle = Math.round((primeAnnuelle / 12) * 100) / 100
     const primeTrimestrielle = Math.round((primeAnnuelle / 4) * 100) / 100
-    const franchise = Math.max(2500, Math.round(chiffreAffaires * 0.05))
+    const franchise = FRANCHISE_DECENNALE_EUR
     const plafond = chiffreAffaires * 2
 
     const tarif = {

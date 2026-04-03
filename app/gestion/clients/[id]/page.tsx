@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { readResponseJson } from "@/lib/read-response-json"
+import { Toast } from "@/components/Toast"
 
 interface ClientData {
   user: { id: string; email: string; raisonSociale: string | null; siret: string | null; adresse?: string | null; codePostal?: string | null; ville?: string | null; telephone?: string | null; createdAt: string }
@@ -52,6 +53,17 @@ export default function ClientDetailPage() {
   const [sinistreForm, setSinistreForm] = useState({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [profileForm, setProfileForm] = useState({
+    email: "",
+    raisonSociale: "",
+    siret: "",
+    adresse: "",
+    codePostal: "",
+    ville: "",
+    telephone: "",
+  })
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -70,6 +82,16 @@ export default function ClientDetailPage() {
         if (!res.ok) throw new Error("Erreur chargement")
         const json = await readResponseJson<ClientData>(res)
         setData(json)
+        const u = json.user
+        setProfileForm({
+          email: u.email,
+          raisonSociale: u.raisonSociale ?? "",
+          siret: u.siret ?? "",
+          adresse: u.adresse ?? "",
+          codePostal: u.codePostal ?? "",
+          ville: u.ville ?? "",
+          telephone: u.telephone ?? "",
+        })
         setNotes(json.notes ?? [])
         setSinistres(json.sinistres ?? [])
         setUserDocuments(json.userDocuments ?? [])
@@ -115,10 +137,11 @@ export default function ClientDetailPage() {
 
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
         <section className="bg-[#252525] rounded-xl p-6 border border-gray-700">
-          <div className="flex justify-between items-start mb-4">
+          <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
             <h1 className="text-xl font-semibold text-white">Fiche client</h1>
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => {
                   setSinistreForm({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
                   setSinistreModal(true)
@@ -128,6 +151,7 @@ export default function ClientDetailPage() {
                 Sinistre
               </button>
               <button
+                type="button"
                 onClick={() => setEmailModal(true)}
                 className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium"
               >
@@ -135,36 +159,124 @@ export default function ClientDetailPage() {
               </button>
             </div>
           </div>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div>
-              <dt className="text-gray-200">Raison sociale</dt>
-              <dd className="text-white font-medium">{user.raisonSociale || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-200">Email</dt>
-              <dd className="text-white">{user.email}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-200">SIRET</dt>
-              <dd className="text-white font-mono">{user.siret || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-200">Client depuis</dt>
-              <dd className="text-white">{new Date(user.createdAt).toLocaleDateString("fr-FR")}</dd>
-            </div>
-            {user.adresse && (
-              <div className="sm:col-span-2">
-                <dt className="text-gray-200">Adresse</dt>
-                <dd className="text-white">{[user.adresse, user.codePostal, user.ville].filter(Boolean).join(", ")}</dd>
-              </div>
-            )}
-            {user.telephone && (
+          <p className="text-xs text-gray-200 mb-4">
+            Client depuis le {new Date(user.createdAt).toLocaleDateString("fr-FR")} — modifiez les coordonnées compte
+            (connexion, facturation) ci-dessous.
+          </p>
+          <form
+            className="space-y-4"
+            onSubmit={async (e) => {
+              e.preventDefault()
+              setProfileSaving(true)
+              try {
+                const res = await fetch(`/api/gestion/clients/${params.id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    email: profileForm.email.trim(),
+                    raisonSociale: profileForm.raisonSociale,
+                    siret: profileForm.siret,
+                    adresse: profileForm.adresse,
+                    codePostal: profileForm.codePostal,
+                    ville: profileForm.ville,
+                    telephone: profileForm.telephone,
+                  }),
+                })
+                const json = await readResponseJson<{
+                  error?: string
+                  user?: ClientData["user"]
+                  syncedDocuments?: number
+                }>(res)
+                if (!res.ok) throw new Error(json.error || "Erreur")
+                if (json.user) {
+                  setData((d) => (d ? { ...d, user: json.user! } : d))
+                  const n = json.syncedDocuments ?? 0
+                  setToast({
+                    message:
+                      n > 0
+                        ? `Fiche enregistrée — identité recopiée sur ${n} contrat(s) / avenant(s)`
+                        : "Fiche enregistrée",
+                    type: "success",
+                  })
+                }
+              } catch (err) {
+                setToast({ message: err instanceof Error ? err.message : "Erreur", type: "error" })
+              } finally {
+                setProfileSaving(false)
+              }
+            }}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
-                <dt className="text-gray-200">Téléphone</dt>
-                <dd className="text-white">{user.telephone}</dd>
+                <label className="block text-gray-200 mb-1">Raison sociale</label>
+                <input
+                  value={profileForm.raisonSociale}
+                  onChange={(e) => setProfileForm((f) => ({ ...f, raisonSociale: e.target.value }))}
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                />
               </div>
-            )}
-          </dl>
+              <div>
+                <label className="block text-gray-200 mb-1">Email (connexion)</label>
+                <input
+                  type="email"
+                  required
+                  autoComplete="off"
+                  value={profileForm.email}
+                  onChange={(e) => setProfileForm((f) => ({ ...f, email: e.target.value }))}
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-200 mb-1">SIRET</label>
+                <input
+                  value={profileForm.siret}
+                  onChange={(e) => setProfileForm((f) => ({ ...f, siret: e.target.value }))}
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-200 mb-1">Téléphone</label>
+                <input
+                  value={profileForm.telephone}
+                  onChange={(e) => setProfileForm((f) => ({ ...f, telephone: e.target.value }))}
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-gray-200 mb-1">Adresse</label>
+                <input
+                  value={profileForm.adresse}
+                  onChange={(e) => setProfileForm((f) => ({ ...f, adresse: e.target.value }))}
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-200 mb-1">Code postal</label>
+                <input
+                  value={profileForm.codePostal}
+                  onChange={(e) => setProfileForm((f) => ({ ...f, codePostal: e.target.value }))}
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-200 mb-1">Ville</label>
+                <input
+                  value={profileForm.ville}
+                  onChange={(e) => setProfileForm((f) => ({ ...f, ville: e.target.value }))}
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                disabled={profileSaving}
+                className="bg-[#2563eb] text-white px-5 py-2 rounded-lg hover:bg-[#1d4ed8] disabled:opacity-50 font-medium text-sm"
+              >
+                {profileSaving ? "Enregistrement…" : "Enregistrer la fiche"}
+              </button>
+            </div>
+          </form>
         </section>
 
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -519,6 +631,10 @@ export default function ClientDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
     </main>
   )

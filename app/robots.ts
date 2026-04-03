@@ -1,15 +1,11 @@
 import { MetadataRoute } from "next"
 import { SITE_URL } from "@/lib/site-url"
 
-function sitemapEntries(baseUrl: string): string | string[] {
-  const primary = `${baseUrl}/sitemap.xml`
-  const www = /^https:\/\/www\.([^/]+)$/i.exec(baseUrl)
-  if (www) {
-    return [primary, `https://${www[1]}/sitemap.xml`]
-  }
-  return primary
-}
-
+/**
+ * Une seule URL de sitemap = l’URL canonique du site (SITE_URL).
+ * Ne pas ajouter le domaine nu en parallèle du www : souvent il ne pointe pas vers Vercel
+ * et renvoie une page HTML (parking, hébergeur, autre stack) → erreur GSC « sitemap en HTML ».
+ */
 export default function robots(): MetadataRoute.Robots {
   const baseUrl = SITE_URL
   return {
@@ -21,6 +17,6 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     host: baseUrl,
-    sitemap: sitemapEntries(baseUrl),
+    sitemap: `${baseUrl}/sitemap.xml`,
   }
 }

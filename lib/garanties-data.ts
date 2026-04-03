@@ -2,19 +2,19 @@ export const garantiesDecennale = [
   {
     nom: "RC Décennale obligatoire",
     description: "Dommages affectant la solidité de l'ouvrage pendant 10 ans après réception.",
-    franchise: "500 € ou 1 000 €",
+    franchise: "1 000 €",
     plafond: "2 000 000 €",
   },
   {
     nom: "RC Professionnelle",
     description: "Dommages corporels, matériels et immatériels causés aux tiers pendant les travaux.",
-    franchise: "500 € ou 1 000 €",
+    franchise: "1 000 €",
     plafond: "2 000 000 €",
   },
   {
     nom: "Bon fonctionnement (biennale)",
     description: "Équipements dissociables — réparation ou remplacement sous 2 ans.",
-    franchise: "500 € ou 1 000 €",
+    franchise: "1 000 €",
     plafond: "600 000 €",
   },
   {

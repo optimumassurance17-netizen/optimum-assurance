@@ -35,7 +35,7 @@ test.describe("Parcours devis → paiement → attestation", () => {
     // Lien direct vers devis (éviter les menus déroulants)
     await page.goto("/devis")
     await expect(page).toHaveURL(/\/devis/)
-    await expect(page.locator("h1")).toContainText("devis")
+    await expect(page.getByRole("heading", { level: 1 }).first()).toContainText(/devis/i)
   })
 
   test("Page espace client (connexion requise)", async ({ page }) => {
@@ -68,12 +68,12 @@ test.describe("Parcours devis → paiement → attestation", () => {
   test("Devis avec préremplissage métier (?metier=plombier)", async ({ page }) => {
     await page.goto("/devis?metier=plombier")
     await expect(page.locator("h1")).toContainText("Demande de devis décennale")
-    await expect(page.getByText("Plomberie sanitaire")).toBeVisible()
+    await expect(page.locator("span.text-black.font-medium").filter({ hasText: "Plomberie sanitaire" })).toBeVisible()
   })
 
   test("Page assurance décennale métier — lien devis avec query metier", async ({ page }) => {
     await page.goto("/assurance-decennale/plombier")
-    const link = page.getByRole("link", { name: /Devis Plombier en 3 minutes/i })
+    const link = page.getByRole("link", { name: /Devis Plombier personnalisé/i })
     await expect(link).toHaveAttribute("href", /metier=plombier/)
   })
 

@@ -1,12 +1,26 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import dynamic from "next/dynamic"
+import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
-import { SimulateurPrime } from "@/components/SimulateurPrime"
 import { garantiesDecennale, metiersBtp } from "@/lib/garanties-data"
 import { OpenChatbotButton } from "@/components/OpenChatbotButton"
 import { buildHomePageJsonLdGraph } from "@/lib/seo-home-jsonld"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
+
+/** Simulateur en chunk séparé : moins de JS critique sur le fil d’hydratation du hero / LCP (H1). */
+const SimulateurPrime = dynamic(
+  () => import("@/components/SimulateurPrime").then((m) => m.SimulateurPrime),
+  {
+    ssr: true,
+    loading: () => (
+      <div
+        className="rounded-3xl border border-slate-200/90 bg-white p-8 shadow-xl shadow-slate-900/5 min-h-[300px] animate-pulse"
+        aria-hidden
+      />
+    ),
+  }
+)
 
 const TrustBar = dynamic(() => import("@/components/premium/TrustBar").then((m) => m.TrustBar), {
   loading: () => <div className="h-14 border-y border-slate-200/80 bg-slate-50/90 animate-pulse" aria-hidden />,
@@ -82,10 +96,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main className="min-h-screen bg-slate-50/50">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildHomePageJsonLdGraph()) }}
-      />
+      <JsonLd id="jsonld-home" data={buildHomePageJsonLdGraph()} />
       <Header />
 
       {/* Obligation légale — bandeau sobre */}
@@ -112,6 +123,10 @@ export default function Home() {
         <div className="relative px-4 sm:px-6 md:px-8 py-16 sm:py-24 md:py-32">
           <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
             <div>
+              {/* H1 en premier dans le DOM : accélère la détection / peinture LCP sur mobile */}
+              <h1 className="text-4xl md:text-5xl lg:text-[3.25rem] font-bold tracking-tight leading-[1.08] mb-5 text-slate-900">
+                Votre assurance décennale en ligne, en quelques minutes
+              </h1>
               <div className="mb-5">
                 <DelegationLegalLine className="max-w-xl" />
               </div>
@@ -123,9 +138,6 @@ export default function Home() {
                   Sans engagement
                 </span>
               </div>
-              <h1 className="text-4xl md:text-5xl lg:text-[3.25rem] font-bold tracking-tight leading-[1.08] mb-6 text-slate-900">
-                Votre assurance décennale en ligne, en quelques minutes
-              </h1>
               <p className="text-lg md:text-xl text-slate-700 mb-6 max-w-xl leading-relaxed">
                 Simple, rapide et sécurisé avec un assureur reconnu. Tarif transparent, parcours guidé, documents
                 conformes.
@@ -159,7 +171,7 @@ export default function Home() {
                   Attestation immédiate
                 </span>
                 <p className="mb-1 text-sm font-medium text-slate-700">À partir de</p>
-                <p className="mb-1 text-4xl font-bold text-slate-900 md:text-5xl">
+                <p className="mb-1 text-4xl font-bold text-slate-900 md:text-5xl tabular-nums min-h-[1.2em]">
                   {EQ_MENSUEL_MIN} €<span className="text-xl font-semibold text-slate-700">/mois</span>
                 </p>
                 <p className="mb-2 text-xs text-slate-700">Équivalent (min. 600 €/an)</p>

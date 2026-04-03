@@ -115,6 +115,18 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
     10,
     13
   )
+  y -= 12
+  y = drawWrappedText(
+    page,
+    "Franchise : aucune (garantie obligatoire dommages-ouvrage).",
+    PDF_PAGE.marginX,
+    y,
+    PDF_PAGE.contentWidth,
+    font,
+    9,
+    12,
+    PDF_COLORS.muted
+  )
   y -= 18
 
   page.drawText("Conditions d’effet", {

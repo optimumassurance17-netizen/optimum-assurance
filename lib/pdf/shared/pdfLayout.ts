@@ -17,6 +17,7 @@ export const PDF_COLORS = {
   primary: rgb(37 / 255, 99 / 255, 235 / 255),
   text: rgb(0.09, 0.09, 0.09),
   muted: rgb(0.25, 0.25, 0.25),
+  white: rgb(1, 1, 1),
 } as const
 
 export { LEGAL_FOOTER_LINES }

@@ -3,22 +3,9 @@
  * Chaque composant retourne un <Page> (sans Document) pour être combiné.
  */
 import React from "react"
-import { Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer"
+import { Page, Text, View, Image } from "@react-pdf/renderer"
 import { pdfLegalLinksLine } from "@/lib/pdf-legal-links"
-
-const sharedStyles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10 },
-  header: { borderBottomWidth: 2, borderBottomColor: "#2563eb", paddingBottom: 15, marginBottom: 20 },
-  title: { fontSize: 18, color: "#2563eb", marginBottom: 4 },
-  subtitle: { fontSize: 9, color: "#333333" },
-  h2: { fontSize: 14, marginBottom: 15, marginTop: 15 },
-  h3: { fontSize: 11, marginBottom: 8, marginTop: 12 },
-  p: { marginBottom: 6, lineHeight: 1.4 },
-  section: { marginBottom: 12 },
-  row: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#E5E0D8", paddingVertical: 6 },
-  cellLeft: { flex: 1 },
-  cellRight: { width: 100, textAlign: "right" },
-})
+import { pdfTheme, PdfBrandHeader } from "@/lib/pdf/react-pdf-brand"
 
 export function ContratPDFPage({
   numero,
@@ -45,38 +32,42 @@ export function ContratPDFPage({
     dateEcheance?: string
   }
   return (
-    <Page size="A4" style={sharedStyles.page}>
-      <View style={sharedStyles.header}>
-        <Text style={sharedStyles.title}>Optimum Assurance</Text>
-        <Text style={sharedStyles.subtitle}>Assurance décennale professionnelle</Text>
-      </View>
-      <Text style={sharedStyles.h2}>CONTRAT D&apos;ASSURANCE DÉCENNALE</Text>
-      <Text style={sharedStyles.p}>N° {numero}</Text>
-      <View style={sharedStyles.section}>
-        <Text style={sharedStyles.h3}>Article 1 - Parties</Text>
-        <Text style={sharedStyles.p}>L&apos;Assuré : {d.raisonSociale ?? "—"}</Text>
-        <Text style={sharedStyles.p}>SIRET : {d.siret ?? "—"}</Text>
+    <Page size="A4" style={pdfTheme.page}>
+      <PdfBrandHeader tagline="Assurance décennale professionnelle — extrait contrat" />
+      <Text style={pdfTheme.h2}>CONTRAT D&apos;ASSURANCE DÉCENNALE</Text>
+      <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#1e40af" }]}>N° {numero}</Text>
+      <View style={pdfTheme.section}>
+        <Text style={pdfTheme.h3}>Article 1 - Parties</Text>
+        <Text style={pdfTheme.p}>L&apos;Assuré : {d.raisonSociale ?? "—"}</Text>
+        <Text style={pdfTheme.p}>SIRET : {d.siret ?? "—"}</Text>
         {(d.adresse || d.codePostal || d.ville) && (
-          <Text style={sharedStyles.p}>{[d.adresse, d.codePostal, d.ville].filter(Boolean).join(" ")}</Text>
+          <Text style={pdfTheme.p}>{[d.adresse, d.codePostal, d.ville].filter(Boolean).join(" ")}</Text>
         )}
       </View>
-      <View style={sharedStyles.section}>
-        <Text style={sharedStyles.h3}>Article 3 - Période</Text>
-        <Text style={sharedStyles.p}>Du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}</Text>
+      <View style={pdfTheme.section}>
+        <Text style={pdfTheme.h3}>Article 3 - Période</Text>
+        <Text style={pdfTheme.p}>
+          Du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}
+        </Text>
       </View>
-      <View style={sharedStyles.section}>
-        <Text style={sharedStyles.h3}>Article 4 - Conditions</Text>
-        <View style={sharedStyles.row}>
-          <Text style={sharedStyles.cellLeft}>Prime annuelle</Text>
-          <Text style={sharedStyles.cellRight}>{(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
-        </View>
-        <View style={sharedStyles.row}>
-          <Text style={sharedStyles.cellLeft}>Franchise</Text>
-          <Text style={sharedStyles.cellRight}>{(d.franchise ?? 0).toLocaleString("fr-FR")} €</Text>
-        </View>
-        <View style={sharedStyles.row}>
-          <Text style={sharedStyles.cellLeft}>Plafond</Text>
-          <Text style={sharedStyles.cellRight}>{(d.plafond ?? 0).toLocaleString("fr-FR")} €</Text>
+      <View style={pdfTheme.section}>
+        <Text style={pdfTheme.h3}>Article 4 - Conditions</Text>
+        <View style={pdfTheme.tableCard}>
+          <View style={pdfTheme.tableHeader}>
+            <Text style={pdfTheme.tableHeaderText}>Synthèse financière</Text>
+          </View>
+          <View style={pdfTheme.row}>
+            <Text style={pdfTheme.cellLeft}>Prime annuelle</Text>
+            <Text style={pdfTheme.cellRight}>{(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+          </View>
+          <View style={pdfTheme.row}>
+            <Text style={pdfTheme.cellLeft}>Franchise</Text>
+            <Text style={pdfTheme.cellRight}>{(d.franchise ?? 0).toLocaleString("fr-FR")} €</Text>
+          </View>
+          <View style={pdfTheme.rowLast}>
+            <Text style={pdfTheme.cellLeft}>Plafond</Text>
+            <Text style={pdfTheme.cellRight}>{(d.plafond ?? 0).toLocaleString("fr-FR")} €</Text>
+          </View>
         </View>
       </View>
     </Page>
@@ -104,44 +95,42 @@ export function AttestationPDFPage({
     verificationQrDataUri?: string
   }
   return (
-    <Page size="A4" style={sharedStyles.page}>
-      <View style={sharedStyles.header}>
-        <Text style={sharedStyles.title}>Optimum Assurance</Text>
-        <Text style={sharedStyles.subtitle}>Assurance décennale professionnelle</Text>
-      </View>
-      <Text style={[sharedStyles.h2, { textAlign: "center" }]}>ATTESTATION D&apos;ASSURANCE</Text>
-      <Text style={[sharedStyles.p, { textAlign: "center", marginBottom: 20 }]}>N° {numero}</Text>
-      <View style={[sharedStyles.section, { borderWidth: 2, borderColor: "#E5E0D8", padding: 20 }]}>
-        <Text style={sharedStyles.p}>La société Optimum Assurance atteste que :</Text>
-        <Text style={[sharedStyles.p, { fontFamily: "Helvetica-Bold" }]}>{d.raisonSociale ?? "—"}</Text>
-        <Text style={sharedStyles.p}>SIRET : {d.siret ?? "—"}</Text>
+    <Page size="A4" style={pdfTheme.page}>
+      <PdfBrandHeader tagline="Assurance décennale professionnelle" />
+      <Text style={pdfTheme.h2Center}>ATTESTATION D&apos;ASSURANCE</Text>
+      <Text style={[pdfTheme.subtitleCenter, { color: "#2563eb", fontFamily: "Helvetica-Bold" }]}>N° {numero}</Text>
+      <View style={pdfTheme.attestCard}>
+        <Text style={pdfTheme.p}>La société Optimum Assurance atteste que :</Text>
+        <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#0f172a" }]}>{d.raisonSociale ?? "—"}</Text>
+        <Text style={pdfTheme.p}>SIRET : {d.siret ?? "—"}</Text>
         {(d.adresse || d.codePostal || d.ville) && (
-          <Text style={sharedStyles.p}>{[d.adresse, d.codePostal, d.ville].filter(Boolean).join(" ")}</Text>
+          <Text style={pdfTheme.p}>{[d.adresse, d.codePostal, d.ville].filter(Boolean).join(" ")}</Text>
         )}
-        <Text style={sharedStyles.p}>
-          est garantie au titre de l&apos;assurance responsabilité civile décennale pour les activités : {d.activites?.join(", ") ?? "—"}
+        <Text style={pdfTheme.p}>
+          est garantie au titre de l&apos;assurance responsabilité civile décennale pour les activités :{" "}
+          {d.activites?.join(", ") ?? "—"}
         </Text>
-        <Text style={sharedStyles.p}>Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}</Text>
-        <Text style={sharedStyles.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+        <Text style={pdfTheme.p}>
+          Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}
+        </Text>
+        <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         {d.verificationQrDataUri && (
           <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
             {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
             <Image src={d.verificationQrDataUri} style={{ width: 72, height: 72, marginRight: 10 }} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold" }}>
+              <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold", color: "#1e40af" }}>
                 Vérification en ligne
               </Text>
               {d.verificationUrl ? (
-                <Text style={{ fontSize: 7, lineHeight: 1.35, color: "#333333" }}>{d.verificationUrl}</Text>
+                <Text style={{ fontSize: 7, lineHeight: 1.35, color: "#475569" }}>{d.verificationUrl}</Text>
               ) : null}
             </View>
           </View>
         )}
       </View>
-      <Text style={{ fontSize: 8, color: "#333333", marginTop: 12, lineHeight: 1.35 }}>
-        {pdfLegalLinksLine()}
-      </Text>
-      <Text style={{ fontSize: 8, color: "#555555", marginTop: 4, lineHeight: 1.35 }}>
+      <Text style={[pdfTheme.legalText, { marginTop: 14 }]}>{pdfLegalLinksLine()}</Text>
+      <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
         Optimum Courtage agit par délégation de Axcelrant Insurance.
       </Text>
     </Page>
@@ -169,41 +158,40 @@ export function AttestationDoPDFPage({
   }
   const typeGarantie = d.closCouvert ? "Clos et couvert" : "DO complète"
   return (
-    <Page size="A4" style={sharedStyles.page}>
-      <View style={sharedStyles.header}>
-        <Text style={sharedStyles.title}>Optimum Assurance</Text>
-        <Text style={sharedStyles.subtitle}>Assurance dommage ouvrage</Text>
-      </View>
-      <Text style={[sharedStyles.h2, { textAlign: "center" }]}>ATTESTATION D&apos;ASSURANCE</Text>
-      <Text style={[sharedStyles.p, { textAlign: "center", color: "#2563eb", marginBottom: 20 }]}>Dommage Ouvrage — N° {numero}</Text>
-      <View style={[sharedStyles.section, { borderWidth: 2, borderColor: "#E5E0D8", padding: 20 }]}>
-        <Text style={sharedStyles.p}>La société Optimum Assurance atteste que :</Text>
-        <Text style={[sharedStyles.p, { fontFamily: "Helvetica-Bold" }]}>{d.raisonSociale ?? "—"}</Text>
+    <Page size="A4" style={pdfTheme.page}>
+      <PdfBrandHeader tagline="Assurance dommage ouvrage" />
+      <Text style={pdfTheme.h2Center}>ATTESTATION D&apos;ASSURANCE</Text>
+      <Text style={[pdfTheme.subtitleCenter, { color: "#2563eb", fontFamily: "Helvetica-Bold" }]}>
+        Dommage Ouvrage — N° {numero}
+      </Text>
+      <View style={pdfTheme.attestCard}>
+        <Text style={pdfTheme.p}>La société Optimum Assurance atteste que :</Text>
+        <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#0f172a" }]}>{d.raisonSociale ?? "—"}</Text>
         {(d.adresseOperation || d.codePostal || d.ville) && (
-          <Text style={sharedStyles.p}>{[d.adresseOperation, d.codePostal, d.ville].filter(Boolean).join(", ")}</Text>
+          <Text style={pdfTheme.p}>{[d.adresseOperation, d.codePostal, d.ville].filter(Boolean).join(", ")}</Text>
         )}
-        <Text style={sharedStyles.p}>Type de garantie : {typeGarantie}</Text>
-        <Text style={sharedStyles.p}>Validité : du {d.dateSignature ?? "—"} au {d.dateEcheance ?? "—"} (10 ans, non résiliable)</Text>
-        <Text style={sharedStyles.p}>Prime : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+        <Text style={pdfTheme.p}>Type de garantie : {typeGarantie}</Text>
+        <Text style={pdfTheme.p}>
+          Validité : du {d.dateSignature ?? "—"} au {d.dateEcheance ?? "—"} (10 ans, non résiliable)
+        </Text>
+        <Text style={pdfTheme.p}>Prime : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         {d.verificationQrDataUri && (
           <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
             {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
             <Image src={d.verificationQrDataUri} style={{ width: 72, height: 72, marginRight: 10 }} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold" }}>
+              <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold", color: "#1e40af" }}>
                 Vérification en ligne
               </Text>
               {d.verificationUrl ? (
-                <Text style={{ fontSize: 7, lineHeight: 1.35, color: "#333333" }}>{d.verificationUrl}</Text>
+                <Text style={{ fontSize: 7, lineHeight: 1.35, color: "#475569" }}>{d.verificationUrl}</Text>
               ) : null}
             </View>
           </View>
         )}
       </View>
-      <Text style={{ fontSize: 8, color: "#333333", marginTop: 12, lineHeight: 1.35 }}>
-        {pdfLegalLinksLine()}
-      </Text>
-      <Text style={{ fontSize: 8, color: "#555555", marginTop: 4, lineHeight: 1.35 }}>
+      <Text style={[pdfTheme.legalText, { marginTop: 14 }]}>{pdfLegalLinksLine()}</Text>
+      <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
         Optimum Courtage agit par délégation de Axcelrant Insurance.
       </Text>
     </Page>
@@ -229,33 +217,33 @@ export function FactureDoPDFPage({
   }
   const typeGarantie = d.closCouvert ? "Clos et couvert" : "DO complète"
   return (
-    <Page size="A4" style={sharedStyles.page}>
-      <View style={sharedStyles.header}>
-        <Text style={sharedStyles.title}>Optimum Assurance</Text>
-        <Text style={sharedStyles.subtitle}>Assurance dommage ouvrage</Text>
-      </View>
-      <Text style={[sharedStyles.h2, { textAlign: "center" }]}>FACTURE ACQUITTÉE</Text>
-      <Text style={[sharedStyles.p, { textAlign: "center", marginBottom: 20 }]}>N° {numero} — {d.datePaiement ?? ""}</Text>
-      <View style={sharedStyles.section}>
-        <Text style={sharedStyles.p}>Client : {d.raisonSociale ?? "—"}</Text>
+    <Page size="A4" style={pdfTheme.page}>
+      <PdfBrandHeader tagline="Assurance dommage ouvrage — facturation" />
+      <Text style={pdfTheme.h2Center}>FACTURE ACQUITTÉE</Text>
+      <Text style={pdfTheme.subtitleCenter}>
+        N° {numero} — {d.datePaiement ?? ""}
+      </Text>
+      <View style={pdfTheme.section}>
+        <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold" }]}>Client : {d.raisonSociale ?? "—"}</Text>
         {(d.adresse || d.codePostal || d.ville) && (
-          <Text style={sharedStyles.p}>{[d.adresse, d.codePostal, d.ville].filter(Boolean).join(", ")}</Text>
+          <Text style={pdfTheme.p}>{[d.adresse, d.codePostal, d.ville].filter(Boolean).join(", ")}</Text>
         )}
       </View>
-      <View style={sharedStyles.section}>
-        <View style={sharedStyles.row}>
-          <Text style={sharedStyles.cellLeft}>Assurance DO — {typeGarantie}</Text>
-          <Text style={sharedStyles.cellRight}>{(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} €</Text>
+      <View style={pdfTheme.tableCard}>
+        <View style={pdfTheme.tableHeader}>
+          <Text style={pdfTheme.tableHeaderText}>Détail</Text>
         </View>
-        <View style={sharedStyles.row}>
-          <Text style={sharedStyles.cellLeft}>Total TTC</Text>
-          <Text style={sharedStyles.cellRight}>{(d.totalTTC ?? d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} €</Text>
+        <View style={pdfTheme.row}>
+          <Text style={pdfTheme.cellLeft}>Assurance DO — {typeGarantie}</Text>
+          <Text style={pdfTheme.cellRight}>{(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} €</Text>
+        </View>
+        <View style={pdfTheme.rowLast}>
+          <Text style={pdfTheme.cellLeft}>Total TTC</Text>
+          <Text style={pdfTheme.cellRight}>{(d.totalTTC ?? d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} €</Text>
         </View>
       </View>
-      <Text style={{ fontSize: 8, color: "#333333", marginTop: 16, lineHeight: 1.35 }}>
-        {pdfLegalLinksLine()}
-      </Text>
-      <Text style={{ fontSize: 8, color: "#555555", marginTop: 4, lineHeight: 1.35 }}>
+      <Text style={[pdfTheme.legalText, { marginTop: 16 }]}>{pdfLegalLinksLine()}</Text>
+      <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
         Optimum Courtage agit par délégation de Axcelrant Insurance.
       </Text>
     </Page>
@@ -285,15 +273,15 @@ export function AttestationNonSinistralitePDFPage({
     return [day, m, y].filter(Boolean).join("/")
   }
   return (
-    <Page size="A4" style={sharedStyles.page}>
-      <View style={sharedStyles.header}>
-        <Text style={sharedStyles.title}>Optimum Assurance</Text>
-        <Text style={sharedStyles.subtitle}>Assurance décennale professionnelle</Text>
-      </View>
-      <Text style={[sharedStyles.h2, { textAlign: "center" }]}>ATTESTATION DE NON SINISTRALITÉ</Text>
-      <Text style={[sharedStyles.p, { textAlign: "center", marginBottom: 20 }]}>N° {numero}</Text>
-      <View style={[sharedStyles.section, { borderWidth: 2, borderColor: "#E5E0D8", padding: 20 }]}>
-        <Text style={sharedStyles.p}>La société Optimum Assurance atteste que {d.raisonSociale ?? "—"} (SIRET : {d.siret ?? "—"}) n&apos;a déclaré aucun sinistre sur la période du {formatDate(d.dateDebut ?? "")} au {formatDate(d.dateFin ?? "")}.</Text>
+    <Page size="A4" style={pdfTheme.page}>
+      <PdfBrandHeader tagline="Assurance décennale professionnelle" />
+      <Text style={pdfTheme.h2Center}>ATTESTATION DE NON SINISTRALITÉ</Text>
+      <Text style={pdfTheme.subtitleCenter}>N° {numero}</Text>
+      <View style={pdfTheme.attestCard}>
+        <Text style={pdfTheme.p}>
+          La société Optimum Assurance atteste que {d.raisonSociale ?? "—"} (SIRET : {d.siret ?? "—"}) n&apos;a déclaré
+          aucun sinistre sur la période du {formatDate(d.dateDebut ?? "")} au {formatDate(d.dateFin ?? "")}.
+        </Text>
       </View>
     </Page>
   )
@@ -315,24 +303,22 @@ export function DocumentResumePDFPage({
     avenant: "Avenant",
   }
   const d = data as { raisonSociale?: string; primeAnnuelle?: number; dateEffet?: string }
+  const label = labels[type] || type
   return (
-    <Page size="A4" style={sharedStyles.page}>
-      <View style={sharedStyles.header}>
-        <Text style={sharedStyles.title}>Optimum Assurance</Text>
-        <Text style={sharedStyles.subtitle}>{labels[type] || type}</Text>
-      </View>
-      <Text style={sharedStyles.h2}>{labels[type] || type}</Text>
-      <Text style={sharedStyles.p}>N° {numero}</Text>
-      {d.raisonSociale && <Text style={sharedStyles.p}>Client : {d.raisonSociale}</Text>}
-      {d.primeAnnuelle != null && <Text style={sharedStyles.p}>Prime : {d.primeAnnuelle.toLocaleString("fr-FR")} € TTC</Text>}
-      {d.dateEffet && <Text style={sharedStyles.p}>Date d&apos;effet : {d.dateEffet}</Text>}
-      <Text style={[sharedStyles.p, { marginTop: 20, fontSize: 9, color: "#333333" }]}>
+    <Page size="A4" style={pdfTheme.page}>
+      <PdfBrandHeader tagline={label} />
+      <Text style={pdfTheme.h2}>{label}</Text>
+      <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#1e40af" }]}>N° {numero}</Text>
+      {d.raisonSociale && <Text style={pdfTheme.p}>Client : {d.raisonSociale}</Text>}
+      {d.primeAnnuelle != null && (
+        <Text style={pdfTheme.p}>Prime : {d.primeAnnuelle.toLocaleString("fr-FR")} € TTC</Text>
+      )}
+      {d.dateEffet && <Text style={pdfTheme.p}>Date d&apos;effet : {d.dateEffet}</Text>}
+      <Text style={[pdfTheme.p, { marginTop: 20, fontSize: 9, color: "#64748b" }]}>
         Consultez ce document en ligne dans votre espace client pour les détails complets.
       </Text>
-      <Text style={{ fontSize: 8, color: "#333333", marginTop: 14, lineHeight: 1.35 }}>
-        {pdfLegalLinksLine()}
-      </Text>
-      <Text style={{ fontSize: 8, color: "#555555", marginTop: 6, lineHeight: 1.35 }}>
+      <Text style={[pdfTheme.legalText, { marginTop: 14 }]}>{pdfLegalLinksLine()}</Text>
+      <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
         Optimum Courtage agit par délégation de Axcelrant Insurance.
       </Text>
     </Page>

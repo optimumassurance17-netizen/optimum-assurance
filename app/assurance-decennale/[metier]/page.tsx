@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
 import { METIERS_SEO } from "@/lib/metiers-seo"
 import {
@@ -84,7 +85,7 @@ export default async function MetierPage({
 
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(metierJsonLd) }} />
+      <JsonLd id={`jsonld-metier-${data.slug}`} data={metierJsonLd} />
       <Header />
 
       <div className="max-w-3xl mx-auto px-6 py-14">

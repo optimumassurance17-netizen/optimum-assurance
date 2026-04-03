@@ -2,7 +2,8 @@
 
 import dynamic from "next/dynamic"
 
-const Chatbot = dynamic(() => import("@/components/Chatbot").then((m) => ({ default: m.Chatbot })), {
+/** Import relatif + default export : évite les ChunkLoadError fréquents avec Turbopack sur `then(default: m.X)`. */
+const Chatbot = dynamic(() => import("./Chatbot"), {
   ssr: false,
   loading: () => null,
 })

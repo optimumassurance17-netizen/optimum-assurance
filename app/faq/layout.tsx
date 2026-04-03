@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { JsonLd } from "@/components/JsonLd"
 import { faqs } from "@/lib/faq-data"
 import { seoFaqPageNode, seoJsonLdGraph, seoBreadcrumbListNode, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
 import { SITE_URL } from "@/lib/site-url"
@@ -46,7 +47,7 @@ const faqPageJsonLd = seoJsonLdGraph([
 export default function FaqLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd) }} />
+      <JsonLd id="jsonld-faq" data={faqPageJsonLd} />
       {children}
     </>
   )

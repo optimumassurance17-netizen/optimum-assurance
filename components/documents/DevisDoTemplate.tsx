@@ -10,6 +10,7 @@ import {
   DO_LOTS_EXCLUS_CLOS_COUVERT,
   ELEMENTS_DISSOCIABLES_NOTE,
 } from "@/lib/nomenclature-activites"
+import { COMPANY_BRAND, INSURER_NAME, LEGAL_ORIAS_LINE } from "@/lib/legal-branding"
 
 /**
  * Template de proposition d'assurance dommage ouvrage.
@@ -37,13 +38,12 @@ interface DevisDoTemplateProps {
 }
 
 const COURTIER = {
-  nom: "Optimum Courtage",
-  orias: "21001707",
+  nom: COMPANY_BRAND,
   email: "contact@optimum-assurance.fr",
   adresse: "14 Rue Amboise",
   codePostal: "49300",
   ville: "CHOLET",
-}
+} as const
 
 export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
   const dateCreation = data.dateCreation || new Date().toLocaleDateString("fr-FR")
@@ -62,7 +62,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
         </p>
         <p className="text-xs text-[#171717] mt-1 uppercase">Assurance dommages - ouvrage</p>
         <p className="text-xs text-[#171717] mt-0.5">
-          Assureur : MARSH Insurance — Votre courtier : {COURTIER.nom}, ORIAS : {COURTIER.orias}, {COURTIER.email}
+          Assureur : {INSURER_NAME} — Courtier : {LEGAL_ORIAS_LINE} — {COURTIER.email}
         </p>
       </div>
 
@@ -188,7 +188,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
           DOMMAGES – OUVRAGE : Garantie obligatoire DO — Habitation : à hauteur du coût de réparation des dommages.
           Hors habitation : à hauteur du coût de réparation des dommages dans la limite du coût total de construction déclaré.
         </p>
-        <p className="text-xs text-[#171717] mb-3">Franchise : SANS FRANCHISE (garantie obligatoire)</p>
+        <p className="text-xs text-[#171717] mb-3">Franchise : aucune (garantie obligatoire)</p>
         <p className="text-xs text-[#171717] mb-3">Validité : unique de 10 ans à partir de la signature. Non résiliable.</p>
         <table className="w-full border-collapse border border-[#e5e5e5] mb-3">
           <thead>
@@ -279,8 +279,8 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
       <div className="mb-6 text-xs text-[#171717]">
         <h3 className="font-bold text-black mb-2 uppercase">Mentions légales</h3>
         <p>
-          Assureur : MARSH INSURANCE — Marsh SA, siège social Avenue Herrmann-Debroux 2, B-1160 Bruxelles, Belgique.
-          La souscription a été confiée à OPTIMUM COURTAGE – Marque de la société OPTIMUM ASSURANCE – RCS Angers 450 788 278 – ORIAS : 21001707 – Siège Social : 14 Rue Amboise 49300 CHOLET
+          Assureur : {INSURER_NAME}. Distribution : {COMPANY_BRAND} ({LEGAL_ORIAS_LINE}). Siège social courtier :{" "}
+          {COURTIER.adresse}, {COURTIER.codePostal} {COURTIER.ville}.
         </p>
       </div>
 
@@ -292,7 +292,17 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
           déclarations faites sont conformes à la réalité. Ces éléments sont essentiels et déterminants du consentement
           de l&apos;Assureur.
         </p>
-        <p>Le candidat déclare avoir reçu et pris connaissance des Conditions générales CG_DO et CG_PJ.</p>
+        <p>
+          Le candidat déclare avoir reçu et pris connaissance des{" "}
+          <a href={`${SITE_URL}/conditions-generales-dommage-ouvrage`} className="text-[#2563eb] underline">
+            conditions générales dommage ouvrage
+          </a>{" "}
+          et des{" "}
+          <a href={`${SITE_URL}/cgv`} className="text-[#2563eb] underline">
+            CGV
+          </a>{" "}
+          (modalités de distribution).
+        </p>
       </div>
 
       {/* Conditions de validité */}
@@ -307,6 +317,10 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
           de couverture.
         </p>
         <p className="mt-2">
+          <a href={`${SITE_URL}/conditions-generales-dommage-ouvrage`} className="text-[#2563eb] underline">
+            Conditions générales dommage ouvrage
+          </a>
+          {" — "}
           <a href={`${SITE_URL}/cgv`} className="text-[#2563eb] underline">
             CGV
           </a>

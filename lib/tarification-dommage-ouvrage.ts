@@ -7,6 +7,9 @@
  * Option RCMO : +0,2 % du montant du chantier.
  */
 
+/** Franchise dommage ouvrage : aucune (garantie obligatoire — pas de retenue sur sinistre) */
+export const FRANCHISE_DOMMAGE_OUVRAGE_EUR = 0
+
 export interface TarifDommageOuvrageResult {
   primeAnnuelle: number
   tranche: string

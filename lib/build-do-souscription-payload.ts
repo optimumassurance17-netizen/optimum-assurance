@@ -1,6 +1,6 @@
 import type { DevisDommageOuvrageData } from "@/lib/dommage-ouvrage-types"
 import { TYPES_OUVRAGE } from "@/lib/dommage-ouvrage-types"
-import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
+import { calculerTarifDommageOuvrage, FRANCHISE_DOMMAGE_OUVRAGE_EUR } from "@/lib/tarification-dommage-ouvrage"
 import type { DevisResult } from "@/lib/tarification"
 import type { DoSouscriptionInsurancePayload, SouscriptionData } from "@/lib/types"
 
@@ -57,7 +57,7 @@ function tarifShimFromDoPremium(premium: number): DevisResult {
     primeAnnuelle: premium,
     primeMensuelle,
     primeTrimestrielle,
-    franchise: 0,
+    franchise: FRANCHISE_DOMMAGE_OUVRAGE_EUR,
     plafond: 0,
     details: {
       base: premium,

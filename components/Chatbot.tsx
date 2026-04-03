@@ -7,7 +7,7 @@ import { readResponseJson } from "@/lib/read-response-json"
 
 const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
 
-export function Chatbot() {
+export default function Chatbot() {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {

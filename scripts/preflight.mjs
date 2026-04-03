@@ -43,5 +43,6 @@ if (v.status !== 0) {
   process.exit(1)
 }
 run("Variables d'environnement", "node", ["scripts/check-env.mjs"])
+run("Supabase (tables / buckets signature, si configuré)", "node", ["scripts/verify-supabase.mjs"])
 
 console.log("\n✅ Preflight terminé — vous pouvez lancer `npm run build` ou `npm run vercel-build`.\n")

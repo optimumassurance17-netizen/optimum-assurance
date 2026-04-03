@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { FormulaireDevisDommageOuvrage } from "@/components/FormulaireDevisDommageOuvrage"
@@ -45,7 +46,7 @@ const doDevisJsonLd = seoJsonLdGraph([
 export default function DevisDommageOuvragePage() {
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(doDevisJsonLd) }} />
+      <JsonLd id="jsonld-devis-do" data={doDevisJsonLd} />
       <Header />
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-14 text-black">

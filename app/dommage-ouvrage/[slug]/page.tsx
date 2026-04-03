@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
 import { DO_SEO } from "@/lib/dommage-ouvrage-seo"
 import { SITE_URL } from "@/lib/site-url"
@@ -78,8 +79,8 @@ export default async function DommageOuvragePage({
 
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <JsonLd id={`jsonld-do-breadcrumb-${data.slug}`} data={breadcrumbJsonLd} />
+      <JsonLd id={`jsonld-do-faq-${data.slug}`} data={faqJsonLd} />
       <Header />
 
       <div className="max-w-3xl mx-auto px-6 py-14">

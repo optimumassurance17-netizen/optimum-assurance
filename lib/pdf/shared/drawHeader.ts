@@ -1,6 +1,12 @@
 import type { PDFPage, PDFFont } from "pdf-lib"
+import { LEGAL_ORIAS_LINE } from "@/lib/legal-branding"
 import { PDF_COLORS, PDF_PAGE } from "./pdfLayout"
+import { drawWrappedText } from "./pdfUtils"
 
+/**
+ * En-tête PDF (pdf-lib) : monogramme, marque, barre d’accent, titre document.
+ * @returns Ordonnée Y pour la suite du contenu (texte sous le bloc titre).
+ */
 export function drawOptimumHeader(
   page: PDFPage,
   font: PDFFont,
@@ -8,50 +14,85 @@ export function drawOptimumHeader(
   title: string,
   subtitle: string
 ): number {
-  const w = 118
-  const h = 34
   const top = PDF_PAGE.height - PDF_PAGE.marginTop
-  const yRect = top - h
+  const x0 = PDF_PAGE.marginX
+  const monogramSize = 44
+  const rectBottom = top - monogramSize
+
   page.drawRectangle({
-    x: PDF_PAGE.marginX,
-    y: yRect,
-    width: w,
-    height: h,
-    borderColor: PDF_COLORS.primary,
-    borderWidth: 1,
-  })
-  page.drawText("LOGO", {
-    x: PDF_PAGE.marginX + w / 2 - font.widthOfTextAtSize("LOGO", 9) / 2,
-    y: yRect + h / 2 - 3,
-    size: 9,
-    font,
-    color: PDF_COLORS.muted,
+    x: x0,
+    y: rectBottom,
+    width: monogramSize,
+    height: monogramSize,
+    color: PDF_COLORS.primary,
+    borderWidth: 0,
   })
 
-  let y = top - h - 18
+  const oSize = 22
+  const oW = fontBold.widthOfTextAtSize("O", oSize)
+  page.drawText("O", {
+    x: x0 + monogramSize / 2 - oW / 2,
+    y: rectBottom + monogramSize / 2 - oSize * 0.35,
+    size: oSize,
+    font: fontBold,
+    color: PDF_COLORS.white,
+  })
+
+  const textX = x0 + monogramSize + 12
+  let y = top - 8
   page.drawText("Optimum Assurance", {
-    x: PDF_PAGE.marginX,
+    x: textX,
     y,
-    size: 16,
+    size: 15,
     font: fontBold,
     color: PDF_COLORS.primary,
   })
-  y -= 16
-  page.drawText(subtitle, {
-    x: PDF_PAGE.marginX,
+  y -= 14
+  page.drawText(LEGAL_ORIAS_LINE, {
+    x: textX,
     y,
-    size: 9,
+    size: 7.5,
     font,
     color: PDF_COLORS.muted,
+    maxWidth: PDF_PAGE.contentWidth - monogramSize - 24,
   })
-  y -= 28
-  page.drawText(title, {
-    x: PDF_PAGE.marginX,
-    y,
-    size: 13,
-    font: fontBold,
-    color: PDF_COLORS.text,
+  y -= 10
+
+  const barHeight = 2.5
+  const barY = rectBottom - 10
+  page.drawRectangle({
+    x: x0,
+    y: barY,
+    width: PDF_PAGE.contentWidth,
+    height: barHeight,
+    color: PDF_COLORS.primary,
+    borderWidth: 0,
   })
-  y -= 22
-  return y
+
+  let yDoc = barY - 14
+  yDoc = drawWrappedText(
+    page,
+    title,
+    x0,
+    yDoc,
+    PDF_PAGE.contentWidth,
+    fontBold,
+    12,
+    15,
+    PDF_COLORS.text
+  )
+  yDoc -= 6
+  yDoc = drawWrappedText(
+    page,
+    subtitle,
+    x0,
+    yDoc,
+    PDF_PAGE.contentWidth,
+    font,
+    9,
+    12,
+    PDF_COLORS.muted
+  )
+  yDoc -= 14
+  return yDoc
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 function mapTypeOuvrageToConstruction(typeOuvrage?: string): string {
   const map: Record<string, string> = {
@@ -30,6 +30,61 @@ import Link from "next/link"
 import { Toast } from "@/components/Toast"
 import { readResponseJson } from "@/lib/read-response-json"
 
+/** Formulaire édition contrat / avenant (données JSON document) */
+type EditContratForm = {
+  raisonSociale: string
+  email: string
+  siret: string
+  telephone: string
+  adresse: string
+  codePostal: string
+  ville: string
+  civilite: string
+  representantLegal: string
+  chiffreAffaires: string
+  primeAnnuelle: string
+  primeMensuelle: string
+  primeTrimestrielle: string
+  franchise: string
+  plafond: string
+  modePaiement: string
+  periodicitePrelevement: string
+  fraisGestionPrelevement: string
+  activites: string
+  motifAvenant: string
+  dateEffet: string
+  dateEcheance: string
+}
+
+function editFormFromDocData(parsed: Record<string, unknown>): EditContratForm {
+  return {
+    raisonSociale: String(parsed.raisonSociale ?? ""),
+    email: String(parsed.email ?? ""),
+    siret: String(parsed.siret ?? ""),
+    telephone: String(parsed.telephone ?? ""),
+    adresse: String(parsed.adresse ?? ""),
+    codePostal: String(parsed.codePostal ?? ""),
+    ville: String(parsed.ville ?? ""),
+    civilite: String(parsed.civilite ?? ""),
+    representantLegal: String(parsed.representantLegal ?? ""),
+    chiffreAffaires: parsed.chiffreAffaires != null ? String(parsed.chiffreAffaires) : "",
+    primeAnnuelle: parsed.primeAnnuelle != null ? String(parsed.primeAnnuelle) : "",
+    primeMensuelle: parsed.primeMensuelle != null ? String(parsed.primeMensuelle) : "",
+    primeTrimestrielle: parsed.primeTrimestrielle != null ? String(parsed.primeTrimestrielle) : "",
+    franchise: parsed.franchise != null ? String(parsed.franchise) : "",
+    plafond: parsed.plafond != null ? String(parsed.plafond) : "",
+    modePaiement: String(parsed.modePaiement ?? ""),
+    periodicitePrelevement: String(parsed.periodicitePrelevement ?? ""),
+    fraisGestionPrelevement: parsed.fraisGestionPrelevement != null ? String(parsed.fraisGestionPrelevement) : "",
+    activites: Array.isArray(parsed.activites)
+      ? (parsed.activites as string[]).join(", ")
+      : String(parsed.activites ?? ""),
+    motifAvenant: String(parsed.motifAvenant ?? ""),
+    dateEffet: String(parsed.dateEffet ?? ""),
+    dateEcheance: String(parsed.dateEcheance ?? ""),
+  }
+}
+
 interface DashboardData {
   users: { id: string; email: string; raisonSociale: string | null; siret: string | null; createdAt: string }[]
   devisDoLeads?: { id: string; email: string; data?: string; coutTotal: number | null; createdAt: string }[]
@@ -46,6 +101,7 @@ interface DashboardData {
   }[]
   payments: {
     id: string
+    userId: string
     molliePaymentId: string
     amount: number
     status: string
@@ -135,7 +191,7 @@ export default function GestionPage() {
     docId: string
     type: "contrat" | "avenant"
     numero: string
-    form: { chiffreAffaires: string; primeAnnuelle: string; activites: string; motifAvenant: string; dateEffet: string; dateEcheance: string }
+    form: EditContratForm
   } | null>(null)
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [etudeMiseModal, setEtudeMiseModal] = useState<{
@@ -146,7 +202,7 @@ export default function GestionPage() {
   } | null>(null)
   const [etudeMiseSubmitting, setEtudeMiseSubmitting] = useState(false)
 
-  const openEditModal = (doc: { id: string; type: string; numero: string; data?: string }) => {
+  const openEditModal = useCallback((doc: { id: string; type: string; numero: string; data?: string }) => {
     let parsed: Record<string, unknown> = {}
     try {
       parsed = JSON.parse(doc.data || "{}") as Record<string, unknown>
@@ -157,27 +213,61 @@ export default function GestionPage() {
       docId: doc.id,
       type: doc.type as "contrat" | "avenant",
       numero: doc.numero,
-      form: {
-        chiffreAffaires: String(parsed.chiffreAffaires ?? ""),
-        primeAnnuelle: String(parsed.primeAnnuelle ?? ""),
-        activites: Array.isArray(parsed.activites) ? (parsed.activites as string[]).join(", ") : String(parsed.activites ?? ""),
-        motifAvenant: String(parsed.motifAvenant ?? ""),
-        dateEffet: String(parsed.dateEffet ?? ""),
-        dateEcheance: String(parsed.dateEcheance ?? ""),
-      },
+      form: editFormFromDocData(parsed),
     })
-  }
+  }, [])
+
   const handleSaveEdit = async () => {
     if (!editModal) return
     setEditSubmitting(true)
     try {
-      const modifications: Record<string, unknown> = {}
-      if (editModal.form.chiffreAffaires) modifications.chiffreAffaires = Number(editModal.form.chiffreAffaires)
-      if (editModal.form.primeAnnuelle) modifications.primeAnnuelle = Number(editModal.form.primeAnnuelle)
-      if (editModal.form.activites) modifications.activites = editModal.form.activites.split(",").map((a) => a.trim()).filter(Boolean)
-      if (editModal.form.motifAvenant) modifications.motifAvenant = editModal.form.motifAvenant
-      if (editModal.form.dateEffet) modifications.dateEffet = editModal.form.dateEffet
-      if (editModal.form.dateEcheance) modifications.dateEcheance = editModal.form.dateEcheance
+      const f = editModal.form
+      const parseMoney = (label: string, raw: string): number | undefined => {
+        const t = raw.trim()
+        if (!t) return undefined
+        const n = Number(t.replace(/\s/g, "").replace(",", "."))
+        if (!Number.isFinite(n)) throw new Error(`${label} : montant invalide`)
+        return n
+      }
+
+      const modifications: Record<string, unknown> = {
+        raisonSociale: f.raisonSociale.trim(),
+        email: f.email.trim(),
+        siret: f.siret.trim(),
+        telephone: f.telephone.trim(),
+        adresse: f.adresse.trim(),
+        codePostal: f.codePostal.trim(),
+        ville: f.ville.trim(),
+        civilite: f.civilite.trim(),
+        representantLegal: f.representantLegal.trim(),
+        dateEffet: f.dateEffet.trim(),
+        dateEcheance: f.dateEcheance.trim(),
+        motifAvenant: f.motifAvenant.trim(),
+      }
+
+      const ca = parseMoney("Chiffre d'affaires", f.chiffreAffaires)
+      if (ca !== undefined) modifications.chiffreAffaires = ca
+      const pa = parseMoney("Prime annuelle", f.primeAnnuelle)
+      if (pa !== undefined) modifications.primeAnnuelle = pa
+      const pm = parseMoney("Prime mensuelle", f.primeMensuelle)
+      if (pm !== undefined) modifications.primeMensuelle = pm
+      const pt = parseMoney("Prime trimestrielle", f.primeTrimestrielle)
+      if (pt !== undefined) modifications.primeTrimestrielle = pt
+      const fr = parseMoney("Franchise", f.franchise)
+      if (fr !== undefined) modifications.franchise = fr
+      const pl = parseMoney("Plafond de garantie", f.plafond)
+      if (pl !== undefined) modifications.plafond = pl
+      const fg = parseMoney("Frais de gestion prélèvement", f.fraisGestionPrelevement)
+      if (fg !== undefined) modifications.fraisGestionPrelevement = fg
+
+      if (f.modePaiement === "unique" || f.modePaiement === "prelevement") {
+        modifications.modePaiement = f.modePaiement
+      }
+      if (f.periodicitePrelevement.trim()) {
+        modifications.periodicitePrelevement = f.periodicitePrelevement.trim()
+      }
+
+      modifications.activites = f.activites.split(",").map((a) => a.trim()).filter(Boolean)
 
       const res = await fetch(`/api/gestion/documents/${editModal.docId}`, {
         method: "PATCH",
@@ -197,27 +287,32 @@ export default function GestionPage() {
     }
   }
 
-  const filterBySearch = <T extends { user: { email: string; raisonSociale: string | null } }>(
+  const filterBySearch = <T extends { user: { email: string; raisonSociale: string | null }; numero?: string }>(
     items: T[],
     q: string
   ): T[] => {
     if (!q.trim()) return items
     const lower = q.toLowerCase()
-    return items.filter(
-      (i) =>
-        i.user.email?.toLowerCase().includes(lower) ||
-        i.user.raisonSociale?.toLowerCase().includes(lower)
-    )
+    return items.filter((i) => {
+      if (i.user.email?.toLowerCase().includes(lower)) return true
+      if (i.user.raisonSociale?.toLowerCase().includes(lower)) return true
+      if (i.numero?.toLowerCase().includes(lower)) return true
+      return false
+    })
   }
-  const filterUsersBySearch = <T extends { email: string; raisonSociale: string | null }>(
+  const filterUsersBySearch = <T extends { email: string; raisonSociale: string | null; siret: string | null }>(
     items: T[],
     q: string
   ): T[] => {
     if (!q.trim()) return items
     const lower = q.toLowerCase()
-    return items.filter(
-      (i) => i.email?.toLowerCase().includes(lower) || i.raisonSociale?.toLowerCase().includes(lower)
-    )
+    const qDigits = q.trim().replace(/\s/g, "").toLowerCase()
+    return items.filter((i) => {
+      if (i.email?.toLowerCase().includes(lower)) return true
+      if (i.raisonSociale?.toLowerCase().includes(lower)) return true
+      if (i.siret && i.siret.replace(/\s/g, "").toLowerCase().includes(qDigits)) return true
+      return false
+    })
   }
 
   useEffect(() => {
@@ -246,6 +341,18 @@ export default function GestionPage() {
 
     fetchData()
   }, [status, router])
+
+  /** Ouvre le modal d'édition si l'URL contient ?editDoc= (lien depuis /gestion/documents/[id]) */
+  useEffect(() => {
+    if (!data || typeof window === "undefined") return
+    const editDocId = new URLSearchParams(window.location.search).get("editDoc")
+    if (!editDocId) return
+    const doc = data.documents.find((d) => d.id === editDocId)
+    if (doc && (doc.type === "contrat" || doc.type === "avenant")) {
+      openEditModal(doc)
+      router.replace("/gestion", { scroll: false })
+    }
+  }, [data, router, openEditModal])
 
   const handleStatusChange = async (docId: string, newStatus: "valide" | "suspendu" | "resilie", motif?: string) => {
     try {
@@ -404,6 +511,33 @@ export default function GestionPage() {
             >
               Export paiements
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!data) return
+                const csv = [
+                  ["Raison sociale", "Email", "SIRET", "Inscription"].join(";"),
+                  ...data.users.map((u) =>
+                    [
+                      u.raisonSociale ?? "",
+                      u.email,
+                      u.siret ?? "",
+                      new Date(u.createdAt).toLocaleDateString("fr-FR"),
+                    ].join(";")
+                  ),
+                ].join("\n")
+                const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement("a")
+                a.href = url
+                a.download = `export-clients-${new Date().toISOString().slice(0, 10)}.csv`
+                a.click()
+                URL.revokeObjectURL(url)
+              }}
+              className="text-sm text-gray-200 hover:text-white"
+            >
+              Export clients
+            </button>
             {data.devisDoLeads && data.devisDoLeads.length > 0 && (
               <button
                 onClick={() => {
@@ -438,7 +572,7 @@ export default function GestionPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
               <input
                 type="search"
-                placeholder="Rechercher un client (email, raison sociale)..."
+                placeholder="Rechercher (email, raison sociale, SIRET, n° contrat / attestation)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-80"
@@ -624,12 +758,13 @@ export default function GestionPage() {
                   <th className="text-left p-3 sm:p-4 font-medium">Client</th>
                   <th className="text-left p-3 sm:p-4 font-medium">Montant</th>
                   <th className="text-left p-3 sm:p-4 font-medium">Statut</th>
+                  <th className="text-left p-3 sm:p-4 font-medium w-[4.5rem]">CRM</th>
                   <th className="text-left p-3 sm:p-4 font-medium hidden md:table-cell">Mollie ID</th>
                 </tr>
               </thead>
               <tbody>
                 {filterBySearch(data.payments, searchQuery).length === 0 ? (
-                  <tr><td colSpan={5} className="p-4 text-gray-200">Aucun paiement</td></tr>
+                  <tr><td colSpan={6} className="p-4 text-gray-200">Aucun paiement</td></tr>
                 ) : (
                   filterBySearch(data.payments, searchQuery).map((p) => (
                     <tr key={p.id} className="border-b border-gray-700/50">
@@ -640,6 +775,15 @@ export default function GestionPage() {
                         <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-green-900/50 text-green-300" : "bg-blue-900/50 text-sky-300"}`}>
                           {p.status}
                         </span>
+                      </td>
+                      <td className="p-3 sm:p-4">
+                        <Link
+                          href={`/gestion/clients/${p.userId}`}
+                          className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium whitespace-nowrap"
+                          title="Ouvrir la fiche client"
+                        >
+                          →
+                        </Link>
                       </td>
                       <td className="p-3 sm:p-4 font-mono text-xs text-gray-200 hidden md:table-cell">{p.molliePaymentId}</td>
                     </tr>
@@ -701,6 +845,12 @@ export default function GestionPage() {
                       <td className="p-3 sm:p-4">
                         <Link href={`/gestion/documents/${d.id}`} className="text-[#2563eb] hover:text-[#1d4ed8] text-sm mr-2">
                           Voir
+                        </Link>
+                        <Link
+                          href={`/gestion/clients/${d.userId}`}
+                          className="text-gray-200 hover:text-white text-sm mr-2"
+                        >
+                          Client
                         </Link>
                         {d.type === "attestation" && d.status === "valide" && (
                           <>
@@ -776,6 +926,12 @@ export default function GestionPage() {
                       </td>
                       <td className="p-3 sm:p-4 hidden sm:table-cell">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-3 sm:p-4">
+                        <Link
+                          href={`/gestion/clients/${d.userId}`}
+                          className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium mr-3"
+                        >
+                          CRM →
+                        </Link>
                         {d.status === "valide" && (
                           <>
                             <button
@@ -1350,94 +1506,280 @@ export default function GestionPage() {
         )}
       </div>
 
-      {/* Modal modification contrat / avenant */}
+      {/* Modal modification contrat / avenant — données alignées sur le JSON contrat / PDF */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 overflow-y-auto py-8" onClick={() => setEditModal(null)}>
-          <div className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-lg w-full mx-4 my-auto" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Modifier {editModal.type === "contrat" ? "le contrat" : "l'avenant"} {editModal.numero}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 overflow-y-auto py-6 px-2" onClick={() => setEditModal(null)}>
+          <div
+            className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-3xl w-full mx-2 my-auto max-h-[92vh] overflow-y-auto shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="edit-contrat-title"
+          >
+            <h3 id="edit-contrat-title" className="text-lg font-semibold text-white mb-1">
+              Modifier {editModal.type === "contrat" ? "le contrat" : "l'avenant"}{" "}
+              <span className="font-mono text-sky-300">{editModal.numero}</span>
             </h3>
-            <div className="space-y-4 mb-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-200 mb-1">Chiffre d&apos;affaires (€)</label>
-                  <input
-                    type="number"
-                    value={editModal.form.chiffreAffaires}
-                    onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, chiffreAffaires: e.target.value } } : m)}
-                    placeholder="Optionnel"
-                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-200 mb-1">Prime annuelle (€)</label>
-                  <input
-                    type="number"
-                    value={editModal.form.primeAnnuelle}
-                    onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, primeAnnuelle: e.target.value } } : m)}
-                    placeholder="Optionnel"
-                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
-                  />
+            <p className="text-xs text-gray-200 mb-6 leading-relaxed">
+              Les montants laissés vides ne sont pas modifiés. Les champs texte vident effacent la valeur dans le dossier
+              (assuré, adresse, etc.). Les activités : saisir la <strong className="text-gray-200">liste complète</strong> à
+              chaque enregistrement (séparées par des virgules).
+            </p>
+
+            <div className="space-y-6 mb-6 text-sm">
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-sky-400/90 mb-3">Identité assuré</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-gray-200 mb-1">Raison sociale</label>
+                    <input
+                      value={editModal.form.raisonSociale}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, raisonSociale: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">SIRET</label>
+                    <input
+                      value={editModal.form.siret}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, siret: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">Civilité</label>
+                    <select
+                      value={editModal.form.civilite || ""}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, civilite: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    >
+                      <option value="">—</option>
+                      <option value="M.">M.</option>
+                      <option value="Mme">Mme</option>
+                      <option value="Société">Société</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-gray-200 mb-1">Représentant légal</label>
+                    <input
+                      value={editModal.form.representantLegal}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, representantLegal: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
                 </div>
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-1">Activités (séparées par des virgules)</label>
-                <input
-                  type="text"
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-sky-400/90 mb-3">Coordonnées</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-gray-200 mb-1">Email</label>
+                    <input
+                      type="email"
+                      autoComplete="off"
+                      value={editModal.form.email}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, email: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">Téléphone</label>
+                    <input
+                      value={editModal.form.telephone}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, telephone: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-gray-200 mb-1">Adresse</label>
+                    <input
+                      value={editModal.form.adresse}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, adresse: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">Code postal</label>
+                    <input
+                      value={editModal.form.codePostal}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, codePostal: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">Ville</label>
+                    <input
+                      value={editModal.form.ville}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, ville: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-sky-400/90 mb-3">Montants & garanties (€)</h4>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-gray-200 mb-1">Chiffre d&apos;affaires</label>
+                    <input
+                      inputMode="decimal"
+                      value={editModal.form.chiffreAffaires}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, chiffreAffaires: e.target.value } } : m))}
+                      placeholder="inchangé si vide"
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">Prime annuelle</label>
+                    <input
+                      inputMode="decimal"
+                      value={editModal.form.primeAnnuelle}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, primeAnnuelle: e.target.value } } : m))}
+                      placeholder="inchangé si vide"
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">Prime mensuelle</label>
+                    <input
+                      inputMode="decimal"
+                      value={editModal.form.primeMensuelle}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, primeMensuelle: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">Prime trimestrielle</label>
+                    <input
+                      inputMode="decimal"
+                      value={editModal.form.primeTrimestrielle}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, primeTrimestrielle: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">Franchise</label>
+                    <input
+                      inputMode="decimal"
+                      value={editModal.form.franchise}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, franchise: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">Plafond garantie</label>
+                    <input
+                      inputMode="decimal"
+                      value={editModal.form.plafond}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, plafond: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-sky-400/90 mb-3">Paiement</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-gray-200 mb-1">Mode</label>
+                    <select
+                      value={editModal.form.modePaiement || ""}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, modePaiement: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    >
+                      <option value="">— inchangé —</option>
+                      <option value="unique">Paiement unique</option>
+                      <option value="prelevement">Prélèvement</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">Périodicité prélèvement</label>
+                    <input
+                      value={editModal.form.periodicitePrelevement}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, periodicitePrelevement: e.target.value } } : m))}
+                      placeholder="ex. trimestriel"
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">Frais gestion (€)</label>
+                    <input
+                      inputMode="decimal"
+                      value={editModal.form.fraisGestionPrelevement}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, fraisGestionPrelevement: e.target.value } } : m))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-sky-400/90 mb-3">Activités garanties</h4>
+                <textarea
+                  rows={3}
                   value={editModal.form.activites}
-                  onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, activites: e.target.value } } : m)}
-                  placeholder="Ex. Plomberie, Chauffage"
-                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                  onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, activites: e.target.value } } : m))}
+                  placeholder="Ex. Plomberie, Chauffage, Zinguerie (liste complète, séparée par des virgules)"
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500"
                 />
               </div>
+
               {editModal.type === "avenant" && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-200 mb-1">Motif avenant</label>
-                  <input
-                    type="text"
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-sky-400/90 mb-3">Avenant</h4>
+                  <label className="block text-gray-200 mb-1">Motif de l&apos;avenant</label>
+                  <textarea
+                    rows={2}
                     value={editModal.form.motifAvenant}
-                    onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, motifAvenant: e.target.value } } : m)}
-                    placeholder="Modification contractuelle"
-                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                    onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, motifAvenant: e.target.value } } : m))}
+                    placeholder="Modification contractuelle, extension d'activité…"
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
                   />
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-200 mb-1">Date d&apos;effet</label>
-                  <input
-                    type="text"
-                    value={editModal.form.dateEffet}
-                    onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, dateEffet: e.target.value } } : m)}
-                    placeholder="JJ/MM/AAAA"
-                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-200 mb-1">Date d&apos;échéance</label>
-                  <input
-                    type="text"
-                    value={editModal.form.dateEcheance}
-                    onChange={(e) => setEditModal((m) => m ? { ...m, form: { ...m.form, dateEcheance: e.target.value } } : m)}
-                    placeholder="JJ/MM/AAAA"
-                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
-                  />
+
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-sky-400/90 mb-3">Période de couverture</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-gray-200 mb-1">Date d&apos;effet</label>
+                    <input
+                      value={editModal.form.dateEffet}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, dateEffet: e.target.value } } : m))}
+                      placeholder="JJ/MM/AAAA"
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-200 mb-1">Date d&apos;échéance</label>
+                    <input
+                      value={editModal.form.dateEcheance}
+                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, dateEcheance: e.target.value } } : m))}
+                      placeholder="JJ/MM/AAAA"
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="flex gap-3 justify-end">
+
+            <div className="flex flex-wrap gap-3 justify-end pt-2 border-t border-gray-700">
               <button
+                type="button"
                 onClick={() => setEditModal(null)}
                 className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
               >
                 Annuler
               </button>
               <button
+                type="button"
                 onClick={handleSaveEdit}
                 disabled={editSubmitting}
-                className="px-4 py-2 rounded-lg bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-50"
+                className="px-5 py-2 rounded-lg bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-50 font-medium"
               >
-                {editSubmitting ? "Enregistrement..." : "Enregistrer"}
+                {editSubmitting ? "Enregistrement…" : "Enregistrer les modifications"}
               </button>
             </div>
           </div>

@@ -9,6 +9,9 @@ import { getTarifActivite, TARIF_DEFAULT } from "./tarification-data"
 
 export const CA_MINIMUM = 40_000
 
+/** Franchise fixe assurance décennale (€) — affichée sur devis, contrats et documents */
+export const FRANCHISE_DECENNALE_EUR = 1000
+
 export interface DevisInput {
   chiffreAffaires: number
   sinistres: number
@@ -78,7 +81,7 @@ export function calculerTarif(input: DevisInput): DevisResult {
       primeAnnuelle: primeAnnuelleRounded,
       primeMensuelle: Math.round((primeAnnuelleRounded / 12) * 100) / 100,
       primeTrimestrielle,
-      franchise: 2500,
+      franchise: FRANCHISE_DECENNALE_EUR,
       plafond: Math.max(chiffreAffaires * 2, 100000),
       reprisePasse: reprisePasse && sinistres === 0,
       supplementReprisePasse,
@@ -139,8 +142,8 @@ export function calculerTarif(input: DevisInput): DevisResult {
 
   const primeTrimestrielle = Math.round((primeAnnuelle / 4) * 100) / 100
 
-  // Franchise standard : 5% du CA ou 2500€ min
-  const franchise = Math.max(2500, Math.round(chiffreAffaires * 0.05))
+  // Franchise décennale : montant fixe
+  const franchise = FRANCHISE_DECENNALE_EUR
 
   // Plafond de garantie : 2x le CA
   const plafond = chiffreAffaires * 2
