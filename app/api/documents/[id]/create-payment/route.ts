@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma"
 
 /**
  * Crée un paiement Mollie pour un document devis_do.
- * Paiement par virement bancaire (banktransfer) — instructions RIB / référence sur la page Mollie.
+ * Uniquement virement bancaire (`banktransfer`) — pas de CB, pas de SEPA direct sur ce flux.
  * @see https://docs.mollie.com/payments/bank-transfer
  */
 export async function POST(
@@ -86,6 +86,7 @@ export async function POST(
         type: "devis_do",
         documentId: document.id,
         documentNumero: document.numero,
+        userId: session.user.id,
         email,
         raisonSociale: document.user.raisonSociale || "",
       },

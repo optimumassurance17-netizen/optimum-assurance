@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
 import { Header } from "@/components/Header"
 import { Stepper } from "@/components/Stepper"
 import { Breadcrumb } from "@/components/Breadcrumb"
@@ -11,6 +12,7 @@ import { STORAGE_KEYS, FRAIS_GESTION_PRELEVEMENT } from "@/lib/types"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import type { PeriodicitePrelevement } from "@/lib/types"
 import { getIbanValidationMessage, normalizeIban } from "@/lib/iban"
+import { readResponseJson } from "@/lib/read-response-json"
 
 /** Unique mode : trimestriel — 1er trimestre + frais en CB, puis 3 prélèvements SEPA trimestriels. */
 const PERIODICITE: PeriodicitePrelevement = "trimestriel"
@@ -23,6 +25,7 @@ function calculerPremierMontant(primeAnnuelle: number): number {
 
 export default function MandatSepaPage() {
   const router = useRouter()
+  const { status: sessionStatus } = useSession()
   const [data, setData] = useState<(SouscriptionData & { signature?: string }) | null>(null)
   const [iban, setIban] = useState("")
   const [titulaire, setTitulaire] = useState("")
@@ -31,14 +34,12 @@ export default function MandatSepaPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    const stored = sessionStorage.getItem(STORAGE_KEYS.signature)
+
     const mandatStored = sessionStorage.getItem(STORAGE_KEYS.mandatSepa)
-    if (!stored) {
-      router.replace("/devis")
-      return
-    }
-    try {
-      const parsed = JSON.parse(stored) as SouscriptionData
+    const stored = sessionStorage.getItem(STORAGE_KEYS.signature)
+
+    const applyStored = (raw: string) => {
+      const parsed = JSON.parse(raw) as SouscriptionData
       queueMicrotask(() => {
         setData(parsed)
         setTitulaire(parsed.representantLegal || parsed.raisonSociale)
@@ -48,10 +49,51 @@ export default function MandatSepaPage() {
           if (m.titulaireCompte) setTitulaire(m.titulaireCompte)
         }
       })
-    } catch {
-      router.replace("/devis")
     }
-  }, [router])
+
+    if (stored) {
+      try {
+        applyStored(stored)
+      } catch {
+        router.replace("/devis")
+      }
+      return
+    }
+
+    if (sessionStatus === "loading") return
+
+    if (sessionStatus === "unauthenticated") {
+      router.replace(`/connexion?callbackUrl=${encodeURIComponent("/mandat-sepa")}`)
+      return
+    }
+
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch("/api/client/decennale-paiement-session")
+        const json = await readResponseJson<{
+          available?: boolean
+          signaturePayload?: SouscriptionData & {
+            yousignContractNumero?: string
+            yousignContractData?: Record<string, unknown>
+          }
+        }>(res)
+        if (cancelled) return
+        if (!res.ok || !json.available || !json.signaturePayload) {
+          router.replace("/devis")
+          return
+        }
+        sessionStorage.setItem(STORAGE_KEYS.signature, JSON.stringify(json.signaturePayload))
+        applyStored(sessionStorage.getItem(STORAGE_KEYS.signature) || "")
+      } catch {
+        if (!cancelled) router.replace("/devis")
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [router, sessionStatus])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

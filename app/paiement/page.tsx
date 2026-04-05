@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
 import { Header } from "@/components/Header"
 import { Stepper } from "@/components/Stepper"
 import { Breadcrumb } from "@/components/Breadcrumb"
@@ -44,6 +45,7 @@ function normalizeMandat(raw: unknown): MandatSepaStored | null {
 
 export default function PaiementPage() {
   const router = useRouter()
+  const { data: authSession, status: sessionStatus } = useSession()
   const [data, setData] = useState<(SouscriptionData & { signature?: string }) | null>(null)
   const [mandat, setMandat] = useState<MandatSepaStored | null>(null)
   const [loading, setLoading] = useState(false)
@@ -51,31 +53,75 @@ export default function PaiementPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    const stored = sessionStorage.getItem(STORAGE_KEYS.signature)
+
     const mandatStored = sessionStorage.getItem(STORAGE_KEYS.mandatSepa)
-    if (!stored) {
-      router.replace("/devis")
-      return
-    }
-    if (!mandatStored) {
-      router.replace("/mandat-sepa")
-      return
-    }
-    try {
-      const parsed = JSON.parse(mandatStored)
-      const normalized = normalizeMandat(parsed)
-      if (normalized) {
+    let stored = sessionStorage.getItem(STORAGE_KEYS.signature)
+
+    const tryApplyLocal = (): boolean => {
+      if (!stored || !mandatStored) return false
+      try {
+        const parsed = JSON.parse(mandatStored)
+        const normalized = normalizeMandat(parsed)
+        if (!normalized) {
+          router.replace("/mandat-sepa")
+          return true
+        }
         sessionStorage.setItem(STORAGE_KEYS.mandatSepa, JSON.stringify(normalized))
         setMandat(normalized)
-      } else {
+        setData(JSON.parse(stored))
+        return true
+      } catch {
+        router.replace("/devis")
+        return true
+      }
+    }
+
+    if (tryApplyLocal()) return
+
+    if (sessionStatus === "loading") return
+
+    const hydrateFromApi = async (): Promise<boolean> => {
+      if (sessionStatus !== "authenticated") return false
+      const res = await fetch("/api/client/decennale-paiement-session")
+      const json = await readResponseJson<{
+        available?: boolean
+        signaturePayload?: Record<string, unknown>
+      }>(res)
+      if (!res.ok || !json.available || !json.signaturePayload) return false
+      sessionStorage.setItem(STORAGE_KEYS.signature, JSON.stringify(json.signaturePayload))
+      return true
+    }
+
+    void (async () => {
+      if (!stored && sessionStatus === "authenticated") {
+        const ok = await hydrateFromApi()
+        if (ok) stored = sessionStorage.getItem(STORAGE_KEYS.signature)
+      }
+      if (!stored) {
+        router.replace("/devis")
+        return
+      }
+      const m = sessionStorage.getItem(STORAGE_KEYS.mandatSepa)
+      if (!m) {
         router.replace("/mandat-sepa")
         return
       }
-      setData(JSON.parse(stored))
-    } catch {
-      router.replace("/devis")
-    }
-  }, [router])
+      try {
+        const parsed = JSON.parse(m)
+        const normalized = normalizeMandat(parsed)
+        if (normalized) {
+          sessionStorage.setItem(STORAGE_KEYS.mandatSepa, JSON.stringify(normalized))
+          setMandat(normalized)
+        } else {
+          router.replace("/mandat-sepa")
+          return
+        }
+        setData(JSON.parse(stored))
+      } catch {
+        router.replace("/devis")
+      }
+    })()
+  }, [router, sessionStatus])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -105,6 +151,7 @@ export default function PaiementPage() {
           /** Pour création mandat SEPA Mollie (webhook) — métadonnées Mollie = chaînes */
           iban: mandat.iban.replace(/\s+/g, ""),
           titulaireCompte: mandat.titulaireCompte,
+          ...(authSession?.user?.id && { userId: authSession.user.id }),
         },
         customerEmail: data.email,
         method: "creditcard",

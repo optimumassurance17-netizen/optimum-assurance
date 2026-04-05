@@ -203,9 +203,8 @@ export default function DocumentPage() {
         {document.type === "devis_do" && (
           <div className="mb-6 print:hidden space-y-3">
             <p className="text-sm text-[#333333]">
-              Le règlement se fait par <strong>virement bancaire</strong> via Mollie : vous serez redirigé vers une
-              page sécurisée avec les coordonnées bancaires et la référence à indiquer. L&apos;attestation sera
-              délivrée après réception du virement.
+              Règlement : <strong>uniquement virement bancaire</strong> (Mollie). Page sécurisée avec RIB et référence.
+              Aucun paiement par carte pour ce devis. Attestation après encaissement du virement.
             </p>
             <DevoirConseil
               produit="dommage-ouvrage"

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import crypto from "crypto"
+import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { SITE_URL } from "@/lib/site-url"
 
 const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000 // 1 heure
 
@@ -27,33 +29,18 @@ export async function POST(request: NextRequest) {
       data: { userId: user.id, token, expiresAt },
     })
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-    const resetUrl = `${baseUrl}/reinitialiser-mot-de-passe?token=${token}`
+    const base = SITE_URL.replace(/\/$/, "")
+    const resetUrl = `${base}/reinitialiser-mot-de-passe?token=${token}`
+    const tpl = EMAIL_TEMPLATES.motDePasseReinitialisation(resetUrl)
 
-    const resendKey = process.env.RESEND_API_KEY
-    if (resendKey) {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${resendKey}`,
-        },
-        body: JSON.stringify({
-          from: process.env.EMAIL_FROM || "Optimum <noreply@optimum-assurance.fr>",
-          to: user.email,
-          subject: "Réinitialisation de votre mot de passe - Optimum Assurance",
-          html: `
-            <p>Bonjour,</p>
-            <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
-            <p><a href="${resetUrl}" style="color:#2563eb;font-weight:bold">Cliquez ici pour réinitialiser</a></p>
-            <p>Ce lien expire dans 1 heure. Si vous n'avez pas fait cette demande, ignorez cet email.</p>
-            <p>— Optimum Assurance</p>
-          `,
-        }),
-      })
-      if (!res.ok) {
-        console.error("Erreur envoi email reset:", await res.text())
-      }
+    const sent = await sendEmail({
+      to: user.email,
+      subject: tpl.subject,
+      text: tpl.text,
+      html: tpl.html,
+    })
+    if (!sent) {
+      console.warn("forgot-password: RESEND_API_KEY manquant ou envoi refusé")
     }
 
     return NextResponse.json({ ok: true })

@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma"
 import crypto from "crypto"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { SITE_URL as APP_URL } from "@/lib/site-url"
+import { generateDecennaleQuote } from "@/lib/pdf/decennale/generateQuote"
+import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
+import { logPdfGeneration } from "@/lib/pdf/logPdfGeneration"
+import { insuranceDataFromDecennaleDevis } from "@/lib/pdf/quote-email-data"
+
 const DRAFT_EXPIRY_DAYS = 7
 
 /**
@@ -34,12 +39,41 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const template = EMAIL_TEMPLATES.devisSauvegarde(email, resumeUrl)
+    const createdAt = new Date().toISOString()
+    let pdfBytes: Uint8Array | null = null
+    let contractNumberForPdf: string | undefined
+    try {
+      const base = insuranceDataFromDecennaleDevis(devis, createdAt)
+      contractNumberForPdf = await allocateNextContractNumber("decennale")
+      const pdfData = { ...base, contractNumber: contractNumberForPdf }
+      pdfBytes = await generateDecennaleQuote(pdfData)
+      await logPdfGeneration({
+        contractNumber: contractNumberForPdf,
+        productType: "decennale",
+        documentType: "quote",
+        metadata: { source: "devis_send_email" },
+      })
+    } catch (e) {
+      console.error("[devis/send-email] PDF décennale:", e)
+    }
+
+    const template = EMAIL_TEMPLATES.devisSauvegarde(email, resumeUrl, {
+      pdfJoint: !!pdfBytes,
+    })
     const sent = await sendEmail({
       to: email,
       subject: template.subject,
       text: template.text,
       html: (template as { html?: string }).html,
+      ...(pdfBytes &&
+        contractNumberForPdf && {
+          attachments: [
+            {
+              filename: `devis-decennale-${contractNumberForPdf}.pdf`,
+              content: Buffer.from(pdfBytes),
+            },
+          ],
+        }),
     })
 
     if (!sent) {

@@ -24,6 +24,7 @@ function mapDestinationConstruction(dest?: string): string {
   return dest ? (map[dest] ?? "Usage personnel") : ""
 }
 import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
+import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -183,6 +184,20 @@ export default function GestionPage() {
   })
   const [avenantSubmitting, setAvenantSubmitting] = useState(false)
   const [devisDoSubmitting, setDevisDoSubmitting] = useState(false)
+  const [devisDecForm, setDevisDecForm] = useState({
+    userId: "",
+    activites: "",
+    chiffreAffaires: "",
+    primeAnnuelle: "",
+    franchise: "",
+    plafond: "100000",
+    representantLegal: "",
+    civilite: "M",
+    jamaisAssure: false,
+    reprisePasse: false,
+    dateCreationSociete: "",
+  })
+  const [devisDecSubmitting, setDevisDecSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [docTypeFilter, setDocTypeFilter] = useState<string>("all")
   const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
@@ -377,6 +392,86 @@ export default function GestionPage() {
     }
   }
 
+
+  const handleCreateDevisDecennale = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setDevisDecSubmitting(true)
+    try {
+      const selectedUser = data?.users.find((u) => u.id === devisDecForm.userId)
+      if (!selectedUser) {
+        throw new Error("Choisissez un client")
+      }
+      const activites = devisDecForm.activites
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean)
+      if (!devisDecForm.representantLegal.trim()) {
+        throw new Error("Représentant légal obligatoire (pour la signature Yousign ensuite)")
+      }
+      if (!activites.length) {
+        throw new Error("Indiquez au moins une activité (séparées par des virgules)")
+      }
+      const pa = Number(devisDecForm.primeAnnuelle)
+      if (!Number.isFinite(pa) || pa <= 0) {
+        throw new Error("Prime annuelle invalide")
+      }
+      const res = await fetch("/api/gestion/documents/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: devisDecForm.userId,
+          type: "devis",
+          data: {
+            raisonSociale: selectedUser.raisonSociale || "",
+            siret: selectedUser.siret || "",
+            email: selectedUser.email,
+            activites,
+            chiffreAffaires: Number(devisDecForm.chiffreAffaires) || 0,
+            primeAnnuelle: pa,
+            franchise:
+              devisDecForm.franchise.trim() !== ""
+                ? Number(devisDecForm.franchise)
+                : FRANCHISE_DECENNALE_EUR,
+            plafond: Number(devisDecForm.plafond) || 100_000,
+            representantLegal: devisDecForm.representantLegal.trim(),
+            civilite: devisDecForm.civilite.trim() || "M",
+            jamaisAssure: devisDecForm.jamaisAssure,
+            reprisePasse: devisDecForm.reprisePasse,
+            dateCreationSociete: devisDecForm.dateCreationSociete.trim() || undefined,
+            dateCreation: new Date().toLocaleDateString("fr-FR"),
+          },
+        }),
+      })
+      const result = await readResponseJson<{ error?: string; numero?: string; id?: string }>(res)
+      if (!res.ok) throw new Error(result.error || "Erreur")
+      setToast({
+        message: `Devis décennale ${result.numero} créé. Ouvrez la fiche document pour envoyer la signature Yousign.`,
+        type: "success",
+      })
+      setDevisDecForm({
+        userId: "",
+        activites: "",
+        chiffreAffaires: "",
+        primeAnnuelle: "",
+        franchise: "",
+        plafond: "100000",
+        representantLegal: "",
+        civilite: "M",
+        jamaisAssure: false,
+        reprisePasse: false,
+        dateCreationSociete: "",
+      })
+      const dashRes = await fetch("/api/gestion/dashboard")
+      if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : "Erreur création devis décennale",
+        type: "error",
+      })
+    } finally {
+      setDevisDecSubmitting(false)
+    }
+  }
 
   const handleCreateDevisDo = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1032,11 +1127,157 @@ export default function GestionPage() {
           </section>
         )}
 
+        {/* Devis décennale — saisie manuelle puis signature Yousign depuis la fiche document */}
+        <section>
+          <h2 className="text-lg font-semibold text-white mb-4">Devis décennale (manuel)</h2>
+          <p className="text-sm text-gray-200 mb-4 max-w-2xl">
+            Créez un devis pour un client existant. Ensuite, ouvrez le document depuis le tableau des documents
+            (ou la fiche client) et cliquez sur <strong className="text-white">Envoyer pour signature Yousign</strong> :
+            le contrat PDF est généré, le client reçoit un lien Yousign par email (même flux que la souscription en ligne).
+          </p>
+          <form onSubmit={handleCreateDevisDecennale} className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 max-w-xl mb-10">
+            <div>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Client</label>
+              <select
+                required
+                value={devisDecForm.userId}
+                onChange={(e) => setDevisDecForm((f) => ({ ...f, userId: e.target.value }))}
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+              >
+                <option value="">— Sélectionner —</option>
+                {data.users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.email} {u.raisonSociale ? `— ${u.raisonSociale}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Activités (virgules)</label>
+              <input
+                required
+                value={devisDecForm.activites}
+                onChange={(e) => setDevisDecForm((f) => ({ ...f, activites: e.target.value }))}
+                placeholder="ex. Maçonnerie, Couverture"
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder:text-gray-500"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Chiffre d&apos;affaires (€)</label>
+                <input
+                  required
+                  type="number"
+                  min={0}
+                  value={devisDecForm.chiffreAffaires}
+                  onChange={(e) => setDevisDecForm((f) => ({ ...f, chiffreAffaires: e.target.value }))}
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Prime annuelle TTC (€)</label>
+                <input
+                  required
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={devisDecForm.primeAnnuelle}
+                  onChange={(e) => setDevisDecForm((f) => ({ ...f, primeAnnuelle: e.target.value }))}
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Franchise (€) — défaut barème</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={devisDecForm.franchise}
+                  onChange={(e) => setDevisDecForm((f) => ({ ...f, franchise: e.target.value }))}
+                  placeholder={String(FRANCHISE_DECENNALE_EUR)}
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder:text-gray-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Plafond (€)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={devisDecForm.plafond}
+                  onChange={(e) => setDevisDecForm((f) => ({ ...f, plafond: e.target.value }))}
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-200 mb-1">Représentant légal (signataire Yousign)</label>
+                <input
+                  required
+                  value={devisDecForm.representantLegal}
+                  onChange={(e) => setDevisDecForm((f) => ({ ...f, representantLegal: e.target.value }))}
+                  placeholder="Prénom Nom"
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder:text-gray-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Civilité</label>
+                <select
+                  value={devisDecForm.civilite}
+                  onChange={(e) => setDevisDecForm((f) => ({ ...f, civilite: e.target.value }))}
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                >
+                  <option value="M">M</option>
+                  <option value="Mme">Mme</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-6 text-sm text-gray-200">
+              <label className="inline-flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={devisDecForm.jamaisAssure}
+                  onChange={(e) => setDevisDecForm((f) => ({ ...f, jamaisAssure: e.target.checked }))}
+                  className="rounded border-gray-600"
+                />
+                Jamais assuré (attestation non-sinistralité si besoin)
+              </label>
+              <label className="inline-flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={devisDecForm.reprisePasse}
+                  onChange={(e) => setDevisDecForm((f) => ({ ...f, reprisePasse: e.target.checked }))}
+                  className="rounded border-gray-600"
+                />
+                Reprise du passé
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Date de création société (si jamais assuré)</label>
+              <input
+                type="date"
+                value={devisDecForm.dateCreationSociete}
+                onChange={(e) => setDevisDecForm((f) => ({ ...f, dateCreationSociete: e.target.value }))}
+                className="w-full sm:w-auto bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={devisDecSubmitting}
+              className="bg-[#2563eb] text-white px-4 py-2.5 rounded-lg font-medium hover:bg-[#1d4ed8] disabled:opacity-50"
+            >
+              {devisDecSubmitting ? "Création…" : "Créer le devis décennale"}
+            </button>
+          </form>
+        </section>
+
         {/* Devis dommage ouvrage - ajout manuel */}
         <section>
           <h2 className="text-lg font-semibold text-white mb-4">Ajouter un devis dommage ouvrage</h2>
-          <p className="text-sm text-gray-200 mb-4">
-            Le devis sera ajouté à l&apos;espace client. Le client pourra signer électroniquement (Yousign) et payer par virement bancaire (Mollie).
+          <p className="text-sm text-gray-200 mb-4 max-w-2xl">
+            Le devis est ajouté à l&apos;espace client. Paiement :{" "}
+            <strong className="text-white">uniquement virement bancaire via Mollie</strong> (aucune carte sur ce produit).
           </p>
           <form onSubmit={handleCreateDevisDo} className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 max-w-xl mb-10">
             {data.devisDoLeads && data.devisDoLeads.length > 0 && (

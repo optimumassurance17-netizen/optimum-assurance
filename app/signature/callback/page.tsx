@@ -80,15 +80,25 @@ function SignatureCallbackContent() {
             <h1 className="text-3xl font-semibold text-black mb-4">
               Signature enregistrée
             </h1>
-            <p className="text-[#171717] mb-8">
-              Votre contrat a été signé électroniquement. Renseignez vos coordonnées bancaires (IBAN et mandat SEPA) pour finaliser votre souscription.
+            <p className="text-[#171717] mb-6">
+              Votre contrat a été signé électroniquement. Pour le <strong>mandat SEPA</strong> et le{" "}
+              <strong>premier paiement par carte</strong> (Mollie), connectez-vous avec le compte associé à votre dossier
+              puis rendez-vous sur la page mandat — ou utilisez le lien direct si vous êtes déjà connecté.
             </p>
-            <Link
-              href="/mandat-sepa"
-              className="inline-block bg-[#2563eb] text-white px-8 py-3 rounded-xl hover:bg-[#1d4ed8] transition font-medium"
-            >
-              IBAN et mandat SEPA →
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-4">
+              <Link
+                href={`/connexion?callbackUrl=${encodeURIComponent("/mandat-sepa")}`}
+                className="inline-block bg-[#2563eb] text-white px-8 py-3 rounded-xl hover:bg-[#1d4ed8] transition font-medium"
+              >
+                Connexion → mandat SEPA
+              </Link>
+              <Link
+                href="/mandat-sepa"
+                className="inline-block border-2 border-[#2563eb] text-[#2563eb] px-8 py-3 rounded-xl hover:bg-[#dbeafe] transition font-medium"
+              >
+                Mandat SEPA (déjà connecté)
+              </Link>
+            </div>
           </>
         )}
 

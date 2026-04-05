@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { readResponseJson } from "@/lib/read-response-json"
+import { Toast } from "@/components/Toast"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
 const DevisDoTemplate = dynamic(() => import("@/components/documents/DevisDoTemplate").then((m) => m.DevisDoTemplate), { ssr: false })
@@ -29,6 +30,8 @@ export default function GestionDocumentPage() {
     verificationToken?: string | null
   } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [yousignLoading, setYousignLoading] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -87,6 +90,43 @@ export default function GestionDocumentPage() {
             ← Fiche client
           </Link>
           <div className="flex flex-wrap gap-3 items-center justify-end">
+            {document.type === "devis" && (
+              <button
+                type="button"
+                disabled={yousignLoading}
+                onClick={async () => {
+                  setYousignLoading(true)
+                  setToast(null)
+                  try {
+                    const res = await fetch("/api/gestion/yousign/create-from-devis", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ documentId: document.id }),
+                    })
+                    const json = await readResponseJson<{
+                      error?: string
+                      ok?: boolean
+                      contractNumero?: string
+                    }>(res)
+                    if (!res.ok) throw new Error(json.error || "Erreur")
+                    setToast({
+                      message: `Contrat ${json.contractNumero ?? ""} — lien Yousign envoyé à l’email du client.`,
+                      type: "success",
+                    })
+                  } catch (e) {
+                    setToast({
+                      message: e instanceof Error ? e.message : "Erreur d’envoi",
+                      type: "error",
+                    })
+                  } finally {
+                    setYousignLoading(false)
+                  }
+                }}
+                className="text-sm font-medium bg-[#2563eb] text-white px-3 py-1.5 rounded-lg hover:bg-[#1d4ed8] disabled:opacity-50"
+              >
+                {yousignLoading ? "Envoi…" : "Envoyer pour signature Yousign"}
+              </button>
+            )}
             {(document.type === "contrat" || document.type === "avenant") && (
               <Link
                 href={`/gestion?editDoc=${document.id}`}
@@ -106,6 +146,12 @@ export default function GestionDocumentPage() {
           </div>
         </div>
       </header>
+
+      {toast && (
+        <div className="max-w-4xl mx-auto px-6 pt-4 print:hidden">
+          <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto px-6 py-8">
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden print:shadow-none text-black">
