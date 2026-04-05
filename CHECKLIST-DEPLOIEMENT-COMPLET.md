@@ -9,25 +9,21 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 
 - **Git** : `main` poussé sur GitHub ; CI + déploiement Vercel déclenchés.
 - **Vercel** : dernier déploiement **Production** **Ready** ; alias `https://www.optimum-assurance.fr`.
-- **Santé prod** : `https://www.optimum-assurance.fr/api/health` → base **connected**, email Resend **configured**.
-- **Variables Vercel (Production)** : vérifiées par **`npm run verify:vercel-env`** — toutes les clés **requises** sont présentes (`DATABASE_URL`, auth, Mollie, Yousign, Resend, **`CRON_SECRET`**, **`YOUSIGN_WEBHOOK_SECRET`**, etc.).
+- **Santé prod** : `https://www.optimum-assurance.fr/api/health` → base **connected**, email Resend **configured** (`RESEND_API_KEY` + `EMAIL_FROM` côté serveur).
+- **Variables Vercel (Production)** : **`npm run verify:vercel-env`** — toutes les clés **requises** présentes (DB, auth, **Mollie**, **Yousign** + `YOUSIGN_WEBHOOK_SECRET`, **Resend**, **`CRON_SECRET`**, etc.).
 - **Prisma** : migration baseline appliquée côté base utilisée ; scripts `db:sync-url-vercel`, `verify-supabase`, etc. documentés dans `DEPLOY.md`.
 - **Qualité locale** : `npm run lint`, `preflight`, `build` OK.
 
 ---
 
-## À faire côté dashboards (non automatisables ici)
+## À faire côté dashboards (si pas déjà fait)
 
 ### Mollie
-- [ ] Dans **Developers → Webhooks** (ou app Mollie), URL : **`https://www.optimum-assurance.fr/api/mollie/webhook`**.
-- [ ] Confirmer que la clé API en prod est bien **`live_`** (déjà sur Vercel ; ne pas la committer).
+- [ ] **Webhooks** : URL **`https://www.optimum-assurance.fr/api/mollie/webhook`** enregistrée dans l’app Mollie.
+- [ ] En **prod**, confirmer dans le dashboard Mollie que tu utilises bien le mode **live** (cohérent avec la clé sur Vercel).
 
 ### Yousign
-- [ ] Webhook / callback alignés avec **`YOUSIGN_ENV=production`** et l’URL du site (voir `npm run print:webhooks`).
-- La **clé secrète** webhook est déjà sur Vercel (`YOUSIGN_WEBHOOK_SECRET`) ; en cas de rotation, mettre à jour **Vercel** et le **dashboard Yousign**.
-
-### Resend
-- [ ] Domaine d’envoi **vérifié** ; `EMAIL_FROM` cohérent avec ce domaine (déjà sur Vercel).
+- [ ] **Webhooks / redirections** : URLs de prod alignées avec le site (rappel : `npm run print:webhooks`).
 
 ### Signature MVP Supabase (uniquement si tu utilises `/api/sign` + Storage)
 - [ ] SQL : `sql/supabase-esign-mvp.sql` + `sql/supabase-esign-storage.sql`.
@@ -54,4 +50,4 @@ npx prisma migrate deploy
 
 ---
 
-*Mis à jour : état post-vérification Vercel + prod.*
+*Mis à jour : tâches « déjà couvertes » retirées de la liste à faire.*
