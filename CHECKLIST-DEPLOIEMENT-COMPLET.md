@@ -11,6 +11,7 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 - **Vercel** : dernier déploiement **Production** **Ready** ; alias `https://www.optimum-assurance.fr`.
 - **Santé prod** : `https://www.optimum-assurance.fr/api/health` → base **connected**, email Resend **configured** (`RESEND_API_KEY` + `EMAIL_FROM` côté serveur).
 - **Variables Vercel (Production)** : **`npm run verify:vercel-env`** — toutes les clés **requises** présentes (DB, auth, **Mollie**, **Yousign** + `YOUSIGN_WEBHOOK_SECRET`, **Resend**, **`CRON_SECRET`**, etc.).
+- **SEO — URL canonique** : **`NEXT_PUBLIC_SITE_CANONICAL`** = `https://www.optimum-assurance.fr` sur Vercel Production (utilisée par `lib/site-url.ts` pour sitemap, robots, métadonnées). Redéployer après changement de cette variable.
 - **Prisma** : migration baseline appliquée côté base utilisée ; scripts `db:sync-url-vercel`, `verify-supabase`, etc. documentés dans `DEPLOY.md`.
 - **Qualité locale** : `npm run lint`, `preflight`, `build` OK.
 
@@ -30,9 +31,14 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 - [ ] Vercel : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, **`SUPABASE_SERVICE_ROLE_KEY`**.
 - [ ] **`npm run verify:supabase`** puis test `npm run esign:create-request -- …`.
 
+### Google Search Console (recommandé pour le suivi SEO)
+- [ ] Créer la propriété **domaine** ou **préfixe d’URL** `https://www.optimum-assurance.fr`.
+- [ ] Récupérer le code de **vérification** (balise `meta`) → variable **`NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`** sur Vercel (Production), puis redéployer — le layout injecte déjà la meta si la variable est définie (voir `.env.example`).
+- [ ] **Sitemaps** : soumettre **`https://www.optimum-assurance.fr/sitemap.xml`**.
+
 ### Optionnel
-- [ ] **Google Search Console** + propriété domaine ; sitemap déjà servi (`/sitemap.xml`).
-- [ ] Variables optionnelles : `NEXT_PUBLIC_SITE_CANONICAL`, téléphone/WhatsApp, **Upstash**, Pappers, etc. selon besoins.
+- [ ] Variables optionnelles : téléphone/WhatsApp, **Upstash**, Pappers, etc. selon besoins.
+- [ ] SEO programmatique : enrichir `seo_decennale_ville` / `seo_do_ville` dans Supabase si tu veux plus de pages localement (voir `lib/seo-programmatic/`).
 - [ ] Rotation des secrets si exposition accidentelle.
 
 ---
@@ -50,4 +56,4 @@ npx prisma migrate deploy
 
 ---
 
-*Mis à jour : tâches « déjà couvertes » retirées de la liste à faire.*
+*Mis à jour : canonical Vercel + étapes Search Console.*

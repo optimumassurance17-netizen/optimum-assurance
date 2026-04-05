@@ -30,7 +30,7 @@ const OPTIONAL_NOTES = [
   ["NEXT_PUBLIC_SUPABASE_URL", "Signature MVP /api/sign + Storage"],
   ["NEXT_PUBLIC_SUPABASE_ANON_KEY", "Idem"],
   ["SUPABASE_SERVICE_ROLE_KEY", "Idem (serveur)"],
-  ["NEXT_PUBLIC_SITE_CANONICAL", "SEO canonique forcé"],
+  ["NEXT_PUBLIC_SITE_CANONICAL", "SEO — URL canonique (recommandé sur Vercel Production)"],
   ["UPSTASH_REDIS_REST_URL", "Rate limit distribué (chat / contact)"],
   ["UPSTASH_REDIS_REST_TOKEN", "Avec Upstash"],
   ["NEXT_PUBLIC_PHONE", "Affichage site"],
