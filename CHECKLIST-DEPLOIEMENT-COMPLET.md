@@ -1,42 +1,43 @@
 # Checklist déploiement — Optimum Assurance
 
 Détails longs : **`DEPLOY.md`**.  
-Ci-dessous : **ce qui reste à faire** + rappel de ce qui est **déjà traité** (à ne pas remettre sur ta liste demain).
+Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 
 ---
 
-## Déjà fait — tu peux barrer ça de ta tête
+## Déjà fait — conforme
 
-- Commit Git local avec migrations Prisma baseline, scripts (`verify-supabase`, `audit:env`, sync `DATABASE_URL`, signature MVP, checklist, etc.) — **reste seulement à pousser** (voir ci-dessous).
-- **Prisma** : migration `20260403120000_baseline` + `migrate resolve` / `migrate deploy` sur la base utilisée.
-- **`.env`** : `DATABASE_URL` alignée prod via **`npm run db:sync-url-vercel`** ; commentaire SQLite corrigé ; placeholder **`NEXTAUTH_SECRET`** retiré du `.env` (secret dans **`.env.local`**).
-- **`.gitignore`** : `playwright-report/`, `test-results/` ; rapports retirés du dépôt.
-- **Qualité** : `npm run lint`, `preflight`, `build` OK en local ; `npm audit fix` sans `--force` déjà appliqué (alertes `vercel` CLI restantes = connues).
+- **Git** : `main` poussé sur GitHub ; CI + déploiement Vercel déclenchés.
+- **Vercel** : dernier déploiement **Production** **Ready** ; alias `https://www.optimum-assurance.fr`.
+- **Santé prod** : `https://www.optimum-assurance.fr/api/health` → base **connected**, email Resend **configured**.
+- **Variables Vercel (Production)** : vérifiées par **`npm run verify:vercel-env`** — toutes les clés **requises** sont présentes (`DATABASE_URL`, auth, Mollie, Yousign, Resend, **`CRON_SECRET`**, **`YOUSIGN_WEBHOOK_SECRET`**, etc.).
+- **Prisma** : migration baseline appliquée côté base utilisée ; scripts `db:sync-url-vercel`, `verify-supabase`, etc. documentés dans `DEPLOY.md`.
+- **Qualité locale** : `npm run lint`, `preflight`, `build` OK.
 
 ---
 
-## À faire quand tu reviens
+## À faire côté dashboards (non automatisables ici)
 
-### Prioritaire
-- [ ] **`git push`** vers GitHub (déclenche Vercel + CI).
-- [ ] Vérifier sur **Vercel** que le déploiement **Production** est vert après le push.
-- [ ] **`https://www.optimum-assurance.fr/api/health`** (ou ton domaine) → base OK.
+### Mollie
+- [ ] Dans **Developers → Webhooks** (ou app Mollie), URL : **`https://www.optimum-assurance.fr/api/mollie/webhook`**.
+- [ ] Confirmer que la clé API en prod est bien **`live_`** (déjà sur Vercel ; ne pas la committer).
 
-### Prod / intégrations (si pas déjà 100 %)
-- [ ] **Mollie** : webhook `https://TON_DOMAINE/api/mollie/webhook` ; clé **`live_`** en prod sur Vercel.
-- [ ] **Yousign** : `YOUSIGN_ENV=production` ; webhooks / callback ; idéalement **`YOUSIGN_WEBHOOK_SECRET`** sur Vercel.
-- [ ] **`CRON_SECRET`** sur Vercel si tu veux que les **`/api/cron/*`** tournent.
-- [ ] **Resend** : domaine vérifié, **`EMAIL_FROM`** cohérent.
+### Yousign
+- [ ] Webhook / callback alignés avec **`YOUSIGN_ENV=production`** et l’URL du site (voir `npm run print:webhooks`).
+- La **clé secrète** webhook est déjà sur Vercel (`YOUSIGN_WEBHOOK_SECRET`) ; en cas de rotation, mettre à jour **Vercel** et le **dashboard Yousign**.
 
-### Signature MVP Supabase (uniquement si tu l’utilises)
-- [ ] SQL Supabase : `sql/supabase-esign-mvp.sql` + `sql/supabase-esign-storage.sql`.
+### Resend
+- [ ] Domaine d’envoi **vérifié** ; `EMAIL_FROM` cohérent avec ce domaine (déjà sur Vercel).
+
+### Signature MVP Supabase (uniquement si tu utilises `/api/sign` + Storage)
+- [ ] SQL : `sql/supabase-esign-mvp.sql` + `sql/supabase-esign-storage.sql`.
 - [ ] Vercel : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, **`SUPABASE_SERVICE_ROLE_KEY`**.
 - [ ] **`npm run verify:supabase`** puis test `npm run esign:create-request -- …`.
 
 ### Optionnel
-- [ ] **Search Console** + sitemap.
-- [ ] Variables optionnelles (`NEXT_PUBLIC_PHONE`, Upstash, Pappers, etc.) selon tes besoins.
-- [ ] Si tu as partagé des secrets en clair quelque part : **rotation** mot de passe Neon / clés concernées.
+- [ ] **Google Search Console** + propriété domaine ; sitemap déjà servi (`/sitemap.xml`).
+- [ ] Variables optionnelles : `NEXT_PUBLIC_SITE_CANONICAL`, téléphone/WhatsApp, **Upstash**, Pappers, etc. selon besoins.
+- [ ] Rotation des secrets si exposition accidentelle.
 
 ---
 
@@ -44,11 +45,13 @@ Ci-dessous : **ce qui reste à faire** + rappel de ce qui est **déjà traité**
 
 ```bash
 npm run audit:env && npm run check-env && npm run preflight
+npm run verify:prod
+npm run verify:vercel-env
+npm run print:webhooks
 npx vercel env pull .env.vercel.pull --environment production --yes && npm run db:sync-url-vercel
 npx prisma migrate deploy
-git push
 ```
 
 ---
 
-*Mis à jour : liste allégée — les étapes déjà réalisées en session ont été retirées de « à faire demain ».*
+*Mis à jour : état post-vérification Vercel + prod.*
