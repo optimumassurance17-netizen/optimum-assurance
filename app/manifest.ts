@@ -5,6 +5,8 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Optimum Assurance - Espace client",
     short_name: "Optimum Assurance",
     description: "Assurance décennale BTP et dommage ouvrage. Accédez à vos documents et attestations.",
+    lang: "fr",
+    categories: ["finance", "business"],
     start_url: "/espace-client",
     display: "standalone",
     background_color: "#ffffff",

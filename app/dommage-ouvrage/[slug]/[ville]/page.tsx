@@ -19,6 +19,7 @@ import {
   seoJsonLdGraph,
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
+import { buildProgrammaticMetaDescription } from "@/lib/seo-metadata-utils"
 import { SITE_URL } from "@/lib/site-url"
 
 const FaqSEO = dynamic(() =>
@@ -45,7 +46,11 @@ export async function generateMetadata({
 
   const path = `/dommage-ouvrage/${data.slug}/${data.villeSlug}`
   const title = `Assurance dommage ouvrage ${data.nom} à ${data.villeNom} | Devis | Optimum`
-  const description = `Assurance dommage ouvrage ${data.nom} à ${data.villeNom} : obligation, garanties et devis sous 24 h. ${data.description.slice(0, 110)}…`
+  const description = buildProgrammaticMetaDescription(
+    `Assurance dommage ouvrage ${data.nom} à ${data.villeNom} : obligation, garanties et devis sous 24 h.`,
+    data.description,
+    158
+  )
 
   return {
     title,

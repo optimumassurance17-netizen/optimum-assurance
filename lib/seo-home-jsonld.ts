@@ -1,5 +1,9 @@
 import { EQ_MENSUEL_MIN } from "@/lib/decennale-affichage-tarif"
+import { seoOrgId, seoWebsiteId } from "@/lib/seo-jsonld-helpers"
 import { SITE_URL as baseUrl } from "@/lib/site-url"
+
+const publicContactEmail =
+  process.env.NEXT_PUBLIC_EMAIL?.trim() || "contact@optimum-assurance.fr"
 
 /** Profils sociaux (optionnel) — ex. NEXT_PUBLIC_SEO_SAME_AS="https://linkedin.com/...,https://..." */
 function sameAsFromEnv(): string[] | undefined {
@@ -18,7 +22,7 @@ export function buildHomePageJsonLdGraph() {
 
   const organization = {
     "@type": "InsuranceAgency",
-    "@id": `${baseUrl}/#organization`,
+    "@id": seoOrgId,
     name: "Optimum Assurance",
     description: `Assurance décennale BTP et dommage ouvrage en ligne. Devis en quelques minutes, attestation pour artisans et entreprises. Plombier, électricien, peintre, maçon… Dès ${EQ_MENSUEL_MIN} €/mois équivalent (min. 600 €/an), prélèvement trimestriel.`,
     url: baseUrl,
@@ -34,6 +38,16 @@ export function buildHomePageJsonLdGraph() {
       "Bâtiment et travaux publics",
       "Loi Spinetta",
     ],
+    email: publicContactEmail,
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        contactType: "customer service",
+        email: publicContactEmail,
+        areaServed: "FR",
+        availableLanguage: ["French"],
+      },
+    ],
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "4.9",
@@ -46,11 +60,11 @@ export function buildHomePageJsonLdGraph() {
 
   const website = {
     "@type": "WebSite",
-    "@id": `${baseUrl}/#website`,
+    "@id": seoWebsiteId,
     name: "Optimum Assurance",
     url: baseUrl,
     inLanguage: "fr-FR",
-    publisher: { "@id": `${baseUrl}/#organization` },
+    publisher: { "@id": seoOrgId },
     /** Pas de SearchAction : pas de recherche interne — évite les erreurs d’interprétation Google. */
   }
 

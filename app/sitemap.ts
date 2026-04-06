@@ -44,7 +44,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }))
 
   return [
-    { url: baseUrl, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
+    {
+      url: baseUrl,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 1,
+      images: [`${baseUrl}/opengraph-image`],
+    },
     { url: `${baseUrl}/devis`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.95 },
     { url: `${baseUrl}/devis-dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
     {

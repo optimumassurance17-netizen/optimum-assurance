@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
+import { seoJsonLdGraph, seoOrgId } from "@/lib/seo-jsonld-helpers"
 import { SITE_URL } from "@/lib/site-url"
 
 const baseUrl = SITE_URL
@@ -35,24 +36,38 @@ const temoignages = [
   { texte: "Équipe réactive pour mes questions. Je recommande à tous les plombiers de ma région.", auteur: "S. T., Plombier-chauffagiste", ville: "Lille" },
 ]
 
-const jsonLdReview = {
-  "@context": "https://schema.org",
-  "@type": "InsuranceAgency",
-  name: "Optimum Assurance",
-  url: baseUrl,
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "4.9",
-    bestRating: "5",
-    worstRating: "1",
-    ratingCount: "50",
+const jsonLdAvis = seoJsonLdGraph([
+  {
+    "@type": "InsuranceAgency",
+    "@id": seoOrgId,
+    name: "Optimum Assurance",
+    url: baseUrl,
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.9",
+      bestRating: "5",
+      worstRating: "1",
+      ratingCount: "50",
+    },
   },
-}
+  ...temoignages.map((t) => ({
+    "@type": "Review" as const,
+    itemReviewed: { "@id": seoOrgId },
+    author: { "@type": "Person" as const, name: t.auteur },
+    reviewBody: t.texte,
+    reviewRating: {
+      "@type": "Rating" as const,
+      ratingValue: 5,
+      bestRating: 5,
+      worstRating: 1,
+    },
+  })),
+])
 
 export default function AvisPage() {
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      <JsonLd id="jsonld-avis" data={jsonLdReview} />
+      <JsonLd id="jsonld-avis" data={jsonLdAvis} />
       <Header />
       <div className="max-w-2xl mx-auto px-6 py-14">
         <h1 className="text-3xl font-bold text-[#0a0a0a] mb-2">Avis clients</h1>
