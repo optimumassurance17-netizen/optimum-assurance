@@ -3,8 +3,11 @@ import { buildSitemapEntries, minimalSitemapEntries, type SitemapEntry } from "@
 
 export const runtime = "nodejs"
 
-/** Cache CDN / réduit charge (route handler). */
-export const revalidate = 86_400
+/**
+ * Toujours régénérer à la requête : évite une page statique / cache CDN obsolète
+ * avec ancien code (ex. 500) après déploiement.
+ */
+export const dynamic = "force-dynamic"
 
 function escapeXml(unsafe: string): string {
   return unsafe
