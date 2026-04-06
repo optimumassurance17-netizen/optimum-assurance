@@ -31,7 +31,32 @@ create index if not exists signatures_created_at_idx on public.signatures (creat
 alter table public.sign_requests enable row level security;
 alter table public.signatures enable row level security;
 
--- Pas de policy publique : l’API Next.js utilise SUPABASE_SERVICE_ROLE_KEY (bypass RLS).
+-- Politiques explicites (advisor « RLS Enabled No Policy ») : refus anon / authenticated.
+-- L’API Next.js utilise SUPABASE_SERVICE_ROLE_KEY — ce rôle contourne la RLS.
+-- (Copie alignée sur sql/supabase-esign-rls-policies.sql pour exécutions partielles.)
+drop policy if exists "sign_requests_deny_anon" on public.sign_requests;
+create policy "sign_requests_deny_anon" on public.sign_requests
+  for all to anon
+  using (false)
+  with check (false);
+
+drop policy if exists "sign_requests_deny_authenticated" on public.sign_requests;
+create policy "sign_requests_deny_authenticated" on public.sign_requests
+  for all to authenticated
+  using (false)
+  with check (false);
+
+drop policy if exists "signatures_deny_anon" on public.signatures;
+create policy "signatures_deny_anon" on public.signatures
+  for all to anon
+  using (false)
+  with check (false);
+
+drop policy if exists "signatures_deny_authenticated" on public.signatures;
+create policy "signatures_deny_authenticated" on public.signatures
+  for all to authenticated
+  using (false)
+  with check (false);
 
 -- ----- Partie B : buckets Storage (PDF, privés, URLs signées côté API) -----
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

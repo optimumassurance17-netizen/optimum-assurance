@@ -25,7 +25,8 @@ create index if not exists signatures_created_at_idx on public.signatures (creat
 alter table public.sign_requests enable row level security;
 alter table public.signatures enable row level security;
 
--- Pas de policy : accès anon refusé. L’API Next.js utilise SUPABASE_SERVICE_ROLE_KEY (bypass RLS).
+-- Exécutez aussi sql/supabase-esign-rls-policies.sql (politiques explicites anon/authenticated ;
+-- supprime l’alerte advisor « RLS Enabled No Policy »). L’API utilise SUPABASE_SERVICE_ROLE_KEY (bypass RLS).
 --
 -- Exemple après upload du fichier dans le bucket "documents" :
 -- insert into public.sign_requests (document_storage_path) values ('dossiers/contrat.pdf');
