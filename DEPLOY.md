@@ -26,10 +26,10 @@ Projet Vercel → **Settings → Environment Variables** : copier depuis `.env.e
 | `NEXT_PUBLIC_APP_URL` | **Identique** à `NEXTAUTH_URL` (même origine) |
 | `MOLLIE_API_KEY` | `live_` en prod |
 | `RESEND_API_KEY` + `EMAIL_FROM` | Domaine vérifié sur Resend |
-| `YOUSIGN_API_KEY` + `YOUSIGN_ENV` | `production` pour la prod |
+| `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | Signature `/api/sign`, Storage |
 | `ADMIN_EMAILS` | Emails autorisés sur `/gestion` |
 
-**Recommandé :** `CRON_SECRET` (crons Vercel), `YOUSIGN_WEBHOOK_SECRET`, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`.
+**Recommandé :** `CRON_SECRET` (crons Vercel), `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`.
 
 **SEO :** `NEXT_PUBLIC_APP_URL` et `NEXTAUTH_URL` = URL publique finale (ex. `https://www.optimum-assurance.fr`). Optionnel : `NEXT_PUBLIC_SITE_CANONICAL` pour forcer la même URL dans robots, sitemap et métadonnées si `NEXT_PUBLIC_APP_URL` pointe encore vers un domaine Vercel en preview.
 
@@ -106,7 +106,7 @@ npx prisma migrate deploy
 
 Ou : `node scripts/prisma-migrate-prod.mjs` (utilise `.env.vercel.pull` directement).
 
-### Secrets (NEXTAUTH, CRON, optionnel Yousign webhook legacy)
+### Secrets (NEXTAUTH, CRON)
 
 En local, pour générer des valeurs à coller dans Vercel :
 
@@ -118,9 +118,8 @@ npm run secrets:prod
 
 1. **Mollie** : URL webhook = `https://votredomaine.fr/api/mollie/webhook`
 2. **Supabase signature** : tables + buckets (`sql/supabase-esign-complete.sql`) ; variables URL + `SUPABASE_SERVICE_ROLE_KEY`
-3. **Yousign** *(si legacy)* : webhook `/api/yousign/webhook`
-4. **Search Console** : propriété + sitemap `https://votredomaine.fr/sitemap.xml`
-5. Tester : `/api/health` → `database: connected`
+3. **Search Console** : propriété + sitemap `https://votredomaine.fr/sitemap.xml`
+4. Tester : `/api/health` → `database: connected`
 
 ## 5. Icônes PWA (install / barre d’adresse)
 

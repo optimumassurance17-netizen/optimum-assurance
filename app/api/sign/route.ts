@@ -7,7 +7,7 @@ import { getClientIp, getUserAgent } from "@/lib/esign/get-request-meta"
 import { sha256Hex } from "@/lib/esign/hash-pdf"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
-import { applyPendingFinalize } from "@/lib/yousign-finalize-pending"
+import { applyPendingFinalize } from "@/lib/pending-signature-finalize"
 
 export const runtime = "nodejs"
 

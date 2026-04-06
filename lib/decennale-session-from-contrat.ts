@@ -21,8 +21,8 @@ export function buildSignatureSessionFromContrat(
   contratNumero: string,
   user: UserFields
 ): SouscriptionData & {
-  yousignContractNumero: string
-  yousignContractData: Record<string, unknown>
+  signedContractNumero: string
+  signedContractData: Record<string, unknown>
 } {
   const pa = Number(contratData.primeAnnuelle) || 0
   const primeTrimestrielle =
@@ -84,7 +84,7 @@ export function buildSignatureSessionFromContrat(
 
   return {
     ...souscription,
-    yousignContractNumero: contratNumero,
-    yousignContractData: { ...contratData, numero: contratNumero },
+    signedContractNumero: contratNumero,
+    signedContractData: { ...contratData, numero: contratNumero },
   }
 }

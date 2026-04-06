@@ -212,7 +212,7 @@ model DevisDommageOuvrageLead {
 
 model PendingSignature {
   id                 String   @id @default(cuid())
-  signatureRequestId String   @unique // ID Yousign ou UUID sign_requests (Supabase Sign)
+  signatureRequestId String   @unique // UUID sign_requests (Supabase Sign)
   userId             String
   contractData       String   // JSON du contrat
   contractNumero     String

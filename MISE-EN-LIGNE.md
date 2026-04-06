@@ -69,7 +69,6 @@ Ajouter ces variables (Production) :
 | `CRON_SECRET` | `npm run generate-secret` (en local) |
 
 **Optionnelles :**
-- `YOUSIGN_API_KEY`, `YOUSIGN_ENV`, `YOUSIGN_WEBHOOK_SECRET` — uniquement si webhook Yousign legacy encore actif
 - `INSEE_API_KEY_INTEGRATION` — [portail-api.insee.fr](https://portail-api.insee.fr) (pré-remplissage SIRET)
 - `PAPPERS_API_KEY` — [pappers.fr](https://pappers.fr) (pré-remplissage SIRET)
 
@@ -114,8 +113,6 @@ Dashboard Mollie → Paramètres → Webhooks
 URL : `https://votre-domaine/api/mollie/webhook`
 
 **Signature (Supabase) :** exécuter `sql/supabase-esign-complete.sql` sur le projet ; variables `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` sur Vercel.
-
-**Yousign *(optionnel — legacy)* :** si encore utilisé, Dashboard Yousign → Webhooks → `https://votre-domaine/api/yousign/webhook`
 
 ---
 

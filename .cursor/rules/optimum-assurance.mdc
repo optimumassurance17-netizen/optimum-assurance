@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Optimum Assurance (mémoire projet)
 
-- **Stack** : Next.js (App Router), Prisma/PostgreSQL, NextAuth, Mollie, Resend, signature électronique Supabase (`/api/sign`, Storage), webhook Yousign optionnel (legacy), crons Vercel (`vercel.json`).
+- **Stack** : Next.js (App Router), Prisma/PostgreSQL, NextAuth, Mollie, Resend, signature électronique Supabase (`/api/sign`, `/api/sign/create-request`, Storage), crons Vercel (`vercel.json`).
 - **Build prod** : `npm run vercel-build` = `prisma generate && next build` — **pas** de `migrate deploy` dans le build. Migrations : `npx prisma migrate deploy` sur la BDD prod (manuel ou CI dédié).
 - **Git / CI** : remote GitHub `optimumassurance17-netizen/optimum-assurance`, branche `main`. Workflow `.github/workflows/ci.yml` (lint + build). Vercel : déploiements auto si le dépôt est lié dans le dashboard Vercel.
 - **Déploiement après modifications** : méthode standard — **commit + `git push origin main`** → Vercel construit et déploie la prod tout seul (dépôt Git connecté au projet Vercel). Ne pas oublier le push : sans push, rien ne part en prod. Alternative hors Git : `npm run deploy` (prod) ou `npm run deploy:preview` après `npx vercel login` et projet lié.

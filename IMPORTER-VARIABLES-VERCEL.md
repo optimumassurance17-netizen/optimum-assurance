@@ -13,7 +13,6 @@ Remplace **chaque** `REMPLACE_PAR_...` par ta vraie valeur :
 | REMPLACE_PAR_CLE_RESEND | resend.com → API Keys |
 | REMPLACE_PAR_SUPABASE_URL | Supabase → Project Settings → API → Project URL |
 | REMPLACE_PAR_SUPABASE_SERVICE_ROLE | Supabase → API → service_role (secret) |
-| REMPLACE_PAR_CLE_YOUSIGN | *(Optionnel legacy)* Dashboard Yousign → Production |
 | REMPLACE_PAR_TON_DOMAINE | Ton domaine (ex: optimum-assurance) |
 | REMPLACE_PAR_TON_EMAIL | Ton email (ex: contact@optimum-assurance.fr) |
 

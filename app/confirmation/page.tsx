@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Header } from "@/components/Header"
 import { STORAGE_KEYS } from "@/lib/types"
 import { readResponseJson } from "@/lib/read-response-json"
+import { getSignedContractData, getSignedContractNumero } from "@/lib/signature-session-fields"
 
 async function sendConfirmationEmail(raisonSociale: string, email: string) {
   try {
@@ -121,7 +122,10 @@ export default function ConfirmationPage() {
             const signatureData = sessionStorage.getItem(STORAGE_KEYS.signature)
             if (signatureData) {
               try {
-                const souscription = JSON.parse(signatureData)
+                const souscription = JSON.parse(signatureData) as Record<string, unknown>
+                const tarif = souscription.tarif as
+                  | { primeAnnuelle?: number; primeMensuelle?: number; franchise?: number; plafond?: number }
+                  | undefined
                 const now = new Date()
                 const dateEffet = now.toLocaleDateString("fr-FR")
                 const dateEcheance = new Date(now.getFullYear(), 11, 31).toLocaleDateString("fr-FR")
@@ -133,16 +137,17 @@ export default function ConfirmationPage() {
                     return null
                   }
                 })()
-                const primeAnnuelle = souscription.tarif?.primeAnnuelle ?? 0
+                const primeAnnuelle = tarif?.primeAnnuelle ?? 0
                 const periodicite = paiementOpts?.periodicite ?? "trimestriel"
                 const primeTrimestrielle = Math.round((primeAnnuelle / 4) * 100) / 100
                 const primeMensuelleCalc =
                   primeAnnuelle > 0 ? Math.round((primeAnnuelle / 12) * 100) / 100 : undefined
                 const trimestrielCarte = paiementOpts?.premierPaiementCarte === true && periodicite === "trimestriel"
                 if (trimestrielCarte) setDecennalePremierTrimestreCarte(true)
-                const docData = souscription.yousignContractData
+                const signedPayload = getSignedContractData(souscription)
+                const docData = signedPayload
                   ? {
-                      ...souscription.yousignContractData,
+                      ...signedPayload,
                       raisonSociale: souscription.raisonSociale,
                       siret: souscription.siret,
                       adresse: souscription.adresse,
@@ -175,14 +180,14 @@ export default function ConfirmationPage() {
                       civilite: souscription.civilite,
                       activites: souscription.activites,
                       chiffreAffaires: souscription.chiffreAffaires,
-                      primeAnnuelle: souscription.tarif?.primeAnnuelle,
-                      primeMensuelle: souscription.tarif?.primeMensuelle ?? primeMensuelleCalc,
+                      primeAnnuelle: tarif?.primeAnnuelle,
+                      primeMensuelle: tarif?.primeMensuelle ?? primeMensuelleCalc,
                       primeTrimestrielle,
                       modePaiement: paiementOpts ? "prelevement" : "unique",
                       periodicitePrelevement: periodicite,
                       fraisGestionPrelevement: paiementOpts ? 60 : undefined,
-                      franchise: souscription.tarif?.franchise,
-                      plafond: souscription.tarif?.plafond,
+                      franchise: tarif?.franchise,
+                      plafond: tarif?.plafond,
                       dateEffet,
                       dateEcheance,
                       ...(trimestrielCarte && {
@@ -214,8 +219,8 @@ export default function ConfirmationPage() {
                   body: JSON.stringify({
                     type: "contrat",
                     data: docData,
-                    ...(souscription.yousignContractNumero && {
-                      numero: souscription.yousignContractNumero,
+                    ...(getSignedContractNumero(souscription) && {
+                      numero: getSignedContractNumero(souscription),
                     }),
                   }),
                 })
@@ -231,7 +236,10 @@ export default function ConfirmationPage() {
                     },
                   }),
                 })
-                await sendConfirmationEmail(souscription.raisonSociale, souscription.email)
+                await sendConfirmationEmail(
+                  String(souscription.raisonSociale ?? ""),
+                  String(souscription.email ?? "")
+                )
               } catch (e) {
                 console.error("Erreur création documents:", e)
               }

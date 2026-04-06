@@ -27,9 +27,6 @@ const REQUIRED_PRODUCTION = [
 /** Utiles selon les fonctionnalités activées */
 const OPTIONAL_NOTES = [
   ["NEXT_PUBLIC_SUPABASE_ANON_KEY", "Client Supabase (usage futur côté navigateur)"],
-  ["YOUSIGN_API_KEY", "Legacy — webhook Yousign si encore utilisé"],
-  ["YOUSIGN_ENV", "Legacy — sandbox ou production"],
-  ["YOUSIGN_WEBHOOK_SECRET", "Legacy — vérification webhooks Yousign"],
   ["NEXT_PUBLIC_SITE_CANONICAL", "SEO — URL canonique (recommandé sur Vercel Production)"],
   ["UPSTASH_REDIS_REST_URL", "Rate limit distribué (chat / contact)"],
   ["UPSTASH_REDIS_REST_TOKEN", "Avec Upstash"],
@@ -119,11 +116,6 @@ if (supabaseOk) {
   )
 } else if (!supabaseBundle.some((k) => prodKeys.has(k))) {
   console.log("ℹ️  Signature Supabase : non configurée sur Vercel — voir `npm run print:supabase-signature`.\n")
-}
-
-const yousignLegacy = ["YOUSIGN_API_KEY", "YOUSIGN_ENV", "YOUSIGN_WEBHOOK_SECRET"].filter((k) => prodKeys.has(k))
-if (yousignLegacy.length > 0) {
-  console.log("ℹ️  Yousign (legacy) : clés présentes — webhook `/api/yousign/webhook` si encore utilisé.\n")
 }
 
 console.log("✅ verify-vercel-env terminé.\n")

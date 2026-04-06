@@ -76,7 +76,7 @@ export default function SignaturePage() {
     }
 
     try {
-      const res = await fetch("/api/yousign/create-signature", {
+      const res = await fetch("/api/sign/create-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ souscription }),
@@ -96,9 +96,9 @@ export default function SignaturePage() {
 
       const dataWithSignature = {
         ...souscription,
-        yousignSignatureRequestId: result.signatureRequestId,
-        yousignContractNumero: result.contractNumero,
-        yousignContractData: result.contractData,
+        signatureRequestId: result.signatureRequestId,
+        signedContractNumero: result.contractNumero,
+        signedContractData: result.contractData,
         dateSignature: new Date().toISOString(),
       }
       sessionStorage.setItem(STORAGE_KEYS.signature, JSON.stringify(dataWithSignature))

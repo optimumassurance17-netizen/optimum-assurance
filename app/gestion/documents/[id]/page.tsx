@@ -102,7 +102,7 @@ export default function GestionDocumentPage() {
                   setSignatureSendLoading(true)
                   setToast(null)
                   try {
-                    const res = await fetch("/api/gestion/yousign/create-from-devis", {
+                    const res = await fetch("/api/gestion/sign/send-from-devis", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ documentId: document.id }),

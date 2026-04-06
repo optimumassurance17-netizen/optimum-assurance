@@ -43,8 +43,6 @@ const vars = [
   { key: "ADMIN_EMAILS", required: true, hint: "Emails admin CRM" },
   { key: "RESEND_API_KEY", required: true, hint: "Clé Resend (resend.com)" },
   { key: "EMAIL_FROM", required: true, hint: "Email expéditeur" },
-  { key: "YOUSIGN_API_KEY", required: false, hint: "Legacy — webhook / API Yousign si encore utilisé" },
-  { key: "YOUSIGN_ENV", required: false, hint: "Legacy — sandbox ou production" },
   { key: "NEXT_PUBLIC_SITE_CANONICAL", required: false, hint: "Optionnel — URL canonique forcée SEO (ex. https://www.optimum-assurance.fr)" },
   { key: "NEXT_PUBLIC_PHONE", required: false, hint: "Téléphone affiché" },
   { key: "NEXT_PUBLIC_EMAIL", required: false, hint: "Email de contact" },
@@ -52,7 +50,6 @@ const vars = [
   { key: "PAPPERS_API_KEY", required: false, hint: "Optionnel - pré-remplissage SIRET (Pappers)" },
   { key: "INSEE_API_KEY_INTEGRATION", required: false, hint: "Optionnel - pré-remplissage SIRET (INSEE gratuit)" },
   { key: "CRON_SECRET", required: false, hint: "Recommandé - sécurise les crons Vercel (rappels)" },
-  { key: "YOUSIGN_WEBHOOK_SECRET", required: false, hint: "Recommandé - vérifie la signature des webhooks YouSign" },
   { key: "UPSTASH_REDIS_REST_URL", required: false, hint: "Optionnel - rate limit distribué (chat / contact) sur Vercel" },
   { key: "UPSTASH_REDIS_REST_TOKEN", required: false, hint: "Avec UPSTASH_REDIS_REST_URL (console upstash.com)" },
   {
@@ -110,7 +107,4 @@ if (appUrl && authUrl && appUrl !== authUrl) {
 }
 if (!process.env.CRON_SECRET) {
   console.log("⚠️  CRON_SECRET vide — les crons /api/cron/* refuseront les appels (sécurité). À définir sur Vercel.\n")
-}
-if (!process.env.YOUSIGN_WEBHOOK_SECRET && process.env.YOUSIGN_API_KEY) {
-  console.log("⚠️  YOUSIGN_WEBHOOK_SECRET vide — recommandé si vous utilisez encore les webhooks Yousign.\n")
 }

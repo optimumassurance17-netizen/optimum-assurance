@@ -17,9 +17,11 @@ import { createSupabaseServiceClient } from "@/lib/supabase"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 
+export const runtime = "nodejs"
+
 /**
  * Admin : à partir d’un document **devis** décennale, génère le contrat PDF, crée une demande
- * sign_requests (Supabase Sign) pour le client et envoie le lien `/sign/[id]` par email.
+ * `sign_requests` (Supabase Sign) pour le client et envoie le lien `/sign/[id]` par email.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -147,7 +149,7 @@ export async function POST(request: NextRequest) {
       signatureLink,
     })
   } catch (error) {
-    console.error("[gestion/yousign/create-from-devis]", error)
+    console.error("[gestion/sign/send-from-devis]", error)
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Erreur lors de la création de la signature",

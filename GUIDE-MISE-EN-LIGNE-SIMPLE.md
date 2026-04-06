@@ -233,7 +233,7 @@ npm run generate-secret
 - Nom : `CRON_SECRET`
 - Valeur : la même chaîne que NEXTAUTH_SECRET (ou la 2e générée à l'étape 8)
 
-5. Vérifie que les 11 variables ci-dessus sont bien listées dans Vercel. Optionnel legacy : `YOUSIGN_API_KEY`, `YOUSIGN_ENV`, `YOUSIGN_WEBHOOK_SECRET` seulement si le webhook Yousign est encore utilisé (voir `DEPLOYMENT.md`).
+5. Vérifie que les variables ci-dessus sont bien listées dans Vercel (voir `DEPLOYMENT.md`).
 
 ---
 

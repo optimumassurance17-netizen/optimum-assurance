@@ -17,7 +17,6 @@ Monitoring
 
 Webhooks & crons (détail : npm run print:webhooks)
   · Mollie : ${base}/api/mollie/webhook
-  · Yousign (legacy, si utilisé) : ${base}/api/yousign/webhook
 
 Vérifications locales
   · npm run verify:vercel-env

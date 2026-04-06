@@ -26,6 +26,15 @@ export interface SouscriptionData extends DevisData {
   telephone: string
   representantLegal: string
   civilite: "M" | "Mme" | "Mlle"
+  /** Après `/api/sign/create-request` : id `sign_requests` (Supabase). */
+  signatureRequestId?: string
+  /** Données contrat pour mandat / paiement (post-signature). */
+  signedContractNumero?: string
+  signedContractData?: Record<string, unknown>
+  /** @deprecated Anciennes sessions — lire via `getSignedContract*` dans signature-session-fields */
+  yousignSignatureRequestId?: string
+  yousignContractNumero?: string
+  yousignContractData?: Record<string, unknown>
   /** Parcours signature / récap (optionnel) */
   insuranceProduct?: "decennale" | "do"
   doProjectName?: string

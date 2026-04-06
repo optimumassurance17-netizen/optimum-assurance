@@ -30,8 +30,6 @@ jobs:
       ADMIN_EMAILS: ci@example.com
       RESEND_API_KEY: re_ci_placeholder
       EMAIL_FROM: CI <ci@example.com>
-      YOUSIGN_API_KEY: ys_ci_placeholder
-      YOUSIGN_ENV: sandbox
       MOLLIE_API_KEY: test_ci_placeholder
 
     steps:

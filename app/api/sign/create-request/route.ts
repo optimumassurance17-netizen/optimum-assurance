@@ -10,6 +10,9 @@ import { prisma } from "@/lib/prisma"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
 
+export const runtime = "nodejs"
+
+/** Décennale : PDF contrat + ligne `sign_requests` (Supabase) + `pendingSignature`. */
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -98,7 +101,7 @@ export async function POST(request: NextRequest) {
       contractData,
     })
   } catch (error) {
-    console.error("Erreur création signature (Supabase Sign):", error)
+    console.error("[api/sign/create-request]", error)
     return NextResponse.json(
       {
         error:

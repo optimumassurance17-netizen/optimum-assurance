@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Affiche les URLs à configurer manuellement dans Mollie (et Yousign si flux legacy).
+ * Affiche les URLs à configurer manuellement dans Mollie.
  * Usage: npm run print:webhooks
  *        VERIFY_PROD_URL=https://www.x.fr node scripts/print-webhook-urls.mjs
  */
@@ -17,8 +17,6 @@ Base production : ${base}
 Mollie (développeurs → Webhooks ou dans l’app) :
   ${base}/api/mollie/webhook
 
-Yousign — uniquement si webhook legacy encore actif :
-  Webhook : ${base}/api/yousign/webhook
 Retour utilisateur après signature (décennale) :
   ${base}/signature/callback
 

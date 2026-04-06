@@ -19,8 +19,6 @@ NEXTAUTH_SECRET=${nextauth}
 
 CRON_SECRET=${cron}
 
-YOUSIGN_WEBHOOK_SECRET=${randomBytes(24).toString("hex")}
-
 ──────────────────────────────────────────────────────────────
   Rappel : une valeur par variable. Redéployez après enregistrement.
 ══════════════════════════════════════════════════════════════

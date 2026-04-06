@@ -15,10 +15,9 @@ Liste issue de l’audit projet. Cocher au fur et à mesure.
 - [ ] `npm run build` : si erreur EPERM (Prisma), fermer tous les terminaux / `npm run dev`, puis relancer.
 - [ ] Compléter `.env` / `.env.local` : `npm run check-env` jusqu’à ce que toutes les variables **obligatoires** soient vertes *(en local, sans clés Supabase, le preflight peut échouer — les copier depuis Vercel ou `vercel env pull` si besoin de tester la signature en dev)*.
 - [x] Déploiement Git + Vercel : `main` déployé, site accessible en HTTPS.
-- [x] En production : URLs **HTTPS** ; parcours signature principal via **Supabase Sign** ; **Yousign** réservé au **legacy** (clés optionnelles sur Vercel si webhook encore utilisé).
+- [x] En production : URLs **HTTPS** ; parcours signature via **Supabase Sign** (`/api/sign/create-request`, `/sign/[id]`, `POST /api/sign`).
 - [ ] **Production** : confirmer `CRON_SECRET` sur Vercel si les crons planifiés (`vercel.json`) doivent tourner (sinon 503 volontaire).
 - [x] Supabase signature (Vercel) : `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` + anon ; SQL `sign_*` à jour sur le projet Supabase utilisé en prod (voir checklist).
-- [ ] *(Optionnel legacy)* `YOUSIGN_WEBHOOK_SECRET` aligné avec le dashboard Yousign si `/api/yousign/webhook` est encore utilisé (sinon ignorer).
 
 ## Contenu légal (hors code — avocat / conformité assurance)
 
@@ -33,5 +32,5 @@ Liste issue de l’audit projet. Cocher au fur et à mesure.
 
 - [ ] Parcours mobile : header (scroll horizontal si besoin), FAQ, Guides, Espace client.
 - [ ] Export PDF groupé : QR + URL de vérification sur les attestations (si `verificationToken` présent).
-- [ ] Parcours décennale complet : **signature** (lien `/sign/…`, Supabase Sign) → **mandat SEPA** → **paiement Mollie** (test ou live selon politique). *(Legacy : webhook Yousign + `/api/yousign/sync-pending` seulement si anciennes demandes.)*
+- [ ] Parcours décennale complet : **signature** (lien `/sign/…`, Supabase Sign) → **mandat SEPA** → **paiement Mollie** (test ou live selon politique).
 - [ ] **Google Search Console** : propriété + soumission du sitemap `https://www.optimum-assurance.fr/sitemap.xml`.

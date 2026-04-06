@@ -1,66 +1,14 @@
 "use client"
 
-import { Suspense, useEffect, useRef } from "react"
+import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
-import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
-import { STORAGE_KEYS } from "@/lib/types"
-import { readResponseJson } from "@/lib/read-response-json"
 
 function SignatureCallbackContent() {
   const searchParams = useSearchParams()
-  const { status: sessionStatus } = useSession()
   const error = searchParams.get("error") === "1"
   const status: "success" | "error" = error ? "error" : "success"
-  const syncOnce = useRef(false)
-
-  /** Secours si webhooks Yousign pas encore actifs : synchronise le contrat via l’API Yousign (hors flux Supabase Sign). */
-  useEffect(() => {
-    if (status !== "success" || sessionStatus !== "authenticated" || syncOnce.current) return
-    if (typeof window === "undefined") return
-    const raw = sessionStorage.getItem(STORAGE_KEYS.signature)
-    if (!raw) return
-    let parsed: {
-      yousignSignatureRequestId?: string
-      yousignContractData?: { signatureProvider?: string }
-    }
-    try {
-      parsed = JSON.parse(raw) as {
-        yousignSignatureRequestId?: string
-        yousignContractData?: { signatureProvider?: string }
-      }
-    } catch {
-      return
-    }
-    if (parsed.yousignContractData?.signatureProvider === "supabase") return
-    const signatureRequestId = parsed.yousignSignatureRequestId
-    if (!signatureRequestId) return
-    syncOnce.current = true
-
-    const attemptSync = async (attempt: number): Promise<void> => {
-      try {
-        const res = await fetch("/api/yousign/sync-pending", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ signatureRequestId }),
-        })
-        const data = await readResponseJson<{ result?: string; error?: string }>(res)
-        const result = data.result
-        if (result === "not_ready" && attempt < 5) {
-          await new Promise((r) => setTimeout(r, 2000))
-          await attemptSync(attempt + 1)
-        }
-      } catch {
-        if (attempt < 3) {
-          await new Promise((r) => setTimeout(r, 2000))
-          await attemptSync(attempt + 1)
-        }
-      }
-    }
-
-    void attemptSync(0)
-  }, [status, sessionStatus])
 
   return (
     <main className="min-h-screen bg-slate-50">

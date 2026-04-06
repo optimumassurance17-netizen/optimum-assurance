@@ -24,7 +24,7 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 
 - **Smoke test prod (sans secrets)** : **`npm run verify:prod`** — `/api/health`, `/robots.txt`, **`/sitemap.xml`** en **200** (sitemap : route handler dynamique + proxy qui **n’applique pas** Supabase session sur `sitemap.xml` / `robots.txt`).
 
-- **Variables Vercel (Production)** : **`npm run verify:vercel-env`** — toutes les clés **requises** présentes (DB, auth, **Mollie**, **Supabase** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, **Resend**, **`CRON_SECRET`**, etc.). Les clés **Yousign** restent **optionnelles** (webhook legacy). Raccourci : **`npm run verify:release`** (= `verify:vercel-env` puis `verify:prod`).
+- **Variables Vercel (Production)** : **`npm run verify:vercel-env`** — toutes les clés **requises** présentes (DB, auth, **Mollie**, **Supabase** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, **Resend**, **`CRON_SECRET`**, etc.). Raccourci : **`npm run verify:release`** (= `verify:vercel-env` puis `verify:prod`).
 
 - **SEO — URL canonique** : **`NEXT_PUBLIC_SITE_CANONICAL`** = `https://www.optimum-assurance.fr` sur Vercel Production (utilisée par `lib/site-url.ts` pour sitemap, robots, métadonnées). Redéployer après changement de cette variable.
 
@@ -87,12 +87,6 @@ Commandes locales (nécessitent **`SUPABASE_DATABASE_URL`** dans `.env.local`) :
 - [ ] **Webhooks** : URL **`https://www.optimum-assurance.fr/api/mollie/webhook`** enregistrée dans l’app Mollie.
 
 - [ ] En **prod**, confirmer dans le dashboard Mollie que tu utilises bien le mode **live** (cohérent avec la clé sur Vercel).
-
-
-
-### Yousign *(optionnel — legacy)*
-
-- [ ] Si vous conservez l’ancien webhook : **`/api/yousign/webhook`** aligné avec le dashboard Yousign (`npm run print:webhooks`). Sinon, le parcours principal passe par **Supabase Sign** ci-dessous.
 
 
 

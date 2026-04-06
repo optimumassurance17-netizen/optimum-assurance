@@ -34,10 +34,6 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 RESEND_API_KEY=re_xxx
 EMAIL_FROM=Optimum <noreply@votredomaine.com>
-# Optionnel — webhooks Yousign si vous conservez un flux legacy
-# YOUSIGN_API_KEY=
-# YOUSIGN_ENV=sandbox
-# YOUSIGN_WEBHOOK_SECRET=
 ```
 
 ## Lancement
@@ -72,7 +68,6 @@ FAQ site : `/faq#parcours-do` et `/faq#parcours-decennale`
 
 Utiliser [ngrok](https://ngrok.com) pour exposer le serveur :
 - Mollie : `https://xxx.ngrok-free.app/api/mollie/webhook`
-- (Optionnel legacy) Yousign : `https://xxx.ngrok-free.app/api/yousign/webhook`
 
 ## Déploiement
 

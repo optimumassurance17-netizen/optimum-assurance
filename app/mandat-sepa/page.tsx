@@ -74,6 +74,8 @@ export default function MandatSepaPage() {
         const json = await readResponseJson<{
           available?: boolean
           signaturePayload?: SouscriptionData & {
+            signedContractNumero?: string
+            signedContractData?: Record<string, unknown>
             yousignContractNumero?: string
             yousignContractData?: Record<string, unknown>
           }
