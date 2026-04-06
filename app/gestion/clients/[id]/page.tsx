@@ -707,10 +707,24 @@ export default function ClientDetailPage() {
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ userId: data.user.id, subject: emailSubject, body: emailBody }),
                     })
-                    if (res.ok) {
+                    const json = await readResponseJson<{
+                      ok?: boolean
+                      sentTo?: string
+                      error?: string
+                    }>(res)
+                    if (res.ok && json.ok) {
                       setEmailModal(false)
                       setEmailSubject("")
                       setEmailBody("")
+                      setToast({
+                        message: `Email envoyé à ${json.sentTo ?? data.user.email}`,
+                        type: "success",
+                      })
+                    } else {
+                      setToast({
+                        message: json.error || "Échec de l’envoi",
+                        type: "error",
+                      })
                     }
                   } finally {
                     setEmailLoading(false)
