@@ -11,6 +11,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // Exclure sitemap / robots / manifest : pas besoin de session ; évite un 500 si getUser() échoue.
+    "/((?!sitemap\\.xml$|robots\\.txt$|manifest\\.webmanifest$|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 }
