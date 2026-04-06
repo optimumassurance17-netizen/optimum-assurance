@@ -103,4 +103,21 @@ if (optionalPresent.length) {
   console.log("")
 }
 
+const supabaseBundle = [
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY",
+]
+const supabaseOk = supabaseBundle.every((k) => prodKeys.has(k))
+const supabasePartial = supabaseBundle.some((k) => prodKeys.has(k)) && !supabaseOk
+if (supabaseOk) {
+  console.log("✅ Signature Supabase (/api/sign) : les 3 variables sont déclarées sur Vercel.\n")
+} else if (supabasePartial) {
+  console.log(
+    "⚠️  Signature Supabase : configuration incomplète — ajoutez les 3 clés (URL, anon, service_role). `npm run vercel:push-supabase-env` après les avoir mises dans .env.local\n"
+  )
+} else if (!supabaseBundle.some((k) => prodKeys.has(k))) {
+  console.log("ℹ️  Signature Supabase : non configurée sur Vercel — voir `npm run print:supabase-signature`.\n")
+}
+
 console.log("✅ verify-vercel-env terminé.\n")

@@ -26,13 +26,13 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 ### Yousign
 - [ ] **Webhooks / redirections** : URLs de prod alignées avec le site (rappel : `npm run print:webhooks`).
 
-### Signature MVP Supabase (`/api/sign` + Storage) — à activer sur le projet Supabase
-- [ ] **SQL** (une fois) : dans Supabase → **SQL Editor** → exécuter **`sql/supabase-esign-complete.sql`** (fusion de `supabase-esign-mvp.sql` + `supabase-esign-storage.sql`).
-- [ ] **Vercel (Production)** : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, **`SUPABASE_SERVICE_ROLE_KEY`** (copier depuis Supabase → **Project Settings → API** ; la `service_role` n’est pas fournie par l’intégration Vercel par défaut).
-- [ ] **Redéployer** le site sur Vercel après ajout des variables.
-- [ ] **`npm run verify:supabase`** (après `vercel env pull` ou `.env.local` rempli) — doit afficher tables + buckets OK.
-- [ ] Rappel des étapes : **`npm run print:supabase-signature`**.
-- [ ] Optionnel : test `npm run esign:create-request -- …` si le script est configuré.
+### Signature MVP Supabase (`/api/sign` + Storage)
+- [ ] Créer un projet **Supabase** (ou en utiliser un).
+- [ ] **SQL** (une fois) : **SQL Editor** → coller **`sql/supabase-esign-complete.sql`** **ou** en local : `SUPABASE_DATABASE_URL` (URI Postgres du projet Supabase, pas Neon) dans `.env.local` puis **`npm run supabase:apply-esign-sql`**.
+- [ ] Copier **URL**, **anon**, **service_role** depuis Supabase → **Project Settings → API** dans **`.env.local`**.
+- [ ] **`npm run vercel:push-supabase-env`** (envoie les 3 clés sur Vercel Production) puis **`npx vercel deploy --prod --yes`**.
+- [ ] **`npm run verify:supabase`** — tables + buckets OK ; **`npm run verify:vercel-env`** — doit indiquer la signature Supabase complète.
+- [ ] Aide : **`npm run print:supabase-signature`** — optionnel : `npm run esign:create-request -- …`
 
 ### Google Search Console (recommandé pour le suivi SEO)
 - [ ] Créer la propriété **domaine** ou **préfixe d’URL** `https://www.optimum-assurance.fr`.
