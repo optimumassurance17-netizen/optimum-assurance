@@ -105,6 +105,7 @@ export async function fetchDecennaleStaticParams(): Promise<{ metier: string; vi
     `
     )
     .eq("indexable", true)
+    .limit(12_000)
 
   if (error) {
     if (process.env.NODE_ENV === "development") {
@@ -150,6 +151,7 @@ export async function fetchDoStaticParams(): Promise<{ slug: string; ville: stri
     `
     )
     .eq("indexable", true)
+    .limit(12_000)
 
   if (error) {
     if (process.env.NODE_ENV === "development") {
@@ -507,8 +509,8 @@ export async function fetchDoSiblingVilles(
     .slice(0, limit)
 }
 
-/** Limite les URLs programmatiques dans le sitemap (évite timeout serverless / payload énorme). */
-const PROGRAMMATIC_SITEMAP_MAX = 8000
+/** Limite les URLs programmatiques dans le sitemap (évite timeout serverless / réponse trop lourde). */
+const PROGRAMMATIC_SITEMAP_MAX = 5000
 
 export async function fetchProgrammaticSitemapUrls(): Promise<
   { path: string; changeFrequency: "weekly" | "monthly"; priority: number }[]

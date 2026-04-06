@@ -7,6 +7,9 @@ import { SITE_URL } from "@/lib/site-url"
 
 const baseUrl = SITE_URL
 
+/** Cache ISR : le sitemap n’est pas régénéré à chaque hit (réduit charge et risque de timeout). */
+export const revalidate = 86_400
+
 function minimalSitemap(): MetadataRoute.Sitemap {
   return [
     {
@@ -59,7 +62,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,
-      images: [`${baseUrl}/opengraph-image`],
     },
     { url: `${baseUrl}/devis`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.95 },
     { url: `${baseUrl}/devis-dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
