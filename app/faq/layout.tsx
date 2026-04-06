@@ -3,13 +3,16 @@ import { JsonLd } from "@/components/JsonLd"
 import { faqs } from "@/lib/faq-data"
 import { seoFaqPageNode, seoJsonLdGraph, seoBreadcrumbListNode, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
 import { SITE_URL } from "@/lib/site-url"
+import { truncateForDescription } from "@/lib/seo-metadata-utils"
 
 const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
   title: "FAQ assurance décennale BTP & dommage ouvrage — tarif, attestation, sinistre",
-  description:
+  description: truncateForDescription(
     "Obligation décennale, prix et cotisation, attestation, résiliation, sinistre, parcours de souscription et dommage ouvrage : réponses pour artisans et maîtres d’ouvrage. Optimum Assurance.",
+    158
+  ),
   alternates: { canonical: `${baseUrl}/faq` },
   openGraph: {
     url: `${baseUrl}/faq`,

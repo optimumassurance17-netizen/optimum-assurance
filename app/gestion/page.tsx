@@ -989,7 +989,7 @@ export default function GestionPage() {
                           if (!res.ok) throw new Error()
                           setToast({ message: "Résiliation autorisée. Email envoyé au client.", type: "success" })
                           const dashRes = await fetch("/api/gestion/dashboard")
-                          if (dashRes.ok) setData(await dashRes.json())
+                          if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
                         } catch {
                           setToast({ message: "Erreur", type: "error" })
                         }
@@ -1009,7 +1009,7 @@ export default function GestionPage() {
                           if (!res.ok) throw new Error()
                           setToast({ message: "Demande refusée", type: "success" })
                           const dashRes = await fetch("/api/gestion/dashboard")
-                          if (dashRes.ok) setData(await dashRes.json())
+                          if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
                         } catch {
                           setToast({ message: "Erreur", type: "error" })
                         }

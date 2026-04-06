@@ -9,6 +9,7 @@ import { Footer } from "@/components/Footer";
 import { CookieBanner, StickyMobileCta } from "@/components/LayoutDeferredUi";
 import { ForceLightTheme } from "@/components/ForceLightTheme";
 import { SITE_URL } from "@/lib/site-url";
+import { truncateForDescription } from "@/lib/seo-metadata-utils";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -35,8 +36,10 @@ export const metadata: Metadata = {
     default: "Assurance Décennale BTP en Ligne | Devis 3 min | Optimum Assurance",
     template: "%s | Optimum Assurance",
   },
-  description:
+  description: truncateForDescription(
     `Assurance décennale BTP obligatoire : devis en 3 minutes, attestation immédiate. Plombier, électricien, peintre, maçon. Dès ${EQ_MENSUEL_MIN} €/mois équivalent (min. 600 €/an), paiement trimestriel. Sans engagement. 100 % en ligne.`,
+    158
+  ),
   keywords: [
     "assurance décennale",
     "assurance décennale BTP",

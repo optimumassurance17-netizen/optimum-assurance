@@ -33,7 +33,11 @@ export default function Chatbot() {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight)
+    const id = requestAnimationFrame(() => {
+      const el = scrollRef.current
+      if (el) el.scrollTo(0, el.scrollHeight)
+    })
+    return () => cancelAnimationFrame(id)
   }, [messages])
 
   const sendMessage = async (text: string) => {

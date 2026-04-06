@@ -50,6 +50,7 @@ const HomeQrSection = dynamic(
   },
 )
 import { SITE_URL } from "@/lib/site-url"
+import { truncateForDescription } from "@/lib/seo-metadata-utils"
 import {
   EQ_MENSUEL_MIN,
   EQ_MENSUEL_EXEMPLE_NETTOYAGE_TOITURE,
@@ -74,7 +75,10 @@ export const metadata: Metadata = {
     absolute:
       "Assurance décennale BTP en ligne | Devis 3 min & attestation | Optimum Assurance",
   },
-  description: `Assurance décennale obligatoire (loi Spinetta) : devis en ligne en quelques minutes, attestation pour artisans et entreprises du BTP. Plomberie, électricité, maçonnerie… Dès ${EQ_MENSUEL_MIN} €/mois équivalent, prélèvement trimestriel. Sans engagement.`,
+  description: truncateForDescription(
+    `Assurance décennale obligatoire (loi Spinetta) : devis en ligne en quelques minutes, attestation pour artisans et entreprises du BTP. Plomberie, électricité, maçonnerie… Dès ${EQ_MENSUEL_MIN} €/mois équivalent, prélèvement trimestriel. Sans engagement.`,
+    158
+  ),
   alternates: { canonical: SITE_URL },
   openGraph: {
     type: "website",
