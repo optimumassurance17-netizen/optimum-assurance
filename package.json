@@ -37,6 +37,7 @@
     "check-env": "node scripts/check-env.mjs",
     "audit:env": "node scripts/audit-env-files.mjs",
     "verify:supabase": "node scripts/verify-supabase.mjs",
+    "print:supabase-signature": "node scripts/print-supabase-signature-activation.mjs",
     "verify:vercel-env": "node scripts/verify-vercel-env.mjs",
     "seo:bulk": "tsx scripts/seo-bulk-generate.ts",
     "seo:ai": "tsx scripts/generate-ai-content.ts",

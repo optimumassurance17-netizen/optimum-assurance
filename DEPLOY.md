@@ -179,7 +179,7 @@ Les clés **API** se trouvent dans Supabase : **Project Settings** → **API** �
 ### Appliquer les tables + buckets Storage
 
 **Option A — SQL Editor Supabase (la plus simple)**  
-Dans Supabase : **SQL** → **New query** → coller `sql/supabase-esign-mvp.sql` → **Run** → puis `sql/supabase-esign-storage.sql` → **Run**.
+Dans Supabase : **SQL** → **New query** → exécuter **`sql/supabase-esign-complete.sql`** (tout-en-un), **ou** coller `sql/supabase-esign-mvp.sql` → **Run** puis `sql/supabase-esign-storage.sql` → **Run**.
 
 **Option B — CLI en local** (fichier identique à `supabase/migrations/20250403120000_esign_signature_mvp.sql`) :
 

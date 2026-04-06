@@ -26,10 +26,13 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 ### Yousign
 - [ ] **Webhooks / redirections** : URLs de prod alignées avec le site (rappel : `npm run print:webhooks`).
 
-### Signature MVP Supabase (uniquement si tu utilises `/api/sign` + Storage)
-- [ ] SQL : `sql/supabase-esign-mvp.sql` + `sql/supabase-esign-storage.sql`.
-- [ ] Vercel : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, **`SUPABASE_SERVICE_ROLE_KEY`**.
-- [ ] **`npm run verify:supabase`** puis test `npm run esign:create-request -- …`.
+### Signature MVP Supabase (`/api/sign` + Storage) — à activer sur le projet Supabase
+- [ ] **SQL** (une fois) : dans Supabase → **SQL Editor** → exécuter **`sql/supabase-esign-complete.sql`** (fusion de `supabase-esign-mvp.sql` + `supabase-esign-storage.sql`).
+- [ ] **Vercel (Production)** : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, **`SUPABASE_SERVICE_ROLE_KEY`** (copier depuis Supabase → **Project Settings → API** ; la `service_role` n’est pas fournie par l’intégration Vercel par défaut).
+- [ ] **Redéployer** le site sur Vercel après ajout des variables.
+- [ ] **`npm run verify:supabase`** (après `vercel env pull` ou `.env.local` rempli) — doit afficher tables + buckets OK.
+- [ ] Rappel des étapes : **`npm run print:supabase-signature`**.
+- [ ] Optionnel : test `npm run esign:create-request -- …` si le script est configuré.
 
 ### Google Search Console (recommandé pour le suivi SEO)
 - [ ] Créer la propriété **domaine** ou **préfixe d’URL** `https://www.optimum-assurance.fr`.
