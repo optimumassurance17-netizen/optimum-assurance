@@ -4,7 +4,7 @@ import { randomBytes } from "crypto"
 import React from "react"
 import { Document } from "@react-pdf/renderer"
 import { renderToBuffer } from "@react-pdf/renderer"
-import { FactureDoPDFPage } from "@/lib/pdf-pages"
+import { FactureDecennalePDFPage, FactureDoPDFPage } from "@/lib/pdf-pages"
 import { prisma } from "@/lib/prisma"
 import { getNextNumero } from "@/lib/documents"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
@@ -111,8 +111,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true })
       }
 
-      let user: { id: string; email: string; raisonSociale: string | null; adresse?: string | null; codePostal?: string | null; ville?: string | null } | null = null
+      let user: { id: string; email: string; raisonSociale: string | null; adresse?: string | null; codePostal?: string | null; ville?: string | null; siret?: string | null } | null = null
       let facturePdfAttachment: { filename: string; content: Buffer } | undefined
+      let factureDecennalePdfAttachment: { filename: string; content: Buffer } | undefined
+      let decennaleFactureNumero = ""
 
       // Idempotence : si le paiement est déjà enregistré comme payé, ne pas recréer attestation/facture
       const existingPayment = await prisma.payment.findUnique({
@@ -218,6 +220,68 @@ export async function POST(request: NextRequest) {
             }
           }
         }
+      } else if (metadata.type === "decennale_premier_trimestre" && metadata.userId) {
+        user = await prisma.user.findUnique({
+          where: { id: metadata.userId },
+          select: {
+            id: true,
+            email: true,
+            raisonSociale: true,
+            adresse: true,
+            codePostal: true,
+            ville: true,
+            siret: true,
+          },
+        })
+        if (user && !alreadyProcessed) {
+          const amount = payment.amount?.value ? parseFloat(payment.amount.value) : 0
+          const primeAnnuelle = parseFloat(metadata.primeAnnuelle || "0") || 0
+          const fraisGestion = parseFloat(metadata.fraisGestion || "60") || 0
+          const montantPremierTrimestre = Math.round((primeAnnuelle / 4) * 100) / 100
+          const datePaiement = new Date().toLocaleDateString("fr-FR")
+          const factureDataDec = {
+            raisonSociale: metadata.raisonSociale || user.raisonSociale || user.email,
+            siret: (metadata.siret || user.siret || "").replace(/\s/g, ""),
+            email: user.email,
+            adresse: user.adresse ?? undefined,
+            codePostal: user.codePostal ?? undefined,
+            ville: user.ville ?? undefined,
+            primeAnnuelle,
+            fraisGestion,
+            montantPremierTrimestre,
+            montantTotalPaye: amount,
+            datePaiement,
+          }
+          const numeroFactureDec = await getNextNumero("facture_decennale")
+          await prisma.document.create({
+            data: {
+              userId: user.id,
+              type: "facture_decennale",
+              numero: numeroFactureDec,
+              data: JSON.stringify(factureDataDec),
+              status: "valide",
+            },
+          })
+          decennaleFactureNumero = numeroFactureDec
+          try {
+            const pdfElDec = React.createElement(
+              Document,
+              {},
+              React.createElement(FactureDecennalePDFPage, {
+                numero: numeroFactureDec,
+                data: factureDataDec,
+              })
+            )
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- renderToBuffer attend un Document react-pdf
+            const pdfBufferDec = await renderToBuffer(pdfElDec as any)
+            factureDecennalePdfAttachment = {
+              filename: `facture-decennale-${numeroFactureDec}.pdf`,
+              content: Buffer.from(pdfBufferDec),
+            }
+          } catch (e) {
+            console.warn("Impossible de générer la facture décennale PDF pour pièce jointe:", e)
+          }
+        }
       } else if (metadata.userId) {
         user = await prisma.user.findUnique({
           where: { id: metadata.userId },
@@ -287,7 +351,20 @@ export async function POST(request: NextRequest) {
             html: (template as { html?: string }).html,
             attachments: facturePdfAttachment ? [facturePdfAttachment] : undefined,
           })
-        } else if (metadata.type !== "sepa_trimestre") {
+        } else if (metadata.type === "decennale_premier_trimestre" && decennaleFactureNumero) {
+          const template = EMAIL_TEMPLATES.confirmationPaiementDecennalePremierTrimestre(
+            metadata.raisonSociale || user.raisonSociale || user.email,
+            decennaleFactureNumero,
+            amount
+          )
+          await sendEmail({
+            to: user.email,
+            subject: template.subject,
+            text: template.text,
+            html: (template as { html?: string }).html,
+            attachments: factureDecennalePdfAttachment ? [factureDecennalePdfAttachment] : undefined,
+          })
+        } else if (metadata.type !== "sepa_trimestre" && metadata.type !== "decennale_premier_trimestre") {
           const template = EMAIL_TEMPLATES.confirmationSouscription(
             metadata.raisonSociale || user.raisonSociale || user.email
           )

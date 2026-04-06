@@ -5,6 +5,7 @@ import {
   AttestationPDFPage,
   AttestationDoPDFPage,
   FactureDoPDFPage,
+  FactureDecennalePDFPage,
   AttestationNonSinistralitePDFPage,
   DocumentResumePDFPage,
 } from "@/lib/pdf-pages"
@@ -24,6 +25,7 @@ const pageMap: Record<
   attestation: (p) => React.createElement(AttestationPDFPage, p),
   attestation_do: (p) => React.createElement(AttestationDoPDFPage, p),
   facture_do: (p) => React.createElement(FactureDoPDFPage, p),
+  facture_decennale: (p) => React.createElement(FactureDecennalePDFPage, p),
   attestation_non_sinistralite: (p) => React.createElement(AttestationNonSinistralitePDFPage, p),
 }
 

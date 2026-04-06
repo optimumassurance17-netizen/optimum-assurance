@@ -116,6 +116,16 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nVotre virement de ${montant.toLocaleString("fr-FR")} € (Mollie) pour le devis dommage ouvrage ${numero} a bien été enregistré.\n\nVotre attestation DO et votre facture acquittée sont dans votre espace client. L'attestation comporte un QR code de vérification. Validité 10 ans, non résiliable.\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Votre <strong>virement</strong> de <strong>${montant.toLocaleString("fr-FR")} €</strong> (Mollie) pour le devis dommage ouvrage ${numero} a bien été enregistré.</p><p>Votre attestation DO et votre facture acquittée sont dans votre espace client. QR code sur l’attestation. Validité 10 ans, non résiliable.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
+  /** Décennale — 1er trimestre CB (distinct du DO). Pièce jointe : facture FAC-DEC. */
+  confirmationPaiementDecennalePremierTrimestre: (
+    raisonSociale: string,
+    numeroFacture: string,
+    montant: number
+  ) => ({
+    subject: `Paiement reçu — 1er trimestre décennale (${numeroFacture}) - Optimum Assurance`,
+    text: `Bonjour ${raisonSociale},\n\nNous avons bien enregistré votre paiement de ${montant.toLocaleString("fr-FR")} € (Mollie) pour le premier trimestre de votre assurance décennale.\n\nVotre facture acquittée ${numeroFacture} est jointe à cet email et disponible dans votre espace client.\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${raisonSociale},</p><p>Nous avons bien enregistré votre <strong>paiement par carte</strong> de <strong>${montant.toLocaleString("fr-FR")} €</strong> (Mollie) pour le <strong>premier trimestre</strong> de votre assurance décennale.</p><p>Votre <strong>facture acquittée ${numeroFacture}</strong> est jointe à cet email et disponible dans votre espace client.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+  }),
   devisDoAjoute: (raisonSociale: string, numero: string, primeAnnuelle: number) => ({
     subject: `Votre devis dommage ouvrage ${numero} est disponible - Optimum Assurance`,
     text: `Bonjour ${raisonSociale},\n\nVotre devis dommage ouvrage a été ajouté à votre espace client.\n\nRéférence : ${numero}\nPrime annuelle : ${primeAnnuelle.toLocaleString("fr-FR")} €\n\nRèglement : uniquement par virement bancaire via Mollie (instructions sur la page de paiement). Attestation délivrée après encaissement.\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,

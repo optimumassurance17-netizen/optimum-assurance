@@ -26,6 +26,7 @@ const typeLabels: Record<string, string> = {
   attestation_non_sinistralite: "Attestation non sinistralité",
   avenant: "Avenant",
   facture_do: "Facture acquittée DO",
+  facture_decennale: "Facture acquittée décennale",
 }
 
 export default function ClientDetailPage() {

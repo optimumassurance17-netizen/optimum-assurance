@@ -198,6 +198,76 @@ export function AttestationDoPDFPage({
   )
 }
 
+/** Facture acquittée — assurance décennale (1er trimestre CB + frais). Ne pas confondre avec facture DO. */
+export function FactureDecennalePDFPage({
+  numero,
+  data,
+}: {
+  numero: string
+  data: Record<string, unknown>
+}) {
+  const d = data as {
+    raisonSociale?: string
+    siret?: string
+    adresse?: string
+    codePostal?: string
+    ville?: string
+    email?: string
+    primeAnnuelle?: number
+    fraisGestion?: number
+    montantPremierTrimestre?: number
+    montantTotalPaye?: number
+    datePaiement?: string
+  }
+  return (
+    <Page size="A4" style={pdfTheme.page}>
+      <PdfBrandHeader tagline="Assurance décennale — facturation" />
+      <Text style={pdfTheme.h2Center}>FACTURE ACQUITTÉE</Text>
+      <Text style={pdfTheme.subtitleCenter}>
+        N° {numero} — {d.datePaiement ?? ""}
+      </Text>
+      <View style={pdfTheme.section}>
+        <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold" }]}>Client : {d.raisonSociale ?? "—"}</Text>
+        {d.siret ? <Text style={pdfTheme.p}>SIRET : {d.siret}</Text> : null}
+        {d.email ? <Text style={pdfTheme.p}>{d.email}</Text> : null}
+        {(d.adresse || d.codePostal || d.ville) && (
+          <Text style={pdfTheme.p}>{[d.adresse, d.codePostal, d.ville].filter(Boolean).join(", ")}</Text>
+        )}
+      </View>
+      <View style={pdfTheme.tableCard}>
+        <View style={pdfTheme.tableHeader}>
+          <Text style={pdfTheme.tableHeaderText}>Désignation</Text>
+        </View>
+        <View style={pdfTheme.row}>
+          <Text style={pdfTheme.cellLeft}>
+            Assurance décennale — 1er trimestre (règlement par carte bancaire), prélèvements trimestriels suivants sur
+            mandat SEPA
+          </Text>
+          <Text style={pdfTheme.cellRight}>{(d.montantPremierTrimestre ?? 0).toLocaleString("fr-FR")} €</Text>
+        </View>
+        <View style={pdfTheme.row}>
+          <Text style={pdfTheme.cellLeft}>Frais de gestion prélèvement (trimestriel)</Text>
+          <Text style={pdfTheme.cellRight}>{(d.fraisGestion ?? 0).toLocaleString("fr-FR")} €</Text>
+        </View>
+        <View style={pdfTheme.rowLast}>
+          <Text style={pdfTheme.cellLeft}>Total TTC réglé</Text>
+          <Text style={pdfTheme.cellRight}>
+            {(d.montantTotalPaye ?? 0).toLocaleString("fr-FR")} €
+          </Text>
+        </View>
+      </View>
+      <Text style={[pdfTheme.p, { marginTop: 10, fontSize: 8, color: "#64748b" }]}>
+        Prime annuelle de référence : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € (échéances suivantes selon
+        mandat).
+      </Text>
+      <Text style={[pdfTheme.legalText, { marginTop: 16 }]}>{pdfLegalLinksLine()}</Text>
+      <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
+        Optimum Courtage agit par délégation de Axcelrant Insurance.
+      </Text>
+    </Page>
+  )
+}
+
 export function FactureDoPDFPage({
   numero,
   data,

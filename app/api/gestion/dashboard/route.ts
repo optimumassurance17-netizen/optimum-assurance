@@ -132,7 +132,7 @@ export async function GET() {
       (async () => {
         const [attestationsTotal, facturesCount, attestationsDo] = await Promise.all([
           prisma.document.count({ where: { type: "attestation_do" } }),
-          prisma.document.count({ where: { type: "facture_do" } }),
+          prisma.document.count({ where: { type: { in: ["facture_do", "facture_decennale"] } } }),
           prisma.document.findMany({
             where: { type: "attestation_do" },
             select: { data: true },

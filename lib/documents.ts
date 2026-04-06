@@ -9,6 +9,8 @@ const PREFIXES = {
   attestation_non_sinistralite: "ANS",
   avenant: "AVN",
   facture_do: "FAC-DO",
+  /** Facture acquittée — 1er trimestre décennale (parcours CB), distinct de facture_do */
+  facture_decennale: "FAC-DEC",
 } as const
 
 export async function getNextNumero(type: keyof typeof PREFIXES | string): Promise<string> {

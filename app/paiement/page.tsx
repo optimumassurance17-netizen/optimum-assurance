@@ -140,6 +140,8 @@ export default function PaiementPage() {
         description: `Assurance décennale — 1er trimestre (CB) - ${data.raisonSociale}`,
         redirectUrl: `${baseUrl}/confirmation`,
         metadata: {
+          /** Webhook : crée Document facture_decennale + email (ne pas réutiliser pour le flux DO). */
+          type: "decennale_premier_trimestre",
           siret: data.siret,
           raisonSociale: data.raisonSociale,
           email: data.email,

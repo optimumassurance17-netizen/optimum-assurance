@@ -15,6 +15,10 @@ const AttestationTemplate = dynamic(() => import("@/components/documents/Attesta
 const AttestationDoTemplate = dynamic(() => import("@/components/documents/AttestationDoTemplate").then((m) => m.AttestationDoTemplate), { ssr: false })
 const AttestationNonSinistraliteTemplate = dynamic(() => import("@/components/documents/AttestationNonSinistraliteTemplate").then((m) => m.AttestationNonSinistraliteTemplate), { ssr: false })
 const FactureDoTemplate = dynamic(() => import("@/components/documents/FactureDoTemplate").then((m) => m.FactureDoTemplate), { ssr: false })
+const FactureDecennaleTemplate = dynamic(
+  () => import("@/components/documents/FactureDecennaleTemplate").then((m) => m.FactureDecennaleTemplate),
+  { ssr: false }
+)
 const AvenantTemplate = dynamic(() => import("@/components/documents/AvenantTemplate").then((m) => m.AvenantTemplate), { ssr: false })
 
 export default function GestionDocumentPage() {
@@ -194,6 +198,9 @@ export default function GestionDocumentPage() {
           )}
           {document.type === "facture_do" && (
             <FactureDoTemplate numero={document.numero} data={document.data as never} />
+          )}
+          {document.type === "facture_decennale" && (
+            <FactureDecennaleTemplate numero={document.numero} data={document.data as never} />
           )}
           {document.type === "avenant" && (
             <AvenantTemplate numero={document.numero} data={document.data as never} />
