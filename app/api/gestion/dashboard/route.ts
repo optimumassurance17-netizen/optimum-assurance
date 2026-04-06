@@ -63,6 +63,7 @@ export async function GET() {
       payments,
       avenantFees,
       devisDoLeads,
+      devisRcFabriquantLeads,
       devisEtudeLeads,
       resiliationLogs,
       adminActivityLogs,
@@ -99,6 +100,10 @@ export async function GET() {
         include: { user: { select: { email: true, raisonSociale: true } } },
       }),
       prisma.devisDommageOuvrageLead.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
+      prisma.devisRcFabriquantLead.findMany({
         orderBy: { createdAt: "desc" },
         take: 50,
       }),
@@ -207,6 +212,7 @@ export async function GET() {
       payments,
       avenantFees,
       devisDoLeads,
+      devisRcFabriquantLeads,
       devisEtudeLeads,
       resiliationLogs,
       resiliationRequests,

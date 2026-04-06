@@ -26,7 +26,7 @@ export function getDevisAlertRecipientEmails(): string[] {
   return out
 }
 
-type DevisAlertType = "decennale" | "dommage_ouvrage"
+type DevisAlertType = "decennale" | "dommage_ouvrage" | "rc_fabriquant"
 
 /**
  * Envoie une alerte interne pour chaque nouvelle demande de devis (Resend).
@@ -45,7 +45,12 @@ export async function sendNewDevisRequestAlert(params: {
     return
   }
 
-  const label = params.type === "decennale" ? "Décennale" : "Dommage ouvrage"
+  const label =
+    params.type === "decennale"
+      ? "Décennale"
+      : params.type === "dommage_ouvrage"
+        ? "Dommage ouvrage"
+        : "RC Fabriquant"
   const subject = `[Optimum] Nouvelle demande de devis — ${label}`
   const clientEmail = params.clientEmail.trim()
 

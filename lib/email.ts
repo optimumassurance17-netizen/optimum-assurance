@@ -11,6 +11,14 @@ import {
 
 const FROM = process.env.EMAIL_FROM || "Optimum Assurance <noreply@optimum-assurance.fr>"
 
+function escapeHtmlForEmail(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+}
+
 export async function sendEmail(params: {
   to: string
   subject: string
@@ -143,6 +151,36 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nNous avons bien enregistré votre demande de devis dommage ouvrage. Vous trouverez en pièce jointe une estimation indicative (PDF), sous réserve d’étude de votre dossier.\n\nUn conseiller peut vous confirmer le montant définitif sous 24 h ouvrées.\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Nous avons bien enregistré votre <strong>demande de devis dommage ouvrage</strong>. Vous trouverez en pièce jointe une <strong>estimation indicative</strong> (PDF), sous réserve d’étude de votre dossier.</p><p>Un conseiller peut vous confirmer le montant définitif sous <strong>24 h ouvrées</strong>.</p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
+  /** RC Fabriquant — pas de PDF automatique ; étude par un conseiller. */
+  demandeRcFabriquantRecue: (raisonSociale: string) => ({
+    subject: "Demande de devis RC Fabriquant bien reçue - Optimum Assurance",
+    text: `Bonjour ${raisonSociale},\n\nNous avons bien enregistré votre demande de devis pour une assurance Responsabilité Civile Fabriquant.\n\nUn conseiller étudiera votre dossier (activité, zones de commercialisation, chiffre d’affaires) et vous recontacte en général sous 24 à 48 h ouvrées avec une proposition adaptée.\n\nPour toute précision : répondez à cet email ou écrivez-nous via ${APP_URL}/contact\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${raisonSociale},</p><p>Nous avons bien enregistré votre demande de devis pour une assurance <strong>Responsabilité Civile Fabriquant</strong>.</p><p>Un conseiller étudiera votre dossier (activité, zones de commercialisation, chiffre d’affaires) et vous recontacte en général sous <strong>24 à 48 h ouvrées</strong> avec une proposition adaptée.</p><p>Pour toute précision : répondez à cet email ou utilisez notre <a href="${APP_URL}/contact" style="color:#2563eb;font-weight:bold">formulaire de contact</a>.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+  }),
+  /**
+   * Proposition métier après étude (RC Fabriquant) — message rédigé par l’admin, envoyé au prospect.
+   * La prime éventuelle est indicative ; pas de souscription en ligne sur ce produit.
+   */
+  propositionRcFabriquant: (raisonSociale: string, messagePlain: string, primeAnnuelle?: number) => {
+    const primeTxt =
+      primeAnnuelle != null && primeAnnuelle > 0
+        ? `Indication de prime annuelle proposée : ${primeAnnuelle.toLocaleString("fr-FR")} € TTC (sous réserve de validation définitive du dossier et des conditions générales).\n\n`
+        : ""
+    const primeHtml =
+      primeAnnuelle != null && primeAnnuelle > 0
+        ? `<p style="margin:16px 0;padding:12px 16px;background:#f0fdfa;border-radius:8px;border:1px solid #99f6e4;"><strong>Indication de prime annuelle proposée :</strong> ${primeAnnuelle.toLocaleString("fr-FR")} € TTC <span style="font-size:13px;color:#0f766e;">(sous réserve de validation définitive du dossier et des conditions générales)</span></p>`
+        : ""
+    const paras = messagePlain
+      .trim()
+      .split(/\n\n+/)
+      .map((p) => `<p>${escapeHtmlForEmail(p).replace(/\n/g, "<br/>")}</p>`)
+      .join("")
+    return {
+      subject: "Votre proposition RC Fabriquant - Optimum Assurance",
+      text: `Bonjour ${raisonSociale},\n\nSuite à l’étude de votre demande d’assurance Responsabilité Civile Fabriquant, nous vous adressons les éléments suivants.\n\n${primeTxt}${messagePlain.trim()}\n\nPour toute question, répondez directement à cet e-mail ou utilisez notre formulaire : ${APP_URL}/contact\n\nCordialement,\nOptimum Assurance`,
+      html: `<p>Bonjour ${raisonSociale},</p><p>Suite à l’étude de votre demande d’assurance <strong>Responsabilité Civile Fabriquant</strong>, nous vous adressons les éléments suivants.</p>${primeHtml}<div style="margin:16px 0;color:#0f172a;line-height:1.5;">${paras}</div><p style="font-size:14px;color:#64748b;">Pour toute question, répondez à cet e-mail ou utilisez notre <a href="${APP_URL}/contact" style="color:#2563eb;font-weight:bold">formulaire de contact</a>.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+    }
+  },
   remisePersonnaliseeEtude: (raisonSociale: string, primeAnnuelle: number, resumeUrl: string) => ({
     subject: "Votre proposition personnalisée - Assurance décennale - Optimum Assurance",
     text: `Bonjour ${raisonSociale},\n\nSuite à l'étude de votre dossier, nous avons le plaisir de vous transmettre notre proposition personnalisée.\n\nPrime annuelle : ${primeAnnuelle.toLocaleString("fr-FR")} €\n\nCliquez sur le lien ci-dessous pour finaliser votre souscription :\n\n${resumeUrl}\n\nCe lien est valable 7 jours.\n\nCordialement,\nOptimum Assurance`,

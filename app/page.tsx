@@ -200,6 +200,27 @@ export default function Home() {
       <HomeHowItWorks />
       <HomeQrSection />
 
+      {/* RC Fabriquant — bandeau discret vers la demande à l’étude */}
+      <section className="px-4 sm:px-6 md:px-8 py-10 bg-gradient-to-r from-teal-50 via-white to-slate-50 border-y border-teal-100/80" aria-labelledby="rc-fab-section">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div>
+            <h2 id="rc-fab-section" className="text-xl md:text-2xl font-bold text-slate-900 mb-2">
+              Responsabilité civile fabricant
+            </h2>
+            <p className="text-slate-700 max-w-2xl leading-relaxed">
+              Vous fabriquez ou distribuez des biens ? Protégez-vous contre les dommages causés par vos produits après
+              leur mise sur le marché. Demande personnalisée, étude par nos équipes.
+            </p>
+          </div>
+          <Link
+            href="/devis-rc-fabriquant"
+            className="shrink-0 inline-flex justify-center items-center rounded-2xl bg-teal-700 px-8 py-4 text-center text-base font-semibold text-white shadow-md shadow-teal-900/20 transition-all hover:bg-teal-800"
+          >
+            Faire une demande RC fabriquant
+          </Link>
+        </div>
+      </section>
+
       {/* Dommage Ouvrage — produit principal, mise en avant égale à décennale */}
       <section className="relative overflow-hidden" aria-labelledby="do-section">
         <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900" />

@@ -61,6 +61,7 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
     },
     { url: `${baseUrl}/devis`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.95 },
     { url: `${baseUrl}/devis-dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
+    { url: `${baseUrl}/devis-rc-fabriquant`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.85 },
     {
       url: `${baseUrl}/souscription-dommage-ouvrage`,
       lastModified: new Date(),

@@ -30,6 +30,23 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Toast } from "@/components/Toast"
 import { readResponseJson } from "@/lib/read-response-json"
+import {
+  RC_FABRIQUANT_LEAD_STATUT_LABELS,
+  RC_FABRIQUANT_LEAD_STATUT_VALUES,
+  normalizeRcFabriquantLeadStatut,
+} from "@/lib/rc-fabriquant-lead-statuts"
+
+function getRcFabLeadDraft(
+  d: { id: string; statut?: string; notesInternes?: string | null },
+  drafts: Record<string, { statut: string; notes: string }>
+) {
+  const draft = drafts[d.id]
+  if (draft) return draft
+  return {
+    statut: normalizeRcFabriquantLeadStatut(d.statut),
+    notes: d.notesInternes ?? "",
+  }
+}
 
 /** Formulaire édition contrat / avenant (données JSON document) */
 type EditContratForm = {
@@ -89,6 +106,17 @@ function editFormFromDocData(parsed: Record<string, unknown>): EditContratForm {
 interface DashboardData {
   users: { id: string; email: string; raisonSociale: string | null; siret: string | null; createdAt: string }[]
   devisDoLeads?: { id: string; email: string; data?: string; coutTotal: number | null; createdAt: string }[]
+  devisRcFabriquantLeads?: {
+    id: string
+    email: string
+    data: string
+    statut: string
+    notesInternes: string | null
+    primeProposee: number | null
+    propositionEnvoyeeAt: string | null
+    createdAt: string
+    updatedAt: string
+  }[]
   devisEtudeLeads?: { id: string; email: string; raisonSociale: string | null; siret: string | null; data: string; statut: string; createdAt: string }[]
   documents: {
     id: string
@@ -243,6 +271,16 @@ export default function GestionPage() {
   } | null>(null)
   const [etudeMiseSubmitting, setEtudeMiseSubmitting] = useState(false)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
+  const [rcFabDrafts, setRcFabDrafts] = useState<Record<string, { statut: string; notes: string }>>({})
+  const [rcFabSavingId, setRcFabSavingId] = useState<string | null>(null)
+  const [rcFabPropositionModal, setRcFabPropositionModal] = useState<{
+    id: string
+    email: string
+    raisonSociale: string
+  } | null>(null)
+  const [rcFabPropositionPrime, setRcFabPropositionPrime] = useState("")
+  const [rcFabPropositionMessage, setRcFabPropositionMessage] = useState("")
+  const [rcFabPropositionSubmitting, setRcFabPropositionSubmitting] = useState(false)
 
   const openEditModal = useCallback((doc: { id: string; type: string; numero: string; data?: string }) => {
     let parsed: Record<string, unknown> = {}
@@ -745,6 +783,74 @@ export default function GestionPage() {
                 Export devis DO
               </button>
             )}
+            {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!data?.devisRcFabriquantLeads?.length) return
+                  const csv = [
+                    [
+                      "Email",
+                      "Raison sociale",
+                      "Téléphone",
+                      "Activité",
+                      "Statut",
+                      "Notes internes",
+                      "Prime proposée",
+                      "Proposition envoyée le",
+                      "Date demande",
+                    ].join(";"),
+                    ...data.devisRcFabriquantLeads.map((d) => {
+                      let rs = ""
+                      let tel = ""
+                      let act = ""
+                      try {
+                        const j = JSON.parse(d.data || "{}") as {
+                          raisonSociale?: string
+                          telephone?: string
+                          activiteFabrication?: string
+                        }
+                        rs = j.raisonSociale ?? ""
+                        tel = j.telephone ?? ""
+                        act = (j.activiteFabrication ?? "").replace(/\r?\n/g, " ").slice(0, 500)
+                      } catch {
+                        /* ignore */
+                      }
+                      const st = RC_FABRIQUANT_LEAD_STATUT_LABELS[normalizeRcFabriquantLeadStatut(d.statut)]
+                      const notes = (d.notesInternes ?? "").replace(/\r?\n/g, " ").replace(/;/g, ",").slice(0, 2000)
+                      const prime =
+                        d.primeProposee != null && d.primeProposee > 0
+                          ? String(d.primeProposee).replace(".", ",")
+                          : ""
+                      const propAt = d.propositionEnvoyeeAt
+                        ? new Date(d.propositionEnvoyeeAt).toLocaleString("fr-FR")
+                        : ""
+                      return [
+                        d.email,
+                        rs,
+                        tel,
+                        act,
+                        st,
+                        notes,
+                        prime,
+                        propAt,
+                        new Date(d.createdAt).toLocaleDateString("fr-FR"),
+                      ].join(";")
+                    }),
+                  ].join("\n")
+                  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement("a")
+                  a.href = url
+                  a.download = `export-devis-rc-fabriquant-${new Date().toISOString().slice(0, 10)}.csv`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                }}
+                className="text-sm text-gray-200 hover:text-white"
+              >
+                Export RC Fabriquant
+              </button>
+            )}
             {(data.devisLeads?.length ?? 0) > 0 && (
               <button
                 type="button"
@@ -828,6 +934,18 @@ export default function GestionPage() {
                   <p className="text-gray-200 text-sm">Demandes d&apos;étude</p>
                   <p className="text-2xl font-bold text-[#2563eb]">{data.devisEtudeLeads?.length ?? 0}</p>
                   <p className="text-xs text-gray-200 mt-1">À traiter (remise personnalisée)</p>
+                </div>
+              )}
+              {(data.devisRcFabriquantLeads?.length ?? 0) > 0 && (
+                <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
+                  <p className="text-gray-200 text-sm">RC Fabriquant</p>
+                  <p className="text-2xl font-bold text-teal-300">{data.devisRcFabriquantLeads?.length ?? 0}</p>
+                  <p className="text-xs text-gray-200 mt-1">
+                    {(data.devisRcFabriquantLeads ?? []).filter(
+                      (l) => normalizeRcFabriquantLeadStatut(l.statut) === "a_traiter"
+                    ).length}{" "}
+                    à traiter — 50 derniers
+                  </p>
                 </div>
               )}
               {data.doStats && (
@@ -1747,6 +1865,170 @@ export default function GestionPage() {
         </section>
 
         {/* Demandes devis DO en attente */}
+        {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
+          <section>
+            <h2 className="text-lg font-semibold text-white mb-2">Demandes RC Fabriquant</h2>
+            <p className="text-sm text-gray-200 mb-4 max-w-3xl">
+              Statut et notes sont visibles uniquement en gestion. Aucun refus ni tarif n’est communiqué automatiquement au
+              prospect — tout passe par votre action (email, devis externe, etc.).
+            </p>
+            <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full text-sm min-w-[720px]">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 sm:p-4 font-medium">Email</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Société</th>
+                    <th className="text-left p-3 sm:p-4 font-medium hidden lg:table-cell">Activité</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Statut</th>
+                    <th className="text-left p-3 sm:p-4 font-medium min-w-[200px]">Notes internes</th>
+                    <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">Reçu</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Suivi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.devisRcFabriquantLeads.map((d) => {
+                    let rs = ""
+                    let act = ""
+                    try {
+                      const j = JSON.parse(d.data || "{}") as {
+                        raisonSociale?: string
+                        activiteFabrication?: string
+                      }
+                      rs = j.raisonSociale ?? ""
+                      act = j.activiteFabrication ?? ""
+                    } catch {
+                      /* ignore */
+                    }
+                    const draft = getRcFabLeadDraft(d, rcFabDrafts)
+                    const serverSt = normalizeRcFabriquantLeadStatut(d.statut)
+                    const serverNotes = d.notesInternes ?? ""
+                    const dirty =
+                      draft.statut !== serverSt || draft.notes.trim() !== serverNotes.trim()
+                    return (
+                      <tr key={d.id} className="border-b border-gray-700/50 align-top">
+                        <td className="p-3 sm:p-4">{d.email}</td>
+                        <td className="p-3 sm:p-4">{rs || "—"}</td>
+                        <td className="p-3 sm:p-4 hidden lg:table-cell max-w-[220px]">
+                          <span className="line-clamp-3" title={act}>
+                            {act || "—"}
+                          </span>
+                        </td>
+                        <td className="p-3 sm:p-4">
+                          <select
+                            value={draft.statut}
+                            onChange={(e) =>
+                              setRcFabDrafts((p) => ({
+                                ...p,
+                                [d.id]: { ...getRcFabLeadDraft(d, p), statut: e.target.value },
+                              }))
+                            }
+                            className="w-full max-w-[11rem] rounded-lg border border-gray-600 bg-[#1a1a1a] text-gray-100 px-2 py-2 text-xs sm:text-sm"
+                            aria-label={`Statut pour ${d.email}`}
+                          >
+                            {RC_FABRIQUANT_LEAD_STATUT_VALUES.map((v) => (
+                              <option key={v} value={v}>
+                                {RC_FABRIQUANT_LEAD_STATUT_LABELS[v]}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="p-3 sm:p-4">
+                          <textarea
+                            value={draft.notes}
+                            onChange={(e) =>
+                              setRcFabDrafts((p) => ({
+                                ...p,
+                                [d.id]: { ...getRcFabLeadDraft(d, p), notes: e.target.value },
+                              }))
+                            }
+                            rows={2}
+                            placeholder="Mémo interne…"
+                            className="w-full min-w-[180px] rounded-lg border border-gray-600 bg-[#1a1a1a] text-gray-100 px-2 py-2 text-xs sm:text-sm placeholder:text-gray-500"
+                            aria-label={`Notes internes pour ${d.email}`}
+                          />
+                        </td>
+                        <td className="p-3 sm:p-4 hidden sm:table-cell whitespace-nowrap text-gray-200">
+                          {new Date(d.createdAt).toLocaleDateString("fr-FR")}
+                        </td>
+                        <td className="p-3 sm:p-4">
+                          <div className="flex flex-col gap-2 max-w-[11rem]">
+                            <button
+                              type="button"
+                              disabled={!dirty || rcFabSavingId === d.id}
+                              onClick={async () => {
+                                const cur = getRcFabLeadDraft(d, rcFabDrafts)
+                                setRcFabSavingId(d.id)
+                                try {
+                                  const res = await fetch(`/api/gestion/rc-fabriquant-lead/${d.id}`, {
+                                    method: "PATCH",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      statut: cur.statut,
+                                      notesInternes: cur.notes.trim() === "" ? null : cur.notes.trim(),
+                                    }),
+                                  })
+                                  const json = await readResponseJson<{ error?: string }>(res)
+                                  if (!res.ok) throw new Error(json.error || "Erreur")
+                                  setRcFabDrafts((p) => {
+                                    const next = { ...p }
+                                    delete next[d.id]
+                                    return next
+                                  })
+                                  setToast({ message: "Suivi RC Fabriquant enregistré", type: "success" })
+                                  const dashRes = await fetch("/api/gestion/dashboard")
+                                  if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                } catch (err) {
+                                  setToast({
+                                    message: err instanceof Error ? err.message : "Erreur",
+                                    type: "error",
+                                  })
+                                } finally {
+                                  setRcFabSavingId(null)
+                                }
+                              }}
+                              className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg bg-teal-700 text-white hover:bg-teal-600 disabled:opacity-40 disabled:pointer-events-none"
+                            >
+                              {rcFabSavingId === d.id ? "…" : "Enregistrer"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={
+                                normalizeRcFabriquantLeadStatut(d.statut) === "refuse" ||
+                                rcFabPropositionSubmitting
+                              }
+                              title={
+                                normalizeRcFabriquantLeadStatut(d.statut) === "refuse"
+                                  ? "Lead refusé — pas d’envoi"
+                                  : "Envoyer l’e-mail de proposition au prospect"
+                              }
+                              onClick={() => {
+                                setRcFabPropositionPrime(
+                                  d.primeProposee != null && d.primeProposee > 0
+                                    ? String(d.primeProposee)
+                                    : ""
+                                )
+                                setRcFabPropositionMessage("")
+                                setRcFabPropositionModal({
+                                  id: d.id,
+                                  email: d.email,
+                                  raisonSociale: rs || d.email,
+                                })
+                              }}
+                              className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-teal-500/70 text-teal-100 hover:bg-teal-900/40 disabled:opacity-40 disabled:pointer-events-none"
+                            >
+                              E-mail proposition
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
         {data.devisDoLeads && data.devisDoLeads.length > 0 && (
           <section>
             <h2 className="text-lg font-semibold text-white mb-4">Demandes devis dommage ouvrage (en attente)</h2>
@@ -2322,6 +2604,119 @@ export default function GestionPage() {
                 className="px-4 py-2 rounded-lg bg-[#2563eb] text-white hover:bg-[#1d4ed8]"
               >
                 Confirmer la résiliation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal proposition RC Fabriquant (e-mail au prospect) */}
+      {rcFabPropositionModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => {
+            if (!rcFabPropositionSubmitting) {
+              setRcFabPropositionModal(null)
+              setRcFabPropositionMessage("")
+              setRcFabPropositionPrime("")
+            }
+          }}
+        >
+          <div
+            className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-white mb-2">Proposition RC Fabriquant par e-mail</h3>
+            <p className="text-sm text-gray-200 mb-4">
+              <strong>{rcFabPropositionModal.raisonSociale}</strong> — {rcFabPropositionModal.email}
+            </p>
+            <p className="text-xs text-gray-200 mb-4 leading-relaxed">
+              Rédigez le corps du message tel qu’il sera lu par le prospect (conditions, prochaines étapes, pièces à
+              fournir…). Le statut du lead passera à « Proposition envoyée » et l’indication de prime sera mémorisée si
+              vous en saisissez une. Réponse directe : l’e-mail part avec votre adresse en reply-to si elle est connue.
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-200 mb-2">
+                Prime annuelle indicative (€) <span className="text-gray-200 font-normal">— optionnel</span>
+              </label>
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                value={rcFabPropositionPrime}
+                onChange={(e) => setRcFabPropositionPrime(e.target.value)}
+                placeholder="Ex. 2400"
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500"
+              />
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-200 mb-2">Message au client (min. 20 caractères)</label>
+              <textarea
+                rows={8}
+                value={rcFabPropositionMessage}
+                onChange={(e) => setRcFabPropositionMessage(e.target.value)}
+                placeholder="Bonjour, suite à l’analyse de votre dossier…"
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 text-sm"
+              />
+            </div>
+            <div className="flex flex-wrap gap-3 justify-end">
+              <button
+                type="button"
+                disabled={rcFabPropositionSubmitting}
+                onClick={() => {
+                  setRcFabPropositionModal(null)
+                  setRcFabPropositionMessage("")
+                  setRcFabPropositionPrime("")
+                }}
+                className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={
+                  rcFabPropositionSubmitting ||
+                  rcFabPropositionMessage.trim().length < 20
+                }
+                onClick={async () => {
+                  if (!rcFabPropositionModal) return
+                  setRcFabPropositionSubmitting(true)
+                  try {
+                    const primeTrim = rcFabPropositionPrime.trim()
+                    const body: {
+                      leadId: string
+                      messagePersonnalise: string
+                      primeAnnuelle?: number
+                    } = {
+                      leadId: rcFabPropositionModal.id,
+                      messagePersonnalise: rcFabPropositionMessage.trim(),
+                    }
+                    if (primeTrim !== "") {
+                      const p = Number(primeTrim.replace(",", "."))
+                      if (Number.isFinite(p) && p > 0) body.primeAnnuelle = p
+                    }
+                    const res = await fetch("/api/gestion/rc-fabriquant-lead/proposition", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(body),
+                    })
+                    const json = await readResponseJson<{ error?: string }>(res)
+                    if (!res.ok) throw new Error(json.error || "Erreur")
+                    setToast({ message: "E-mail de proposition envoyé au prospect.", type: "success" })
+                    setRcFabPropositionModal(null)
+                    setRcFabPropositionMessage("")
+                    setRcFabPropositionPrime("")
+                    const dashRes = await fetch("/api/gestion/dashboard")
+                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                  } catch (err) {
+                    setToast({ message: err instanceof Error ? err.message : "Erreur", type: "error" })
+                  } finally {
+                    setRcFabPropositionSubmitting(false)
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-teal-600 text-white hover:bg-teal-500 disabled:opacity-50 font-medium"
+              >
+                {rcFabPropositionSubmitting ? "Envoi…" : "Envoyer l’e-mail"}
               </button>
             </div>
           </div>

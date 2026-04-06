@@ -210,6 +210,21 @@ model DevisDommageOuvrageLead {
   createdAt DateTime @default(now())
 }
 
+/// Demande de devis RC Fabriquant (étude manuelle, pas de tarif auto sur le site).
+model DevisRcFabriquantLead {
+  id              String   @id @default(cuid())
+  email           String
+  data            String // JSON : raisonSociale, siret, activiteFabrication, etc.
+  /// Suivi interne : a_traiter | en_cours | proposition_envoyee | refuse | clos
+  statut                String    @default("a_traiter")
+  notesInternes         String?   @db.Text
+  /// Dernière prime annuelle indiquée dans l’e-mail de proposition (à titre indicatif)
+  primeProposee         Float?
+  propositionEnvoyeeAt  DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
 model PendingSignature {
   id                 String   @id @default(cuid())
   signatureRequestId String   @unique // UUID sign_requests (Supabase Sign)

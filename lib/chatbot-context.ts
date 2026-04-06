@@ -24,6 +24,10 @@ const FAQ_BASE: { q: string; r: string }[] = [
   { q: "après paiement attestation", r: "Dès validation du paiement, votre attestation décennale est disponible dans votre espace client. Vous pouvez la télécharger en PDF et la partager avec vos clients. Un QR code permet de vérifier son authenticité." },
   { q: "téléphone appeler contact", r: "Nous ne proposons pas de contact téléphonique. Toutes nos réponses se font en ligne : par email (contact@optimum-assurance.fr), via ce chat, ou via le formulaire de contact sur notre site." },
   { q: "devis obtenir tarif", r: "Rendez-vous sur /devis pour l'assurance décennale ou /devis-dommage-ouvrage pour le dommage ouvrage. Devis en 3 minutes, sans engagement." },
+  {
+    q: "rc fabriquant fabricant responsabilité civile produit mise sur le marché",
+    r: "La responsabilité civile fabricant couvre les dommages liés à vos produits après leur mise sur le marché. Chez Optimum, il n’y a pas de tarif automatique en ligne : remplissez le formulaire sur /devis-rc-fabriquant — notre équipe étudie votre dossier et vous recontacte. Vous recevez aussi un accusé par email.",
+  },
   { q: "nettoyage toiture couvreur", r: "Oui. Nous avons une offre dédiée pour le nettoyage toiture et peinture résine (I3 à I5). Sociétés résiliées acceptées. Taux 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)." },
   { q: "plombier électricien peintre maçon carreleur", r: "Tous les corps de métier du BTP sont couverts : plombiers, électriciens, peintres, maçons, couvreurs, charpentiers, carreleurs, menuisiers, BET, architectes. Devis en 3 minutes sur /devis." },
   { q: "franchise plafond", r: "Franchise décennale : 1 000 €. Plafond de garantie : 2× le chiffre d'affaires. Pour le dommage ouvrage : aucune franchise (garantie obligatoire)." },
@@ -46,7 +50,7 @@ export const faqForMatching: { q: string; r: string }[] = [
 // Prompt système complet avec TOUTES les infos pour l'IA
 const FAQ_TEXTE = faqs.map((f) => `Q: ${f.q}\nR: ${f.r}`).join("\n\n")
 
-export const CHATBOT_SYSTEM_PROMPT = `Tu es l'assistant virtuel d'Optimum Assurance, courtier en assurance décennale BTP et dommage ouvrage.
+export const CHATBOT_SYSTEM_PROMPT = `Tu es l'assistant virtuel d'Optimum Assurance, courtier en assurance décennale BTP, dommage ouvrage et responsabilité civile fabricant (RC fabriquant).
 
 RÈGLES IMPORTANTES :
 - Réponds UNIQUEMENT en français, de manière courtoise et professionnelle.
@@ -55,6 +59,7 @@ RÈGLES IMPORTANTES :
 - Nous ne proposons PAS de contact téléphonique — uniquement en ligne (email, chat, formulaire).
 - Pour un devis décennale : dirige vers /devis
 - Pour un devis dommage ouvrage : dirige vers /devis-dommage-ouvrage
+- Pour une demande RC fabriquant (fabricant, produits, mise sur le marché) : dirige vers /devis-rc-fabriquant — pas de tarif instantané, étude par l’équipe
 - Pour une question sur **où cliquer**, **l’ordre des étapes** ou **une page du site** : utilise la section « Fonctionnement du site » ci-dessous.
 - Pour une question sur **un dossier personnel** (statut, impayé, document manquant) : tu n’y as pas accès — oriente vers contact@optimum-assurance.fr ou l’espace client après connexion.
 - Pour une question complexe ou personnalisée : invite à écrire à contact@optimum-assurance.fr
@@ -70,6 +75,7 @@ INFORMATIONS OPTIMUM ASSURANCE (rappel synthétique) :
 - Sociétés résiliées pour non-paiement acceptées (+10 % majoration)
 - Nettoyage toiture et peinture résine (I3 à I5) : offre dédiée, taux 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)
 - Dommage ouvrage : devis sous 24h, auto-construction, garantie clos et couvert
+- RC fabriquant : formulaire sur /devis-rc-fabriquant, réponse après étude (pas de tarificateur en ligne)
 - Franchise : 1 000 € (décennale) ; aucune (dommage ouvrage)
 - Prélèvement trimestriel : 1er trimestre par carte (+ 60 € frais), puis SEPA trimestriel
 - Avenants : 60 €
