@@ -42,6 +42,8 @@
     "verify:supabase": "node scripts/verify-supabase.mjs",
     "print:supabase-signature": "node scripts/print-supabase-signature-activation.mjs",
     "supabase:apply-esign-sql": "node scripts/apply-supabase-esign-sql.mjs",
+    "supabase:install": "node scripts/supabase-install-all.mjs",
+    "supabase:bundle": "node scripts/bundle-supabase-sql.mjs",
     "supabase:apply-rls-sql": "node scripts/apply-supabase-rls-sql.mjs",
     "supabase:apply-esign-policies": "node scripts/apply-supabase-esign-policies.mjs",
     "vercel:push-supabase-env": "node scripts/vercel-push-supabase-env.mjs",

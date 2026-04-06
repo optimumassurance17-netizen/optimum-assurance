@@ -56,17 +56,21 @@ Une fois dans le **SQL Editor** (ou `SUPABASE_DATABASE_URL` en local + scripts n
 
 |--------|--------|
 
-| `sql/supabase-esign-complete.sql` | Tables signature + buckets + RLS + politiques `sign_*` |
+| `sql/supabase-bootstrap-all-in-one.sql` | **Tout-en-un** (généré : `npm run supabase:bundle`) — signature + RLS advisor + SEO + slug ; à coller dans SQL Editor |
 
-| `sql/supabase-esign-rls-policies.sql` | Seulement politiques RLS `sign_requests` / `signatures` (si tables déjà créées) |
+| `sql/supabase-esign-complete.sql` | Tables signature + buckets + RLS `sign_*` (inclus dans le bootstrap) |
 
-| `sql/supabase-rls-utilisateurs-entreprises-devis.sql` | RLS sur `utilisateurs`, `entreprises`, `devis` (advisor « RLS Disabled in Public ») |
+| `sql/supabase-esign-rls-policies.sql` | Seulement politiques RLS `sign_requests` / `signatures` (déjà dans `esign-complete`) |
+
+| `sql/supabase-rls-utilisateurs-entreprises-devis.sql` | RLS sur `utilisateurs`, `entreprises`, `devis` (advisor) |
+
+| `sql/supabase-seo-programmatic.sql` + `supabase-contenus-seo-slug.sql` | Pages SEO localement (inclus dans le bootstrap) |
 
 
 
 Commandes locales (nécessitent **`SUPABASE_DATABASE_URL`** dans `.env.local`) :  
 
-`npm run supabase:apply-esign-sql` · `npm run supabase:apply-esign-policies` · `npm run supabase:apply-rls-sql`
+**`npm run supabase:install`** — enchaîne esign + RLS advisor + SEO + slug · `npm run supabase:bundle` — régénère le fichier tout-en-un · `npm run supabase:apply-esign-sql` · `npm run supabase:apply-esign-policies` · `npm run supabase:apply-rls-sql`
 
 
 

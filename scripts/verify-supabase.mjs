@@ -76,7 +76,7 @@ if (t1) {
   const msg = t1.message || String(t1)
   if (/relation|does not exist|schema cache|not find/i.test(msg)) {
     console.error("❌ Table public.sign_requests introuvable.")
-    console.error("   Exécute sql/supabase-esign-mvp.sql ou : npx supabase db push --db-url …\n")
+    console.error("   Exécute sql/supabase-esign-complete.sql ou : npm run supabase:install\n")
     failed = true
   } else {
     console.error("❌ sign_requests :", msg, "\n")
