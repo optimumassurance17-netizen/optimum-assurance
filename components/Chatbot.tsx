@@ -2,12 +2,20 @@
 
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 import { readResponseJson } from "@/lib/read-response-json"
 
 const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
 
+/** Même logique que StickyMobileCta : barre Devis décennale / Devis DO en bas (mobile). */
+const STICKY_DEVIS_PREFIXES = ["/gestion", "/admin", "/v/"]
+
 export default function Chatbot() {
+  const pathname = usePathname() || ""
+  const stickyDevisBarVisible =
+    !STICKY_DEVIS_PREFIXES.some((p) => pathname.startsWith(p)) && !pathname.startsWith("/api")
+
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -77,7 +85,11 @@ export default function Chatbot() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="fixed z-[110] flex items-center gap-2 bg-[#2563eb] text-white px-4 py-3 rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-[max(1.5rem,env(safe-area-inset-right))]"
+        className={
+          stickyDevisBarVisible
+            ? "fixed z-[110] flex items-center gap-2 bg-[#2563eb] text-white px-4 py-3 rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 bottom-[max(9.25rem,calc(env(safe-area-inset-bottom)+7.75rem))] md:bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-[max(1.5rem,env(safe-area-inset-right))]"
+            : "fixed z-[110] flex items-center gap-2 bg-[#2563eb] text-white px-4 py-3 rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-[max(1.5rem,env(safe-area-inset-right))]"
+        }
         aria-label={open ? "Fermer le chat" : "Ouvrir l'assistant"}
       >
         <svg
@@ -98,7 +110,11 @@ export default function Chatbot() {
 
       {open && (
         <div
-          className="fixed z-[110] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-96 sm:max-w-none max-h-[min(70vh,100dvh-8rem)] flex flex-col bg-white rounded-2xl shadow-2xl border border-[#e5e5e5] overflow-hidden bottom-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] right-[max(1rem,env(safe-area-inset-right))] sm:bottom-24 sm:right-6"
+          className={
+            stickyDevisBarVisible
+              ? "fixed z-[110] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-96 sm:max-w-none max-h-[min(70vh,100dvh-8rem)] flex flex-col bg-white rounded-2xl shadow-2xl border border-[#e5e5e5] overflow-hidden max-md:bottom-[max(13.5rem,calc(env(safe-area-inset-bottom)+11.25rem))] md:bottom-24 right-[max(1rem,env(safe-area-inset-right))] sm:right-6"
+              : "fixed z-[110] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-96 sm:max-w-none max-h-[min(70vh,100dvh-8rem)] flex flex-col bg-white rounded-2xl shadow-2xl border border-[#e5e5e5] overflow-hidden bottom-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] right-[max(1rem,env(safe-area-inset-right))] sm:bottom-24 sm:right-6"
+          }
           role="dialog"
           aria-label="Chat assistant Optimum Assurance"
         >
