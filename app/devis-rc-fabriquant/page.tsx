@@ -46,9 +46,10 @@ export default function DevisRcFabriquantPage() {
           etc.), selon les garanties et exclusions du contrat proposé par l’assureur.
         </p>
         <p className="text-slate-600 mb-8 leading-relaxed text-sm">
-          Il n’y a pas de tarificateur en ligne pour ce risque : chaque dossier (nature des produits, volumes, pays
-          d’export, chiffre d’affaires) fait l’objet d’une <strong>étude</strong>. Remplissez le formulaire ci-dessous :
-          un conseiller Optimum vous recontacte en général sous <strong>24 à 48 h ouvrées</strong>.
+          Il n’y a pas de tarificateur en ligne pour ce risque : chaque dossier (nature des produits, zone de
+          distribution, chiffre d’affaires, sinistralité) fait l’objet d’une <strong>étude</strong>. Le formulaire compte{" "}
+          <strong>quatre étapes</strong> (entreprise, activité fabricant, chiffre d’affaires, sinistralité). Un conseiller
+          Optimum vous recontacte en général sous <strong>24 à 48 h ouvrées</strong>.
         </p>
         <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-8 mb-10">
           <FormulaireRcFabriquant />

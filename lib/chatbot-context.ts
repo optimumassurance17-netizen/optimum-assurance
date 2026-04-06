@@ -26,7 +26,7 @@ const FAQ_BASE: { q: string; r: string }[] = [
   { q: "devis obtenir tarif", r: "Rendez-vous sur /devis pour l'assurance décennale ou /devis-dommage-ouvrage pour le dommage ouvrage. Devis en 3 minutes, sans engagement." },
   {
     q: "rc fabriquant fabricant responsabilité civile produit mise sur le marché",
-    r: "La responsabilité civile fabricant couvre les dommages liés à vos produits après leur mise sur le marché. Chez Optimum, il n’y a pas de tarif automatique en ligne : remplissez le formulaire sur /devis-rc-fabriquant — notre équipe étudie votre dossier et vous recontacte. Vous recevez aussi un accusé par email.",
+    r: "La responsabilité civile fabricant couvre les dommages liés à vos produits après leur mise sur le marché. Chez Optimum, il n’y a pas de tarif affiché en ligne : formulaire en plusieurs étapes sur /devis-rc-fabriquant (SIRET, type de produit, zone de distribution, CA…). Notre équipe étudie le dossier et vous recontacte ; vous recevez un accusé par e-mail.",
   },
   { q: "nettoyage toiture couvreur", r: "Oui. Nous avons une offre dédiée pour le nettoyage toiture et peinture résine (I3 à I5). Sociétés résiliées acceptées. Taux 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)." },
   { q: "plombier électricien peintre maçon carreleur", r: "Tous les corps de métier du BTP sont couverts : plombiers, électriciens, peintres, maçons, couvreurs, charpentiers, carreleurs, menuisiers, BET, architectes. Devis en 3 minutes sur /devis." },

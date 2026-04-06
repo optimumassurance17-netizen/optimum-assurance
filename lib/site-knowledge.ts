@@ -8,7 +8,7 @@ export const SITE_KNOWLEDGE = `
 - **Accueil /** : présentation, simulateur de prime, liens vers devis.
 - **Assurance décennale BTP** : **/devis** (tarif automatique en quelques minutes). Pages SEO métiers : **/assurance-decennale/[metier]** (ex. plombier, électricien).
 - **Dommage ouvrage** : **/devis-dommage-ouvrage** (formulaire 5 étapes). Pages SEO : **/dommage-ouvrage/[slug]** (auto-construction, particulier, etc.).
-- **RC fabriquant** : **/devis-rc-fabriquant** — demande à l’étude (pas de tarif en ligne) ; email de confirmation et alerte équipe. En **gestion**, suivi statut / notes et envoi d’**e-mail de proposition** au prospect (prime indicative optionnelle), sans souscription en ligne sur ce produit.
+- **RC fabriquant** : **/devis-rc-fabriquant** — formulaire en **4 étapes** (entreprise, type de produit / zone / sous-traitance, CA, sinistralité) ; **pas de tarif affiché** au prospect. Email de confirmation et alerte équipe ; en **gestion** : suivi, e-mail de proposition, et **indicatifs internes** (score / prime indicative) enregistrés avec le lead pour aider l’étude — sans valeur contractuelle pour le visiteur.
 - **Contenu** : **/faq**, **/guides** et **/guides/[slug]** (guides pratiques), **/contact** (formulaire), **/cgv**, **/conditions-generales-dommage-ouvrage** (CG produit DO, avec le devis), **/conditions-attestations** (émission et validité des attestations décennale / DO), **/mentions-legales**, **/confidentialite**, **/droits-personnes**.
 - **API PDF (pdf-lib, POST, application/pdf)** : **/api/pdf/decennale/quote**, **/policy**, **/certificate** ; **/api/pdf/do/quote**, **/policy**, **/certificate**. Optionnel : variable d’environnement PDF_API_SECRET + en-tête Authorization Bearer. Vérification par numéro de contrat : **/verify/[contractNumber]** (InsuranceContract SaaS ou redirection vers **/v/[token]** pour anciennes attestations).
 - **Cycle de vie contrats (Prisma, pas Supabase)** : **POST /api/contracts/create**, **/api/contracts/validate** (admin), **/api/contracts/pay** (Mollie virement, metadata insurance_contract), **GET /api/contracts/[id]/pdf/[docType]**, **POST /api/pdf/generate**, **POST /api/contracts/[id]/regenerate** (admin). Webhook Mollie enrichi pour activer le contrat et générer les PDF. **/admin** : liste des contrats (emails ADMIN_EMAILS).
@@ -28,7 +28,7 @@ export const SITE_KNOWLEDGE = `
 7. **/confirmation** — Après validation du paiement, **attestation** disponible rapidement dans l’espace client (PDF, QR de vérification).
 
 ## Parcours RC fabriquant
-1. **/devis-rc-fabriquant** — Formulaire dédié (coordonnées, activité / produits fabriqués, chiffres clés). Envoi → enregistrement lead ; **réponse sous étude** par l’équipe (pas de tarificateur ni PDF auto sur ce parcours).
+1. **/devis-rc-fabriquant** — Formulaire en **4 étapes** : entreprise (e-mail, raison sociale, **SIRET 14 chiffres**, téléphone, activité, année de création) ; fabricant (type de produit, zone France/Europe/Monde, sous-traitance, contrôle qualité, questions certification/tests pour batterie/électronique) ; CA total (obligatoire), export, effectifs ; sinistralité et message. Envoi → lead + **indicatifs internes** (score / prime indicative) pour la gestion uniquement — **aucun tarif affiché** au prospect.
 
 ## Parcours dommage ouvrage (DO)
 1. **/devis-dommage-ouvrage** — Questionnaire en **5 étapes** (souscripteur, opération, ouvrage et coûts, terrain et technique, garanties). Brouillon enregistré localement dans le navigateur.
