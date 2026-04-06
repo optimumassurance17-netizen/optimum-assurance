@@ -138,7 +138,12 @@ export default function SignaturePage() {
             : "Signez électroniquement votre contrat d’assurance décennale sur notre page de signature sécurisée."}
         </p>
 
-        {insuranceSnapshot ? <InsuranceContractParcoursBanner snapshot={insuranceSnapshot} /> : null}
+        {insuranceSnapshot ? (
+          <InsuranceContractParcoursBanner
+            snapshot={insuranceSnapshot}
+            souscriptionProduct={souscription.insuranceProduct === "do" ? "do" : "decennale"}
+          />
+        ) : null}
 
         <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-8">
           <h3 className="font-medium text-black mb-4">

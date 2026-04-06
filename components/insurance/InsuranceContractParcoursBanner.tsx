@@ -6,10 +6,14 @@ import { PayInsuranceContractButton } from "@/components/insurance/PayInsuranceC
 
 type Props = {
   snapshot: InsuranceContractSnapshot
+  /** Anciens snapshots sans productType : aligner sur la souscription affichée. */
+  souscriptionProduct?: "decennale" | "do"
 }
 
-export function InsuranceContractParcoursBanner({ snapshot }: Props) {
-  const { contractNumber, status, rejectedReason, contractId } = snapshot
+export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct }: Props) {
+  const { contractNumber, status, rejectedReason, contractId, productType } = snapshot
+  const isDoPlatform =
+    productType === "do" || (productType == null && souscriptionProduct === "do")
 
   if (status === CONTRACT_STATUS.rejected) {
     return (
@@ -41,6 +45,18 @@ export function InsuranceContractParcoursBanner({ snapshot }: Props) {
   }
 
   if (status === CONTRACT_STATUS.approved) {
+    if (!isDoPlatform) {
+      return (
+        <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-left">
+          <p className="mb-1 font-semibold text-emerald-950">Dossier accepté — ordre des étapes</p>
+          <p className="text-sm text-emerald-900/90">
+            Contrat plateforme <span className="font-mono">{contractNumber}</span> est validé. Signez le contrat ci-dessous, puis
+            enchaînez avec le <strong>mandat SEPA</strong> et la page <strong>Paiement</strong> : échéancier trimestriel et{" "}
+            <strong>1er trimestre par carte</strong> (les échéances suivantes en prélèvement SEPA).
+          </p>
+        </div>
+      )
+    }
     return (
       <div className="mb-8 p-5 rounded-2xl border border-[#2563eb]/40 bg-[#eff6ff] text-left">
         <p className="font-semibold text-[#0a0a0a] mb-1">Paiement du contrat (virement)</p>

@@ -15,6 +15,7 @@ function parseInsuranceSnapshotFromSession(): InsuranceContractSnapshot | null {
         contractNumber: p.contractNumber,
         status: p.status,
         rejectedReason: p.rejectedReason,
+        productType: p.productType === "do" || p.productType === "decennale" ? p.productType : undefined,
       }
     }
   } catch {
@@ -35,22 +36,27 @@ async function tryMollieRedirectIfApproved(contractId: string): Promise<
   return { outcome: "continue_flow" }
 }
 
+function shouldRedirectApprovedToMollieContractPay(snapshot: InsuranceContractSnapshot): boolean {
+  return snapshot.productType === "do"
+}
+
 async function resumeInsuranceContractFlowFromSnapshot(
   snapshot: InsuranceContractSnapshot
 ): Promise<{ outcome: "mollie_redirect"; checkoutUrl: string } | { outcome: "continue_flow" }> {
-  const { contractId, contractNumber, status, rejectedReason } = snapshot
+  const { contractId, contractNumber, status, rejectedReason, productType } = snapshot
   persistInsuranceContractSnapshot({
     contractId,
     contractNumber,
     status,
     rejectedReason,
+    productType,
   })
 
   if (status === CONTRACT_STATUS.rejected) {
     return { outcome: "continue_flow" }
   }
 
-  if (status === CONTRACT_STATUS.approved) {
+  if (status === CONTRACT_STATUS.approved && shouldRedirectApprovedToMollieContractPay(snapshot)) {
     return tryMollieRedirectIfApproved(contractId)
   }
 
@@ -273,13 +279,16 @@ export function persistInsuranceContractSnapshot(payload: {
   contractNumber: string
   status: string
   rejectedReason?: string | null
+  productType?: "decennale" | "do"
 }) {
   if (typeof sessionStorage === "undefined") return
   sessionStorage.setItem(STORAGE_KEYS.insuranceContract, JSON.stringify(payload))
 }
 
 /**
- * Après souscription : crée le contrat Prisma, oriente vers Mollie si approuvé, sinon laisse le parcours (signature).
+ * Après souscription : crée le contrat Prisma.
+ * Décennale approuvée : toujours suite « signature → mandat SEPA → /paiement (échéancier + 1er trimestre CB) » — pas de POST /contracts/pay ici.
+ * DO approuvé : redirection Mollie virement contrat plateforme (inchangé).
  */
 export async function runInsuranceContractStepAfterSouscription(
   data: SouscriptionData | DoSouscriptionInsurancePayload
@@ -294,7 +303,11 @@ export async function runInsuranceContractStepAfterSouscription(
       sessionStorage.removeItem(STORAGE_KEYS.insuranceContractSessionCreatedId)
     }
     if (sessionCreatedId && snapshot?.contractId === sessionCreatedId) {
-      return resumeInsuranceContractFlowFromSnapshot(snapshot)
+      const inferred: "decennale" | "do" = isDoSouscriptionPayload(data) ? "do" : "decennale"
+      return resumeInsuranceContractFlowFromSnapshot({
+        ...snapshot,
+        productType: snapshot.productType ?? inferred,
+      })
     }
   }
 
@@ -307,6 +320,7 @@ export async function runInsuranceContractStepAfterSouscription(
   }
 
   const { contractId, contractNumber, status, rejectedReason } = created.contract
+  const productType: "decennale" | "do" = isDoSouscriptionPayload(data) ? "do" : "decennale"
   if (typeof sessionStorage !== "undefined") {
     sessionStorage.setItem(STORAGE_KEYS.insuranceContractSessionCreatedId, contractId)
   }
@@ -315,13 +329,14 @@ export async function runInsuranceContractStepAfterSouscription(
     contractNumber,
     status,
     rejectedReason,
+    productType,
   })
 
   if (status === CONTRACT_STATUS.rejected) {
     return { outcome: "continue_flow" }
   }
 
-  if (status === CONTRACT_STATUS.approved) {
+  if (status === CONTRACT_STATUS.approved && productType === "do") {
     return tryMollieRedirectIfApproved(contractId)
   }
 

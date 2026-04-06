@@ -20,4 +20,6 @@ export type InsuranceContractSnapshot = {
   contractNumber: string
   status: string
   rejectedReason?: string | null
+  /** Décennale : signature → mandat → paiement trimestriel (pas de virement annuel avant). DO : virement contrat plateforme si approuvé. */
+  productType?: "decennale" | "do"
 }
