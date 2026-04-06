@@ -2,6 +2,7 @@ import { existsSync } from "fs"
 import { unlink } from "fs/promises"
 import { join } from "path"
 import { NextRequest, NextResponse } from "next/server"
+import { createMollieClient } from "@mollie/api-client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
@@ -241,12 +242,29 @@ export async function DELETE(
       select: { filepath: true },
     })
 
+    const sepaMollie = await prisma.sepaSubscription.findUnique({
+      where: { userId: id },
+      select: { mollieCustomerId: true },
+    })
+
     await prisma.$transaction(async (tx) => {
       await tx.pendingSignature.deleteMany({ where: { userId: id } })
       await tx.pdfGenerationLog.updateMany({ where: { userId: id }, data: { userId: null } })
       await tx.devoirConseilLog.updateMany({ where: { userId: id }, data: { userId: null } })
       await tx.user.delete({ where: { id } })
     })
+
+    if (sepaMollie?.mollieCustomerId) {
+      const apiKey = process.env.MOLLIE_API_KEY
+      if (apiKey) {
+        try {
+          const mollie = createMollieClient({ apiKey })
+          await mollie.customers.delete(sepaMollie.mollieCustomerId)
+        } catch (e) {
+          console.warn("[gestion] Mollie customers.delete après suppression client (non bloquant):", e)
+        }
+      }
+    }
 
     for (const row of gedFiles) {
       const fullPath = join(UPLOAD_DIR, row.filepath)

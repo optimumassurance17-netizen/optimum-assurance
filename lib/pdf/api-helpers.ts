@@ -29,3 +29,17 @@ export function isPdfApiAuthorized(request: Request): boolean {
   const token = header?.startsWith("Bearer ") ? header.slice(7) : null
   return token === secret
 }
+
+/** Réponse 401 explicite lorsque le secret PDF est actif (évite la confusion « PDF cassé »). */
+export function pdfApiUnauthorizedResponse(): NextResponse {
+  const hasSecret = !!process.env.PDF_API_SECRET?.trim()
+  return NextResponse.json(
+    {
+      error: "Non autorisé",
+      ...(hasSecret && {
+        hint: 'Ajoutez l’en-tête Authorization: Bearer <PDF_API_SECRET>, ou retirez PDF_API_SECRET si vous n’en avez pas besoin.',
+      }),
+    },
+    { status: 401 }
+  )
+}

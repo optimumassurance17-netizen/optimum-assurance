@@ -123,9 +123,20 @@ export default function PaiementPage() {
     })()
   }, [router, sessionStatus])
 
+  useEffect(() => {
+    if (sessionStatus === "loading") return
+    if (sessionStatus !== "unauthenticated") return
+    if (!data || !mandat) return
+    router.replace(`/connexion?callbackUrl=${encodeURIComponent("/paiement")}`)
+  }, [sessionStatus, data, mandat, router])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!data?.tarif || !mandat) return
+    if (!authSession?.user?.id) {
+      router.push(`/connexion?callbackUrl=${encodeURIComponent("/paiement")}`)
+      return
+    }
 
     setLoading(true)
     setError(null)
@@ -153,7 +164,7 @@ export default function PaiementPage() {
           /** Pour création mandat SEPA Mollie (webhook) — métadonnées Mollie = chaînes */
           iban: mandat.iban.replace(/\s+/g, ""),
           titulaireCompte: mandat.titulaireCompte,
-          ...(authSession?.user?.id && { userId: authSession.user.id }),
+          userId: authSession.user.id,
         },
         customerEmail: data.email,
         method: "creditcard",

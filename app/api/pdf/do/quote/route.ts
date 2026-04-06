@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from "next/server"
 import { generateDOQuote } from "@/lib/pdf/do/generateQuote"
 import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
 import { logPdfGeneration } from "@/lib/pdf/logPdfGeneration"
-import { handlePdfError, isPdfApiAuthorized, pdfBufferResponse } from "@/lib/pdf/api-helpers"
+import {
+  handlePdfError,
+  isPdfApiAuthorized,
+  pdfApiUnauthorizedResponse,
+  pdfBufferResponse,
+} from "@/lib/pdf/api-helpers"
 import type { InsuranceData } from "@/lib/pdf/types"
 
 export async function POST(request: NextRequest) {
   if (!isPdfApiAuthorized(request)) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+    return pdfApiUnauthorizedResponse()
   }
   try {
     const body = (await request.json()) as {

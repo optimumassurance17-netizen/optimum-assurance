@@ -220,19 +220,31 @@ export async function POST(request: NextRequest) {
             }
           }
         }
-      } else if (metadata.type === "decennale_premier_trimestre" && metadata.userId) {
-        user = await prisma.user.findUnique({
-          where: { id: metadata.userId },
-          select: {
-            id: true,
-            email: true,
-            raisonSociale: true,
-            adresse: true,
-            codePostal: true,
-            ville: true,
-            siret: true,
-          },
-        })
+      } else if (metadata.type === "decennale_premier_trimestre") {
+        const decennaleUserSelect = {
+          id: true,
+          email: true,
+          raisonSociale: true,
+          adresse: true,
+          codePostal: true,
+          ville: true,
+          siret: true,
+        } as const
+        if (metadata.userId) {
+          user = await prisma.user.findUnique({
+            where: { id: metadata.userId },
+            select: decennaleUserSelect,
+          })
+        }
+        if (!user && metadata.email) {
+          const em = String(metadata.email).trim().toLowerCase()
+          if (em) {
+            user = await prisma.user.findUnique({
+              where: { email: em },
+              select: decennaleUserSelect,
+            })
+          }
+        }
         if (user && !alreadyProcessed) {
           const amount = payment.amount?.value ? parseFloat(payment.amount.value) : 0
           const primeAnnuelle = parseFloat(metadata.primeAnnuelle || "0") || 0
