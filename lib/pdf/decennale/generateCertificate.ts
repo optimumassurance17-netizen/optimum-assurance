@@ -7,7 +7,7 @@ import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { embedVerificationQr } from "../shared/qrCode"
-import { drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 
 /**
  * Attestation décennale — RC décennale, articles 1792, QR vérification.
@@ -33,7 +33,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     "Document officiel"
   )
 
-  page.drawText(`N° ${data.contractNumber}`, {
+  drawTextPdf(page, `N° ${data.contractNumber}`, {
     x: PDF_PAGE.marginX,
     y,
     size: 11,
@@ -41,7 +41,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     color: PDF_COLORS.text,
   })
   y -= 14
-  page.drawText(`Émis le ${formatGeneratedAt(data.createdAt)}`, {
+  drawTextPdf(page, `Émis le ${formatGeneratedAt(data.createdAt)}`, {
     x: PDF_PAGE.marginX,
     y,
     size: 9,
@@ -62,7 +62,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
   )
   y -= 14
 
-  page.drawText("Assuré", { x: PDF_PAGE.marginX, y, size: 11, font: fontBold, color: PDF_COLORS.text })
+  drawTextPdf(page, "Assuré", { x: PDF_PAGE.marginX, y, size: 11, font: fontBold, color: PDF_COLORS.text })
   y -= 14
   y = drawWrappedText(page, data.clientName, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, fontBold, 10, 13)
   if (data.siret) {
@@ -73,7 +73,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
   y = drawWrappedText(page, data.address, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 10, 13)
   y -= 16
 
-  page.drawText("Couverture : RC décennale", {
+  drawTextPdf(page, "Couverture : RC décennale", {
     x: PDF_PAGE.marginX,
     y,
     size: 11,
@@ -128,7 +128,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
   )
   y -= 18
 
-  page.drawText("Conditions d’effet", {
+  drawTextPdf(page, "Conditions d'effet", {
     x: PDF_PAGE.marginX,
     y,
     size: 11,

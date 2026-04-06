@@ -1,3 +1,6 @@
+import { existsSync } from "fs"
+import { unlink } from "fs/promises"
+import { join } from "path"
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
@@ -5,6 +8,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { syncContratAvenantDocumentsFromUser } from "@/lib/sync-user-document-identity"
+import { UPLOAD_DIR } from "@/lib/user-documents"
 
 export async function GET(
   _request: Request,
@@ -184,5 +188,86 @@ export async function PATCH(
   } catch (error) {
     console.error("Erreur PATCH client:", error)
     return NextResponse.json({ error: "Erreur lors de la mise à jour" }, { status: 500 })
+  }
+}
+
+/**
+ * DELETE — Supprime le compte client, son espace (documents plateforme, paiements, GED, SEPA en base)
+ * et les brouillons de signature liés. Les contrats assurance plateforme restent en base avec userId null.
+ * Body : { confirmEmail: string } doit correspondre à l’email du client (insensible à la casse).
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id || !isAdmin(session)) {
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
+    }
+
+    const { id } = await params
+    if (session.user.id === id) {
+      return NextResponse.json(
+        { error: "Vous ne pouvez pas supprimer votre propre compte administrateur." },
+        { status: 400 }
+      )
+    }
+
+    let body: { confirmEmail?: string } = {}
+    try {
+      body = (await request.json()) as { confirmEmail?: string }
+    } catch {
+      /* empty body */
+    }
+    const confirmEmail = String(body.confirmEmail ?? "").trim().toLowerCase()
+
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { email: true },
+    })
+    if (!target) {
+      return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
+    }
+    if (confirmEmail !== target.email.toLowerCase()) {
+      return NextResponse.json(
+        { error: "Saisissez l'email exact du client pour confirmer la suppression." },
+        { status: 400 }
+      )
+    }
+
+    const gedFiles = await prisma.userDocument.findMany({
+      where: { userId: id },
+      select: { filepath: true },
+    })
+
+    await prisma.$transaction(async (tx) => {
+      await tx.pendingSignature.deleteMany({ where: { userId: id } })
+      await tx.pdfGenerationLog.updateMany({ where: { userId: id }, data: { userId: null } })
+      await tx.devoirConseilLog.updateMany({ where: { userId: id }, data: { userId: null } })
+      await tx.user.delete({ where: { id } })
+    })
+
+    for (const row of gedFiles) {
+      const fullPath = join(UPLOAD_DIR, row.filepath)
+      try {
+        if (existsSync(fullPath)) await unlink(fullPath)
+      } catch (e) {
+        console.warn("[gestion] suppression fichier GED après delete user:", row.filepath, e)
+      }
+    }
+
+    await logAdminActivity({
+      adminEmail: session.user.email || "admin",
+      action: "user_delete",
+      targetType: "user",
+      targetId: id,
+      details: { deletedEmail: target.email },
+    })
+
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error("Erreur DELETE client:", error)
+    return NextResponse.json({ error: "Erreur lors de la suppression" }, { status: 500 })
   }
 }

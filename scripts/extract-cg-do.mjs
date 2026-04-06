@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Extrait le texte d'un PDF des CG DO, applique les remplacements Optimum / Axcelrant,
+ * Extrait le texte d'un PDF des CG DO, applique les remplacements Optimum / Accelerant,
  * et écrit lib/cg-dommage-ouvrage-full.txt
  *
  * Usage : node scripts/extract-cg-do.mjs "chemin/vers/CG_DO.pdf"
@@ -29,12 +29,14 @@ const { text: raw } = await pdf(buf)
 
 let text = raw
 
-const DISTRIBUTION_BLOCK = `Assureur : Axcelrant Insurance. Distribution : Optimum Courtage, immatriculé à l'ORIAS sous le numéro LPS 28931947, 14 rue Amboise, 49300 Cholet, France — contact@optimum-assurance.fr — soumis au contrôle de l'Autorité de contrôle prudentiel et de résolution (ACPR).`
+const DISTRIBUTION_BLOCK = `Assureur : Accelerant Insurance. Distribution : Optimum Courtage, immatriculé à l'ORIAS sous le numéro LPS 28931947, 14 rue Amboise, 49300 Cholet, France — contact@optimum-assurance.fr — soumis au contrôle de l'Autorité de contrôle prudentiel et de résolution (ACPR).`
 
 const replacements = [
-  [/MARSH\s+INSURANCE/gi, "Axcelrant Insurance"],
-  [/Marsh\s+Insurance/gi, "Axcelrant Insurance"],
-  [/Marsh\s+SA/gi, "Axcelrant Insurance"],
+  [/MARSH\s+INSURANCE/gi, "Accelerant Insurance"],
+  [/Marsh\s+Insurance/gi, "Accelerant Insurance"],
+  [/Marsh\s+SA/gi, "Accelerant Insurance"],
+  /** Ancienne faute de frappe dans des exports / brouillons */
+  [/Axcelrant\s+Insurance/gi, "Accelerant Insurance"],
   [/www\.marsh-insurance\.eu/gi, ""],
   [/marsh-insurance\.eu/gi, ""],
   [/MARSH INSURANCE\s*,?\s*Marsh SA est une société anonyme par actions, enregistrée en Belgique sous le numéro\s*d'entreprise 0403\.276\.906 et dont le siège social est situé Avenue Herrmann-Debroux 2, B-1160 Bruxelles, Belgique\.\s*Marsh SA fait partie du groupe Marsh McLennan[^.]*\.\s*Soumise au contrôle de l'Autorité de Contrôle\s*Prudentiel et de Résolution[^.]*\.\s*site web\s*:\s*www\.marsh-insurance\.eu/gi, DISTRIBUTION_BLOCK],
@@ -51,7 +53,7 @@ for (const [re, rep] of replacements) {
 }
 
 const header = `CONDITIONS GÉNÉRALES — DOMMAGES-OUVRAGE (CG DO)
-Version adaptée pour la distribution par Optimum Courtage (ORIAS LPS 28931947) — Assureur : Axcelrant Insurance.
+Version adaptée pour la distribution par Optimum Courtage (ORIAS LPS 28931947) — Assureur : Accelerant Insurance.
 Document généré à partir du modèle contractuel fourni ; les mentions de l'ancien distributeur ont été remplacées.
 Les conditions particulières et le questionnaire d'étude prévalent en cas de contradiction.
 

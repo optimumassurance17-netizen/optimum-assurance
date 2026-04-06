@@ -6,7 +6,7 @@ import { embedStandardFonts } from "../shared/initPdf"
 import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
-import { drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 
 export async function generateDOPolicy(data: InsuranceData): Promise<Uint8Array> {
   validateDoQuote(data)
@@ -23,7 +23,7 @@ export async function generateDOPolicy(data: InsuranceData): Promise<Uint8Array>
     "Contrat DO"
   )
 
-  page.drawText(`Contrat N° ${data.contractNumber}`, {
+  drawTextPdf(page, `Contrat N° ${data.contractNumber}`, {
     x: PDF_PAGE.marginX,
     y,
     size: 11,
@@ -31,7 +31,7 @@ export async function generateDOPolicy(data: InsuranceData): Promise<Uint8Array>
     color: PDF_COLORS.text,
   })
   y -= 14
-  page.drawText(`Document généré le ${formatGeneratedAt(data.createdAt)}`, {
+  drawTextPdf(page, `Document généré le ${formatGeneratedAt(data.createdAt)}`, {
     x: PDF_PAGE.marginX,
     y,
     size: 9,
@@ -41,9 +41,9 @@ export async function generateDOPolicy(data: InsuranceData): Promise<Uint8Array>
   y -= 20
 
   const clauses: string[] = [
-    "Assureur : Axcelrant Insurance.",
+    "Assureur : Accelerant Insurance.",
     "Courtier : Optimum Courtage, ORIAS LPS 28931947.",
-    "Optimum Courtage agit par délégation de Axcelrant Insurance.",
+    "Optimum Courtage agit par délégation de Accelerant Insurance.",
     `Souscripteur : ${data.clientName}.`,
     `Adresse : ${data.address}.`,
     `Chantier / opération : ${data.projectName} — ${data.projectAddress}.`,

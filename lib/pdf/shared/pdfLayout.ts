@@ -1,6 +1,7 @@
 import type { PDFPage, PDFFont } from "pdf-lib"
 import { rgb } from "pdf-lib"
 import { LEGAL_FOOTER_LINES } from "@/lib/legal-branding"
+import { sanitizeForPdfLib } from "./sanitizePdfText"
 
 /** Points PDF (A4) */
 export const PDF_PAGE = {
@@ -44,7 +45,7 @@ export function drawPdfFooter(
   /** Coordonnée Y du bas de page : le texte du pied monte vers les Y plus grands */
   let y = 56
   for (const line of LEGAL_FOOTER_LINES) {
-    page.drawText(line, {
+    page.drawText(sanitizeForPdfLib(line), {
       x: PDF_PAGE.marginX,
       y,
       size,
@@ -55,7 +56,7 @@ export function drawPdfFooter(
     y -= lineGap
   }
 
-  const pageLabel = `Page ${pageIndex1} / ${totalPages}`
+  const pageLabel = sanitizeForPdfLib(`Page ${pageIndex1} / ${totalPages}`)
   page.drawText(pageLabel, {
     x: width - PDF_PAGE.marginX - font.widthOfTextAtSize(pageLabel, size),
     y: 56,

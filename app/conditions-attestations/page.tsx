@@ -21,7 +21,7 @@ export default function ConditionsAttestationsPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-semibold text-black">1. Délégation</h2>
             <p>
-              Les contrats d&apos;assurance sont souscrits auprès de compagnies partenaires, notamment <strong>Axcelrant Insurance</strong>.
+              Les contrats d&apos;assurance sont souscrits auprès de compagnies partenaires, notamment <strong>Accelerant Insurance</strong>.
             </p>
             <p>
               <strong>Optimum Courtage / Optimum Assurance agit par délégation de l&apos;assureur pour la distribution et, le cas échéant, la gestion des contrats.</strong>
@@ -106,7 +106,7 @@ export default function ConditionsAttestationsPage() {
             <h2 className="text-xl font-semibold text-black">8. Responsabilité</h2>
             <p>Optimum Courtage agit en qualité d&apos;intermédiaire.</p>
             <p>
-              La responsabilité des garanties incombe exclusivement à l&apos;assureur, notamment <strong>Axcelrant Insurance</strong>.
+              La responsabilité des garanties incombe exclusivement à l&apos;assureur, notamment <strong>Accelerant Insurance</strong>.
             </p>
           </section>
 

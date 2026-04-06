@@ -6,12 +6,12 @@ import { embedStandardFonts } from "../shared/initPdf"
 import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
-import { drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 
 const QUOTE_VALIDITY_DAYS = 30
 
 /**
- * Devis décennale — pdf-lib, mentions légales Axcelrant / délégation (pied de page).
+ * Devis décennale — pdf-lib, mentions légales Accelerant / délégation (pied de page).
  */
 export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8Array> {
   validateDecennaleQuote(data)
@@ -28,7 +28,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
     "Assurance décennale professionnelle"
   )
 
-  page.drawText(`N° ${data.contractNumber}`, {
+  drawTextPdf(page, `N° ${data.contractNumber}`, {
     x: PDF_PAGE.marginX,
     y,
     size: 10,
@@ -36,7 +36,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
     color: PDF_COLORS.text,
   })
   y -= 14
-  page.drawText(`Émis le ${formatGeneratedAt(data.createdAt)}`, {
+  drawTextPdf(page, `Émis le ${formatGeneratedAt(data.createdAt)}`, {
     x: PDF_PAGE.marginX,
     y,
     size: 9,
@@ -47,7 +47,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
 
   y = drawWrappedText(
     page,
-    "Assureur : Axcelrant Insurance — Distribution : Optimum Courtage (ORIAS LPS 28931947).",
+    "Assureur : Accelerant Insurance — Distribution : Optimum Courtage (ORIAS LPS 28931947).",
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,
@@ -58,7 +58,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
   )
   y -= 16
 
-  page.drawText("Client", { x: PDF_PAGE.marginX, y, size: 11, font: fontBold, color: PDF_COLORS.text })
+  drawTextPdf(page, "Client", { x: PDF_PAGE.marginX, y, size: 11, font: fontBold, color: PDF_COLORS.text })
   y -= 14
   y = drawWrappedText(page, data.clientName, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, fontBold, 10, 13)
   if (data.siret) {
@@ -69,7 +69,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
   y = drawWrappedText(page, data.address, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 10, 13)
   y -= 18
 
-  page.drawText("Activités déclarées", {
+  drawTextPdf(page, "Activités déclarées", {
     x: PDF_PAGE.marginX,
     y,
     size: 11,
@@ -89,7 +89,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
   )
   y -= 18
 
-  page.drawText("Prime TTC (indicative)", {
+  drawTextPdf(page, "Prime TTC (indicative)", {
     x: PDF_PAGE.marginX,
     y,
     size: 11,
@@ -106,7 +106,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
   })
   y -= 20
 
-  page.drawText(`Validité du devis : ${QUOTE_VALIDITY_DAYS} jours à compter de la date d’émission.`, {
+  drawTextPdf(page, `Validité du devis : ${QUOTE_VALIDITY_DAYS} jours à compter de la date d'émission.`, {
     x: PDF_PAGE.marginX,
     y,
     size: 9,

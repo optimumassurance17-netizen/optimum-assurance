@@ -6,7 +6,7 @@ const baseUrl = SITE_URL
 export const metadata: Metadata = {
   title: "Émission et validité des attestations",
   description:
-    "Conditions d'émission et de validité des attestations d'assurance décennale et dommages-ouvrage — Optimum Courtage, ORIAS LPS 28931947, Axcelrant Insurance.",
+    "Conditions d'émission et de validité des attestations d'assurance décennale et dommages-ouvrage — Optimum Courtage, ORIAS LPS 28931947, Accelerant Insurance.",
   alternates: {
     canonical: `${baseUrl}/conditions-attestations`,
   },

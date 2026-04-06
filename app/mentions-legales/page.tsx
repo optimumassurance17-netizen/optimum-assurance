@@ -91,7 +91,7 @@ export default function MentionsLegalesPage() {
             </p>
             <p>
               La société agit en qualité de <strong>courtier indépendant</strong> et propose des contrats d&apos;assurance auprès de plusieurs compagnies partenaires, notamment{" "}
-              <strong>Axcelrant Insurance</strong>, dans le cadre de délégations de gestion.
+              <strong>Accelerant Insurance</strong>, dans le cadre de délégations de gestion.
             </p>
             <p>
               Optimum Courtage n&apos;est pas soumis à une obligation contractuelle de travailler exclusivement avec une ou plusieurs entreprises d&apos;assurance.

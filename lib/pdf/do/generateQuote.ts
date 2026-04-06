@@ -6,7 +6,7 @@ import { embedStandardFonts } from "../shared/initPdf"
 import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
-import { drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 
 const QUOTE_VALIDITY_DAYS = 30
 
@@ -25,7 +25,7 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
     "Construction / maître d’ouvrage"
   )
 
-  page.drawText(`N° ${data.contractNumber}`, {
+  drawTextPdf(page, `N° ${data.contractNumber}`, {
     x: PDF_PAGE.marginX,
     y,
     size: 10,
@@ -33,7 +33,7 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
     color: PDF_COLORS.text,
   })
   y -= 14
-  page.drawText(`Émis le ${formatGeneratedAt(data.createdAt)}`, {
+  drawTextPdf(page, `Émis le ${formatGeneratedAt(data.createdAt)}`, {
     x: PDF_PAGE.marginX,
     y,
     size: 9,
@@ -44,7 +44,7 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
 
   y = drawWrappedText(
     page,
-    "Assureur : Axcelrant Insurance — Distribution : Optimum Courtage (ORIAS LPS 28931947).",
+    "Assureur : Accelerant Insurance — Distribution : Optimum Courtage (ORIAS LPS 28931947).",
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,
@@ -55,7 +55,7 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
   )
   y -= 16
 
-  page.drawText("Maître d’ouvrage / client", {
+  drawTextPdf(page, "Maître d'ouvrage / client", {
     x: PDF_PAGE.marginX,
     y,
     size: 11,
@@ -68,7 +68,7 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
   y = drawWrappedText(page, data.address, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 10, 13)
   y -= 18
 
-  page.drawText("Opération de construction", {
+  drawTextPdf(page, "Opération de construction", {
     x: PDF_PAGE.marginX,
     y,
     size: 11,
@@ -94,7 +94,7 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
   }
   y -= 18
 
-  page.drawText("Prime TTC (indicative)", {
+  drawTextPdf(page, "Prime TTC (indicative)", {
     x: PDF_PAGE.marginX,
     y,
     size: 11,
@@ -102,7 +102,7 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
     color: PDF_COLORS.text,
   })
   y -= 14
-  page.drawText(formatEuro(data.premium), {
+  drawTextPdf(page, formatEuro(data.premium), {
     x: PDF_PAGE.marginX,
     y,
     size: 12,
@@ -110,7 +110,7 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
     color: PDF_COLORS.primary,
   })
   y -= 16
-  page.drawText("Franchise : aucune (garantie obligatoire DO).", {
+  drawTextPdf(page, "Franchise : aucune (garantie obligatoire DO).", {
     x: PDF_PAGE.marginX,
     y,
     size: 9,
@@ -119,7 +119,7 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
   })
   y -= 20
 
-  page.drawText(`Validité du devis : ${QUOTE_VALIDITY_DAYS} jours à compter de la date d’émission.`, {
+  drawTextPdf(page, `Validité du devis : ${QUOTE_VALIDITY_DAYS} jours à compter de la date d'émission.`, {
     x: PDF_PAGE.marginX,
     y,
     size: 9,

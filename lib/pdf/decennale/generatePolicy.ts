@@ -6,7 +6,7 @@ import { embedStandardFonts } from "../shared/initPdf"
 import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
-import { drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 
 /**
  * Conditions particulières — contrat décennale (pdf-lib).
@@ -26,7 +26,7 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
     "Contrat RC décennale"
   )
 
-  page.drawText(`Contrat N° ${data.contractNumber}`, {
+  drawTextPdf(page, `Contrat N° ${data.contractNumber}`, {
     x: PDF_PAGE.marginX,
     y,
     size: 11,
@@ -34,7 +34,7 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
     color: PDF_COLORS.text,
   })
   y -= 14
-  page.drawText(`Document généré le ${formatGeneratedAt(data.createdAt)}`, {
+  drawTextPdf(page, `Document généré le ${formatGeneratedAt(data.createdAt)}`, {
     x: PDF_PAGE.marginX,
     y,
     size: 9,
@@ -44,9 +44,9 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
   y -= 20
 
   const clauses: string[] = [
-    "Assureur : Axcelrant Insurance.",
+    "Assureur : Accelerant Insurance.",
     "Courtier : Optimum Courtage, ORIAS LPS 28931947.",
-    "Optimum Courtage agit par délégation de Axcelrant Insurance.",
+    "Optimum Courtage agit par délégation de Accelerant Insurance.",
     `Assuré : ${data.clientName}${data.siret ? ` — SIRET ${data.siret}` : ""}.`,
     `Adresse : ${data.address}.`,
     `Période : du ${data.startDate} au ${data.endDate}.`,

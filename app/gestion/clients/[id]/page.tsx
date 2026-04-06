@@ -32,7 +32,7 @@ const typeLabels: Record<string, string> = {
 export default function ClientDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { status } = useSession()
+  const { status, data: authSession } = useSession()
   const [data, setData] = useState<ClientData | null>(null)
   const [notes, setNotes] = useState<{ id: string; content: string; adminEmail: string; createdAt: string }[]>([])
   const [noteInput, setNoteInput] = useState("")
@@ -65,6 +65,9 @@ export default function ClientDetailPage() {
   })
   const [profileSaving, setProfileSaving] = useState(false)
   const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
+  const [deleteModal, setDeleteModal] = useState(false)
+  const [deleteConfirmEmail, setDeleteConfirmEmail] = useState("")
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -127,6 +130,7 @@ export default function ClientDetailPage() {
 
   const { user, documents, payments, avenantFees } = data
   const caTotal = payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0)
+  const isOwnAdminAccount = authSession?.user?.id === params.id
 
   return (
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
@@ -468,6 +472,29 @@ export default function ClientDetailPage() {
             )}
           </div>
         </section>
+
+        <section className="border border-red-900/60 rounded-xl p-6 bg-red-950/20">
+          <h2 className="text-lg font-semibold text-red-200 mb-2">Zone sensible</h2>
+          <p className="text-sm text-gray-200 mb-4">
+            Supprime définitivement le compte, l’accès à l’espace client, les documents décennale / DO, les paiements
+            enregistrés, le mandat SEPA en base et les fichiers déposés dans la GED. Les contrats assurance plateforme
+            (dossier SaaS) restent conservés sans lien vers ce compte.
+          </p>
+          {isOwnAdminAccount ? (
+            <p className="text-sm text-amber-200">Impossible de supprimer votre propre compte depuis cette fiche.</p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteConfirmEmail("")
+                setDeleteModal(true)
+              }}
+              className="text-sm font-medium px-4 py-2 rounded-lg bg-red-900/80 text-white hover:bg-red-800 border border-red-700"
+            >
+              Supprimer la fiche et l’espace client
+            </button>
+          )}
+        </section>
       </div>
 
       {sinistreModal && data && (
@@ -570,6 +597,71 @@ export default function ClientDetailPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteModal && data && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => !deleteLoading && setDeleteModal(false)}
+        >
+          <div
+            className="bg-[#252525] border border-red-900/50 rounded-xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-red-200 mb-2">Confirmer la suppression</h3>
+            <p className="text-sm text-gray-200 mb-4">
+              Cette action est irréversible. Saisissez l’email du client pour confirmer :{" "}
+              <span className="text-white font-mono text-xs break-all">{data.user.email}</span>
+            </p>
+            <input
+              type="email"
+              autoComplete="off"
+              value={deleteConfirmEmail}
+              onChange={(e) => setDeleteConfirmEmail(e.target.value)}
+              placeholder="Email du client"
+              className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white mb-4"
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={() => setDeleteModal(false)}
+                className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700 disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={
+                  deleteLoading ||
+                  deleteConfirmEmail.trim().toLowerCase() !== data.user.email.toLowerCase()
+                }
+                onClick={async () => {
+                  setDeleteLoading(true)
+                  try {
+                    const res = await fetch(`/api/gestion/clients/${params.id}`, {
+                      method: "DELETE",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ confirmEmail: deleteConfirmEmail }),
+                    })
+                    const json = await readResponseJson<{ error?: string }>(res)
+                    if (!res.ok) {
+                      setToast({ message: json.error || "Suppression impossible", type: "error" })
+                      return
+                    }
+                    setDeleteModal(false)
+                    router.replace("/gestion")
+                  } finally {
+                    setDeleteLoading(false)
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-red-700 text-white hover:bg-red-600 disabled:opacity-50"
+              >
+                {deleteLoading ? "Suppression…" : "Supprimer définitivement"}
+              </button>
+            </div>
           </div>
         </div>
       )}

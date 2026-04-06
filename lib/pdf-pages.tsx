@@ -131,7 +131,7 @@ export function AttestationPDFPage({
       </View>
       <Text style={[pdfTheme.legalText, { marginTop: 14 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
-        Optimum Courtage agit par délégation de Axcelrant Insurance.
+        Optimum Courtage agit par délégation de Accelerant Insurance.
       </Text>
     </Page>
   )
@@ -192,7 +192,7 @@ export function AttestationDoPDFPage({
       </View>
       <Text style={[pdfTheme.legalText, { marginTop: 14 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
-        Optimum Courtage agit par délégation de Axcelrant Insurance.
+        Optimum Courtage agit par délégation de Accelerant Insurance.
       </Text>
     </Page>
   )
@@ -262,7 +262,7 @@ export function FactureDecennalePDFPage({
       </Text>
       <Text style={[pdfTheme.legalText, { marginTop: 16 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
-        Optimum Courtage agit par délégation de Axcelrant Insurance.
+        Optimum Courtage agit par délégation de Accelerant Insurance.
       </Text>
     </Page>
   )
@@ -314,7 +314,7 @@ export function FactureDoPDFPage({
       </View>
       <Text style={[pdfTheme.legalText, { marginTop: 16 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
-        Optimum Courtage agit par délégation de Axcelrant Insurance.
+        Optimum Courtage agit par délégation de Accelerant Insurance.
       </Text>
     </Page>
   )
@@ -389,7 +389,7 @@ export function DocumentResumePDFPage({
       </Text>
       <Text style={[pdfTheme.legalText, { marginTop: 14 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
-        Optimum Courtage agit par délégation de Axcelrant Insurance.
+        Optimum Courtage agit par délégation de Accelerant Insurance.
       </Text>
     </Page>
   )

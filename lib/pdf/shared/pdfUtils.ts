@@ -2,18 +2,31 @@ import type { PDFFont, PDFPage } from "pdf-lib"
 import { PDF_COLORS, PDF_PAGE } from "./pdfLayout"
 import { PdfValidationError } from "../errors"
 import type { InsuranceCertificateData, InsuranceData, ProductType } from "../types"
+import { sanitizeForPdfLib } from "./sanitizePdfText"
 
+/** Montants lisibles en français sans espaces « exotiques » (évite les erreurs d’encodage pdf-lib). */
 export function formatEuro(n: number): string {
-  return `${n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
+  const [intPart, dec] = n.toFixed(2).split(".")
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+  return `${grouped},${dec} EUR`
 }
 
 export function formatGeneratedAt(iso: string): string {
   try {
     const d = new Date(iso)
-    return d.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
+    const s = d.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
+    return sanitizeForPdfLib(s)
   } catch {
-    return iso
+    return sanitizeForPdfLib(iso)
   }
+}
+
+export function drawTextPdf(
+  page: PDFPage,
+  text: string,
+  options: Parameters<PDFPage["drawText"]>[1]
+): void {
+  page.drawText(sanitizeForPdfLib(text), options)
 }
 
 export function wrapLines(text: string, maxWidth: number, font: PDFFont, fontSize: number): string[] {
@@ -44,9 +57,10 @@ export function drawWrappedText(
   lineHeight: number,
   color = PDF_COLORS.text
 ): number {
+  const safe = sanitizeForPdfLib(text)
   let y = startY
-  for (const line of wrapLines(text, maxWidth, font, fontSize)) {
-    page.drawText(line, { x, y, size: fontSize, font, color, maxWidth })
+  for (const line of wrapLines(safe, maxWidth, font, fontSize)) {
+    drawTextPdf(page, line, { x, y, size: fontSize, font, color, maxWidth })
     y -= lineHeight
   }
   return y

@@ -1,7 +1,7 @@
 import type { PDFPage, PDFFont } from "pdf-lib"
 import { LEGAL_ORIAS_LINE } from "@/lib/legal-branding"
 import { PDF_COLORS, PDF_PAGE } from "./pdfLayout"
-import { drawWrappedText } from "./pdfUtils"
+import { drawTextPdf, drawWrappedText } from "./pdfUtils"
 
 /**
  * En-tête PDF (pdf-lib) : monogramme, marque, barre d’accent, titre document.
@@ -30,7 +30,7 @@ export function drawOptimumHeader(
 
   const oSize = 22
   const oW = fontBold.widthOfTextAtSize("O", oSize)
-  page.drawText("O", {
+  drawTextPdf(page, "O", {
     x: x0 + monogramSize / 2 - oW / 2,
     y: rectBottom + monogramSize / 2 - oSize * 0.35,
     size: oSize,
@@ -40,7 +40,7 @@ export function drawOptimumHeader(
 
   const textX = x0 + monogramSize + 12
   let y = top - 8
-  page.drawText("Optimum Assurance", {
+  drawTextPdf(page, "Optimum Assurance", {
     x: textX,
     y,
     size: 15,
@@ -48,7 +48,7 @@ export function drawOptimumHeader(
     color: PDF_COLORS.primary,
   })
   y -= 14
-  page.drawText(LEGAL_ORIAS_LINE, {
+  drawTextPdf(page, LEGAL_ORIAS_LINE, {
     x: textX,
     y,
     size: 7.5,

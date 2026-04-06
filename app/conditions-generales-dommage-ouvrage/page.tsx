@@ -21,7 +21,7 @@ function loadCgFullText(): string | null {
 }
 
 /**
- * Conditions générales dommage ouvrage — texte propre au dispositif Optimum / Axcelrant.
+ * Conditions générales dommage ouvrage — texte propre au dispositif Optimum / Accelerant.
  * Si `lib/cg-dommage-ouvrage-full.txt` est présent (généré par `npm run extract:cg-do`),
  * le texte intégral issu du PDF adapté s’affiche ci-dessous.
  * Ne pas confondre avec les CGV de distribution (courtage numérique) : /cgv

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { renderContractPdf, type DocPdfType } from "@/lib/insurance-contract-pdf"
+import { PdfValidationError } from "@/lib/pdf/errors"
 
 const ALLOWED: DocPdfType[] = ["quote", "policy", "certificate", "invoice"]
 
@@ -42,11 +43,16 @@ export async function GET(
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur"
-    if (msg === "CERTIFICATE_NOT_ALLOWED") {
-      return NextResponse.json(
-        { error: "Attestation non disponible (paiement ou validation assureur requis)" },
-        { status: 403 }
-      )
+    if (msg === "CERTIFICATE_NOT_ALLOWED" || msg === "QR_CODE_GENERATION_FAILED") {
+      const body =
+        msg === "QR_CODE_GENERATION_FAILED"
+          ? "Génération du QR de vérification impossible. Réessayez ou contactez le support."
+          : "Attestation non disponible (paiement ou validation assureur requis)"
+      return NextResponse.json({ error: body }, { status: msg === "QR_CODE_GENERATION_FAILED" ? 503 : 403 })
+    }
+    if (e instanceof PdfValidationError) {
+      const status = e.code === "CERTIFICATE_BLOCKED" ? 403 : 400
+      return NextResponse.json({ error: e.message, code: e.code }, { status })
     }
     console.error(e)
     return NextResponse.json({ error: "Génération PDF impossible" }, { status: 500 })

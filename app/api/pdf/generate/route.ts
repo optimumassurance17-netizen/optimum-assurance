@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { renderContractPdf, type DocPdfType } from "@/lib/insurance-contract-pdf"
+import { PdfValidationError } from "@/lib/pdf/errors"
 
 /**
  * Génère un PDF pour un InsuranceContract (admin ou propriétaire du contrat).
@@ -39,6 +40,22 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (e) {
+    const msg = e instanceof Error ? e.message : ""
+    if (msg === "CERTIFICATE_NOT_ALLOWED" || msg === "QR_CODE_GENERATION_FAILED") {
+      const isQr = msg === "QR_CODE_GENERATION_FAILED"
+      return NextResponse.json(
+        {
+          error: isQr
+            ? "Génération du QR de vérification impossible."
+            : "Attestation non disponible (paiement ou validation assureur requis)",
+        },
+        { status: isQr ? 503 : 403 }
+      )
+    }
+    if (e instanceof PdfValidationError) {
+      const status = e.code === "CERTIFICATE_BLOCKED" ? 403 : 400
+      return NextResponse.json({ error: e.message, code: e.code }, { status })
+    }
     console.error(e)
     return NextResponse.json({ error: "Erreur génération" }, { status: 500 })
   }

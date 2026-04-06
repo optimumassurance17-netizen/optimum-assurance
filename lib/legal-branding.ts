@@ -3,12 +3,12 @@
  * Ne pas dupliquer ces chaînes ailleurs — importer depuis ce module.
  */
 export const COMPANY_BRAND = "Optimum Courtage"
-export const INSURER_NAME = "Axcelrant Insurance"
+export const INSURER_NAME = "Accelerant Insurance"
 export const ORIAS_NUMBER = "LPS 28931947"
 
 /** Texte légal obligatoire (attestations, factures, etc.) */
 export const LEGAL_DELEGATION_MANDATORY =
-  "Optimum Courtage agit par délégation de Axcelrant Insurance"
+  "Optimum Courtage agit par délégation de Accelerant Insurance"
 
 export const LEGAL_ORIAS_LINE = `${COMPANY_BRAND} – ORIAS ${ORIAS_NUMBER}`
 

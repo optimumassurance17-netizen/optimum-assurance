@@ -15,6 +15,8 @@ import {
 } from "@/lib/legal-branding"
 import { SITE_URL } from "@/lib/site-url"
 import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
+import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
+import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 
 function contractToInsuranceData(c: InsuranceContract): InsuranceData {
   const activities = parseActivitiesJson(c.activitiesJson)
@@ -55,32 +57,49 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
   const page = pdf.addPage([595.28, 841.89])
   const y0 = 800
   let y = y0
-  page.drawText("FACTURE ACQUITTÉE", { x: 50, y, size: 14, font: bold })
+  page.drawText(sanitizeForPdfLib("FACTURE ACQUITTÉE"), { x: 50, y, size: 14, font: bold })
   y -= 28
-  page.drawText(`Contrat ${c.contractNumber}`, { x: 50, y, size: 10, font })
+  page.drawText(sanitizeForPdfLib(`Contrat ${c.contractNumber}`), { x: 50, y, size: 10, font })
   y -= 16
-  page.drawText(`Produit : ${c.productType === "do" ? "Dommages-ouvrage" : "Décennale"}`, {
+  page.drawText(
+    sanitizeForPdfLib(`Produit : ${c.productType === "do" ? "Dommages-ouvrage" : "Décennale"}`),
+    {
+      x: 50,
+      y,
+      size: 10,
+      font,
+    }
+  )
+  y -= 16
+  page.drawText(sanitizeForPdfLib(`Client : ${c.clientName}`), { x: 50, y, size: 10, font })
+  y -= 14
+  page.drawText(sanitizeForPdfLib(`Montant TTC : ${formatEuro(c.premium)}`), { x: 50, y, size: 11, font: bold })
+  y -= 18
+  page.drawText(sanitizeForPdfLib(`Moyen de paiement : ${INVOICE_PAYMENT_METHOD_PRIMARY}`), {
     x: 50,
     y,
     size: 10,
     font,
   })
-  y -= 16
-  page.drawText(`Client : ${c.clientName}`, { x: 50, y, size: 10, font })
   y -= 14
-  page.drawText(`Montant TTC : ${c.premium.toLocaleString("fr-FR")} €`, { x: 50, y, size: 11, font: bold })
-  y -= 18
-  page.drawText(`Moyen de paiement : ${INVOICE_PAYMENT_METHOD_PRIMARY}`, { x: 50, y, size: 10, font })
-  y -= 14
-  page.drawText(INVOICE_FIRST_SETTLEMENT_NOTE, { x: 50, y, size: 9, font })
+  page.drawText(sanitizeForPdfLib(INVOICE_FIRST_SETTLEMENT_NOTE), { x: 50, y, size: 9, font })
   y -= 14
   if (c.paidAt) {
-    page.drawText(`Date de règlement : ${c.paidAt.toLocaleString("fr-FR")}`, { x: 50, y, size: 9, font })
+    page.drawText(
+      sanitizeForPdfLib(`Date de règlement : ${c.paidAt.toLocaleString("fr-FR")}`),
+      { x: 50, y, size: 9, font }
+    )
     y -= 14
   }
-  page.drawText(LEGAL_DELEGATION_MANDATORY, { x: 50, y: 76, size: 8, font: bold, maxWidth: 500 })
-  page.drawText(`ORIAS ${ORIAS_NUMBER}`, { x: 50, y: 62, size: 8, font, maxWidth: 500 })
-  page.drawText(`Références : ${SITE_URL}/cgv`, { x: 50, y: 46, size: 8, font })
+  page.drawText(sanitizeForPdfLib(LEGAL_DELEGATION_MANDATORY), {
+    x: 50,
+    y: 76,
+    size: 8,
+    font: bold,
+    maxWidth: 500,
+  })
+  page.drawText(sanitizeForPdfLib(`ORIAS ${ORIAS_NUMBER}`), { x: 50, y: 62, size: 8, font, maxWidth: 500 })
+  page.drawText(sanitizeForPdfLib(`Références : ${SITE_URL}/cgv`), { x: 50, y: 46, size: 8, font })
   return pdf.save()
 }
 

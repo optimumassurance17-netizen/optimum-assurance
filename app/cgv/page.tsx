@@ -30,7 +30,7 @@ export default function CGVPage() {
               <li>La mise en place d&apos;un mandat SEPA</li>
             </ul>
             <p>
-              Les contrats sont portés par des compagnies partenaires, notamment <strong>Axcelrant Insurance</strong>, dans le cadre de délégations.
+              Les contrats sont portés par des compagnies partenaires, notamment <strong>Accelerant Insurance</strong>, dans le cadre de délégations.
             </p>
           </section>
 

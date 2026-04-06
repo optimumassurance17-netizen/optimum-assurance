@@ -1,6 +1,6 @@
 const ITEMS = [
   { k: "ORIAS", v: "LPS 28931947" },
-  { k: "Assureur", v: "Axcelrant Insurance" },
+  { k: "Assureur", v: "Accelerant Insurance" },
   { k: "Paiement", v: "Sécurisé (Mollie)" },
   { k: "Régulation", v: "Conforme cadre ACPR" },
 ] as const

@@ -10,7 +10,7 @@ export default function CGDOLayout({ children }: { children: React.ReactNode }) 
 export const metadata: Metadata = {
   title: "Conditions générales dommage ouvrage | Optimum Assurance",
   description:
-    "Conditions générales du contrat d'assurance dommages-ouvrage distribué par Optimum Courtage (Axcelrant Insurance). Document contractuel de référence avec le devis.",
+    "Conditions générales du contrat d'assurance dommages-ouvrage distribué par Optimum Courtage (Accelerant Insurance). Document contractuel de référence avec le devis.",
   alternates: { canonical: `${baseUrl}/conditions-generales-dommage-ouvrage` },
   openGraph: {
     title: "Conditions générales dommage ouvrage | Optimum Assurance",

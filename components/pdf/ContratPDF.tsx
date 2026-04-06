@@ -144,7 +144,7 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
           </Text>
           <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>{pdfLegalLinksLine()}</Text>
           <Text style={[pdfTheme.legalText, { marginTop: 8 }]}>
-            Optimum Courtage agit par délégation de Axcelrant Insurance.
+            Optimum Courtage agit par délégation de Accelerant Insurance.
           </Text>
         </View>
       </Page>
