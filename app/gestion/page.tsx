@@ -387,18 +387,26 @@ export default function GestionPage() {
               setError("Accès refusé (compte non autorisé dans ADMIN_EMAILS).")
               return
             }
-            const json = await readResponseJson<DashboardData & { error?: string }>(res)
+            const json = await readResponseJson<
+              DashboardData & { error?: string; prismaCode?: string; debugMessage?: string }
+            >(res)
             if (cancelled) return
             if (!res.ok) {
               const msg =
                 json.error ||
                 `Erreur serveur (${res.status}). Souvent : base inaccessible ou migration Prisma non appliquée — voir les logs Vercel.`
+              const detail =
+                json.prismaCode != null
+                  ? ` Code Prisma : ${json.prismaCode}.`
+                  : ""
+              const dev =
+                json.debugMessage != null ? `\n${json.debugMessage}` : ""
               if (i < attempts - 1) {
                 await new Promise((r) => setTimeout(r, 700 * (i + 1)))
                 if (cancelled) return
                 continue
               }
-              setError(msg)
+              setError(`${msg}${detail}${dev}`)
               return
             }
             setData(json)

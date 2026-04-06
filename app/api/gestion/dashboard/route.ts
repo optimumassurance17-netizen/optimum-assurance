@@ -1,8 +1,46 @@
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+
+/** Message utilisateur + code Prisma pour le support (logs Vercel). */
+function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
+  let prismaCode: string | undefined
+  let message =
+    "Impossible de charger le tableau de bord. Consultez les logs Vercel (fonction /api/gestion/dashboard)."
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    prismaCode = error.code
+    if (error.code === "P1001" || error.code === "P1002") {
+      message =
+        "Connexion à la base de données refusée ou serveur injoignable. Vérifiez DATABASE_URL sur Vercel et que Postgres (Supabase) autorise les connexions depuis Vercel."
+    } else if (error.code === "P1017") {
+      message =
+        "La connexion à la base a été fermée (souvent timeout). Réessayez dans un instant."
+    } else if (error.code === "P2021") {
+      message =
+        "Table absente : appliquez les migrations Prisma sur cette base (npx prisma migrate deploy sur l’URL de prod)."
+    } else if (error.code === "P2022") {
+      message =
+        "Colonne absente : le schéma Prisma ne correspond pas à la base — migrations à jour ?"
+    }
+  } else if (error instanceof Prisma.PrismaClientInitializationError) {
+    prismaCode = error.errorCode
+    message =
+      "Client base de données non initialisé : DATABASE_URL manquant, invalide ou base inaccessible."
+  } else if (error instanceof Prisma.PrismaClientRustPanicError) {
+    message = "Erreur interne du moteur Prisma. Relancez le déploiement ou vérifiez les logs Vercel."
+  }
+
+  const out: { error: string; prismaCode?: string; debugMessage?: string } = { error: message }
+  if (prismaCode) out.prismaCode = prismaCode
+  if (process.env.NODE_ENV === "development" && error instanceof Error && error.message) {
+    out.debugMessage = error.message
+  }
+  return out
+}
 
 /** Vercel Pro : jusqu’à 60 s ; Hobby plafonne souvent à 10 s. */
 export const maxDuration = 60
@@ -181,9 +219,7 @@ export async function GET() {
     })
   } catch (error) {
     console.error("Erreur dashboard gestion:", error)
-    return NextResponse.json(
-      { error: "Erreur lors de la récupération" },
-      { status: 500 }
-    )
+    const body = errorPayloadForDashboard(error)
+    return NextResponse.json(body, { status: 500 })
   }
 }
