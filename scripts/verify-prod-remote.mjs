@@ -20,6 +20,9 @@ async function check(pathname) {
     if (pathname === "/api/health" && ok) {
       const j = await res.json().catch(() => ({}))
       console.log("   ", JSON.stringify(j))
+      if (j.crons?.secret === "missing") {
+        console.log("   ⚠️  crons.secret = missing → les routes /api/cron/* renverront 503 en prod (définir CRON_SECRET sur Vercel).")
+      }
     }
     return ok
   } catch (e) {

@@ -11,7 +11,8 @@ alwaysApply: true
 - **Déploiement après modifications** : méthode standard — **commit + `git push origin main`** → Vercel construit et déploie la prod tout seul (dépôt Git connecté au projet Vercel). Ne pas oublier le push : sans push, rien ne part en prod. Alternative hors Git : `npm run deploy` (prod) ou `npm run deploy:preview` après `npx vercel login` et projet lié.
 - **Assistant** : une fois les changements terminés et le build validé (`npm run build`), si l’utilisateur veut mettre en prod, **proposer ou exécuter** le push vers `main` (ou rappeler qu’il manque le push pour déclencher Vercel).
 - **Resend** : API REST `https://api.resend.com/emails`, champ **`reply_to`** (snake_case), pas `replyTo`. Emails centralisés dans `lib/email.ts` (`sendEmail`).
-- **Health** : `GET /api/health` — DB + statut présence `RESEND_API_KEY` / `EMAIL_FROM` (sans tester l’API Resend).
+- **Health** : `GET /api/health` — DB + `RESEND_API_KEY` / `EMAIL_FROM` + **`crons.secret`** (présence `CRON_SECRET`, sans invoquer les crons).
+- **Crons** : `vercel.json` → `npm run print:crons` ; routes `/api/cron/*` protégées par `CRON_SECRET` (`lib/cron-auth.ts`, doc Vercel Bearer automatique).
 - **PWA** : `npm run icons:pwa` régénère `public/icon-192.png` et `icon-512.png`.
 
 ## Hors périmètre assistant (à faire humain / dashboard)

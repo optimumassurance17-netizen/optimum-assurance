@@ -15,8 +15,9 @@ Google Search Console
 Monitoring
   · Health : ${base}/api/health
 
-Webhooks & crons (détail : npm run print:webhooks)
+Webhooks & crons
   · Mollie : ${base}/api/mollie/webhook
+  · Planification crons + CRON_SECRET : npm run print:crons
 
 Vérifications locales
   · npm run verify:vercel-env

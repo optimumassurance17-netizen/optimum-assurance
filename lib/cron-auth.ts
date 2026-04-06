@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server"
  * - **Développement** sans secret → autorisé (avec avertissement console).
  */
 export function assertCronAuthorized(request: NextRequest): NextResponse | null {
-  const secret = process.env.CRON_SECRET
+  const secret = process.env.CRON_SECRET?.trim()
   const isProd = process.env.NODE_ENV === "production"
 
   if (!secret) {
@@ -28,7 +28,7 @@ export function assertCronAuthorized(request: NextRequest): NextResponse | null 
     return null
   }
 
-  const auth = request.headers.get("authorization")
+  const auth = request.headers.get("authorization")?.trim()
   if (auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
   }

@@ -14,12 +14,21 @@ function emailFromConfigured(): boolean {
   return Boolean(f && f.trim().length > 0)
 }
 
+function cronSecretConfigured(): boolean {
+  const s = process.env.CRON_SECRET
+  return Boolean(s && s.trim().length > 0)
+}
+
 /**
  * Health check pour monitoring (UptimeRobot, Vercel, etc.)
  * GET /api/health
  * Ne teste pas l’API Resend (pas d’email envoyé) — indique seulement si les variables sont présentes.
+ * Les crons `/api/cron/*` refusent les appels en prod sans `CRON_SECRET` (503) ; Vercel envoie `Authorization: Bearer …` si la variable est définie.
  */
 export async function GET() {
+  const crons = {
+    secret: cronSecretConfigured() ? "configured" : "missing",
+  }
   try {
     await prisma.$queryRaw`SELECT 1`
     return NextResponse.json({
@@ -30,6 +39,7 @@ export async function GET() {
         resend: resendConfigured() ? "configured" : "missing",
         from: emailFromConfigured() ? "configured" : "missing",
       },
+      crons,
     })
   } catch (error) {
     console.error("Health check failed:", error)
@@ -42,6 +52,7 @@ export async function GET() {
           resend: resendConfigured() ? "configured" : "missing",
           from: emailFromConfigured() ? "configured" : "missing",
         },
+        crons,
       },
       { status: 503 }
     )
