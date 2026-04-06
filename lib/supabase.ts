@@ -1,14 +1,15 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import { getSupabaseAnonKey, getSupabaseUrl } from "@/utils/supabase/env"
 
 /**
  * Client Supabase (anon) pour usage futur (Storage, Realtime, etc.).
  * La base applicative reste gérée par Prisma via DATABASE_URL (PostgreSQL Supabase ou autre).
- * Retourne null si NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY sont absents.
+ * Retourne null si URL / clé anon absents (NEXT_PUBLIC_SUPABASE_ANON_KEY ou NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY).
  */
 export function createSupabaseBrowserClient(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url?.trim() || !key?.trim()) return null
+  const url = getSupabaseUrl()
+  const key = getSupabaseAnonKey()
+  if (!url || !key) return null
   return createClient(url, key)
 }
 

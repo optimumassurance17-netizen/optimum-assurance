@@ -36,7 +36,9 @@ loadEnvFile(resolve(root, ".env.vercel.pull"), { override: true })
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+const anonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY?.trim()
 
 console.log("\n🔌 Vérification Supabase (signature / Storage)\n")
 
