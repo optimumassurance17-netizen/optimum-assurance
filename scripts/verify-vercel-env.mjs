@@ -58,7 +58,7 @@ try {
     stdio: ["ignore", "pipe", "pipe"],
     maxBuffer: 2 * 1024 * 1024,
   })
-} catch (e) {
+} catch {
   console.error("\n❌ Impossible d’exécuter `vercel env list production`. Vérifiez le lien projet et la session (`npx vercel login`).\n")
   process.exit(1)
 }

@@ -49,6 +49,8 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 ## Commandes utiles
 
 ```bash
+npm run verify:all
+npm run build
 npm run audit:env && npm run check-env && npm run preflight
 npm run verify:prod
 npm run verify:vercel-env

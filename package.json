@@ -41,6 +41,7 @@
     "supabase:apply-esign-sql": "node scripts/apply-supabase-esign-sql.mjs",
     "vercel:push-supabase-env": "node scripts/vercel-push-supabase-env.mjs",
     "verify:vercel-env": "node scripts/verify-vercel-env.mjs",
+    "verify:all": "node scripts/verify-all.mjs",
     "seo:bulk": "tsx scripts/seo-bulk-generate.ts",
     "seo:ai": "tsx scripts/generate-ai-content.ts",
     "create-admin": "node scripts/create-admin-user.mjs",
