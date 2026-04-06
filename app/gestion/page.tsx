@@ -25,7 +25,7 @@ function mapDestinationConstruction(dest?: string): string {
 }
 import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
-import { useSession } from "next-auth/react"
+import { getSession, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Toast } from "@/components/Toast"
@@ -369,7 +369,15 @@ export default function GestionPage() {
     setError(null)
 
     const fetchData = async () => {
-      const attempts = 2
+      const s = await getSession()
+      if (cancelled) return
+      if (!s?.user?.email) {
+        if (!cancelled) setLoading(false)
+        router.replace("/connexion?callbackUrl=/gestion")
+        return
+      }
+
+      const attempts = 3
       try {
         for (let i = 0; i < attempts; i++) {
           try {
@@ -386,7 +394,7 @@ export default function GestionPage() {
                 json.error ||
                 `Erreur serveur (${res.status}). Souvent : base inaccessible ou migration Prisma non appliquée — voir les logs Vercel.`
               if (i < attempts - 1) {
-                await new Promise((r) => setTimeout(r, 500 * (i + 1)))
+                await new Promise((r) => setTimeout(r, 700 * (i + 1)))
                 if (cancelled) return
                 continue
               }
@@ -398,7 +406,7 @@ export default function GestionPage() {
           } catch (e) {
             if (cancelled) return
             if (i < attempts - 1) {
-              await new Promise((r) => setTimeout(r, 500 * (i + 1)))
+              await new Promise((r) => setTimeout(r, 700 * (i + 1)))
               if (cancelled) return
               continue
             }

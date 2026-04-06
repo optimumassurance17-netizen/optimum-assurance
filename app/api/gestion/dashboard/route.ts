@@ -4,6 +4,14 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 
+/** Vercel Pro : jusqu’à 60 s ; Hobby plafonne souvent à 10 s. */
+export const maxDuration = 60
+
+/** Limite les listes CRM pour éviter timeouts Vercel / réponses JSON énormes. */
+const DASH_LIST_LIMIT = 3000
+/** Pour le calcul des stats DO (sommes JSON) — plafond pour ne pas charger 100k lignes. */
+const DO_STATS_ATTESTATIONS_CAP = 10_000
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -36,14 +44,17 @@ export async function GET() {
           createdAt: true,
         },
         orderBy: { createdAt: "desc" },
+        take: DASH_LIST_LIMIT,
       }),
       prisma.document.findMany({
         include: { user: { select: { email: true, raisonSociale: true } } },
         orderBy: { createdAt: "desc" },
+        take: DASH_LIST_LIMIT,
       }),
       prisma.payment.findMany({
         include: { user: { select: { email: true, raisonSociale: true } } },
         orderBy: { createdAt: "desc" },
+        take: DASH_LIST_LIMIT,
       }),
       prisma.avenantFee.findMany({
         where: { status: "pending" },
@@ -81,10 +92,16 @@ export async function GET() {
         orderBy: { createdAt: "asc" },
       }),
       (async () => {
-        const attestationsDo = await prisma.document.findMany({
-          where: { type: "attestation_do" },
-          select: { data: true },
-        })
+        const [attestationsTotal, facturesCount, attestationsDo] = await Promise.all([
+          prisma.document.count({ where: { type: "attestation_do" } }),
+          prisma.document.count({ where: { type: "facture_do" } }),
+          prisma.document.findMany({
+            where: { type: "attestation_do" },
+            select: { data: true },
+            orderBy: { createdAt: "desc" },
+            take: DO_STATS_ATTESTATIONS_CAP,
+          }),
+        ])
         let primesTotal = 0
         let closCouvertCount = 0
         for (const d of attestationsDo) {
@@ -97,10 +114,11 @@ export async function GET() {
           }
         }
         return {
-          attestationsCount: attestationsDo.length,
-          facturesCount: await prisma.document.count({ where: { type: "facture_do" } }),
+          attestationsCount: attestationsTotal,
+          facturesCount,
           primesTotal,
           closCouvertCount,
+          /** Sur l’échantillon chargé (plafonné), cohérent avec primes / clos. */
           doCompletCount: attestationsDo.length - closCouvertCount,
         }
       })(),
