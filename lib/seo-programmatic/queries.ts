@@ -4,9 +4,23 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { FALLBACK_BODY_MACON_PARIS, FALLBACK_DO_PARTICULIER_PARIS } from "./content"
 import type { DecennaleLocalPayload, DoLocalPayload, InternalLink } from "./types"
 
-/** Villes servies en mode démo sans Supabase (évite des milliers de pages non gérées). */
+/** Villes servies en mode démo sans Supabase (alignées sur sql/supabase-seo-remplissage-copier-coller.sql). */
 const FALLBACK_VILLE_BY_SLUG: Record<string, { nom: string; population: number }> = {
   paris: { nom: "Paris", population: 2_161_000 },
+  lyon: { nom: "Lyon", population: 522_000 },
+  marseille: { nom: "Marseille", population: 870_000 },
+  toulouse: { nom: "Toulouse", population: 490_000 },
+  nice: { nom: "Nice", population: 350_000 },
+  nantes: { nom: "Nantes", population: 320_000 },
+  montpellier: { nom: "Montpellier", population: 290_000 },
+  strasbourg: { nom: "Strasbourg", population: 290_000 },
+  bordeaux: { nom: "Bordeaux", population: 260_000 },
+  lille: { nom: "Lille", population: 235_000 },
+  rennes: { nom: "Rennes", population: 220_000 },
+  reims: { nom: "Reims", population: 185_000 },
+  "saint-etienne": { nom: "Saint-Étienne", population: 175_000 },
+  "le-havre": { nom: "Le Havre", population: 170_000 },
+  grenoble: { nom: "Grenoble", population: 160_000 },
 }
 
 function metierFromStatic(slug: string) {
@@ -156,7 +170,38 @@ export async function getDecennaleLocalPage(
     .eq("ville_id", villeRow.id)
     .maybeSingle()
 
-  if (error || !data) return null
+  if (error) return null
+
+  if (!data) {
+    const { data: mFull } = await sb
+      .from("metiers")
+      .select("nom, slug, description, risques, prix_moyen")
+      .eq("id", metierRow.id)
+      .maybeSingle()
+    const { data: vFull } = await sb
+      .from("villes")
+      .select("nom, slug, population")
+      .eq("id", villeRow.id)
+      .maybeSingle()
+    if (!mFull || !vFull) return null
+    const prix =
+      mFull.prix_moyen != null
+        ? `Prime annuelle indicative : à partir de ${Math.round(Number(mFull.prix_moyen))} €/an (selon CA et sinistralité)`
+        : `À partir de ${staticMetier.prixMin} €/mois (équivalent)`
+    return {
+      metierSlug: mFull.slug,
+      metierNom: mFull.nom,
+      villeSlug: vFull.slug,
+      villeNom: vFull.nom,
+      population: vFull.population,
+      description: mFull.description ?? staticMetier.description,
+      risques: mFull.risques,
+      prixIndicatif: prix,
+      bodyExtra: null,
+      indexable: true,
+      contentHash: null,
+    }
+  }
 
   const m = embedOne(
     data.metiers as unknown as
@@ -236,7 +281,32 @@ export async function getDoLocalPage(slug: string, villeSlug: string): Promise<D
     .eq("ville_id", villeRow.id)
     .maybeSingle()
 
-  if (error || !data) return null
+  if (error) return null
+
+  if (!data) {
+    const { data: tFull } = await sb
+      .from("types_projets")
+      .select("nom, slug, description")
+      .eq("id", typeRow.id)
+      .maybeSingle()
+    const { data: vFull } = await sb
+      .from("villes")
+      .select("nom, slug, population")
+      .eq("id", villeRow.id)
+      .maybeSingle()
+    if (!tFull || !vFull) return null
+    return {
+      slug: tFull.slug,
+      nom: tFull.nom,
+      villeSlug: vFull.slug,
+      villeNom: vFull.nom,
+      population: vFull.population,
+      description: tFull.description ?? staticDo.description,
+      bodyExtra: null,
+      indexable: true,
+      contentHash: null,
+    }
+  }
 
   const t = embedOne(
     data.types_projets as unknown as {
