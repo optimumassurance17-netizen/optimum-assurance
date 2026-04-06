@@ -37,6 +37,7 @@ const OPTIONAL_NOTES = [
   ["NEXT_PUBLIC_WHATSAPP", "Affichage site"],
   ["PAPPERS_API_KEY", "Pré-remplissage SIRET"],
   ["MOLLIE_PUBLIC_BASE_URL", "Souvent inutile si NEXT_PUBLIC_APP_URL suffit"],
+  ["DEVIS_ALERT_EMAILS", "Alertes internes nouvelles demandes de devis (sinon ADMIN_EMAILS / CONTACT_EMAIL)"],
 ]
 
 function parseVercelJson(stdout) {

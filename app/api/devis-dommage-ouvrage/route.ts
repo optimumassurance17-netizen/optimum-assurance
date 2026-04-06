@@ -6,6 +6,7 @@ import { generateDOQuote } from "@/lib/pdf/do/generateQuote"
 import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
 import { logPdfGeneration } from "@/lib/pdf/logPdfGeneration"
 import { insuranceDataFromDoQuestionnaire } from "@/lib/pdf/quote-email-data"
+import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
 
 /**
  * Enregistre une demande de devis dommage ouvrage et envoie une estimation PDF par email si possible.
@@ -33,6 +34,22 @@ export async function POST(request: NextRequest) {
     const cout = coutTotal ? Number(coutTotal) : 0
     const parsed = data as Partial<DevisDommageOuvrageData>
     const createdAt = new Date().toISOString()
+
+    try {
+      const lines: string[] = []
+      if (parsed.raisonSociale?.trim()) lines.push(`Raison sociale : ${String(parsed.raisonSociale).trim()}`)
+      if (parsed.typeOuvrage) lines.push(`Type d'ouvrage : ${String(parsed.typeOuvrage)}`)
+      if (parsed.destinationConstruction) lines.push(`Destination : ${String(parsed.destinationConstruction)}`)
+      if (coutTotal != null && Number.isFinite(Number(coutTotal)))
+        lines.push(`Montant TTC chantier (déclaré) : ${Number(coutTotal).toLocaleString("fr-FR")} €`)
+      await sendNewDevisRequestAlert({
+        type: "dommage_ouvrage",
+        clientEmail: String(email).trim(),
+        lines,
+      })
+    } catch (e) {
+      console.error("[devis-dommage-ouvrage] alerte interne:", e)
+    }
 
     try {
       const basePdf = insuranceDataFromDoQuestionnaire(parsed, cout, createdAt)

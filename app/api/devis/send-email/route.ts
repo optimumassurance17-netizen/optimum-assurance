@@ -7,6 +7,7 @@ import { generateDecennaleQuote } from "@/lib/pdf/decennale/generateQuote"
 import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
 import { logPdfGeneration } from "@/lib/pdf/logPdfGeneration"
 import { insuranceDataFromDecennaleDevis } from "@/lib/pdf/quote-email-data"
+import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
 
 const DRAFT_EXPIRY_DAYS = 7
 
@@ -91,6 +92,22 @@ export async function POST(request: NextRequest) {
         primeAnnuelle: tarif?.primeAnnuelle ?? undefined,
       },
     })
+
+    try {
+      const lines: string[] = []
+      if (devis.raisonSociale?.trim()) lines.push(`Raison sociale : ${String(devis.raisonSociale).trim()}`)
+      if (devis.siret?.trim()) lines.push(`SIRET : ${String(devis.siret).trim()}`)
+      if (typeof tarif?.primeAnnuelle === "number")
+        lines.push(`Prime annuelle indicative : ${tarif.primeAnnuelle.toLocaleString("fr-FR")} €`)
+      lines.push(`Lien reprise du brouillon : ${resumeUrl}`)
+      await sendNewDevisRequestAlert({
+        type: "decennale",
+        clientEmail: String(email).trim(),
+        lines,
+      })
+    } catch (e) {
+      console.error("[devis/send-email] alerte interne:", e)
+    }
 
     return NextResponse.json({ ok: true })
   } catch (error) {
