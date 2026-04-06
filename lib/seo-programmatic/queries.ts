@@ -31,6 +31,51 @@ function doFromStatic(slug: string) {
   return DO_SEO.find((d) => d.slug === slug) ?? null
 }
 
+/** Page locale sans ligne metiers/villes en base (RLS, import incomplet) : mêmes contenus que sans client Supabase. */
+function decennaleSyntheticFallback(
+  staticMetier: (typeof METIERS_SEO)[number],
+  villeSlug: string
+): DecennaleLocalPayload | null {
+  const v = FALLBACK_VILLE_BY_SLUG[villeSlug]
+  if (!v) return null
+  const bodyExtra =
+    staticMetier.slug === "macon" && villeSlug === "paris" ? FALLBACK_BODY_MACON_PARIS : null
+  return {
+    metierSlug: staticMetier.slug,
+    metierNom: staticMetier.nom,
+    villeSlug,
+    villeNom: v.nom,
+    population: v.population,
+    description: staticMetier.description,
+    risques: null,
+    prixIndicatif: `À partir de ${staticMetier.prixMin} €/mois (équivalent)`,
+    bodyExtra,
+    indexable: true,
+    contentHash: null,
+  }
+}
+
+function doSyntheticFallback(
+  staticDo: (typeof DO_SEO)[number],
+  villeSlug: string
+): DoLocalPayload | null {
+  const v = FALLBACK_VILLE_BY_SLUG[villeSlug]
+  if (!v) return null
+  const bodyExtra =
+    staticDo.slug === "particulier" && villeSlug === "paris" ? FALLBACK_DO_PARTICULIER_PARIS : null
+  return {
+    slug: staticDo.slug,
+    nom: staticDo.nom,
+    villeSlug,
+    villeNom: v.nom,
+    population: v.population,
+    description: staticDo.description,
+    bodyExtra,
+    indexable: true,
+    contentHash: null,
+  }
+}
+
 /** Supabase peut typer les relations embarquées comme tableaux ; on normalise. */
 function embedSlug(rel: { slug: string } | { slug: string }[] | null | undefined): string | null {
   if (rel == null) return null
@@ -132,28 +177,16 @@ export async function getDecennaleLocalPage(
 
   const sb = createSupabaseServerClient()
   if (!sb) {
-    const v = FALLBACK_VILLE_BY_SLUG[villeSlug]
-    if (!v) return null
-    const bodyExtra =
-      metierSlug === "macon" && villeSlug === "paris" ? FALLBACK_BODY_MACON_PARIS : null
-    return {
-      metierSlug: staticMetier.slug,
-      metierNom: staticMetier.nom,
-      villeSlug,
-      villeNom: v.nom,
-      population: v.population,
-      description: staticMetier.description,
-      risques: null,
-      prixIndicatif: `À partir de ${staticMetier.prixMin} €/mois (équivalent)`,
-      bodyExtra,
-      indexable: true,
-      contentHash: null,
-    }
+    return decennaleSyntheticFallback(staticMetier, villeSlug)
   }
 
   const { data: metierRow } = await sb.from("metiers").select("id").eq("slug", metierSlug).maybeSingle()
   const { data: villeRow } = await sb.from("villes").select("id").eq("slug", villeSlug).maybeSingle()
-  if (!metierRow?.id || !villeRow?.id) return null
+  if (!metierRow?.id || !villeRow?.id) {
+    const synthetic = decennaleSyntheticFallback(staticMetier, villeSlug)
+    if (synthetic) return synthetic
+    return null
+  }
 
   const { data, error } = await sb
     .from("seo_decennale_ville")
@@ -245,26 +278,16 @@ export async function getDoLocalPage(slug: string, villeSlug: string): Promise<D
 
   const sb = createSupabaseServerClient()
   if (!sb) {
-    const v = FALLBACK_VILLE_BY_SLUG[villeSlug]
-    if (!v) return null
-    const bodyExtra =
-      slug === "particulier" && villeSlug === "paris" ? FALLBACK_DO_PARTICULIER_PARIS : null
-    return {
-      slug: staticDo.slug,
-      nom: staticDo.nom,
-      villeSlug,
-      villeNom: v.nom,
-      population: v.population,
-      description: staticDo.description,
-      bodyExtra,
-      indexable: true,
-      contentHash: null,
-    }
+    return doSyntheticFallback(staticDo, villeSlug)
   }
 
   const { data: typeRow } = await sb.from("types_projets").select("id").eq("slug", slug).maybeSingle()
   const { data: villeRow } = await sb.from("villes").select("id").eq("slug", villeSlug).maybeSingle()
-  if (!typeRow?.id || !villeRow?.id) return null
+  if (!typeRow?.id || !villeRow?.id) {
+    const synthetic = doSyntheticFallback(staticDo, villeSlug)
+    if (synthetic) return synthetic
+    return null
+  }
 
   const { data, error } = await sb
     .from("seo_do_ville")

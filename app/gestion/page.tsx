@@ -242,6 +242,7 @@ export default function GestionPage() {
     primeAnnuelle: string
   } | null>(null)
   const [etudeMiseSubmitting, setEtudeMiseSubmitting] = useState(false)
+  const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
 
   const openEditModal = useCallback((doc: { id: string; type: string; numero: string; data?: string }) => {
     let parsed: Record<string, unknown> = {}
@@ -363,25 +364,58 @@ export default function GestionPage() {
     }
     if (status !== "authenticated") return
 
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+
     const fetchData = async () => {
+      const attempts = 2
       try {
-        const res = await fetch("/api/gestion/dashboard")
-        if (res.status === 403) {
-          setError("Accès refusé")
-          return
+        for (let i = 0; i < attempts; i++) {
+          try {
+            const res = await fetch("/api/gestion/dashboard", { credentials: "include" })
+            if (cancelled) return
+            if (res.status === 403) {
+              setError("Accès refusé (compte non autorisé dans ADMIN_EMAILS).")
+              return
+            }
+            const json = await readResponseJson<DashboardData & { error?: string }>(res)
+            if (cancelled) return
+            if (!res.ok) {
+              const msg =
+                json.error ||
+                `Erreur serveur (${res.status}). Souvent : base inaccessible ou migration Prisma non appliquée — voir les logs Vercel.`
+              if (i < attempts - 1) {
+                await new Promise((r) => setTimeout(r, 500 * (i + 1)))
+                if (cancelled) return
+                continue
+              }
+              setError(msg)
+              return
+            }
+            setData(json)
+            return
+          } catch (e) {
+            if (cancelled) return
+            if (i < attempts - 1) {
+              await new Promise((r) => setTimeout(r, 500 * (i + 1)))
+              if (cancelled) return
+              continue
+            }
+            setError(e instanceof Error ? e.message : "Erreur de chargement")
+            return
+          }
         }
-        if (!res.ok) throw new Error("Erreur chargement")
-        const json = await readResponseJson<DashboardData>(res)
-        setData(json)
-      } catch {
-        setError("Erreur de chargement")
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     fetchData()
-  }, [status, router])
+    return () => {
+      cancelled = true
+    }
+  }, [status, router, dashboardLoadKey])
 
   /** Ouvre le modal d'édition si l'URL contient ?editDoc= (lien depuis /gestion/documents/[id]) */
   useEffect(() => {
@@ -588,9 +622,22 @@ export default function GestionPage() {
   if (error) {
     return (
       <main className="gestion-app min-h-screen bg-[#1a1a1a] flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md px-4">
           <p className="text-red-400 mb-4">{error}</p>
-          <Link href="/" className="text-[#2563eb] hover:underline">Retour</Link>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <button
+              type="button"
+              className="text-[#2563eb] hover:underline"
+              onClick={() => {
+                setDashboardLoadKey((k) => k + 1)
+              }}
+            >
+              Réessayer
+            </button>
+            <Link href="/" className="text-gray-400 hover:underline">
+              Retour
+            </Link>
+          </div>
         </div>
       </main>
     )
