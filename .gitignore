@@ -28,6 +28,9 @@ lighthouse-report.json
 .DS_Store
 *.pem
 
+# Agent skills (copie locale ; régénérable : npx skills add supabase/agent-skills --yes)
+.agents/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

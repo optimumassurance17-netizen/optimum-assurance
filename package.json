@@ -53,7 +53,8 @@
     "vercel:db-push": "node scripts/db-push-vercel.mjs",
     "deploy": "vercel --prod",
     "deploy:preview": "vercel",
-    "esign:create-request": "node scripts/esign-create-request.mjs"
+    "esign:create-request": "node scripts/esign-create-request.mjs",
+    "skills:supabase": "npx skills add supabase/agent-skills --yes"
   },
   "dependencies": {
     "@mollie/api-client": "^4.4.0",
