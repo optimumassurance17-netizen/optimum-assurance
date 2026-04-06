@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         verificationToken: document.verificationToken,
       })
     } catch (err: unknown) {
-      // Contrat déjà créé par webhook Yousign (numero unique)
+      // Contrat déjà créé par finalisation signature / webhook (numero unique)
       const prismaErr = err as { code?: string }
       if (prismaErr?.code === "P2002" && type === "contrat") {
         const existing = await prisma.document.findFirst({

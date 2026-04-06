@@ -12,7 +12,7 @@ Documentation de référence pour les parcours **dommage ouvrage (DO)** et **ass
 | **Devis en ligne** | Formulaire en **5 étapes** : Souscripteur → Opération → Ouvrage & coûts → Terrain & technique → Garanties & réalisateurs. Brouillon possible (localStorage). |
 | **Envoi** | Enregistrement d’une demande (lead) via l’API ; message indiquant un **prix définitif sous ~24 h** après étude. |
 | **Suite (hors formulaire)** | Le devis est **ajouté à l’espace client** après traitement ; le client dispose d’un **compte** pour la **GED** (permis, DOC, plans, etc.). |
-| **Signature** | **Yousign** sur le contrat. |
+| **Signature** | **Signature électronique** du contrat (lien ou étapes communiqués depuis l’espace client / l’équipe). |
 | **Paiement** | **Virement bancaire** via **Mollie** (instructions sur la page sécurisée). |
 | **Attestation** | Délivrée après **réception des fonds** sur le compte indiqué. |
 
@@ -27,7 +27,7 @@ Documentation de référence pour les parcours **dommage ouvrage (DO)** et **ass
 | 1. **Devis** | `/devis` (ou pages métiers `/assurance-decennale/[metier]`) | Tarif automatique, **affiché en équivalent mensuel** (prime ÷ 12) avec **montants d’échéance trimestriels** ; possibilité de sauvegarder le brouillon par email (`/devis/resume/[token]`). Si l’activité n’est pas dans la liste : **`/etude/domaine`** (demande d’étude). |
 | 2. **Souscription** | `/souscription` | Coordonnées entreprise, SIRET, activités. |
 | 3. **Compte** | `/creer-compte` | Email + mot de passe ; création des documents côté serveur. |
-| 4. **Signature** | `/signature` | **Yousign** (contrat PDF). |
+| 4. **Signature** | `/signature` puis **`/sign/[id]`** | PDF du contrat, signature manuscrite sur le document ; finalisation serveur (`POST /api/sign`). |
 | 5. **Mandat SEPA** | `/mandat-sepa` | IBAN ; périodicité **trimestrielle**. |
 | 6. **Paiement** | `/paiement` | **1er trimestre + frais de gestion (60 €)** en **carte bancaire (Mollie)** ; échéances suivantes en **prélèvement SEPA trimestriel**. |
 | 7. **Confirmation** | `/confirmation` | Attestation disponible **rapidement** après validation du paiement. |
@@ -36,7 +36,7 @@ Documentation de référence pour les parcours **dommage ouvrage (DO)** et **ass
 
 **Stepper UI** : Devis → Souscription → Compte → Signature → IBAN & SEPA → Paiement.
 
-**Résumé** : devis immédiat → souscription → compte → Yousign → mandat → CB (1er trimestre + frais) → SEPA trimestriel → attestation.
+**Résumé** : devis immédiat → souscription → compte → signature (`/sign`) → mandat → CB (1er trimestre + frais) → SEPA trimestriel → attestation.
 
 ---
 
@@ -56,4 +56,4 @@ Le fichier **`lib/site-knowledge.ts`** décrit le fonctionnement du site pour le
 
 ---
 
-*Dernière mise à jour : février 2026.*
+*Dernière mise à jour : avril 2026.*

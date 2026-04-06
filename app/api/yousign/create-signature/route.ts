@@ -1,13 +1,14 @@
+import { randomUUID } from "node:crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { renderToBuffer } from "@react-pdf/renderer"
 import React from "react"
 import { ContratPDF } from "@/components/pdf/ContratPDF"
-import { createSignatureRequest } from "@/lib/yousign"
 import { getNextNumero } from "@/lib/documents"
 import { prisma } from "@/lib/prisma"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
+import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,21 +27,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const apiKey = process.env.YOUSIGN_API_KEY
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "Yousign non configuré (YOUSIGN_API_KEY)" },
-        { status: 503 }
-      )
-    }
-
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
     const now = new Date()
     const dateEffet = now.toLocaleDateString("fr-FR")
     const dateEffetIso = now.toISOString().split("T")[0]
     const dateEcheance = new Date(now.getFullYear(), 11, 31).toLocaleDateString("fr-FR")
 
-    const contractData = {
+    const baseContract = {
       numero: await getNextNumero("contrat"),
       raisonSociale: souscription.raisonSociale,
       siret: souscription.siret || "",
@@ -72,62 +65,40 @@ export async function POST(request: NextRequest) {
       dateCreationSociete: souscription.dateCreationSociete,
     }
 
+    const contractData = { ...baseContract, signatureProvider: "supabase" as const }
+
     const pdfElement = React.createElement(ContratPDF, {
-      numero: contractData.numero,
-      data: contractData,
+      numero: baseContract.numero,
+      data: baseContract,
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfBuffer = await renderToBuffer(pdfElement as any)
+    const pdfBuffer = Buffer.from(await renderToBuffer(pdfElement as any))
 
-    const [firstName, ...lastParts] = (souscription.representantLegal || "Signataire").trim().split(" ")
-    const lastName = lastParts.join(" ") || "Signataire"
+    const folder = randomUUID()
+    const storagePath = `souscription/decennale/${folder}/contrat-${baseContract.numero}.pdf`
 
-    const result = await createSignatureRequest(
-      Buffer.from(pdfBuffer),
-      `contrat-${contractData.numero}.pdf`,
-      {
-        name: `Contrat décennale - ${souscription.raisonSociale}`,
-        signerInfo: {
-          first_name: firstName,
-          last_name: lastName,
-          email: souscription.email,
-          locale: "fr",
-        },
-        redirectUrls: {
-          success: `${baseUrl}/signature/callback?success=1`,
-          error: `${baseUrl}/signature/callback?error=1`,
-        },
-      }
-    )
+    const { id: signRequestId } = await uploadPdfAndInsertSignRequest(pdfBuffer, storagePath)
 
-    const signer = result.signers?.[0] as { signature_link?: string } | undefined
-    const signatureLink = signer?.signature_link
-
-    if (!signatureLink) {
-      return NextResponse.json(
-        { error: "Lien de signature non disponible" },
-        { status: 500 }
-      )
-    }
-
-    // Sauvegarder pour le webhook : signatureRequestId -> userId, contractData
     await prisma.pendingSignature.create({
       data: {
-        signatureRequestId: result.id,
+        signatureRequestId: signRequestId,
         userId: session.user.id,
         contractData: JSON.stringify(contractData),
-        contractNumero: contractData.numero,
+        contractNumero: baseContract.numero,
       },
     })
 
+    const nextPath = "/signature/callback?success=1"
+    const signatureLink = `${baseUrl}/sign/${signRequestId}?next=${encodeURIComponent(nextPath)}`
+
     return NextResponse.json({
-      signatureRequestId: result.id,
+      signatureRequestId: signRequestId,
       signatureLink,
       contractNumero: contractData.numero,
       contractData,
     })
   } catch (error) {
-    console.error("Erreur création signature Yousign:", error)
+    console.error("Erreur création signature (Supabase Sign):", error)
     return NextResponse.json(
       {
         error:

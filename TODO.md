@@ -13,9 +13,10 @@ Liste issue de l’audit projet. Cocher au fur et à mesure.
 - [ ] `npm run build` : si erreur EPERM (Prisma), fermer tous les terminaux / `npm run dev`, puis relancer.
 - [ ] Compléter `.env` : `npm run check-env` jusqu’à ce que toutes les variables **obligatoires** soient vertes.
 - [ ] Déploiement : suivre `GUIDE-MISE-EN-LIGNE-SIMPLE.md` (Git + Vercel ou équivalent).
-- [ ] En production : `NEXT_PUBLIC_APP_URL` et `NEXTAUTH_URL` en **HTTPS** ; webhooks Mollie / YouSign pointent vers l’URL publique.
+- [ ] En production : `NEXT_PUBLIC_APP_URL` et `NEXTAUTH_URL` en **HTTPS** ; webhook Mollie vers l’URL publique ; Yousign seulement si flux legacy.
 - [ ] **Production** : définir `CRON_SECRET` (Vercel env) — les crons planifiés (`vercel.json`) doivent pouvoir l’envoyer (comportement Vercel avec `CRON_SECRET`).
-- [x] `YOUSIGN_WEBHOOK_SECRET` sur Vercel (Production + Development) — **à recopier dans le dashboard Yousign** pour le webhook (même valeur).
+- [ ] Supabase signature : `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` + SQL `sign_*` (voir checklist déploiement).
+- [ ] *(Optionnel legacy)* `YOUSIGN_WEBHOOK_SECRET` aligné avec le dashboard Yousign si `/api/yousign/webhook` est utilisé.
 
 ## Contenu légal (hors code — avocat / conformité assurance)
 

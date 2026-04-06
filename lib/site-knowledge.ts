@@ -21,7 +21,7 @@ export const SITE_KNOWLEDGE = `
 1. **/devis** — Saisie CA, activités, options ; tarif immédiat **affiché en équivalent mensuel** (prime ÷ 12), avec rappel du **prélèvement trimestriel** ; possibilité de sauvegarder le brouillon par email.
 2. **/souscription** — Coordonnées entreprise, SIRET, représentant, activités.
 3. **/creer-compte** — Email + mot de passe ; création des données côté serveur.
-4. **/signature** — Signature électronique du contrat (**Yousign**).
+4. **/signature** — Signature électronique du contrat (puis **/sign/[id]** pour apposer la signature sur le PDF).
 5. **/mandat-sepa** — IBAN et mandat ; **prélèvement trimestriel uniquement** (pas d’option mensuelle).
 6. **/paiement** — **Premier trimestre + 60 € de frais de gestion** payés par **carte bancaire (Mollie)** ; les trimestres suivants sont prévus en **prélèvement SEPA** sur l’IBAN du mandat.
 7. **/confirmation** — Après validation du paiement, **attestation** disponible rapidement dans l’espace client (PDF, QR de vérification).
@@ -30,7 +30,7 @@ export const SITE_KNOWLEDGE = `
 1. **/devis-dommage-ouvrage** — Questionnaire en **5 étapes** (souscripteur, opération, ouvrage et coûts, terrain et technique, garanties). Brouillon enregistré localement dans le navigateur.
 2. Envoi → demande enregistrée ; **prix définitif sous ~24 h** après étude par l’équipe.
 3. Le devis est **ajouté à l’espace client** après traitement ; dépôt de pièces (permis, DOC, plans…) en **GED**.
-4. **Signature Yousign** du contrat.
+4. **Signature électronique** du contrat.
 5. **Paiement par virement bancaire** via **Mollie** (instructions sécurisées).
 6. **Attestation** après **réception des fonds** (pas immédiate comme la décennale carte).
 
@@ -39,7 +39,7 @@ export const SITE_KNOWLEDGE = `
 - **DO** : tarif après étude ; **virement** ; attestation après encaissement.
 
 ## Outils techniques (information générale)
-- **Paiements** : **Mollie** (carte, virement selon produit). **Signature** : **Yousign** (eIDAS).
+- **Paiements** : **Mollie** (carte, virement selon produit). **Signature** : parcours **/signature** puis page **/sign/[id]** (PDF + signature manuscrite sur le document).
 - **Support** : **100 % en ligne** — pas de ligne téléphonique ; email **contact@optimum-assurance.fr**, formulaire **/contact**, ce **chat**.
 
 ## Limites de cet assistant

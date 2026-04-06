@@ -1,13 +1,13 @@
 # Optimum Assurance — Assurance décennale & dommage ouvrage
 
-Site de souscription d'assurance décennale BTP et dommage ouvrage avec tarification automatique, signature électronique Yousign et paiement Mollie.
+Site de souscription d'assurance décennale BTP et dommage ouvrage avec tarification automatique, signature électronique sur PDF (Supabase Storage + `/api/sign`) et paiement Mollie.
 
 ## Fonctionnalités
 
-- **Assurance décennale** : Devis en 3 min (tarif affiché en **équivalent mensuel**, paiement **trimestriel**), signature Yousign, 1er trimestre + frais par carte puis SEPA trimestriel, attestation rapide
+- **Assurance décennale** : Devis en 3 min (tarif affiché en **équivalent mensuel**, paiement **trimestriel**), signature électronique (`/signature` → `/sign/[id]`), 1er trimestre + frais par carte puis SEPA trimestriel, attestation rapide
 - **Dommage ouvrage** : Demande en ligne, devis sous ~24 h, paiement par virement Mollie, attestation après encaissement
 - **Tarification automatique** : CA, sinistres, activités, historique
-- **Signature électronique** : Yousign (eIDAS)
+- **Signature électronique** : PDF sur la page dédiée, finalisation côté serveur (Prisma + Supabase)
 - **Paiement** : Mollie (décennale : carte + SEPA ; DO : virement)
 - **Espace client** : Documents, attestations, régularisation
 - **Gestion CRM** : Admin, devis DO, avenants
@@ -30,10 +30,14 @@ npx prisma db push
 MOLLIE_API_KEY=test_xxxx
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXTAUTH_SECRET=xxx
-YOUSIGN_API_KEY=xxx
-YOUSIGN_ENV=sandbox
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
 RESEND_API_KEY=re_xxx
 EMAIL_FROM=Optimum <noreply@votredomaine.com>
+# Optionnel — webhooks Yousign si vous conservez un flux legacy
+# YOUSIGN_API_KEY=
+# YOUSIGN_ENV=sandbox
+# YOUSIGN_WEBHOOK_SECRET=
 ```
 
 ## Lancement
@@ -52,7 +56,7 @@ Documentation détaillée : **[docs/PARCOURS.md](./docs/PARCOURS.md)** (récap D
 
 1. **`/devis-dommage-ouvrage`** — Formulaire 5 étapes → enregistrement de la demande (prix définitif sous ~24 h après étude).
 2. **Espace client** — Devis ajouté après traitement ; GED pour les pièces (permis, DOC, plans…).
-3. **Yousign** — Signature du contrat.
+3. **Signature** — Contrat signé électroniquement (parcours communiqué depuis l’espace client ou par l’équipe).
 4. **Mollie** — Paiement par **virement bancaire** ; attestation après **réception des fonds**.
 
 ### Assurance décennale BTP
@@ -68,7 +72,7 @@ FAQ site : `/faq#parcours-do` et `/faq#parcours-decennale`
 
 Utiliser [ngrok](https://ngrok.com) pour exposer le serveur :
 - Mollie : `https://xxx.ngrok-free.app/api/mollie/webhook`
-- Yousign : `https://xxx.ngrok-free.app/api/yousign/webhook`
+- (Optionnel legacy) Yousign : `https://xxx.ngrok-free.app/api/yousign/webhook`
 
 ## Déploiement
 

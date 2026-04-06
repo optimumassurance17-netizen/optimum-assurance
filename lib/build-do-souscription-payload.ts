@@ -68,7 +68,7 @@ function tarifShimFromDoPremium(premium: number): DevisResult {
   }
 }
 
-/** Compatibilité page signature / Yousign (produit historique) — métadonnées DO conservées. */
+/** Compatibilité page signature (produit historique décennale) — métadonnées DO conservées. */
 export function doPayloadToSouscriptionShim(d: DoSouscriptionInsurancePayload): SouscriptionData {
   const nat = d.constructionNature?.trim() || "Dommage ouvrage"
   return {

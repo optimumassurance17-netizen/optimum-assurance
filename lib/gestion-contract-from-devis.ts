@@ -1,9 +1,9 @@
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 
 /**
- * Données contrat (PDF Yousign + JSON document) à partir d’un devis décennale et du profil client.
+ * Données contrat (PDF + JSON document Prisma) à partir d’un devis décennale et du profil client.
  */
-export function buildContractDataForYousignFromDevis(
+export function buildContractDataFromDevisForSignature(
   devisData: Record<string, unknown>,
   user: {
     email: string
@@ -75,7 +75,7 @@ export function buildContractDataForYousignFromDevis(
   }
 }
 
-export function validateDevisForYousign(contractData: Record<string, unknown>): string | null {
+export function validateDevisContractData(contractData: Record<string, unknown>): string | null {
   if (!String(contractData.raisonSociale || "").trim()) {
     return "Raison sociale manquante sur le devis ou la fiche client."
   }

@@ -16,15 +16,18 @@ Renseigner toutes les variables dans `.env` (ou les secrets de la plateforme) :
 | `ADMIN_EMAILS` | Emails admin (accès CRM), séparés par des virgules | `admin@optimum-assurance.fr` |
 | `RESEND_API_KEY` | Clé API Resend pour l'envoi d'emails | `re_xxxx` |
 | `EMAIL_FROM` | Email expéditeur (domaine vérifié dans Resend) | `Optimum <noreply@optimum-assurance.fr>` |
-| `YOUSIGN_API_KEY` | Clé API Yousign **production** | — |
-| `YOUSIGN_ENV` | `production` | `production` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Projet Supabase (Storage + tables `sign_*`) | `https://xxxx.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clé **service role** (serveur uniquement — signature `/api/sign`) | `eyJ...` |
+| `YOUSIGN_API_KEY` | *(Optionnel — legacy)* si webhooks Yousign encore actifs | — |
+| `YOUSIGN_ENV` | *(Optionnel)* `production` ou `sandbox` | `production` |
 | `NEXT_PUBLIC_PHONE` | Téléphone affiché sur le site | `01 23 45 67 89` |
 | `NEXT_PUBLIC_EMAIL` | Email de contact | `contact@optimum-assurance.fr` |
 | `NEXT_PUBLIC_WHATSAPP` | Numéro WhatsApp (sans espaces) | `33612345678` |
 | `INSEE_API_KEY_INTEGRATION` | Optionnel — pré-remplissage SIRET (gratuit, portail-api.insee.fr) | — |
 | `PAPPERS_API_KEY` | Optionnel — pré-remplissage SIRET (Pappers, payant) | — |
 | `CRON_SECRET` | **Obligatoire en production** pour que les appels `/api/cron/*` fonctionnent (sinon **503**). Vercel envoie `Authorization: Bearer <CRON_SECRET>` sur les crons planifiés si la variable est définie. | `npm run generate-secret` |
-| `YOUSIGN_WEBHOOK_SECRET` | Recommandé — vérifie la signature des webhooks Yousign | — |
+| `YOUSIGN_WEBHOOK_SECRET` | *(Optionnel — legacy)* vérifie `X-Yousign-Signature-256` sur `/api/yousign/webhook` | — |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Optionnel — usage client navigateur (futur) | — |
 
 ### 2. Base de données (PostgreSQL obligatoire sur Vercel)
 
@@ -49,11 +52,13 @@ Renseigner toutes les variables dans `.env` (ou les secrets de la plateforme) :
 - Dashboard Mollie → Paramètres → Webhooks
 - URL : `https://optimum-assurance.fr/api/mollie/webhook`
 
-#### Yousign
-- Dashboard Yousign (mode Production) → Webhooks
-- URL : `https://optimum-assurance.fr/api/yousign/webhook`
-- Événements : `signature_request.completed`, `signature_request.declined`
-- **Secret** : la variable `YOUSIGN_WEBHOOK_SECRET` doit avoir **la même valeur** sur Vercel et dans la configuration du webhook Yousign (signature `X-Yousign-Signature-256`). En **Preview** Vercel, ajouter manuellement la variable si vous utilisez des déploiements de branche (le CLI peut exiger une branche précise).
+#### Signature (Supabase)
+- Exécuter `sql/supabase-esign-complete.sql` sur le projet Supabase (tables + buckets Storage).
+- Variables : `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (voir aussi `npm run verify:vercel-env`).
+
+#### Yousign *(optionnel — flux legacy)*
+- Si vous conservez des demandes créées via l’ancienne API Yousign : Dashboard Yousign → Webhooks → `https://optimum-assurance.fr/api/yousign/webhook`
+- `YOUSIGN_WEBHOOK_SECRET` aligné avec le dashboard (en-tête `X-Yousign-Signature-256`).
 
 ### 4. Domaine et SSL
 
@@ -85,7 +90,7 @@ vercel
 - [ ] Tester le parcours décennale complet
 - [ ] Tester le parcours dommage ouvrage
 - [ ] Vérifier les emails (confirmation, devis DO)
-- [ ] Vérifier les webhooks (Mollie, Yousign)
+- [ ] Vérifier les webhooks (Mollie ; Yousign seulement si flux legacy)
 - [ ] Créer un compte admin (email dans ADMIN_EMAILS)
 
 ---
@@ -104,11 +109,13 @@ ngrok http 3000
 
 Configurer les webhooks avec l'URL ngrok (ex. `https://abc123.ngrok-free.app/api/mollie/webhook`).
 
-### Test Yousign
+### Test API Yousign *(legacy)*
 
 ```bash
 node scripts/test-yousign.mjs
 ```
+
+Nécessite `YOUSIGN_API_KEY` — utile seulement si le webhook Yousign est encore utilisé.
 
 ---
 

@@ -56,7 +56,7 @@ export default function SignaturePage() {
     }
   }, [router])
 
-  const handleSignWithYousign = async () => {
+  const handleSignContract = async () => {
     if (!souscription) return
 
     setLoading(true)
@@ -135,7 +135,7 @@ export default function SignaturePage() {
         <p className="text-[#171717] mb-8">
           {souscription.insuranceProduct === "do"
             ? "Votre dossier dommage ouvrage est pris en charge. Le contrat plateforme et les paiements sont gérés depuis votre espace client."
-            : "Signez électroniquement votre contrat d'assurance décennale avec Yousign, solution certifiée eIDAS."}
+            : "Signez électroniquement votre contrat d’assurance décennale sur notre page de signature sécurisée."}
         </p>
 
         {insuranceSnapshot ? <InsuranceContractParcoursBanner snapshot={insuranceSnapshot} /> : null}
@@ -179,7 +179,7 @@ export default function SignaturePage() {
         {souscription.insuranceProduct === "do" ? (
           <div className="bg-[#ebe6e0] border border-[#d4d4d4] rounded-2xl p-6 mb-8">
             <p className="text-sm text-[#171717]">
-              La signature Yousign ci-dessous concerne le modèle de contrat historique décennale BTP. Pour le dommage
+              La signature ci-dessous concerne le modèle de contrat historique décennale BTP. Pour le dommage
               ouvrage, suivez votre contrat et les attestations dans l&apos;espace client après validation assureur et
               paiement.
             </p>
@@ -202,15 +202,15 @@ export default function SignaturePage() {
           <p className="text-sm text-[#171717] mb-4">
             {souscription.insuranceProduct === "do"
               ? "Vous pouvez signer le contrat type décennale ci-dessous si votre conseiller vous y a invité ; sinon rendez-vous dans l'espace client pour le dossier dommage ouvrage."
-              : "Vous serez redirigé vers la plateforme Yousign pour signer votre contrat. La signature électronique a la même valeur juridique qu'une signature manuscrite."}
+              : "Vous serez redirigé vers la page de signature pour apposer votre signature sur le PDF. Poursuivez ensuite vers le mandat SEPA et le paiement."}
           </p>
           <button
             type="button"
-            onClick={handleSignWithYousign}
+            onClick={handleSignContract}
             disabled={loading || !devoirConseilAccepte}
             className="w-full bg-[#2563eb] text-white py-4 rounded-xl hover:bg-[#1d4ed8] transition font-medium disabled:bg-slate-300 disabled:cursor-not-allowed"
           >
-            {loading ? "Préparation en cours..." : "Signer avec Yousign (contrat type)"}
+            {loading ? "Préparation en cours..." : "Signer le contrat (contrat type)"}
           </button>
         </div>
 

@@ -30,7 +30,7 @@ export default function GestionDocumentPage() {
     verificationToken?: string | null
   } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [yousignLoading, setYousignLoading] = useState(false)
+  const [signatureSendLoading, setSignatureSendLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
 
   useEffect(() => {
@@ -93,9 +93,9 @@ export default function GestionDocumentPage() {
             {document.type === "devis" && (
               <button
                 type="button"
-                disabled={yousignLoading}
+                disabled={signatureSendLoading}
                 onClick={async () => {
-                  setYousignLoading(true)
+                  setSignatureSendLoading(true)
                   setToast(null)
                   try {
                     const res = await fetch("/api/gestion/yousign/create-from-devis", {
@@ -110,7 +110,7 @@ export default function GestionDocumentPage() {
                     }>(res)
                     if (!res.ok) throw new Error(json.error || "Erreur")
                     setToast({
-                      message: `Contrat ${json.contractNumero ?? ""} — lien Yousign envoyé à l’email du client.`,
+                      message: `Contrat ${json.contractNumero ?? ""} — lien de signature envoyé à l’email du client.`,
                       type: "success",
                     })
                   } catch (e) {
@@ -119,12 +119,12 @@ export default function GestionDocumentPage() {
                       type: "error",
                     })
                   } finally {
-                    setYousignLoading(false)
+                    setSignatureSendLoading(false)
                   }
                 }}
                 className="text-sm font-medium bg-[#2563eb] text-white px-3 py-1.5 rounded-lg hover:bg-[#1d4ed8] disabled:opacity-50"
               >
-                {yousignLoading ? "Envoi…" : "Envoyer pour signature Yousign"}
+                {signatureSendLoading ? "Envoi…" : "Envoyer pour signature"}
               </button>
             )}
             {(document.type === "contrat" || document.type === "avenant") && (

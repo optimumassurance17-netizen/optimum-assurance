@@ -611,10 +611,10 @@ export default function Home() {
       <section className="px-4 sm:px-6 md:px-8 py-16 bg-[var(--background)] border-y border-[#e5e5e5]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-xl font-bold text-slate-900 mb-2">Partenaires de confiance</h2>
-          <p className="text-[#171717] text-sm mb-8">Paiement sécurisé et signature électronique certifiée</p>
+          <p className="text-[#171717] text-sm mb-8">Paiement sécurisé et signature électronique sur document</p>
           <div className="flex flex-wrap justify-center gap-8 items-center">
             <div className="px-6 py-3 bg-white rounded-xl border border-[#e5e5e5] font-semibold text-slate-900">Mollie</div>
-            <div className="px-6 py-3 bg-white rounded-xl border border-[#e5e5e5] font-semibold text-slate-900">Yousign</div>
+            <div className="px-6 py-3 bg-white rounded-xl border border-[#e5e5e5] font-semibold text-slate-900">Signature en ligne</div>
           </div>
         </div>
       </section>

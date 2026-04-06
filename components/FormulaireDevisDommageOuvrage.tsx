@@ -195,7 +195,7 @@ export function FormulaireDevisDommageOuvrage() {
             ) : (
               <>
                 <li>Le devis sera ajouté manuellement à votre espace client</li>
-                <li>Signature électronique du contrat (Yousign)</li>
+                <li>Signature électronique du contrat</li>
                 <li>Validation et paiement par virement bancaire (Mollie)</li>
               </>
             )}

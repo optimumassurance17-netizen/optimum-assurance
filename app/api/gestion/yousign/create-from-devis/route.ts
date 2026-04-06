@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import React from "react"
@@ -7,17 +8,18 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { getNextNumero } from "@/lib/documents"
 import { ContratPDF } from "@/components/pdf/ContratPDF"
-import { createSignatureRequest } from "@/lib/yousign"
 import {
-  buildContractDataForYousignFromDevis,
-  validateDevisForYousign,
+  buildContractDataFromDevisForSignature,
+  validateDevisContractData,
 } from "@/lib/gestion-contract-from-devis"
+import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
+import { createSupabaseServiceClient } from "@/lib/supabase"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 
 /**
- * Admin : à partir d’un document **devis** décennale, génère le contrat PDF, crée une demande Yousign
- * pour le **client** (propriétaire du document) et envoie le lien par email.
+ * Admin : à partir d’un document **devis** décennale, génère le contrat PDF, crée une demande
+ * sign_requests (Supabase Sign) pour le client et envoie le lien `/sign/[id]` par email.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -32,8 +34,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "documentId requis" }, { status: 400 })
     }
 
-    if (!process.env.YOUSIGN_API_KEY) {
-      return NextResponse.json({ error: "Yousign non configuré (YOUSIGN_API_KEY)" }, { status: 503 })
+    if (!createSupabaseServiceClient()) {
+      return NextResponse.json(
+        { error: "Signature électronique non configurée (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)." },
+        { status: 503 }
+      )
     }
 
     const doc = await prisma.document.findUnique({
@@ -68,12 +73,12 @@ export async function POST(request: NextRequest) {
     }
 
     const contractNumero = await getNextNumero("contrat")
-    const contractData = buildContractDataForYousignFromDevis(devisData, doc.user, contractNumero, {
+    const baseContract = buildContractDataFromDevisForSignature(devisData, doc.user, contractNumero, {
       id: doc.id,
       numero: doc.numero,
     })
 
-    const validationError = validateDevisForYousign(contractData)
+    const validationError = validateDevisContractData(baseContract)
     if (validationError) {
       return NextResponse.json({ error: validationError }, { status: 400 })
     }
@@ -85,60 +90,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Une demande de signature est déjà en attente pour ce client. Finalisez ou annulez-la côté Yousign avant d’en créer une nouvelle.",
+            "Une demande de signature est déjà en attente pour ce client. Finalisez ou annulez-la avant d’en créer une nouvelle.",
         },
         { status: 409 }
       )
     }
 
+    const contractData = { ...baseContract, signatureProvider: "supabase" as const }
+
     const pdfElement = React.createElement(ContratPDF, {
       numero: contractNumero,
-      data: contractData as React.ComponentProps<typeof ContratPDF>["data"],
+      data: baseContract as React.ComponentProps<typeof ContratPDF>["data"],
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfBuffer = await renderToBuffer(pdfElement as any)
+    const pdfBuffer = Buffer.from(await renderToBuffer(pdfElement as any))
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-    const repr = String(contractData.representantLegal || "Signataire")
-    const [firstName, ...lastParts] = repr.trim().split(/\s+/)
-    const lastName = lastParts.join(" ") || "Signataire"
+    const folder = randomUUID()
+    const storagePath = `gestion/devis/${folder}/contrat-${contractNumero}.pdf`
 
-    const result = await createSignatureRequest(
-      Buffer.from(pdfBuffer),
-      `contrat-${contractNumero}.pdf`,
-      {
-        name: `Contrat décennale - ${String(contractData.raisonSociale)}`,
-        signerInfo: {
-          first_name: firstName || "Signataire",
-          last_name: lastName,
-          email: doc.user.email,
-          locale: "fr",
-        },
-        redirectUrls: {
-          success: `${baseUrl}/signature/callback?success=1`,
-          error: `${baseUrl}/signature/callback?error=1`,
-        },
-      }
-    )
-
-    const signer = result.signers?.[0] as { signature_link?: string } | undefined
-    const signatureLink = signer?.signature_link
-
-    if (!signatureLink) {
-      return NextResponse.json({ error: "Lien de signature non disponible" }, { status: 500 })
-    }
+    const { id: signRequestId } = await uploadPdfAndInsertSignRequest(pdfBuffer, storagePath)
 
     await prisma.pendingSignature.create({
       data: {
-        signatureRequestId: result.id,
+        signatureRequestId: signRequestId,
         userId: doc.userId,
         contractData: JSON.stringify(contractData),
         contractNumero,
       },
     })
 
-    const raison = String(contractData.raisonSociale || doc.user.raisonSociale || doc.user.email)
-    const tpl = EMAIL_TEMPLATES.invitationSignatureYousignDecennale(raison, signatureLink, doc.numero)
+    const nextPath = "/signature/callback?success=1"
+    const signatureLink = `${baseUrl}/sign/${signRequestId}?next=${encodeURIComponent(nextPath)}`
+
+    const raison = String(baseContract.raisonSociale || doc.user.raisonSociale || doc.user.email)
+    const tpl = EMAIL_TEMPLATES.invitationSignatureDecennale(raison, signatureLink, doc.numero)
     await sendEmail({
       to: doc.user.email,
       subject: tpl.subject,
@@ -148,15 +134,15 @@ export async function POST(request: NextRequest) {
 
     await logAdminActivity({
       adminEmail: session.user.email || "admin",
-      action: "yousign_send_from_devis",
+      action: "signature_send_from_devis",
       targetType: "document",
       targetId: doc.id,
-      details: { contractNumero, signatureRequestId: result.id, clientUserId: doc.userId },
+      details: { contractNumero, signatureRequestId: signRequestId, clientUserId: doc.userId },
     })
 
     return NextResponse.json({
       ok: true,
-      signatureRequestId: result.id,
+      signatureRequestId: signRequestId,
       contractNumero,
       signatureLink,
     })

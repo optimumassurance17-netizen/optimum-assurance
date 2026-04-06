@@ -70,11 +70,17 @@ export async function sendEmail(params: {
 }
 
 export const EMAIL_TEMPLATES = {
-  invitationSignatureYousignDecennale: (raisonSociale: string, signatureLink: string, devisNumero: string) => ({
+  invitationSignatureDecennale: (raisonSociale: string, signatureLink: string, devisNumero: string) => ({
     subject: `Signature de votre contrat décennale — devis ${devisNumero} - Optimum Assurance`,
-    text: `Bonjour ${raisonSociale},\n\nVotre contrat d’assurance décennale est prêt à être signé électroniquement.\n\nLien Yousign :\n${signatureLink}\n\nRéférence devis : ${devisNumero}\n\nAprès signature : connectez-vous sur ${APP_URL} avec votre compte, puis ouvrez la page Mandat SEPA (${APP_URL}/mandat-sepa) pour l’IBAN et le 1er trimestre par carte (Mollie). Les échéances suivantes : prélèvements SEPA trimestriels.\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour ${raisonSociale},</p><p>Votre <strong>contrat d’assurance décennale</strong> est prêt à être signé électroniquement.</p><p><a href="${signatureLink}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Signer le contrat (Yousign)</a></p><p style="font-size:13px;color:#64748b;">Référence devis : <strong>${devisNumero}</strong></p><p style="font-size:13px;color:#64748b;"><strong>Après signature</strong> : connectez-vous, puis <strong>Mandat SEPA</strong> — IBAN puis <strong>1er trimestre par carte</strong> (Mollie) ; ensuite prélèvements SEPA.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+    text: `Bonjour ${raisonSociale},\n\nVotre contrat d’assurance décennale est prêt à être signé électroniquement.\n\nLien de signature :\n${signatureLink}\n\nRéférence devis : ${devisNumero}\n\nAprès signature : connectez-vous sur ${APP_URL} avec votre compte, puis ouvrez la page Mandat SEPA (${APP_URL}/mandat-sepa) pour l’IBAN et le 1er trimestre par carte (Mollie). Les échéances suivantes : prélèvements SEPA trimestriels.\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${raisonSociale},</p><p>Votre <strong>contrat d’assurance décennale</strong> est prêt à être signé électroniquement.</p><p><a href="${signatureLink}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Signer le contrat</a></p><p style="font-size:13px;color:#64748b;">Référence devis : <strong>${devisNumero}</strong></p><p style="font-size:13px;color:#64748b;"><strong>Après signature</strong> : connectez-vous, puis <strong>Mandat SEPA</strong> — IBAN puis <strong>1er trimestre par carte</strong> (Mollie) ; ensuite prélèvements SEPA.</p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
+  /** @deprecated Utiliser invitationSignatureDecennale */
+  invitationSignatureYousignDecennale: (
+    raisonSociale: string,
+    signatureLink: string,
+    devisNumero: string
+  ) => EMAIL_TEMPLATES.invitationSignatureDecennale(raisonSociale, signatureLink, devisNumero),
   motDePasseReinitialisation: (resetUrl: string) => ({
     subject: "Réinitialisation de votre mot de passe - Optimum Assurance",
     text: `Bonjour,\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\nOuvrez ce lien (valable 1 heure) :\n${resetUrl}\n\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\nCordialement,\nOptimum Assurance`,

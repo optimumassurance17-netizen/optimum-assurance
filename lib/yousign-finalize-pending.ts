@@ -1,5 +1,5 @@
 /**
- * Finalisation contrat après signature Yousign (webhook ou secours API).
+ * Finalisation contrat après signature (webhook Yousign legacy, POST /api/sign Supabase, ou secours API).
  */
 import type { PendingSignature } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
@@ -15,7 +15,8 @@ function dateMoins3Mois(dateIso: string): string {
 
 /** Crée contrat + attestation si besoin, supprime le pending (logique identique au webhook). */
 export async function applyPendingFinalize(pending: PendingSignature): Promise<void> {
-  const contractData = JSON.parse(pending.contractData) as Record<string, unknown>
+  const raw = JSON.parse(pending.contractData) as Record<string, unknown>
+  const { signatureProvider: _sp, ...contractData } = raw
 
   await prisma.document.create({
     data: {
@@ -78,19 +79,13 @@ export async function applyPendingFinalize(pending: PendingSignature): Promise<v
 export type FinalizeSyncResult = "created" | "not_found" | "not_ready" | "skipped"
 
 /**
- * Secours si webhook pas encore actif : vérifie le statut Yousign puis applique la même finalisation.
- * Idempotent si le contrat existe déjà (webhook arrivé entre-temps).
+ * Secours si webhook pas encore actif : vérifie le statut Yousign (flux legacy) puis applique la même finalisation.
+ * Les flux Supabase (`signatureProvider: supabase`) sont exclus ici. Idempotent si le contrat existe déjà.
  */
 export async function finalizePendingIfYousignDone(
   signatureRequestId: string,
   expectedUserId: string
 ): Promise<FinalizeSyncResult> {
-  const sr = await getSignatureRequest(signatureRequestId)
-  const st = String(sr.status || "").toLowerCase()
-  if (st !== "done" && st !== "completed") {
-    return "not_ready"
-  }
-
   const pending = await prisma.pendingSignature.findUnique({
     where: { signatureRequestId },
   })
@@ -100,6 +95,23 @@ export async function finalizePendingIfYousignDone(
 
   if (pending.userId !== expectedUserId) {
     return "not_found"
+  }
+
+  let provider: string | undefined
+  try {
+    const parsed = JSON.parse(pending.contractData) as { signatureProvider?: string }
+    provider = parsed.signatureProvider
+  } catch {
+    provider = undefined
+  }
+  if (provider === "supabase") {
+    return "not_ready"
+  }
+
+  const sr = await getSignatureRequest(signatureRequestId)
+  const st = String(sr.status || "").toLowerCase()
+  if (st !== "done" && st !== "completed") {
+    return "not_ready"
   }
 
   const duplicate = await prisma.document.findFirst({

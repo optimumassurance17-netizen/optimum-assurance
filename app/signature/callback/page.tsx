@@ -15,18 +15,25 @@ function SignatureCallbackContent() {
   const status: "success" | "error" = error ? "error" : "success"
   const syncOnce = useRef(false)
 
-  /** Secours si webhooks Yousign pas encore actifs : synchronise le contrat via l’API Yousign. */
+  /** Secours si webhooks Yousign pas encore actifs : synchronise le contrat via l’API Yousign (hors flux Supabase Sign). */
   useEffect(() => {
     if (status !== "success" || sessionStatus !== "authenticated" || syncOnce.current) return
     if (typeof window === "undefined") return
     const raw = sessionStorage.getItem(STORAGE_KEYS.signature)
     if (!raw) return
-    let parsed: { yousignSignatureRequestId?: string }
+    let parsed: {
+      yousignSignatureRequestId?: string
+      yousignContractData?: { signatureProvider?: string }
+    }
     try {
-      parsed = JSON.parse(raw) as { yousignSignatureRequestId?: string }
+      parsed = JSON.parse(raw) as {
+        yousignSignatureRequestId?: string
+        yousignContractData?: { signatureProvider?: string }
+      }
     } catch {
       return
     }
+    if (parsed.yousignContractData?.signatureProvider === "supabase") return
     const signatureRequestId = parsed.yousignSignatureRequestId
     if (!signatureRequestId) return
     syncOnce.current = true

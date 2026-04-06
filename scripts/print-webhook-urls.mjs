@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Affiche les URLs à configurer manuellement dans Mollie / Yousign (dashboards externes).
+ * Affiche les URLs à configurer manuellement dans Mollie (et Yousign si flux legacy).
  * Usage: npm run print:webhooks
  *        VERIFY_PROD_URL=https://www.x.fr node scripts/print-webhook-urls.mjs
  */
@@ -17,9 +17,10 @@ Base production : ${base}
 Mollie (développeurs → Webhooks ou dans l’app) :
   ${base}/api/mollie/webhook
 
-Yousign (webhook + callback selon votre flux) :
-  Webhook (si utilisé) : ${base}/api/yousign/webhook
-  Callback signature : ${base}/signature/callback
+Yousign — uniquement si webhook legacy encore actif :
+  Webhook : ${base}/api/yousign/webhook
+Retour utilisateur après signature (décennale) :
+  ${base}/signature/callback
 
 Crons Vercel (déjà dans vercel.json) — protéger avec CRON_SECRET :
   ${base}/api/cron/rappels-renouvellement

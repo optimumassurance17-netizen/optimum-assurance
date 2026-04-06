@@ -218,12 +218,12 @@ npm run generate-secret
 - Valeur : `Optimum <noreply@tondomaine.com>` (remplace tondomaine par ton domaine)
 
 **Variable 8**
-- Nom : `YOUSIGN_API_KEY`
-- Valeur : ta clé Yousign (mode Production)
+- Nom : `NEXT_PUBLIC_SUPABASE_URL`
+- Valeur : URL du projet Supabase (`.supabase.co`)
 
 **Variable 9**
-- Nom : `YOUSIGN_ENV`
-- Valeur : `production`
+- Nom : `SUPABASE_SERVICE_ROLE_KEY`
+- Valeur : clé **service_role** (Supabase → Project Settings → API)
 
 **Variable 10**
 - Nom : `ADMIN_EMAILS`
@@ -233,7 +233,7 @@ npm run generate-secret
 - Nom : `CRON_SECRET`
 - Valeur : la même chaîne que NEXTAUTH_SECRET (ou la 2e générée à l'étape 8)
 
-5. Vérifie que les 11 variables sont bien ajoutées (tu les vois dans la liste)
+5. Vérifie que les 11 variables ci-dessus sont bien listées dans Vercel. Optionnel legacy : `YOUSIGN_API_KEY`, `YOUSIGN_ENV`, `YOUSIGN_WEBHOOK_SECRET` seulement si le webhook Yousign est encore utilisé (voir `DEPLOYMENT.md`).
 
 ---
 

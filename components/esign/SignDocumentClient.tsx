@@ -10,9 +10,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 type Props = {
   documentId: string
   documentSignedUrl: string
+  /** Après succès, redirection (chemin interne) au lieu de l’écran de téléchargement seul. */
+  afterSignRedirect?: string
 }
 
-export function SignDocumentClient({ documentId, documentSignedUrl }: Props) {
+export function SignDocumentClient({ documentId, documentSignedUrl, afterSignRedirect }: Props) {
   const sigRef = useRef<SignatureCanvasHandle>(null)
   const [email, setEmail] = useState("")
   const [agreed, setAgreed] = useState(false)
@@ -64,6 +66,10 @@ export function SignDocumentClient({ documentId, documentSignedUrl }: Props) {
       }
       if (!data.signedDocumentUrl) {
         setError("Réponse serveur inattendue.")
+        return
+      }
+      if (afterSignRedirect) {
+        window.location.href = afterSignRedirect
         return
       }
       setSuccessUrl(data.signedDocumentUrl)

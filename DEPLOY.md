@@ -106,7 +106,7 @@ npx prisma migrate deploy
 
 Ou : `node scripts/prisma-migrate-prod.mjs` (utilise `.env.vercel.pull` directement).
 
-### Secrets (NEXTAUTH, CRON, Yousign webhook)
+### Secrets (NEXTAUTH, CRON, optionnel Yousign webhook legacy)
 
 En local, pour générer des valeurs à coller dans Vercel :
 
@@ -117,9 +117,10 @@ npm run secrets:prod
 ## 4. Après le premier déploiement
 
 1. **Mollie** : URL webhook = `https://votredomaine.fr/api/mollie/webhook`
-2. **Yousign** : webhook + URL de callback selon doc Yousign
-3. **Search Console** : propriété + sitemap `https://votredomaine.fr/sitemap.xml`
-4. Tester : `/api/health` → `database: connected`
+2. **Supabase signature** : tables + buckets (`sql/supabase-esign-complete.sql`) ; variables URL + `SUPABASE_SERVICE_ROLE_KEY`
+3. **Yousign** *(si legacy)* : webhook `/api/yousign/webhook`
+4. **Search Console** : propriété + sitemap `https://votredomaine.fr/sitemap.xml`
+5. Tester : `/api/health` → `database: connected`
 
 ## 5. Icônes PWA (install / barre d’adresse)
 

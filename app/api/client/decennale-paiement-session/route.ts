@@ -6,7 +6,7 @@ import { buildSignatureSessionFromContrat } from "@/lib/decennale-session-from-c
 
 /**
  * Indique si le client connecté peut poursuivre mandat SEPA + 1er paiement CB (décennale)
- * sans sessionStorage (ex. signature Yousign envoyée depuis la gestion).
+ * sans sessionStorage (ex. lien de signature envoyé depuis la gestion).
  */
 export async function GET() {
   try {

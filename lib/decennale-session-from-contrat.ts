@@ -14,7 +14,7 @@ type UserFields = {
 
 /**
  * Reconstruit le payload `sessionStorage` (clé signature) à partir du contrat enregistré
- * après Yousign (parcours gestion ou retour sans brouillon navigateur).
+ * après signature (parcours gestion ou retour sans brouillon navigateur).
  */
 export function buildSignatureSessionFromContrat(
   contratData: Record<string, unknown>,

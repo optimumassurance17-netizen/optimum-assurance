@@ -5,7 +5,9 @@ import { applySignatureToPdf } from "@/lib/esign/apply-signature-to-pdf"
 import { ESIGN_BUCKET_ORIGINALS, ESIGN_BUCKET_SIGNED } from "@/lib/esign/buckets"
 import { getClientIp, getUserAgent } from "@/lib/esign/get-request-meta"
 import { sha256Hex } from "@/lib/esign/hash-pdf"
+import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
+import { applyPendingFinalize } from "@/lib/yousign-finalize-pending"
 
 export const runtime = "nodejs"
 
@@ -77,6 +79,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Demande de signature introuvable." }, { status: 404 })
   }
 
+  const pending = await prisma.pendingSignature.findUnique({
+    where: { signatureRequestId: id },
+  })
+
   const { data: downloaded, error: dlError } = await supabase.storage
     .from(ESIGN_BUCKET_ORIGINALS)
     .download(signRequest.document_storage_path)
@@ -142,6 +148,21 @@ export async function POST(request: NextRequest) {
 
   if (insError || !row) {
     return NextResponse.json({ error: "Enregistrement de la piste d’audit impossible." }, { status: 500 })
+  }
+
+  if (pending) {
+    try {
+      await applyPendingFinalize(pending)
+    } catch (e) {
+      console.error("[api/sign] applyPendingFinalize", e)
+      return NextResponse.json(
+        {
+          error:
+            "Signature enregistrée mais la finalisation du contrat a échoué. Contactez le support avec votre e-mail.",
+        },
+        { status: 500 }
+      )
+    }
   }
 
   return NextResponse.json({

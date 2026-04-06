@@ -64,12 +64,12 @@ Ajouter ces variables (Production) :
 | `ADMIN_EMAILS` | Votre email (accès CRM `/gestion`) |
 | `RESEND_API_KEY` | [resend.com](https://resend.com) → API Keys |
 | `EMAIL_FROM` | `Optimum <noreply@votredomaine.com>` (domaine vérifié dans Resend) |
-| `YOUSIGN_API_KEY` | Dashboard Yousign (mode Production) |
-| `YOUSIGN_ENV` | `production` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API → URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → API → service_role (secret) |
 | `CRON_SECRET` | `npm run generate-secret` (en local) |
 
 **Optionnelles :**
-- `YOUSIGN_WEBHOOK_SECRET` — Dashboard Yousign → Webhooks
+- `YOUSIGN_API_KEY`, `YOUSIGN_ENV`, `YOUSIGN_WEBHOOK_SECRET` — uniquement si webhook Yousign legacy encore actif
 - `INSEE_API_KEY_INTEGRATION` — [portail-api.insee.fr](https://portail-api.insee.fr) (pré-remplissage SIRET)
 - `PAPPERS_API_KEY` — [pappers.fr](https://pappers.fr) (pré-remplissage SIRET)
 
@@ -113,10 +113,9 @@ Mettre à jour dans Vercel :
 Dashboard Mollie → Paramètres → Webhooks  
 URL : `https://votre-domaine/api/mollie/webhook`
 
-**Yousign :**  
-Dashboard Yousign (Production) → Webhooks  
-URL : `https://votre-domaine/api/yousign/webhook`  
-Événements : `signature_request.completed`, `signature_request.declined`
+**Signature (Supabase) :** exécuter `sql/supabase-esign-complete.sql` sur le projet ; variables `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` sur Vercel.
+
+**Yousign *(optionnel — legacy)* :** si encore utilisé, Dashboard Yousign → Webhooks → `https://votre-domaine/api/yousign/webhook`
 
 ---
 

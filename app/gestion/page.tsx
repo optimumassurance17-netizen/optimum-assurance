@@ -482,7 +482,7 @@ export default function GestionPage() {
         .map((a) => a.trim())
         .filter(Boolean)
       if (!devisDecForm.representantLegal.trim()) {
-        throw new Error("Représentant légal obligatoire (pour la signature Yousign ensuite)")
+        throw new Error("Représentant légal obligatoire (pour la signature électronique ensuite)")
       }
       if (!activites.length) {
         throw new Error("Indiquez au moins une activité (séparées par des virgules)")
@@ -521,7 +521,7 @@ export default function GestionPage() {
       const result = await readResponseJson<{ error?: string; numero?: string; id?: string }>(res)
       if (!res.ok) throw new Error(result.error || "Erreur")
       setToast({
-        message: `Devis décennale ${result.numero} créé. Ouvrez la fiche document pour envoyer la signature Yousign.`,
+        message: `Devis décennale ${result.numero} créé. Ouvrez la fiche document pour envoyer le lien de signature.`,
         type: "success",
       })
       setDevisDecForm({
@@ -856,7 +856,7 @@ export default function GestionPage() {
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">Signatures en attente</p>
                 <p className="text-2xl font-bold text-violet-300">{data.pendingSignatures?.length ?? 0}</p>
-                <p className="text-xs text-gray-200 mt-1">Yousign (non finalisées)</p>
+                <p className="text-xs text-gray-200 mt-1">Non finalisées (PDF / sign)</p>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-amber-900/40">
                 <p className="text-gray-200 text-sm">Contrats plateforme</p>
@@ -997,7 +997,7 @@ export default function GestionPage() {
                     <th className="text-left p-3 sm:p-4 font-medium">Date</th>
                     <th className="text-left p-3 sm:p-4 font-medium">N° contrat</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Client</th>
-                    <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">ID Yousign</th>
+                    <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">ID demande</th>
                     <th className="text-left p-3 sm:p-4 font-medium">CRM</th>
                   </tr>
                 </thead>
@@ -1391,13 +1391,14 @@ export default function GestionPage() {
           </section>
         )}
 
-        {/* Devis décennale — saisie manuelle puis signature Yousign depuis la fiche document */}
+        {/* Devis décennale — saisie manuelle puis envoi lien /sign depuis la fiche document */}
         <section>
           <h2 className="text-lg font-semibold text-white mb-4">Devis décennale (manuel)</h2>
           <p className="text-sm text-gray-200 mb-4 max-w-2xl">
             Créez un devis pour un client existant. Ensuite, ouvrez le document depuis le tableau des documents
-            (ou la fiche client) et cliquez sur <strong className="text-white">Envoyer pour signature Yousign</strong> :
-            le contrat PDF est généré, le client reçoit un lien Yousign par email (même flux que la souscription en ligne).
+            (ou la fiche client) et cliquez sur <strong className="text-white">Envoyer pour signature</strong> : le
+            contrat PDF est généré, le client reçoit un lien de signature par email (même flux que la souscription en
+            ligne).
           </p>
           <form onSubmit={handleCreateDevisDecennale} className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 max-w-xl mb-10">
             <div>
@@ -1476,7 +1477,7 @@ export default function GestionPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-200 mb-1">Représentant légal (signataire Yousign)</label>
+                <label className="block text-sm font-medium text-gray-200 mb-1">Représentant légal (signataire)</label>
                 <input
                   required
                   value={devisDecForm.representantLegal}
