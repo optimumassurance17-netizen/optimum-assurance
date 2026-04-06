@@ -23,6 +23,7 @@
     "preflight": "node scripts/preflight.mjs",
     "verify:prod": "node scripts/verify-prod-remote.mjs",
     "print:webhooks": "node scripts/print-webhook-urls.mjs",
+    "print:post-launch": "node scripts/print-post-launch.mjs",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",

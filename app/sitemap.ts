@@ -7,14 +7,24 @@ import { SITE_URL } from "@/lib/site-url"
 
 const baseUrl = SITE_URL
 
+function minimalSitemap(): MetadataRoute.Sitemap {
+  return [
+    {
+      url: baseUrl,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 1,
+    },
+  ]
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  try {
   let programmatic: Awaited<ReturnType<typeof fetchProgrammaticSitemapUrls>> = []
   try {
     programmatic = await fetchProgrammaticSitemapUrls()
   } catch (e) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("[sitemap] fetchProgrammaticSitemapUrls:", e)
-    }
+    console.error("[sitemap] fetchProgrammaticSitemapUrls:", e)
   }
   const programmaticEntries: MetadataRoute.Sitemap = programmatic.map((p) => ({
     url: `${baseUrl}${p.path}`,
@@ -85,4 +95,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/mandat-sepa`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.25 },
     { url: `${baseUrl}/mot-de-passe-oublie`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
   ]
+  } catch (e) {
+    console.error("[sitemap] génération impossible, fallback minimal:", e)
+    return minimalSitemap()
+  }
 }

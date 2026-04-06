@@ -89,12 +89,13 @@ function embedOne<T>(rel: T | T[] | null | undefined): T | null {
 }
 
 export async function fetchDecennaleStaticParams(): Promise<{ metier: string; ville: string }[]> {
-  const sb = createSupabaseServerClient()
-  if (!sb) {
-    return METIERS_SEO.map((m) => ({ metier: m.slug, ville: "paris" }))
-  }
+  try {
+    const sb = createSupabaseServerClient()
+    if (!sb) {
+      return METIERS_SEO.map((m) => ({ metier: m.slug, ville: "paris" }))
+    }
 
-  const { data, error } = await sb
+    const { data, error } = await sb
     .from("seo_decennale_ville")
     .select(
       `
@@ -126,15 +127,20 @@ export async function fetchDecennaleStaticParams(): Promise<{ metier: string; vi
       return { metier, ville }
     })
     .filter((p): p is { metier: string; ville: string } => p != null)
+  } catch (e) {
+    console.error("[seo-programmatic] fetchDecennaleStaticParams:", e)
+    return METIERS_SEO.map((m) => ({ metier: m.slug, ville: "paris" }))
+  }
 }
 
 export async function fetchDoStaticParams(): Promise<{ slug: string; ville: string }[]> {
-  const sb = createSupabaseServerClient()
-  if (!sb) {
-    return DO_SEO.map((d) => ({ slug: d.slug, ville: "paris" }))
-  }
+  try {
+    const sb = createSupabaseServerClient()
+    if (!sb) {
+      return DO_SEO.map((d) => ({ slug: d.slug, ville: "paris" }))
+    }
 
-  const { data, error } = await sb
+    const { data, error } = await sb
     .from("seo_do_ville")
     .select(
       `
@@ -166,6 +172,10 @@ export async function fetchDoStaticParams(): Promise<{ slug: string; ville: stri
       return { slug, ville }
     })
     .filter((p): p is { slug: string; ville: string } => p != null)
+  } catch (e) {
+    console.error("[seo-programmatic] fetchDoStaticParams:", e)
+    return DO_SEO.map((d) => ({ slug: d.slug, ville: "paris" }))
+  }
 }
 
 export async function getDecennaleLocalPage(
@@ -497,25 +507,34 @@ export async function fetchDoSiblingVilles(
     .slice(0, limit)
 }
 
+/** Limite les URLs programmatiques dans le sitemap (évite timeout serverless / payload énorme). */
+const PROGRAMMATIC_SITEMAP_MAX = 8000
+
 export async function fetchProgrammaticSitemapUrls(): Promise<
   { path: string; changeFrequency: "weekly" | "monthly"; priority: number }[]
 > {
-  const dec = await fetchDecennaleStaticParams()
-  const ddo = await fetchDoStaticParams()
-  const out: { path: string; changeFrequency: "weekly" | "monthly"; priority: number }[] = []
-  for (const p of dec) {
-    out.push({
-      path: `/assurance-decennale/${p.metier}/${p.ville}`,
-      changeFrequency: "monthly",
-      priority: 0.72,
-    })
+  try {
+    const [dec, ddo] = await Promise.all([fetchDecennaleStaticParams(), fetchDoStaticParams()])
+    const out: { path: string; changeFrequency: "weekly" | "monthly"; priority: number }[] = []
+    for (const p of dec) {
+      if (out.length >= PROGRAMMATIC_SITEMAP_MAX) break
+      out.push({
+        path: `/assurance-decennale/${p.metier}/${p.ville}`,
+        changeFrequency: "monthly",
+        priority: 0.72,
+      })
+    }
+    for (const p of ddo) {
+      if (out.length >= PROGRAMMATIC_SITEMAP_MAX) break
+      out.push({
+        path: `/dommage-ouvrage/${p.slug}/${p.ville}`,
+        changeFrequency: "monthly",
+        priority: 0.72,
+      })
+    }
+    return out
+  } catch (e) {
+    console.error("[seo-programmatic] fetchProgrammaticSitemapUrls:", e)
+    return []
   }
-  for (const p of ddo) {
-    out.push({
-      path: `/dommage-ouvrage/${p.slug}/${p.ville}`,
-      changeFrequency: "monthly",
-      priority: 0.72,
-    })
-  }
-  return out
 }
