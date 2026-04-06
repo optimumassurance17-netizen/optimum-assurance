@@ -2,6 +2,7 @@ import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
+import { getVerifyPaymentRow } from "@/lib/insurance-contract-verify-labels"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
 
@@ -32,6 +33,7 @@ export default async function VerifyByContractNumberPage({
 
     const activities = parseActivitiesJson(ic.activitiesJson)
     const exclusions = parseExclusionsJson(ic.exclusionsJson)
+    const paymentRow = getVerifyPaymentRow(ic, isActive)
 
     return (
       <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100 px-4 py-12">
@@ -50,7 +52,12 @@ export default async function VerifyByContractNumberPage({
               </p>
             </div>
             <div className="space-y-4 px-8 py-8">
-              {!isActive && (
+              {!isActive && paymentRow.detail && (
+                <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-950">
+                  {paymentRow.detail}
+                </p>
+              )}
+              {!isActive && !paymentRow.detail && (
                 <p className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-950">
                   Attestation invalide ou contrat non actif.
                 </p>
@@ -76,6 +83,10 @@ export default async function VerifyByContractNumberPage({
                     {ic.status}
                     {isActive ? " (actif)" : " (inactif)"}
                   </dd>
+                </div>
+                <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
+                  <dt className="font-semibold text-slate-900">Paiement</dt>
+                  <dd className="text-right text-slate-800">{paymentRow.label}</dd>
                 </div>
                 {ic.validFrom && ic.validUntil && (
                   <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
