@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/utils/supabase/env"
 
 /**
- * Rafraîchit la session Auth (cookies). À appeler depuis `middleware.ts` à la racine.
+ * Rafraîchit la session Auth (cookies). À appeler depuis `proxy.ts` à la racine (Next.js 16).
  */
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
   const supabaseUrl = getSupabaseUrl()
