@@ -153,6 +153,32 @@ interface DashboardData {
     closCouvertCount: number
     doCompletCount: number
   }
+  devisLeads?: {
+    id: string
+    email: string
+    raisonSociale: string | null
+    siret: string | null
+    primeAnnuelle: number | null
+    rappelSentAt: string | null
+    createdAt: string
+  }[]
+  devisDrafts?: {
+    id: string
+    token: string
+    email: string
+    produit: string
+    expiresAt: string
+    createdAt: string
+  }[]
+  pendingSignatures?: {
+    id: string
+    signatureRequestId: string
+    contractNumero: string
+    createdAt: string
+    userId: string
+    user: { id: string; email: string; raisonSociale: string | null } | null
+  }[]
+  insuranceContractsCount?: number
 }
 
 export default function GestionPage() {
@@ -656,6 +682,39 @@ export default function GestionPage() {
                 Export devis DO
               </button>
             )}
+            {(data.devisLeads?.length ?? 0) > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!data?.devisLeads?.length) return
+                  const csv = [
+                    ["Email", "Raison sociale", "SIRET", "Prime annuelle (€)", "Date"].join(";"),
+                    ...data.devisLeads.map((d) =>
+                      [
+                        d.email,
+                        d.raisonSociale ?? "",
+                        d.siret ?? "",
+                        d.primeAnnuelle != null ? String(d.primeAnnuelle) : "",
+                        new Date(d.createdAt).toLocaleDateString("fr-FR"),
+                      ].join(";")
+                    ),
+                  ].join("\n")
+                  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement("a")
+                  a.href = url
+                  a.download = `export-leads-devis-decennale-${new Date().toISOString().slice(0, 10)}.csv`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                }}
+                className="text-sm text-gray-200 hover:text-white"
+              >
+                Export leads décennale
+              </button>
+            )}
+            <Link href="/admin" className="text-sm text-amber-200/90 hover:text-amber-100">
+              Admin contrats →
+            </Link>
             <Link href="/" className="text-sm text-gray-200 hover:text-white">← Retour site</Link>
           </div>
         </div>
@@ -721,6 +780,28 @@ export default function GestionPage() {
                   </div>
                 </>
               )}
+              <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
+                <p className="text-gray-200 text-sm">Leads devis décennale</p>
+                <p className="text-2xl font-bold text-amber-300">{data.devisLeads?.length ?? 0}</p>
+                <p className="text-xs text-gray-200 mt-1">100 derniers</p>
+              </div>
+              <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
+                <p className="text-gray-200 text-sm">Brouillons devis</p>
+                <p className="text-2xl font-bold text-cyan-300">{data.devisDrafts?.length ?? 0}</p>
+                <p className="text-xs text-gray-200 mt-1">Liens de reprise</p>
+              </div>
+              <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
+                <p className="text-gray-200 text-sm">Signatures en attente</p>
+                <p className="text-2xl font-bold text-violet-300">{data.pendingSignatures?.length ?? 0}</p>
+                <p className="text-xs text-gray-200 mt-1">Yousign (non finalisées)</p>
+              </div>
+              <div className="bg-[#252525] rounded-xl p-4 border border-amber-900/40">
+                <p className="text-gray-200 text-sm">Contrats plateforme</p>
+                <Link href="/admin" className="text-2xl font-bold text-amber-200 hover:text-amber-100 block">
+                  {data.insuranceContractsCount ?? 0}
+                </Link>
+                <p className="text-xs text-gray-200 mt-1">Voir admin →</p>
+              </div>
             </section>
           </>
         )}
@@ -759,6 +840,126 @@ export default function GestionPage() {
                       </tr>
                     ))
                   )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {data && (data.devisLeads?.length ?? 0) > 0 && (
+          <section id="leads-decennale">
+            <h2 className="text-lg font-semibold text-white mb-4">Leads devis décennale (tarificateur)</h2>
+            <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full text-sm min-w-[640px]">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 sm:p-4 font-medium">Date</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Email</th>
+                    <th className="text-left p-3 sm:p-4 font-medium hidden md:table-cell">Raison sociale</th>
+                    <th className="text-left p-3 sm:p-4 font-medium hidden lg:table-cell">SIRET</th>
+                    <th className="text-right p-3 sm:p-4 font-medium">Prime ind.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.devisLeads!.map((l) => (
+                    <tr key={l.id} className="border-b border-gray-700/50">
+                      <td className="p-3 sm:p-4 whitespace-nowrap">{new Date(l.createdAt).toLocaleString("fr-FR")}</td>
+                      <td className="p-3 sm:p-4">{l.email}</td>
+                      <td className="p-3 sm:p-4 hidden md:table-cell">{l.raisonSociale || "—"}</td>
+                      <td className="p-3 sm:p-4 font-mono text-gray-200 hidden lg:table-cell">{l.siret || "—"}</td>
+                      <td className="p-3 sm:p-4 text-right">
+                        {l.primeAnnuelle != null ? `${l.primeAnnuelle.toLocaleString("fr-FR")} €` : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {data && (data.devisDrafts?.length ?? 0) > 0 && (
+          <section id="brouillons-devis">
+            <h2 className="text-lg font-semibold text-white mb-4">Brouillons devis (liens de reprise)</h2>
+            <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full text-sm min-w-[560px]">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 sm:p-4 font-medium">Créé</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Produit</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Email</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Expire</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Reprendre</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.devisDrafts!.map((d) => {
+                    const resumeHref = `/devis/resume/${d.token}`
+                    const expired = new Date(d.expiresAt) < new Date()
+                    return (
+                      <tr key={d.id} className="border-b border-gray-700/50">
+                        <td className="p-3 sm:p-4 whitespace-nowrap">{new Date(d.createdAt).toLocaleString("fr-FR")}</td>
+                        <td className="p-3 sm:p-4">{d.produit === "dommage-ouvrage" ? "DO" : "Décennale"}</td>
+                        <td className="p-3 sm:p-4">{d.email}</td>
+                        <td className="p-3 sm:p-4 text-amber-200/90">{expired ? "Expiré" : new Date(d.expiresAt).toLocaleDateString("fr-FR")}</td>
+                        <td className="p-3 sm:p-4">
+                          <a
+                            href={resumeHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`text-sm font-medium ${expired ? "text-gray-500 pointer-events-none" : "text-[#2563eb] hover:underline"}`}
+                          >
+                            Ouvrir le lien
+                          </a>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs text-gray-200">
+              Le flux de reprise côté site cible le devis décennale ; les brouillons DO listés ici restent identifiables par produit.
+            </p>
+          </section>
+        )}
+
+        {data && (data.pendingSignatures?.length ?? 0) > 0 && (
+          <section id="signatures-attente">
+            <h2 className="text-lg font-semibold text-white mb-4">Signatures électroniques en attente</h2>
+            <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full text-sm min-w-[560px]">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 sm:p-4 font-medium">Date</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">N° contrat</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Client</th>
+                    <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">ID Yousign</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">CRM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.pendingSignatures!.map((s) => (
+                    <tr key={s.id} className="border-b border-gray-700/50">
+                      <td className="p-3 sm:p-4 whitespace-nowrap">{new Date(s.createdAt).toLocaleString("fr-FR")}</td>
+                      <td className="p-3 sm:p-4 font-mono text-white">{s.contractNumero}</td>
+                      <td className="p-3 sm:p-4">
+                        {s.user ? s.user.raisonSociale || s.user.email : "—"}
+                      </td>
+                      <td className="p-3 sm:p-4 font-mono text-xs text-gray-200 hidden sm:table-cell max-w-[12rem] truncate" title={s.signatureRequestId}>
+                        {s.signatureRequestId}
+                      </td>
+                      <td className="p-3 sm:p-4">
+                        {s.user ? (
+                          <Link href={`/gestion/clients/${s.userId}`} className="text-[#2563eb] hover:underline text-sm">
+                            Fiche →
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

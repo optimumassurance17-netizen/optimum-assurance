@@ -11,7 +11,22 @@ export async function GET() {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    const [users, documents, payments, avenantFees, devisDoLeads, devisEtudeLeads, resiliationLogs, adminActivityLogs, resiliationRequests, doStats] = await Promise.all([
+    const [
+      users,
+      documents,
+      payments,
+      avenantFees,
+      devisDoLeads,
+      devisEtudeLeads,
+      resiliationLogs,
+      adminActivityLogs,
+      resiliationRequests,
+      doStats,
+      devisLeads,
+      devisDrafts,
+      pendingSignaturesRaw,
+      insuranceContractsCount,
+    ] = await Promise.all([
       prisma.user.findMany({
         select: {
           id: true,
@@ -89,7 +104,46 @@ export async function GET() {
           doCompletCount: attestationsDo.length - closCouvertCount,
         }
       })(),
+      prisma.devisLead.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+      prisma.devisDraft.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 40,
+        select: {
+          id: true,
+          token: true,
+          email: true,
+          produit: true,
+          expiresAt: true,
+          createdAt: true,
+        },
+      }),
+      prisma.pendingSignature.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 25,
+      }),
+      prisma.insuranceContract.count(),
     ])
+
+    const pendingUserIds = [...new Set(pendingSignaturesRaw.map((p) => p.userId))]
+    const pendingUsers =
+      pendingUserIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: pendingUserIds } },
+            select: { id: true, email: true, raisonSociale: true },
+          })
+        : []
+    const pendingUserById = Object.fromEntries(pendingUsers.map((u) => [u.id, u]))
+    const pendingSignatures = pendingSignaturesRaw.map((p) => ({
+      id: p.id,
+      signatureRequestId: p.signatureRequestId,
+      contractNumero: p.contractNumero,
+      createdAt: p.createdAt,
+      userId: p.userId,
+      user: pendingUserById[p.userId] ?? null,
+    }))
 
     return NextResponse.json({
       users,
@@ -102,6 +156,10 @@ export async function GET() {
       resiliationRequests,
       adminActivityLogs,
       doStats,
+      devisLeads,
+      devisDrafts,
+      pendingSignatures,
+      insuranceContractsCount,
     })
   } catch (error) {
     console.error("Erreur dashboard gestion:", error)
