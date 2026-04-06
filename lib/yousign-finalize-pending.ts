@@ -16,7 +16,8 @@ function dateMoins3Mois(dateIso: string): string {
 /** Crée contrat + attestation si besoin, supprime le pending (logique identique au webhook). */
 export async function applyPendingFinalize(pending: PendingSignature): Promise<void> {
   const raw = JSON.parse(pending.contractData) as Record<string, unknown>
-  const { signatureProvider: _sp, ...contractData } = raw
+  const contractData = { ...raw }
+  delete contractData.signatureProvider
 
   await prisma.document.create({
     data: {
