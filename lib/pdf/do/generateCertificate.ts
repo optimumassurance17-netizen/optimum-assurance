@@ -93,6 +93,19 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
       13
     )
   }
+  if (data.activityExclusions?.length) {
+    y -= 8
+    y = drawWrappedText(
+      page,
+      `Exclusion(s) d'activité : ${data.activityExclusions.join(", ")}.`,
+      PDF_PAGE.marginX,
+      y,
+      PDF_PAGE.contentWidth,
+      font,
+      10,
+      13
+    )
+  }
   y -= 14
   y = drawWrappedText(
     page,

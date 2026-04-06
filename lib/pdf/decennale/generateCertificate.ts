@@ -83,7 +83,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
   y -= 14
   y = drawWrappedText(
     page,
-    `Activités couvertes : ${data.activities!.join(", ")}.`,
+    `Activité(s) assurée(s) : ${data.activities!.join(", ")}.`,
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,
@@ -92,6 +92,19 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     13
   )
   y -= 14
+  if (data.activityExclusions?.length) {
+    y = drawWrappedText(
+      page,
+      `Exclusion(s) d'activité : ${data.activityExclusions.join(", ")}.`,
+      PDF_PAGE.marginX,
+      y,
+      PDF_PAGE.contentWidth,
+      font,
+      10,
+      13
+    )
+    y -= 14
+  }
   y = drawWrappedText(
     page,
     `Période de validité : du ${data.startDate} au ${data.endDate}.`,

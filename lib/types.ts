@@ -10,6 +10,8 @@ export interface DevisData {
   /** Date de création de la société (AAAA-MM-JJ) - requis si jamaisAssure, pour attestation non sinistralité */
   dateCreationSociete?: string
   activites: string[]
+  /** Exclusions d'activité déclarées au contrat (hors périmètre couvert) */
+  exclusionsActivites?: string[]
   tarif?: DevisResult
   montantIndemnisations?: number
   releveSinistraliteNom?: string

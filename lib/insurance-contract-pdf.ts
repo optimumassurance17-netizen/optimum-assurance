@@ -14,9 +14,11 @@ import {
   ORIAS_NUMBER,
 } from "@/lib/legal-branding"
 import { SITE_URL } from "@/lib/site-url"
+import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
 
 function contractToInsuranceData(c: InsuranceContract): InsuranceData {
-  const activities = c.activitiesJson ? (JSON.parse(c.activitiesJson) as string[]) : []
+  const activities = parseActivitiesJson(c.activitiesJson)
+  const exclusions = parseExclusionsJson(c.exclusionsJson)
   const vf = c.validFrom ?? c.paidAt ?? c.createdAt
   const vu = c.validUntil ?? c.createdAt
   return {
@@ -25,6 +27,7 @@ function contractToInsuranceData(c: InsuranceContract): InsuranceData {
     siret: c.siret ?? undefined,
     address: c.address,
     activities: activities.length ? activities : undefined,
+    activityExclusions: exclusions.length ? exclusions : undefined,
     projectName: c.projectName ?? undefined,
     projectAddress: c.projectAddress ?? undefined,
     constructionNature: c.constructionNature ?? undefined,

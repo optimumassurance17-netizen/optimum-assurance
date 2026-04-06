@@ -42,6 +42,8 @@ model InsuranceContract {
   siret              String?
   address            String
   activitiesJson     String?
+  /// Activités / travaux exclus du périmètre couvert (libellés, JSON string[])
+  exclusionsJson     String?
   projectName        String?
   projectAddress     String?
   constructionNature String?

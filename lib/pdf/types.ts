@@ -12,6 +12,8 @@ export type InsuranceData = {
   address: string
   /** Décennale : activités couvertes */
   activities?: string[]
+  /** Activités / travaux exclus du périmètre (mention contractuelle) */
+  activityExclusions?: string[]
   /** DO : désignation du chantier / opération */
   projectName?: string
   /** DO : adresse du chantier */

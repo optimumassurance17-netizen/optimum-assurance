@@ -12,6 +12,8 @@ export type CreateContractInput = {
   siret?: string
   address: string
   activities?: string[]
+  /** Activités / travaux explicitement exclus du contrat (décennale surtout) */
+  exclusions?: string[]
   projectName?: string
   projectAddress?: string
   constructionNature?: string
@@ -56,6 +58,7 @@ export async function createInsuranceContract(input: CreateContractInput) {
         siret: input.siret,
         address: input.address,
         activitiesJson: input.activities?.length ? JSON.stringify(input.activities) : undefined,
+        exclusionsJson: input.exclusions?.length ? JSON.stringify(input.exclusions) : undefined,
         projectName: input.projectName,
         projectAddress: input.projectAddress,
         constructionNature: input.constructionNature,
@@ -83,6 +86,7 @@ export async function createInsuranceContract(input: CreateContractInput) {
       siret: input.siret ?? undefined,
       address: input.address,
       activitiesJson: input.activities?.length ? JSON.stringify(input.activities) : undefined,
+      exclusionsJson: input.exclusions?.length ? JSON.stringify(input.exclusions) : undefined,
       projectName: input.projectName,
       projectAddress: input.projectAddress,
       constructionNature: input.constructionNature,

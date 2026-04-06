@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 
 export const dynamic = "force-dynamic"
@@ -55,9 +56,8 @@ export async function GET(
     })
   }
 
-  const activities = contract.activitiesJson
-    ? (JSON.parse(contract.activitiesJson) as string[])
-    : []
+  const activities = parseActivitiesJson(contract.activitiesJson)
+  const activityExclusions = parseExclusionsJson(contract.exclusionsJson)
 
   return NextResponse.json({
     valid: isActive,
@@ -67,7 +67,8 @@ export async function GET(
     productType: contract.productType,
     validFrom: contract.validFrom?.toISOString() ?? null,
     validUntil: contract.validUntil?.toISOString() ?? null,
-    activities: contract.productType === "decennale" ? activities : undefined,
+    activities: contract.productType === "decennale" ? activities : activities.length ? activities : undefined,
+    activityExclusions: activityExclusions.length ? activityExclusions : undefined,
     projectName: contract.productType === "do" ? contract.projectName : undefined,
     projectAddress: contract.productType === "do" ? contract.projectAddress : undefined,
     message: isActive ? undefined : "Attestation invalide ou contrat non actif",

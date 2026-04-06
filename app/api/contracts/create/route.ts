@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
       siret?: string
       address?: string
       activities?: string[]
+      exclusions?: string[]
       projectName?: string
       projectAddress?: string
       constructionNature?: string
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
       siret: body.siret,
       address: body.address.trim(),
       activities: body.activities,
+      exclusions: body.exclusions,
       projectName: body.projectName,
       projectAddress: body.projectAddress,
       constructionNature: body.constructionNature,

@@ -194,6 +194,7 @@ export async function createInsuranceContractFromSouscription(
       siret,
       address,
       activities: data.activites,
+      exclusions: data.exclusionsActivites?.length ? data.exclusionsActivites : undefined,
       premium,
       missingDocuments: false,
       companyAgeMonths: companyAgeMonthsFromSouscription(data),

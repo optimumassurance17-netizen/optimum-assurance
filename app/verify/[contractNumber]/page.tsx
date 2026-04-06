@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
 
@@ -29,7 +30,8 @@ export default async function VerifyByContractNumberPage({
     const isActive =
       ic.status === CONTRACT_STATUS.active && ic.validUntil != null && ic.validUntil > now
 
-    const activities = ic.activitiesJson ? (JSON.parse(ic.activitiesJson) as string[]) : []
+    const activities = parseActivitiesJson(ic.activitiesJson)
+    const exclusions = parseExclusionsJson(ic.exclusionsJson)
 
     return (
       <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100 px-4 py-12">
@@ -84,10 +86,38 @@ export default async function VerifyByContractNumberPage({
                     </dd>
                   </div>
                 )}
-                {ic.productType === "decennale" && activities.length > 0 && (
+                {ic.productType === "decennale" && (
                   <div className="border-t border-slate-100 pt-3">
-                    <dt className="font-semibold text-slate-900">Activités</dt>
+                    <dt className="font-semibold text-slate-900">Activité(s) assurée(s)</dt>
+                    <dd className="mt-1 text-slate-800">
+                      {activities.length > 0 ? activities.join(", ") : "—"}
+                    </dd>
+                  </div>
+                )}
+                {ic.productType === "decennale" && (
+                  <div className="border-t border-slate-100 pt-3">
+                    <dt className="font-semibold text-slate-900">Exclusion(s) d&apos;activité</dt>
+                    <dd className="mt-1 text-slate-800">
+                      {exclusions.length > 0
+                        ? exclusions.join(", ")
+                        : "Aucune exclusion d’activité déclarée au contrat."}
+                    </dd>
+                  </div>
+                )}
+                {ic.productType === "do" && activities.length > 0 && (
+                  <div className="border-t border-slate-100 pt-3">
+                    <dt className="font-semibold text-slate-900">Activité(s) / nature assurée(s)</dt>
                     <dd className="mt-1 text-slate-800">{activities.join(", ")}</dd>
+                  </div>
+                )}
+                {ic.productType === "do" && (
+                  <div className="border-t border-slate-100 pt-3">
+                    <dt className="font-semibold text-slate-900">Exclusion(s) d&apos;activité</dt>
+                    <dd className="mt-1 text-slate-800">
+                      {exclusions.length > 0
+                        ? exclusions.join(", ")
+                        : "Aucune exclusion d’activité déclarée au contrat."}
+                    </dd>
                   </div>
                 )}
                 {ic.productType === "do" && (ic.projectName || ic.projectAddress) && (
