@@ -31,6 +31,7 @@
     "db:push": "prisma db push",
     "db:sync-url-vercel": "node scripts/sync-database-url-from-vercel-pull.mjs",
     "db:migrate:prod": "node scripts/prisma-migrate-prod.mjs",
+    "db:repair:exclusions": "node scripts/prisma-repair-exclusions-flow.mjs",
     "db:generate": "prisma generate",
     "generate-secret": "node scripts/generate-secret.mjs",
     "secrets:prod": "node scripts/secrets-prod.mjs",
