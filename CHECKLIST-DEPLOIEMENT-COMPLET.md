@@ -22,7 +22,9 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 
 - **Santé prod** : `https://www.optimum-assurance.fr/api/health` → base **connected**, email Resend **configured** (`RESEND_API_KEY` + `EMAIL_FROM` côté serveur).
 
-- **Variables Vercel (Production)** : **`npm run verify:vercel-env`** — toutes les clés **requises** présentes (DB, auth, **Mollie**, **Supabase** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, **Resend**, **`CRON_SECRET`**, etc.). Les clés **Yousign** restent **optionnelles** (webhook legacy).
+- **Smoke test prod (sans secrets)** : **`npm run verify:prod`** — `/api/health`, `/robots.txt`, **`/sitemap.xml`** en **200** (sitemap : route handler dynamique + proxy qui **n’applique pas** Supabase session sur `sitemap.xml` / `robots.txt`).
+
+- **Variables Vercel (Production)** : **`npm run verify:vercel-env`** — toutes les clés **requises** présentes (DB, auth, **Mollie**, **Supabase** `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, **Resend**, **`CRON_SECRET`**, etc.). Les clés **Yousign** restent **optionnelles** (webhook legacy). Raccourci : **`npm run verify:release`** (= `verify:vercel-env` puis `verify:prod`).
 
 - **SEO — URL canonique** : **`NEXT_PUBLIC_SITE_CANONICAL`** = `https://www.optimum-assurance.fr` sur Vercel Production (utilisée par `lib/site-url.ts` pour sitemap, robots, métadonnées). Redéployer après changement de cette variable.
 
@@ -92,15 +94,15 @@ Commandes locales (nécessitent **`SUPABASE_DATABASE_URL`** dans `.env.local`) :
 
 ### Signature Supabase (`/api/sign` + Storage)
 
-- [ ] Créer un projet **Supabase** (ou en utiliser un).
+- [x] Projet **Supabase** + variables sur **Vercel** (vérifié par **`npm run verify:vercel-env`** — section signature).
 
-- [ ] **SQL** (une fois) : **`sql/supabase-esign-complete.sql`** (voir tableau ci-dessus) **ou** **`npm run supabase:apply-esign-sql`** avec `SUPABASE_DATABASE_URL`.
+- [ ] **SQL** (une fois par environnement) : **`sql/supabase-esign-complete.sql`** (voir tableau ci-dessus) **ou** **`npm run supabase:apply-esign-sql`** avec `SUPABASE_DATABASE_URL` — à confirmer sur la base réelle si besoin.
 
-- [ ] Copier **URL**, **anon** (ou clé publishable), **service_role** depuis Supabase → **Project Settings → API** dans **`.env.local`**.
+- [ ] Copier **URL**, **anon** (ou clé publishable), **service_role** dans **`.env.local`** pour le dev local / scripts (optionnel si tout passe par Vercel).
 
-- [ ] **`npm run vercel:push-supabase-env`** (envoie les clés sur Vercel Production) puis redéploiement.
+- [x] **`npm run vercel:push-supabase-env`** déjà utilisable ; clés présentes côté Vercel si `verify:vercel-env` est vert.
 
-- [ ] **`npm run verify:supabase`** — tables + buckets OK ; **`npm run verify:vercel-env`** — signature Supabase complète.
+- [ ] **`npm run verify:supabase`** — tables + buckets OK *(nécessite `SUPABASE_SERVICE_ROLE_KEY` en local ou URL DB)*.
 
 - [ ] Aide : **`npm run print:supabase-signature`** — optionnel : `npm run esign:create-request -- …`
 
@@ -144,6 +146,8 @@ npm run audit:env && npm run check-env && npm run preflight
 
 npm run verify:prod
 
+npm run verify:release
+
 npm run verify:vercel-env
 
 npm run print:webhooks
@@ -162,6 +166,6 @@ npx prisma migrate deploy
 
 
 
-*Mis à jour : proxy Next.js 16, skills Supabase, SQL RLS, npm audit.*
+*Mis à jour : proxy Next.js 16 (exclusion sitemap/robots), `verify:release`, skills Supabase, SQL RLS, npm audit.*
 
 

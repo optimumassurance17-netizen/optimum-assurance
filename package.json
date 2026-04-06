@@ -46,6 +46,7 @@
     "supabase:apply-esign-policies": "node scripts/apply-supabase-esign-policies.mjs",
     "vercel:push-supabase-env": "node scripts/vercel-push-supabase-env.mjs",
     "verify:vercel-env": "node scripts/verify-vercel-env.mjs",
+    "verify:release": "npm run verify:vercel-env && npm run verify:prod",
     "verify:all": "node scripts/verify-all.mjs",
     "seo:bulk": "tsx scripts/seo-bulk-generate.ts",
     "seo:benchmark": "node scripts/seo-benchmark.mjs",
