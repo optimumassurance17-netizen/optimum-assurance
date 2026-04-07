@@ -37,7 +37,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { documentId, motif } = body
+    const payload = body && typeof body === "object" ? (body as Record<string, unknown>) : {}
+    const rawDocumentId = payload.documentId
+    const rawMotif = payload.motif
+    const documentId = typeof rawDocumentId === "string" ? rawDocumentId.trim() : ""
+    const motif = typeof rawMotif === "string" ? rawMotif.trim() : ""
 
     if (!documentId) {
       return NextResponse.json({ error: "documentId requis" }, { status: 400 })

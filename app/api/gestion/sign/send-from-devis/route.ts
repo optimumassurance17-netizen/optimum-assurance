@@ -31,7 +31,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const documentId = typeof body.documentId === "string" ? body.documentId.trim() : ""
+    const rawDocumentId =
+      body && typeof body === "object" ? (body as Record<string, unknown>).documentId : undefined
+    const documentId = typeof rawDocumentId === "string" ? rawDocumentId.trim() : ""
     if (!documentId) {
       return NextResponse.json({ error: "documentId requis" }, { status: 400 })
     }
