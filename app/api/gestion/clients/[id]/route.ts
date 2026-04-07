@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { syncContratAvenantDocumentsFromUser } from "@/lib/sync-user-document-identity"
 import { UPLOAD_DIR } from "@/lib/user-documents"
+import { asJsonObject } from "@/lib/json-object"
 
 export async function GET(
   _request: Request,
@@ -111,7 +112,7 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const body = (await request.json()) as Record<string, unknown>
+    const body = asJsonObject<Record<string, unknown>>(await request.json())
 
     const current = await prisma.user.findUnique({ where: { id } })
     if (!current) {
@@ -219,13 +220,13 @@ export async function DELETE(
       )
     }
 
-    let body: { confirmEmail?: string } = {}
+    let body: Partial<{ confirmEmail?: string }> = {}
     try {
-      body = (await request.json()) as { confirmEmail?: string }
+      body = asJsonObject<{ confirmEmail?: string }>(await request.json())
     } catch {
       /* empty body */
     }
-    const confirmEmail = String(body.confirmEmail ?? "").trim().toLowerCase()
+    const confirmEmail = typeof body.confirmEmail === "string" ? body.confirmEmail.trim().toLowerCase() : ""
 
     const target = await prisma.user.findUnique({
       where: { id },

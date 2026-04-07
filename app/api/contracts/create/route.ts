@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { createInsuranceContract } from "@/lib/insurance-contract-service"
+import { asJsonObject } from "@/lib/json-object"
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Authentification requise" }, { status: 401 })
     }
 
-    const body = (await request.json()) as {
+    const body = asJsonObject<{
       productType?: "decennale" | "do"
       clientName?: string
       siret?: string
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
       premium?: number
       missingDocuments?: boolean
       companyAgeMonths?: number | null
-    }
+    }>(await request.json())
 
     if (!body.productType || !body.clientName?.trim() || !body.address?.trim()) {
       return NextResponse.json({ error: "Champs requis : productType, clientName, address" }, { status: 400 })

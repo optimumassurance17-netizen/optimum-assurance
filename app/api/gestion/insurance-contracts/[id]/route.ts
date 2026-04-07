@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { logContractAction } from "@/lib/insurance-contract-service"
+import { asJsonObject } from "@/lib/json-object"
 
 /**
  * Ajustement manuel de la prime contrat.
@@ -19,7 +20,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   try {
     const { id } = await params
-    const body = (await request.json()) as { premium?: unknown }
+    const body = asJsonObject<{ premium?: unknown }>(await request.json())
     const premium = typeof body.premium === "number" ? body.premium : parseFloat(String(body.premium ?? ""))
     if (!Number.isFinite(premium) || premium <= 0) {
       return NextResponse.json({ error: "premium invalide (> 0 requis)" }, { status: 400 })

@@ -7,6 +7,7 @@ import {
   isRcFabriquantLeadStatut,
   normalizeRcFabriquantLeadStatut,
 } from "@/lib/rc-fabriquant-lead-statuts"
+import { asJsonObject } from "@/lib/json-object"
 
 const NOTES_MAX = 8000
 
@@ -32,11 +33,10 @@ export async function PATCH(
       return NextResponse.json({ error: "JSON invalide" }, { status: 400 })
     }
 
-    if (!body || typeof body !== "object") {
+    const o = asJsonObject(body)
+    if (Object.keys(o).length === 0) {
       return NextResponse.json({ error: "Corps invalide" }, { status: 400 })
     }
-
-    const o = body as Record<string, unknown>
     const statutRaw = typeof o.statut === "string" ? o.statut.trim() : undefined
     const notesRaw = o.notesInternes
 

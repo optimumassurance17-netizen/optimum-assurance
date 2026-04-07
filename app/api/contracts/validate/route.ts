@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { approveInsuranceContract, rejectInsuranceContract } from "@/lib/insurance-contract-service"
+import { asJsonObject } from "@/lib/json-object"
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -11,11 +12,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as {
+    const body = asJsonObject<{
       contractId?: string
       approve?: boolean
       reason?: string
-    }
+    }>(await request.json())
     if (!body.contractId || typeof body.approve !== "boolean") {
       return NextResponse.json({ error: "contractId et approve requis" }, { status: 400 })
     }

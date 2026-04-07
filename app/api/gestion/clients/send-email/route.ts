@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { sendEmail } from "@/lib/email"
 import { escapeHtmlForEmail } from "@/lib/email-layout"
+import { asJsonObject } from "@/lib/json-object"
 import { logAdminActivity } from "@/lib/admin-activity"
 
 export async function POST(request: NextRequest) {
@@ -14,11 +15,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    const body = (await request.json()) as {
+    const body = asJsonObject<{
       userId?: string
       subject?: string
       body?: string
-    }
+    }>(await request.json())
     const userId = typeof body.userId === "string" ? body.userId.trim() : ""
     const subject = typeof body.subject === "string" ? body.subject.trim() : ""
     const emailBody = typeof body.body === "string" ? body.body.trim() : ""

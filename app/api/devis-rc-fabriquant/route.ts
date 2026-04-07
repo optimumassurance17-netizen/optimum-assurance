@@ -5,6 +5,7 @@ import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
 import { getClientIp, checkRateLimitMemory } from "@/lib/rate-limit"
 import type { DevisRcFabriquantData, RcTypeProduit, RcZoneDistribution } from "@/lib/rc-fabriquant-types"
 import { computeRcFabIndicatif } from "@/lib/rc-fabriquant-underwriting"
+import { asJsonObject } from "@/lib/json-object"
 
 export const runtime = "nodejs"
 
@@ -25,8 +26,8 @@ function parseBool(v: unknown): boolean {
 }
 
 function sanitizePayload(body: unknown): { email: string; data: DevisRcFabriquantData } | null {
-  if (!body || typeof body !== "object") return null
-  const o = body as Record<string, unknown>
+  const o = asJsonObject(body)
+  if (Object.keys(o).length === 0) return null
   const email = typeof o.email === "string" ? o.email.trim().toLowerCase() : ""
   if (!email || !EMAIL_RE.test(email)) return null
   const raw = o.data

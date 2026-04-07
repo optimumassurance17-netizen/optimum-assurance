@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
+import { asJsonObject } from "@/lib/json-object"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 
 const MESSAGE_MIN = 20
@@ -24,11 +25,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "JSON invalide" }, { status: 400 })
     }
 
-    if (!body || typeof body !== "object") {
+    const o = asJsonObject(body)
+    if (Object.keys(o).length === 0) {
       return NextResponse.json({ error: "Corps invalide" }, { status: 400 })
     }
-
-    const o = body as Record<string, unknown>
     const leadId = typeof o.leadId === "string" ? o.leadId.trim() : ""
     const messagePersonnalise =
       typeof o.messagePersonnalise === "string" ? o.messagePersonnalise.trim() : ""

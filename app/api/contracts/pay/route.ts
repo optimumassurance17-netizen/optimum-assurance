@@ -11,6 +11,7 @@ import {
 } from "@/lib/insurance-contract-service"
 import { insuranceContractPayLockKeys } from "@/lib/insurance-contract-pay-lock"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
+import { asJsonObject } from "@/lib/json-object"
 
 /** Statuts Mollie pour lesquels le client peut encore utiliser le même paiement. */
 const MOLLIE_REUSABLE_STATUSES = new Set(["open", "pending", "authorized"])
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
   const userId = session.user.id
 
   try {
-    const body = (await request.json()) as { contractId?: string }
+    const body = asJsonObject<{ contractId?: string }>(await request.json())
     if (!body.contractId) {
       return NextResponse.json({ error: "contractId requis" }, { status: 400 })
     }
