@@ -1,8 +1,8 @@
 "use client"
 
-import { Suspense, useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import dynamic from "next/dynamic"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/Header"
 import { Stepper } from "@/components/Stepper"
@@ -28,8 +28,8 @@ const DevisFaq = dynamic(
 
 function DevisPageContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const safeSearchParams = searchParams ?? new URLSearchParams()
+  const [metierParam, setMetierParam] = useState<string | null>(null)
+  const [resumeParam, setResumeParam] = useState<string | null>(null)
   const [activites, setActivites] = useState<string[]>([])
   const [activiteSelectionnee, setActiviteSelectionnee] = useState("")
   const [siret, setSiret] = useState("")
@@ -49,6 +49,13 @@ function DevisPageContent() {
   const [emailDevis, setEmailDevis] = useState("")
   const [sendEmailLoading, setSendEmailLoading] = useState(false)
   const [sendEmailDone, setSendEmailDone] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const urlParams = new URLSearchParams(window.location.search)
+    setMetierParam(urlParams.get("metier"))
+    setResumeParam(urlParams.get("resume"))
+  }, [])
 
   const nbSinistres = Number(sinistres) || 0
   const offreNettoyageToiture = activites.some(
@@ -96,7 +103,7 @@ function DevisPageContent() {
 
   /** Préremplissage activité(s) depuis /assurance-decennale/[metier] (?metier=slug) */
   useEffect(() => {
-    const slug = safeSearchParams.get("metier")
+    const slug = metierParam
     if (!slug || typeof window === "undefined") return
     const prefill = getMetierPrefillActivites(slug)
     if (prefill.length === 0) return
@@ -105,10 +112,10 @@ function DevisPageContent() {
       const merged = prefill.filter((a) => ACTIVITES_BTP.includes(a as (typeof ACTIVITES_BTP)[number]))
       return merged.slice(0, 8)
     })
-  }, [safeSearchParams])
+  }, [metierParam])
 
   useEffect(() => {
-    if (safeSearchParams.get("resume") === "1" && typeof window !== "undefined") {
+    if (resumeParam === "1" && typeof window !== "undefined") {
       try {
         const saved = sessionStorage.getItem("optimum-devis-resume")
         if (saved) {
@@ -137,7 +144,7 @@ function DevisPageContent() {
         /* ignore */
       }
     }
-  }, [safeSearchParams, router])
+  }, [resumeParam, router])
 
   const ajouterActivite = () => {
     if (activiteSelectionnee && activites.length < 8 && !activites.includes(activiteSelectionnee)) {
@@ -651,13 +658,5 @@ function DevisPageContent() {
 }
 
 export default function DevisPage() {
-  return (
-    <Suspense fallback={
-      <main className="min-h-screen bg-[var(--background)] flex items-center justify-center">
-        <div className="animate-pulse text-[#171717]">Chargement...</div>
-      </main>
-    }>
-      <DevisPageContent />
-    </Suspense>
-  )
+  return <DevisPageContent />
 }
