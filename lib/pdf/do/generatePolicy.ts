@@ -8,6 +8,7 @@ import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 
 export async function generateDOPolicy(data: InsuranceData): Promise<Uint8Array> {
   validateDoQuote(data)
@@ -54,6 +55,7 @@ export async function generateDOPolicy(data: InsuranceData): Promise<Uint8Array>
     `Période couverte : du ${data.startDate} au ${data.endDate}.`,
     `Prime TTC : ${formatEuro(data.premium)}.`,
     "Franchise : aucune (garantie obligatoire dommages-ouvrage).",
+    `Protection juridique : garantie défense/recours à hauteur de ${formatEuro(PROTECTION_JURIDIQUE_GARANTIE_EUR)} par litige couvert.`,
     "Paiement : selon modalités contractuelles (virement ou prélèvement selon proposition).",
     "Objet : préfinancement rapide des travaux de réparation relevant de la garantie décennale, sans attendre une décision au fond sur les responsabilités.",
     "Déclenchement : après réception d’une déclaration de sinistre complète et instruite selon les délais légaux applicables en dommages-ouvrage.",

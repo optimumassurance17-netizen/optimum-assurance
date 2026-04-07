@@ -1,6 +1,7 @@
 "use client"
 
 import { SITE_URL } from "@/lib/site-url"
+import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 
 interface ContratTemplateProps {
   numero: string
@@ -120,7 +121,16 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
         </section>
 
         <section>
-          <h3 className="font-semibold mb-2">Article 6 - Résiliation</h3>
+          <h3 className="font-semibold mb-2">Article 6 - Protection juridique</h3>
+          <p>
+            Une garantie de protection juridique est incluse à hauteur de{" "}
+            {PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € par litige garanti, selon les conditions
+            générales et particulières applicables.
+          </p>
+        </section>
+
+        <section>
+          <h3 className="font-semibold mb-2">Article 7 - Résiliation</h3>
           <p>Les demandes de résiliation doivent être adressées par lettre recommandée au plus tard 2 mois avant la date d&apos;échéance (31 décembre). Un minimum d&apos;un an de contrat est requis avant toute résiliation à l&apos;échéance.</p>
         </section>
 

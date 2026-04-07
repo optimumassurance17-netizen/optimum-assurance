@@ -1,3 +1,5 @@
+import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
+
 export const garantiesDecennale = [
   {
     nom: "RC Décennale obligatoire",
@@ -18,10 +20,10 @@ export const garantiesDecennale = [
     plafond: "600 000 €",
   },
   {
-    nom: "Assistance juridique",
-    description: "Conseil juridique et recouvrement de factures impayées.",
+    nom: "Protection juridique",
+    description: `Défense/recours et assistance juridique, dans la limite de ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} €.`,
     franchise: "—",
-    plafond: "Inclus",
+    plafond: `${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} €`,
   },
 ] as const
 

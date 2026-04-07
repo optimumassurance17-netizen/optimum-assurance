@@ -8,6 +8,7 @@ import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 
 /**
  * Conditions particulières — contrat décennale (pdf-lib).
@@ -60,6 +61,7 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
     `Prime annuelle TTC : ${formatEuro(data.premium)}.`,
     "Paiement : prélèvement SEPA selon mandat et échéances contractuelles.",
     "Périmètre de garantie : responsabilité civile décennale de l’assuré pour les dommages matériels compromettant la solidité de l’ouvrage ou le rendant impropre à sa destination, dans la limite des conditions générales et particulières.",
+    `Protection juridique : défense/recours et assistance juridique à hauteur de ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € par litige garanti (selon conditions générales).`,
     "Franchise et plafonds : applicables selon les conditions particulières signées et les conditions générales en vigueur à la date du sinistre.",
     "Obligations déclaratives : toute modification substantielle de l’activité, du chiffre d’affaires, du mode d’exécution des travaux ou de la situation juridique doit être déclarée sans délai.",
     "Sinistre : déclaration écrite dès connaissance du fait dommageable, avec pièces justificatives (référence chantier, nature des dommages, date d’apparition, éléments techniques disponibles).",

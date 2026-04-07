@@ -16,6 +16,7 @@ import {
 } from "@/lib/legal-branding"
 import { SITE_URL } from "@/lib/site-url"
 import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
+import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
 import { drawAttestationStampBottomRight, loadAttestationStampImage } from "@/lib/pdf/shared/attestationStamp"
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
@@ -173,6 +174,13 @@ async function generateRcFabPolicyPlaceholderPdf(c: InsuranceContract): Promise<
   y -= 18
   page.drawText(
     sanitizeForPdfLib(`Franchise contractuelle : ${FRANCHISE_RC_FABRIQUANT_EUR.toLocaleString("fr-FR")} €.`),
+    { x: 50, y, size: 10, font }
+  )
+  y -= 18
+  page.drawText(
+    sanitizeForPdfLib(
+      `Protection juridique : ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € de garantie.`
+    ),
     { x: 50, y, size: 10, font }
   )
   y -= 18
