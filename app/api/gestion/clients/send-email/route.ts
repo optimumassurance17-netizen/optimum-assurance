@@ -14,14 +14,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    const body = (await request.json()) as {
-      userId?: string
-      subject?: string
-      body?: string
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
     }
-    const userId = typeof body.userId === "string" ? body.userId.trim() : ""
-    const subject = typeof body.subject === "string" ? body.subject.trim() : ""
-    const emailBody = typeof body.body === "string" ? body.body.trim() : ""
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const payload = body as {
+      userId?: unknown
+      subject?: unknown
+      body?: unknown
+    }
+    const userId = typeof payload.userId === "string" ? payload.userId.trim() : ""
+    const subject = typeof payload.subject === "string" ? payload.subject.trim() : ""
+    const emailBody = typeof payload.body === "string" ? payload.body.trim() : ""
 
     if (!userId || !subject || !emailBody) {
       return NextResponse.json({ error: "userId, subject et body requis" }, { status: 400 })

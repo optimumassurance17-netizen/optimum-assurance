@@ -19,8 +19,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   try {
     const { id } = await params
-    const body = (await request.json()) as { premium?: unknown }
-    const premium = typeof body.premium === "number" ? body.premium : parseFloat(String(body.premium ?? ""))
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const payload = body as { premium?: unknown }
+    const premium =
+      typeof payload.premium === "number"
+        ? payload.premium
+        : parseFloat(String(payload.premium ?? ""))
     if (!Number.isFinite(premium) || premium <= 0) {
       return NextResponse.json({ error: "premium invalide (> 0 requis)" }, { status: 400 })
     }

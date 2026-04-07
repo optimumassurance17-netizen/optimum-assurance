@@ -40,10 +40,18 @@ export async function POST(
     }
 
     const { id } = await params
-    const body = await request.json()
-    const { content } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const content = (body as Record<string, unknown>).content
 
-    if (!content || typeof content !== "string") {
+    if (!content || typeof content !== "string" || !content.trim()) {
       return NextResponse.json({ error: "content requis" }, { status: 400 })
     }
 

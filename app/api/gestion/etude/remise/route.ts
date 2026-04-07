@@ -20,10 +20,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    const body = await request.json()
-    const { etudeLeadId, primeAnnuelle } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const payload = body as { etudeLeadId?: unknown; primeAnnuelle?: unknown }
+    const etudeLeadId =
+      typeof payload.etudeLeadId === "string" ? payload.etudeLeadId.trim() : ""
+    const primeAnnuelle =
+      typeof payload.primeAnnuelle === "number"
+        ? payload.primeAnnuelle
+        : parseFloat(String(payload.primeAnnuelle ?? ""))
 
-    if (!etudeLeadId || typeof primeAnnuelle !== "number" || primeAnnuelle <= 0) {
+    if (!etudeLeadId || !Number.isFinite(primeAnnuelle) || primeAnnuelle <= 0) {
       return NextResponse.json(
         { error: "ID étude et prime annuelle requis" },
         { status: 400 }

@@ -148,4 +148,29 @@ test.describe("API validations critiques", () => {
     const data = (await res.json()) as { ok?: boolean }
     expect(data.ok).toBe(true)
   })
+
+  test("Gestion remises étude: route protégée sans session", async ({ request }) => {
+    const res = await request.post("/api/gestion/etude/remise", {
+      data: {
+        etudeLeadId: "lead_123",
+        primeAnnuelle: 1200,
+      },
+    })
+    expect(res.status()).toBe(403)
+  })
+
+  test("Gestion notes client: route protégée sans session", async ({ request }) => {
+    const res = await request.post("/api/gestion/clients/abc123/notes", {
+      data: { content: "Note test" },
+    })
+    expect(res.status()).toBe(403)
+  })
+
+  test("Gestion contrats patch: route protégée sans session", async ({ request }) => {
+    const res = await request.fetch("/api/gestion/insurance-contracts/abc123", {
+      method: "PATCH",
+      data: { premium: 1500 },
+    })
+    expect(res.status()).toBe(403)
+  })
 })
