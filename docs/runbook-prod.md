@@ -80,7 +80,73 @@ Ce document sert de procedure standard pour deployer, verifier et surveiller la 
 - push sur `main`
 - verifier CI + statut Vercel du SHA
 
-## 6) Commandes utiles
+## 6) Methode performance reproductible (Lighthouse)
+
+Objectif: mesurer de facon stable, prioriser les pages critiques, et valider chaque optimisation par des chiffres.
+
+### Scope minimum a mesurer
+
+- Home: `/`
+- Devis: `/devis`
+- RC Pro: `/devis/rcpro`
+- Pages SEO metier:
+  - `/assurance-decennale/plombier`
+  - `/assurance-decennale/electricien`
+  - `/assurance-decennale/macon`
+- Pages SEO dommage-ouvrage:
+  - `/dommage-ouvrage/auto-construction`
+  - `/dommage-ouvrage/clos-et-couvert`
+
+### Regle de mesure
+
+- Toujours faire **3 runs** par page.
+- Travailler en mobile en priorite, puis desktop.
+- Utiliser le meme binaire Chromium pour eviter les variations d'environnement:
+  - `CHROME_PATH="/home/ubuntu/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome"`
+
+### Commande type (mobile)
+
+```bash
+CHROME_PATH="/home/ubuntu/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome"
+for i in 1 2 3; do
+  npx lighthouse "https://www.optimum-assurance.fr/devis" \
+    --quiet \
+    --chrome-path="$CHROME_PATH" \
+    --chrome-flags="--headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage" \
+    --output=json \
+    --output-path="/tmp/lh-devis-$i.json" \
+    --only-categories=performance \
+    --preset=perf
+done
+```
+
+### Seuils cibles (mobile)
+
+- Score performance >= 95
+- LCP <= 2.5s (ideal proche de 1s sur pages legeres)
+- TBT < 150ms
+- CLS < 0.1
+
+### Procedure d'optimisation
+
+1. Identifier la page la plus faible (score / LCP).
+2. Identifier le vrai LCP (texte principal, cookie banner, hero, image).
+3. Appliquer un changement **cible** (pas de refacto global):
+   - code splitting des blocs non critiques
+   - suppression d'un suspense bloquant au-dessus de la ligne de flottaison
+   - reduction JS initial
+   - report des widgets secondaires (chat, FAQ, etc.)
+4. Refaire 3 runs et comparer la moyenne.
+5. Conserver le changement seulement si la moyenne s'ameliore.
+
+### Validation finale
+
+- `npm run vercel-build`
+- push `main`
+- attendre CI + Vercel success
+- re-mesurer en production et archiver le resultat dans le suivi ops
+
+## 7) Commandes utiles
 
 - Build prod local:
   - `npm run vercel-build`
@@ -91,7 +157,7 @@ Ce document sert de procedure standard pour deployer, verifier et surveiller la 
 - Verifier variables Vercel:
   - `npm run verify:vercel-env`
 
-## 7) Responsabilites
+## 8) Responsabilites
 
 - Dev: qualite code + build + checks post-release.
 - Ops: monitoring quotidien + verification crons + suivi erreurs prod.
