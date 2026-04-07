@@ -40,7 +40,11 @@ export async function POST(request: NextRequest) {
       where: {
         id: body.contractId,
         userId,
-        status: CONTRACT_STATUS.approved,
+        OR: [
+          { status: CONTRACT_STATUS.approved },
+          /** RC Fabriquant : échéances suivantes après activation (trimestriel manuel). */
+          { status: CONTRACT_STATUS.active, productType: "rc_fabriquant" },
+        ],
       },
     })
 
@@ -78,7 +82,10 @@ export async function POST(request: NextRequest) {
         where: {
           id: contractId,
           userId,
-          status: CONTRACT_STATUS.approved,
+          OR: [
+            { status: CONTRACT_STATUS.approved },
+            { status: CONTRACT_STATUS.active, productType: "rc_fabriquant" },
+          ],
         },
       })
 

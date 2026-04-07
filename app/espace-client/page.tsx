@@ -205,7 +205,13 @@ export default function EspaceClientPage() {
                           ? "RC Fabriquant"
                           : "Décennale"}{" "}
                       ·{" "}
-                      {c.premium.toLocaleString("fr-FR")} € / an ·{" "}
+                      {c.productType === "rc_fabriquant" ? (
+                        <>
+                          {c.premium.toLocaleString("fr-FR")} € — montant de l&apos;échéance en cours (trimestriel) ·{" "}
+                        </>
+                      ) : (
+                        <>{c.premium.toLocaleString("fr-FR")} € / an · </>
+                      )}
                       <span className="font-medium">{c.status}</span>
                     </p>
                     {c.status === CONTRACT_STATUS.rejected && c.rejectedReason && (
@@ -218,8 +224,16 @@ export default function EspaceClientPage() {
                       contractNumber={c.contractNumber}
                       status={c.status}
                     />
-                    {c.status === CONTRACT_STATUS.approved && (
-                      <PayInsuranceContractButton contractId={c.id} label="Payer (virement Mollie)" />
+                    {(c.status === CONTRACT_STATUS.approved ||
+                      (c.status === CONTRACT_STATUS.active && c.productType === "rc_fabriquant")) && (
+                      <PayInsuranceContractButton
+                        contractId={c.id}
+                        label={
+                          c.productType === "rc_fabriquant"
+                            ? "Payer l\u2019échéance — virement Mollie"
+                            : "Payer (virement Mollie)"
+                        }
+                      />
                     )}
                     {c.status === CONTRACT_STATUS.pending_validation && (
                       <span className="inline-block rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-blue-900">

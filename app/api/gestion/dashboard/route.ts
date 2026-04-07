@@ -73,6 +73,7 @@ export async function GET() {
       devisDrafts,
       pendingSignaturesRaw,
       insuranceContractsCount,
+      insuranceContractsList,
     ] = await Promise.all([
       prisma.user.findMany({
         select: {
@@ -186,6 +187,34 @@ export async function GET() {
         take: 25,
       }),
       prisma.insuranceContract.count(),
+      prisma.insuranceContract.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 150,
+        select: {
+          id: true,
+          contractNumber: true,
+          productType: true,
+          clientName: true,
+          userId: true,
+          premium: true,
+          status: true,
+          paidAt: true,
+          validUntil: true,
+          createdAt: true,
+          user: { select: { id: true, email: true, raisonSociale: true } },
+          lifecyclePayments: {
+            orderBy: { createdAt: "desc" },
+            take: 8,
+            select: {
+              id: true,
+              amount: true,
+              status: true,
+              paidAt: true,
+              createdAt: true,
+            },
+          },
+        },
+      }),
     ])
 
     const pendingUserIds = [...new Set(pendingSignaturesRaw.map((p) => p.userId))]
@@ -238,6 +267,7 @@ export async function GET() {
       devisDrafts,
       pendingSignatures,
       insuranceContractsCount,
+      insuranceContracts: insuranceContractsList,
     })
   } catch (error) {
     console.error("Erreur dashboard gestion:", error)

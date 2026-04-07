@@ -230,6 +230,49 @@ export async function processInsuranceContractPaymentSuccess(
   const c = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
   if (!c) return { ok: false, error: "NOT_FOUND" }
 
+  /**
+   * RC Fabriquant : cotisation par échéances (virement Mollie). Une fois le contrat actif, les paiements suivants
+   * avec un **nouvel** id Mollie doivent être enregistrés (trimestre suivant), pas ignorés comme doublon.
+   */
+  if (c.status === CONTRACT_STATUS.active && c.paidAt && c.productType === "rc_fabriquant") {
+    if (!premiumMatchesMollieAmount(c.premium, amount)) {
+      await logContractAction(contractId, "payment_amount_mismatch", {
+        molliePaymentId,
+        expectedPremium: c.premium,
+        paidAmount: amount,
+        context: "rc_fabriquant_installment",
+      })
+      return { ok: false, error: "AMOUNT_MISMATCH" }
+    }
+    const paidAt = new Date()
+    await prisma.$transaction(async (tx) => {
+      await tx.contractLifecyclePayment.upsert({
+        where: { molliePaymentId },
+        create: {
+          contractId,
+          molliePaymentId,
+          amount,
+          status: "paid",
+          paidAt,
+        },
+        update: { status: "paid", paidAt },
+      })
+      await tx.insuranceContract.update({
+        where: { id: contractId },
+        data: { paidAt },
+      })
+      await tx.contractActionLog.create({
+        data: {
+          contractId,
+          action: "installment_paid",
+          details: JSON.stringify({ molliePaymentId, amount, productType: "rc_fabriquant" }),
+        },
+      })
+    })
+    const fresh = await prisma.insuranceContract.findUniqueOrThrow({ where: { id: contractId } })
+    return { ok: true, contract: fresh, idempotent: false }
+  }
+
   if (c.status === CONTRACT_STATUS.active && c.paidAt) {
     await ensurePostPaymentPdfsIfMissing(c.id)
     return { ok: true, contract: c, idempotent: true }

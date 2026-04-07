@@ -14,6 +14,7 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
   const { contractNumber, status, rejectedReason, contractId, productType } = snapshot
   const isDoPlatform =
     productType === "do" || (productType == null && souscriptionProduct === "do")
+  const isRcFabriquant = productType === "rc_fabriquant"
 
   if (status === CONTRACT_STATUS.rejected) {
     return (
@@ -45,6 +46,22 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
   }
 
   if (status === CONTRACT_STATUS.approved) {
+    if (isRcFabriquant) {
+      return (
+        <div className="mb-8 p-5 rounded-2xl border border-teal-200 bg-teal-50 text-left">
+          <p className="font-semibold text-teal-950 mb-1">RC Fabriquant — cotisation trimestrielle</p>
+          <p className="text-sm text-teal-900/90 mb-4">
+            Comme la décennale, la cotisation est pensée <strong>par trimestre</strong>. Le montant affiché sur le contrat est celui de
+            l&apos;échéance en cours : paiement par <strong>virement Mollie</strong> depuis le bouton ci-dessous. Les prochaines
+            échéances et relances sont <strong>pilotées manuellement</strong> par la gestion (ajustement du montant, emails, suivi).
+          </p>
+          <PayInsuranceContractButton
+            contractId={contractId}
+            label={"Payer l\u2019échéance — virement Mollie"}
+          />
+        </div>
+      )
+    }
     if (!isDoPlatform) {
       return (
         <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-left">

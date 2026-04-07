@@ -30,6 +30,7 @@ import { getSession, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Toast } from "@/components/Toast"
+import { InsuranceContractsGestionBlock } from "@/components/gestion/InsuranceContractsGestionBlock"
 import { readResponseJson } from "@/lib/read-response-json"
 import {
   RC_FABRIQUANT_LEAD_STATUT_LABELS,
@@ -210,6 +211,26 @@ interface DashboardData {
     signatureFlowLabel?: string
   }[]
   insuranceContractsCount?: number
+  insuranceContracts?: {
+    id: string
+    contractNumber: string
+    productType: string
+    clientName: string
+    userId: string | null
+    premium: number
+    status: string
+    paidAt: string | null
+    validUntil: string | null
+    createdAt: string
+    user: { id: string; email: string; raisonSociale: string | null } | null
+    lifecyclePayments: {
+      id: string
+      amount: number
+      status: string
+      paidAt: string | null
+      createdAt: string
+    }[]
+  }[]
 }
 
 export default function GestionPage() {
@@ -1264,13 +1285,25 @@ export default function GestionPage() {
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-amber-900/40">
                 <p className="text-gray-200 text-sm">Contrats plateforme</p>
-                <Link href="/admin" className="text-2xl font-bold text-amber-200 hover:text-amber-100 block">
+                <Link href="#contrats-plateforme" className="text-2xl font-bold text-amber-200 hover:text-amber-100 block">
                   {data.insuranceContractsCount ?? 0}
                 </Link>
-                <p className="text-xs text-gray-200 mt-1">Voir admin →</p>
+                <p className="text-xs text-gray-200 mt-1">Tableau manuel + lien admin</p>
               </div>
             </section>
           </>
+        )}
+
+        {data && Array.isArray(data.insuranceContracts) && (
+          <InsuranceContractsGestionBlock
+            contracts={data.insuranceContracts}
+            searchQuery={searchQuery}
+            onRefresh={async () => {
+              const dashRes = await fetch("/api/gestion/dashboard")
+              if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+            }}
+            setToast={setToast}
+          />
         )}
 
         {/* Liste clients - accès fiche détaillée */}

@@ -15,7 +15,10 @@ function parseInsuranceSnapshotFromSession(): InsuranceContractSnapshot | null {
         contractNumber: p.contractNumber,
         status: p.status,
         rejectedReason: p.rejectedReason,
-        productType: p.productType === "do" || p.productType === "decennale" ? p.productType : undefined,
+        productType:
+          p.productType === "do" || p.productType === "decennale" || p.productType === "rc_fabriquant"
+            ? p.productType
+            : undefined,
       }
     }
   } catch {
@@ -37,7 +40,7 @@ async function tryMollieRedirectIfApproved(contractId: string): Promise<
 }
 
 function shouldRedirectApprovedToMollieContractPay(snapshot: InsuranceContractSnapshot): boolean {
-  return snapshot.productType === "do"
+  return snapshot.productType === "do" || snapshot.productType === "rc_fabriquant"
 }
 
 async function resumeInsuranceContractFlowFromSnapshot(
@@ -279,7 +282,7 @@ export function persistInsuranceContractSnapshot(payload: {
   contractNumber: string
   status: string
   rejectedReason?: string | null
-  productType?: "decennale" | "do"
+  productType?: "decennale" | "do" | "rc_fabriquant"
 }) {
   if (typeof sessionStorage === "undefined") return
   sessionStorage.setItem(STORAGE_KEYS.insuranceContract, JSON.stringify(payload))
