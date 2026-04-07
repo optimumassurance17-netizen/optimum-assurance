@@ -138,14 +138,14 @@ test.describe("API validations critiques", () => {
     expect(data.error).toMatch(/JSON invalide|Objet JSON attendu/i)
   })
 
-  test("Forgot password: JSON invalide rejeté en 400", async ({ request }) => {
+  test("Forgot password: JSON invalide ne révèle pas d'information (ok=true)", async ({ request }) => {
     const res = await request.fetch("/api/auth/forgot-password", {
       method: "POST",
       headers: { "content-type": "application/json" },
       data: "{invalid-json",
     })
-    expect(res.status()).toBe(400)
-    const data = (await res.json()) as { error?: string }
-    expect(data.error).toMatch(/JSON invalide|Objet JSON attendu/i)
+    expect(res.status()).toBe(200)
+    const data = (await res.json()) as { ok?: boolean }
+    expect(data.ok).toBe(true)
   })
 })
