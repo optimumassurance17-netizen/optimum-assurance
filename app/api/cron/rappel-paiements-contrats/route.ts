@@ -8,6 +8,8 @@ import { sendOperationsAlert } from "@/lib/operations-alert"
 import { logAdminActivity } from "@/lib/admin-activity"
 
 const LOOKBACK_DAYS = 14
+const CLIENT_REMINDER_AFTER_HOURS = 24
+const ADMIN_ALERT_AFTER_HOURS = 72
 function getProductLabel(productType: string): string {
   if (productType === "do") return "assurance dommage ouvrage"
   if (productType === "rc_fabriquant") return "assurance RC fabriquant"
@@ -53,6 +55,9 @@ export async function GET(request: NextRequest) {
     let alerts = 0
     let skippedNoUser = 0
     let skippedNoPaymentIntent = 0
+    let skippedTooRecent = 0
+    let skippedAlreadyReminded = 0
+    let skippedAlreadyAlerted = 0
     const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
     const paymentIds = candidates.map((c) => c.lifecyclePayments[0]?.id).filter(Boolean) as string[]
     const contractIds = candidates.map((c) => c.id)
@@ -102,9 +107,58 @@ export async function GET(request: NextRequest) {
       if (status === "paid" || status === "open" || status === "pending" || status === "authorized") {
         continue
       }
-      if (alreadyRemindedPaymentIds.has(latestPayment.id)) continue
+      const paymentAgeMs = now.getTime() - latestPayment.createdAt.getTime()
+      const shouldRemindClient = paymentAgeMs >= CLIENT_REMINDER_AFTER_HOURS * 60 * 60 * 1000
+      const shouldAlertOps = paymentAgeMs >= ADMIN_ALERT_AFTER_HOURS * 60 * 60 * 1000
+      if (!shouldRemindClient && !shouldAlertOps) {
+        skippedTooRecent++
+        continue
+      }
 
       const produitLabel = getProductLabel(contract.productType)
+      if (shouldAlertOps) {
+        if (alreadyAlertedContractIds.has(contract.id)) {
+          skippedAlreadyAlerted++
+        } else {
+          const alertOk = await sendOperationsAlert({
+            subject: "[Optimum] Alerte admin — paiement contrat non finalisé",
+            lines: [
+              `Contrat: ${contract.contractNumber}`,
+              `Produit: ${produitLabel}`,
+              `Client: ${user.raisonSociale || user.email}`,
+              `Email client: ${user.email}`,
+              `Statut paiement: ${latestPayment.status}`,
+              `Dernière tentative: ${latestPayment.createdAt.toISOString()}`,
+              `Montant: ${latestPayment.amount.toLocaleString("fr-FR")} €`,
+              `Espace client: ${SITE_URL}/espace-client`,
+            ],
+            replyTo: user.email,
+          })
+          if (alertOk) {
+            alerts++
+            alreadyAlertedContractIds.add(contract.id)
+            await logAdminActivity({
+              adminEmail: "cron@system",
+              action: "cron_contract_payment_admin_alert_sent",
+              targetType: "insurance_contract",
+              targetId: contract.id,
+              details: {
+                contractNumber: contract.contractNumber,
+                paymentId: latestPayment.id,
+                paymentStatus: latestPayment.status,
+                amount: latestPayment.amount,
+                email: user.email,
+              },
+            })
+          }
+        }
+      }
+
+      if (!shouldRemindClient) continue
+      if (alreadyRemindedPaymentIds.has(latestPayment.id)) {
+        skippedAlreadyReminded++
+        continue
+      }
       const template = EMAIL_TEMPLATES.rappelPaiementContrat(
         user.raisonSociale || contract.clientName || user.email,
         produitLabel,
@@ -122,6 +176,7 @@ export async function GET(request: NextRequest) {
       if (!emailOk) continue
 
       reminded++
+      alreadyRemindedPaymentIds.add(latestPayment.id)
       await logAdminActivity({
         adminEmail: "cron@system",
         action: "cron_contract_payment_client_reminder_sent",
@@ -135,42 +190,6 @@ export async function GET(request: NextRequest) {
           amount: latestPayment.amount,
         },
       })
-
-      const paymentAgeMs = now.getTime() - latestPayment.createdAt.getTime()
-      const shouldAlertOps = paymentAgeMs >= 72 * 60 * 60 * 1000
-      if (shouldAlertOps) {
-        if (alreadyAlertedContractIds.has(contract.id)) continue
-        const alertOk = await sendOperationsAlert({
-          subject: "[Optimum] Alerte admin — paiement contrat non finalisé",
-          lines: [
-            `Contrat: ${contract.contractNumber}`,
-            `Produit: ${produitLabel}`,
-            `Client: ${user.raisonSociale || user.email}`,
-            `Email client: ${user.email}`,
-            `Statut paiement: ${latestPayment.status}`,
-            `Dernière tentative: ${latestPayment.createdAt.toISOString()}`,
-            `Montant: ${latestPayment.amount.toLocaleString("fr-FR")} €`,
-            `Espace client: ${SITE_URL}/espace-client`,
-          ],
-          replyTo: user.email,
-        })
-        if (alertOk) {
-          alerts++
-          await logAdminActivity({
-            adminEmail: "cron@system",
-            action: "cron_contract_payment_admin_alert_sent",
-            targetType: "insurance_contract",
-            targetId: contract.id,
-            details: {
-              contractNumber: contract.contractNumber,
-              paymentId: latestPayment.id,
-              paymentStatus: latestPayment.status,
-              amount: latestPayment.amount,
-              email: user.email,
-            },
-          })
-        }
-      }
     }
 
     return NextResponse.json({
@@ -180,6 +199,9 @@ export async function GET(request: NextRequest) {
       alerts,
       skippedNoUser,
       skippedNoPaymentIntent,
+      skippedTooRecent,
+      skippedAlreadyReminded,
+      skippedAlreadyAlerted,
     })
   } catch (error) {
     console.error("[cron rappel-paiements-contrats]", error)
