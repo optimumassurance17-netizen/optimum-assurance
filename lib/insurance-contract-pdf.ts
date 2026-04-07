@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts } from "pdf-lib"
-import type { InsuranceContract } from "@prisma/client"
+import type { InsuranceContract } from "@/lib/prisma-client"
 import { createSupabaseServiceClient } from "@/lib/supabase"
 import { ESIGN_BUCKET_SIGNED } from "@/lib/esign/buckets"
 import { generateDecennaleCertificate } from "@/lib/pdf/decennale/generateCertificate"

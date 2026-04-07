@@ -1,5 +1,8 @@
 generator client {
   provider = "prisma-client-js"
+  // Hors node_modules/.prisma : sur Windows, le rename du query_engine vers .dll.node
+  // échoue souvent (EPERM) à cause d’antivirus / indexation / processus Node.
+  output   = "../lib/generated/prisma"
 }
 
 datasource db {

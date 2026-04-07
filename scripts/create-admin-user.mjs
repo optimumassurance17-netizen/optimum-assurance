@@ -14,7 +14,7 @@
 import { readFileSync, existsSync } from "node:fs"
 import { resolve } from "node:path"
 import { hash } from "bcryptjs"
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient } from "../lib/generated/prisma/index.js"
 
 const root = resolve(process.cwd())
 

@@ -8,7 +8,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ["@react-pdf/renderer", "pdf-lib"],
+  serverExternalPackages: ["@react-pdf/renderer", "pdf-lib", "@prisma/client"],
   outputFileTracingRoot: path.join(process.cwd()),
   experimental: {
     inlineCss: true,

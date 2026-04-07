@@ -1,4 +1,4 @@
-import type { InsuranceContract } from "@prisma/client"
+import type { InsuranceContract } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"

@@ -1,7 +1,7 @@
 /**
  * Finalisation contrat après signature (POST /api/sign — Supabase Sign).
  */
-import type { PendingSignature } from "@prisma/client"
+import type { PendingSignature } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { getNextNumero } from "@/lib/documents"
 import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"

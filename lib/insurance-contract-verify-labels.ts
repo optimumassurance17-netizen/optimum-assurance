@@ -1,4 +1,4 @@
-import type { InsuranceContract } from "@prisma/client"
+import type { InsuranceContract } from "@/lib/prisma-client"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 
 export type VerifyPaymentRow = {
