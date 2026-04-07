@@ -9,12 +9,14 @@ import { drawOptimumHeader } from "../shared/drawHeader"
 import { PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
+import { getDevoirConseilText, getDevoirConseilLinksLine } from "@/lib/devoir-conseil"
 
 /**
  * Conditions particulières — contrat décennale (pdf-lib).
  */
 export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint8Array> {
   validateDecennaleQuote(data)
+  const devoirConseil = getDevoirConseilText("decennale")
 
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
@@ -66,7 +68,9 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
     "Obligations déclaratives : toute modification substantielle de l’activité, du chiffre d’affaires, du mode d’exécution des travaux ou de la situation juridique doit être déclarée sans délai.",
     "Sinistre : déclaration écrite dès connaissance du fait dommageable, avec pièces justificatives (référence chantier, nature des dommages, date d’apparition, éléments techniques disponibles).",
     "Résiliation : conformément aux conditions contractuelles, notamment en cas de non-paiement, de fausse déclaration ou à l’échéance selon préavis prévu.",
+    `Devoir de conseil : ${devoirConseil}`,
     "Le souscripteur atteste l’exactitude de ses déclarations. Signature et paiement valent engagement sous réserve d’acceptation du risque par l’assureur.",
+    getDevoirConseilLinksLine(),
     `Conditions générales et attestations : ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`,
   ]
 

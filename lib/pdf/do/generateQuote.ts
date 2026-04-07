@@ -9,6 +9,11 @@ import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
+import {
+  DEVOIR_CONSEIL_TITLE,
+  DEVOIR_CONSEIL_DO_TEXT,
+  DEVOIR_CONSEIL_LINKS_LINE,
+} from "@/lib/devoir-conseil"
 
 const QUOTE_VALIDITY_DAYS = 30
 
@@ -204,6 +209,14 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
     y2 = drawWrappedText(page2, line, PDF_PAGE.marginX, y2, PDF_PAGE.contentWidth, font, 9, 12)
     y2 -= 8
   }
+
+  y2 -= 2
+  y2 = drawWrappedText(page2, DEVOIR_CONSEIL_TITLE, PDF_PAGE.marginX, y2, PDF_PAGE.contentWidth, fontBold, 10, 13)
+  y2 -= 6
+  y2 = drawWrappedText(page2, DEVOIR_CONSEIL_DO_TEXT, PDF_PAGE.marginX, y2, PDF_PAGE.contentWidth, font, 9, 12)
+  y2 -= 6
+  y2 = drawWrappedText(page2, DEVOIR_CONSEIL_LINKS_LINE, PDF_PAGE.marginX, y2, PDF_PAGE.contentWidth, font, 8, 11, PDF_COLORS.muted)
+  y2 -= 10
 
   y2 -= 2
   y2 = drawWrappedText(

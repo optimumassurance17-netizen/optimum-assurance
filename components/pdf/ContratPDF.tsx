@@ -2,6 +2,7 @@ import React from "react"
 import { Document, Page, Text, View } from "@react-pdf/renderer"
 import { pdfTheme, PdfBrandHeader } from "@/lib/pdf/react-pdf-brand"
 import { pdfLegalLinksLine } from "@/lib/pdf-legal-links"
+import { DEVOIR_CONSEIL_TEXT_BY_PRODUCT } from "@/lib/devoir-conseil"
 
 interface ContratPDFProps {
   numero: string
@@ -29,6 +30,7 @@ interface ContratPDFProps {
 }
 
 export function ContratPDF({ numero, data }: ContratPDFProps) {
+  const devoirConseil = DEVOIR_CONSEIL_TEXT_BY_PRODUCT.decennale
   return (
     <Document>
       <Page size="A4" style={pdfTheme.page}>
@@ -168,6 +170,11 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
             description des dommages, date de survenance, pièces justificatives). L&apos;instruction suit les modalités
             prévues aux conditions générales.
           </Text>
+        </View>
+
+        <View style={pdfTheme.section}>
+          <Text style={pdfTheme.h3}>Article 10 - Devoir de conseil</Text>
+          <Text style={pdfTheme.p}>{devoirConseil.contenu}</Text>
         </View>
 
         <View style={pdfTheme.signatureZone}>

@@ -2,6 +2,7 @@ import { PDFDocument } from "pdf-lib"
 import { SITE_URL } from "@/lib/site-url"
 import { contractBundleLegalParagraphs } from "@/lib/legal-branding"
 import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
+import { DEVOIR_CONSEIL_DECENNALE_PDF } from "@/lib/devoir-conseil"
 import type { InsuranceData } from "../types"
 import { validateDecennaleQuote } from "../shared/pdfUtils"
 import { embedStandardFonts } from "../shared/initPdf"
@@ -218,6 +219,7 @@ export async function generateDecennaleQuotePolicyBundle(
     `Prime annuelle TTC : ${formatEuro(data.premium)}.`,
     `Protection juridique : garantie plafonnée à ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € par litige couvert.`,
     "Paiement : prélèvement SEPA selon mandat et échéances contractuelles.",
+    `Devoir de conseil : ${DEVOIR_CONSEIL_DECENNALE_PDF}`,
     "Le souscripteur atteste l’exactitude de ses déclarations. Signature et paiement valent engagement sous réserve d’acceptation du risque par l’assureur.",
     `Conditions générales et attestations : ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`,
   ]

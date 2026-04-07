@@ -9,6 +9,7 @@ import { drawOptimumHeader } from "../shared/drawHeader"
 import { PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
+import { DEVOIR_CONSEIL_DO_TEXT, DEVOIR_CONSEIL_LINKS_LINE, DEVOIR_CONSEIL_TITLE } from "@/lib/devoir-conseil"
 
 export async function generateDOPolicy(data: InsuranceData): Promise<Uint8Array> {
   validateDoQuote(data)
@@ -65,6 +66,8 @@ export async function generateDOPolicy(data: InsuranceData): Promise<Uint8Array>
     "Sinistre : notification écrite avec description circonstanciée, date d’apparition, photos/constats et pièces techniques utiles pour instruction.",
     "Résiliation / nullité : selon les dispositions contractuelles, notamment en cas de non-paiement ou de fausse déclaration intentionnelle.",
     "Le souscripteur atteste l’exactitude des informations techniques. La garantie est subordonnée à l’étude du dossier et à l’acceptation du risque par l’assureur.",
+    `${DEVOIR_CONSEIL_TITLE} : ${DEVOIR_CONSEIL_DO_TEXT}`,
+    DEVOIR_CONSEIL_LINKS_LINE,
     `Références : ${SITE_URL}/conditions-generales-dommage-ouvrage — ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`,
   ].filter(Boolean) as string[]
 

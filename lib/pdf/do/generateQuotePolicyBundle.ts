@@ -10,6 +10,7 @@ import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
+import { DEVOIR_CONSEIL_DO } from "@/lib/devoir-conseil"
 
 const QUOTE_VALIDITY_DAYS = 30
 
@@ -196,6 +197,16 @@ export async function generateDOQuotePolicyBundle(
     11,
     PDF_COLORS.muted
   )
+  y -= 14
+  drawTextPdf(page1, "Devoir de conseil", {
+    x: PDF_PAGE.marginX,
+    y,
+    size: 9,
+    font: fontBold,
+    color: PDF_COLORS.text,
+  })
+  y -= 12
+  y = drawWrappedText(page1, DEVOIR_CONSEIL_DO.contenu, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 8, 11, PDF_COLORS.muted)
 
   const page2 = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
   const cpTitle =
@@ -236,6 +247,7 @@ export async function generateDOQuotePolicyBundle(
     "Franchise : aucune (garantie obligatoire dommages-ouvrage).",
     `Protection juridique : garantie défense/recours à hauteur de ${formatEuro(PROTECTION_JURIDIQUE_GARANTIE_EUR)} par litige couvert.`,
     "Paiement : selon modalités contractuelles (virement ou prélèvement selon proposition).",
+    `Devoir de conseil : ${DEVOIR_CONSEIL_DO.contenu}`,
     "Le souscripteur atteste l’exactitude des informations techniques. La garantie est subordonnée à l’étude du dossier et à l’acceptation du risque par l’assureur.",
     `Références : ${SITE_URL}/conditions-generales-dommage-ouvrage — ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`,
   ].filter(Boolean) as string[]
