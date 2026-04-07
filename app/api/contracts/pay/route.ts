@@ -45,10 +45,8 @@ export async function POST(request: NextRequest) {
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
     }
-    const contractId =
-      typeof (body as Record<string, unknown>).contractId === "string"
-        ? (body as Record<string, unknown>).contractId.trim()
-        : ""
+    const input = body as { contractId?: unknown }
+    const contractId = typeof input.contractId === "string" ? input.contractId.trim() : ""
     if (!contractId || !CONTRACT_ID_RE.test(contractId)) {
       return NextResponse.json({ error: "contractId requis" }, { status: 400 })
     }
