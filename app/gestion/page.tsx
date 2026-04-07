@@ -530,6 +530,20 @@ export default function GestionPage() {
     }
   }, [data, router, openEditModal])
 
+  const handleResendImpayeEmail = async (docId: string) => {
+    try {
+      const res = await fetch(`/api/gestion/documents/${docId}/resend-impaye-email`, { method: "POST" })
+      const body = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) throw new Error(body.error || "")
+      setToast({ message: "Email de relance impayé (décennale) envoyé au client", type: "success" })
+    } catch (e) {
+      setToast({
+        message: e instanceof Error ? e.message : "Erreur lors de l’envoi de l’email",
+        type: "error",
+      })
+    }
+  }
+
   const handleStatusChange = async (docId: string, newStatus: "valide" | "suspendu" | "resilie", motif?: string) => {
     try {
       const res = await fetch(`/api/gestion/documents/${docId}/status`, {
@@ -1189,7 +1203,7 @@ export default function GestionPage() {
                 <p className="text-2xl font-bold text-green-400">{filterBySearch(data.payments, searchQuery).filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0).toLocaleString("fr-FR")} €</p>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-                <p className="text-gray-200 text-sm">Attestations suspendues</p>
+                <p className="text-gray-200 text-sm">Décennale suspendue (impayé)</p>
                 <p className="text-2xl font-bold text-red-400">{filterBySearch(data.documents.filter((d) => d.type === "attestation"), searchQuery).filter((d) => d.status === "suspendu").length}</p>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
@@ -1553,9 +1567,10 @@ export default function GestionPage() {
         )}
         {data && data.documents.some((d) => d.type === "attestation" && d.status === "suspendu") && (
           <div className="p-4 bg-red-900/30 border border-red-700 rounded-xl">
-            <p className="font-medium text-red-300">⚠ Alertes impayés</p>
+            <p className="font-medium text-red-300">⚠ Impayés décennale</p>
             <p className="text-sm text-red-200 mt-1">
-              {data.documents.filter((d) => d.type === "attestation" && d.status === "suspendu").length} attestation(s) suspendue(s). Pensez à relancer les clients pour régularisation.
+              {data.documents.filter((d) => d.type === "attestation" && d.status === "suspendu").length} attestation(s){" "}
+              <strong>décennale</strong> suspendue(s). Le DO n’est pas concerné (paiement unique avant attestation). Utilisez « Relancer email » pour renvoyer le lien de régularisation.
             </p>
           </div>
         )}
@@ -1693,6 +1708,14 @@ export default function GestionPage() {
                         )}
                         {d.type === "attestation" && d.status === "suspendu" && (
                           <>
+                            <button
+                              type="button"
+                              onClick={() => handleResendImpayeEmail(d.id)}
+                              className="text-sky-400 hover:text-sky-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
+                              title="Renvoyer l’email de régularisation (décennale)"
+                            >
+                              Relancer email
+                            </button>
                             <button
                               onClick={() => handleStatusChange(d.id, "valide")}
                               className="text-green-400 hover:text-green-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"

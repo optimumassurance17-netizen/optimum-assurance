@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+/** Liste les attestations **décennale** suspendues (impayé). Le DO (`attestation_do`) est exclu — payé avant délivrance. */
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)

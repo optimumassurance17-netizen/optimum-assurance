@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 
+/** Suspension pour impayé : **attestation décennale** uniquement (`type === "attestation"`). L’attestation DO n’est pas dans ce flux. */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

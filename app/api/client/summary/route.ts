@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { isDecennaleAttestationType } from "@/lib/decennale-impaye"
 
 export async function GET() {
   try {
@@ -24,7 +25,10 @@ export async function GET() {
     ])
 
     const attestations = documents.filter((d) => d.type === "attestation" || d.type === "attestation_do")
-    const suspendedCount = attestations.filter((d) => d.status === "suspendu").length
+    /** Impayé / régularisation : uniquement attestations décennale (le DO est payé avant délivrance). */
+    const suspendedCount = documents.filter(
+      (d) => isDecennaleAttestationType(d.type) && d.status === "suspendu"
+    ).length
     const paidTotal = payments.filter((p) => p.status === "paid").reduce((acc, p) => acc + p.amount, 0)
 
     return NextResponse.json({

@@ -314,9 +314,10 @@ export default function EspaceClientPage() {
         {/* Onglet Documents */}
         {activeTab === "documents" && !loading && documents.some((d) => d.type === "attestation" && d.status === "suspendu") && (
           <div className="mb-8 rounded-2xl border border-blue-200 bg-blue-50 p-6">
-            <p className="mb-2 font-medium text-blue-900">Paiement en attente</p>
+            <p className="mb-2 font-medium text-blue-900">Paiement décennale en attente</p>
             <p className="mb-3 text-sm text-blue-800">
-              Une ou plusieurs attestations sont suspendues pour défaut de paiement. Régularisez par carte bancaire.
+              Une ou plusieurs attestations <strong>décennale</strong> sont suspendues pour défaut de paiement (échéances).
+              Régularisez par carte bancaire. Le DO, lui, est payé en une fois avant l’attestation.
             </p>
             <Link
               href="/espace-client/regularisation"

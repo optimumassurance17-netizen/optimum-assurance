@@ -56,7 +56,9 @@ export default async function VerificationPage({
 
   if (document.status === "suspendu") {
     statut = "suspendu"
-    message = isDo ? "Attestation DO suspendue" : "Attestation suspendue pour défaut de paiement"
+    message = isDo
+      ? "Attestation DO suspendue — hors impayé (le DO est payé avant délivrance). Contactez Optimum Assurance."
+      : "Attestation décennale suspendue pour défaut de paiement"
   } else if (dateEcheance && dateEcheance < today) {
     statut = "perimee"
     message = isDo ? "Attestation DO périmée" : "Attestation périmée"

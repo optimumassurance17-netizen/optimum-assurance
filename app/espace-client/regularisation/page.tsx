@@ -108,7 +108,8 @@ export default function RegularisationPage() {
           Régularisation de paiement
         </h1>
         <p className="text-[#171717] mb-8">
-          Paiement par carte bancaire pour régulariser un impayé (Mollie).
+          Paiement par carte bancaire pour régulariser un impayé sur votre <strong>assurance décennale</strong> (Mollie).
+          Le <strong>dommage ouvrage</strong> est réglé en une fois avant l’attestation : il n’y a pas de régularisation DO ici.
         </p>
 
         {attestations.length === 0 ? (

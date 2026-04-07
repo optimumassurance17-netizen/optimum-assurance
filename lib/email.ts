@@ -120,10 +120,11 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nVotre attestation arrive à échéance le ${dateEcheance}.\n\nPensez à renouveler votre contrat pour rester couvert.\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Votre attestation arrive à échéance le <strong>${dateEcheance}</strong>.</p><p>Pensez à renouveler votre contrat pour rester couvert.</p><p><a href="${APP_URL}/devis" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Renouveler mon assurance</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
+  /** Décennale uniquement (échéances / SEPA). Le DO est réglé en une fois avant l’attestation. */
   alerteImpaye: (raisonSociale: string) => ({
-    subject: "Régularisation de votre paiement - Optimum Assurance",
-    text: `Bonjour ${raisonSociale},\n\nVotre attestation a été suspendue pour défaut de paiement.\n\nRégularisez en ligne par carte bancaire : ${APP_URL}/espace-client/regularisation\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour ${raisonSociale},</p><p>Votre attestation a été suspendue pour défaut de paiement.</p><p><a href="${APP_URL}/espace-client/regularisation" style="color:#2563eb;font-weight:bold">Régulariser mon paiement par CB</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+    subject: "Régularisation — assurance décennale - Optimum Assurance",
+    text: `Bonjour ${raisonSociale},\n\nVotre attestation d’assurance décennale a été suspendue pour défaut de paiement.\n\nRégularisez en ligne par carte bancaire : ${APP_URL}/espace-client/regularisation\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${raisonSociale},</p><p>Votre <strong>attestation d’assurance décennale</strong> a été suspendue pour défaut de paiement.</p><p><a href="${APP_URL}/espace-client/regularisation" style="color:#2563eb;font-weight:bold">Régulariser mon paiement par CB</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
   rappelDevisAbandonne: (raisonSociale: string, primeAnnuelle?: number) => ({
     subject: "Votre devis assurance décennale vous attend - Optimum Assurance",
