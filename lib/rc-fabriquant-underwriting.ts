@@ -28,6 +28,9 @@ export interface RcFabPremiumResult {
   franchise: number
 }
 
+/** Franchise contractuelle RC Fabriquant (toutes typologies produit) */
+export const FRANCHISE_RC_FABRIQUANT_EUR = 3000
+
 export interface RcFabIndicatifUnderwriting {
   score: number
   refuseAutomatiqueIndicatif: boolean
@@ -106,7 +109,7 @@ export function calculatePremium(input: RcFabUnderwritingInput): RcFabPremiumRes
       primeTtc: Math.round(premium + frais),
       tauxLabel: "1,7 % du CA",
       plafond: 3_000_000,
-      franchise: 1000,
+      franchise: FRANCHISE_RC_FABRIQUANT_EUR,
     }
   }
 
@@ -121,7 +124,7 @@ export function calculatePremium(input: RcFabUnderwritingInput): RcFabPremiumRes
     primeTtc: Math.round(premium + frais),
     tauxLabel: "standard (grille interne)",
     plafond: 3_000_000,
-    franchise: 1000,
+    franchise: FRANCHISE_RC_FABRIQUANT_EUR,
   }
 }
 
@@ -168,7 +171,7 @@ export function generateRcFabContractHtml(
   <ul>
     <li>Responsabilité civile produits après livraison</li>
     <li>Plafond : 3 000 000 €</li>
-    <li>Franchise : 1 000 €</li>
+    <li>Franchise : ${FRANCHISE_RC_FABRIQUANT_EUR.toLocaleString("fr-FR")} €</li>
   </ul>
   ${clauseBatterie}
 

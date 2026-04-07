@@ -118,7 +118,8 @@ export async function POST(request: NextRequest) {
       modePaiement: "prelevement",
       periodicitePrelevement: "trimestriel",
       fraisGestionPrelevement: 60,
-      franchise: asNonNegativeNumber(tarif.franchise, FRANCHISE_DECENNALE_EUR),
+      // Règle métier: décennale = franchise fixe 1 000 € pour toutes activités.
+      franchise: FRANCHISE_DECENNALE_EUR,
       plafond: asNonNegativeNumber(tarif.plafond, 100000),
       dateEffet,
       dateEffetIso,

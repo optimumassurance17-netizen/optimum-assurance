@@ -22,6 +22,7 @@ import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
 import { primeTrimestrielle } from "@/lib/mollie-sepa"
+import { FRANCHISE_RC_FABRIQUANT_EUR } from "@/lib/rc-fabriquant-underwriting"
 
 /** Contrat actif : PDF devis+CP en version « contrat » + mentions légales complémentaires. */
 function platformQuotePolicyBundleMode(c: InsuranceContract): "proposition" | "contrat" {
@@ -169,6 +170,11 @@ async function generateRcFabPolicyPlaceholderPdf(c: InsuranceContract): Promise<
   page.drawText(sanitizeForPdfLib(p1), { x: 50, y, size: 10, font, maxWidth: 500 })
   y -= 44
   page.drawText(sanitizeForPdfLib(`Prime convenue : ${formatEuro(c.premium)} TTC.`), { x: 50, y, size: 10, font })
+  y -= 18
+  page.drawText(
+    sanitizeForPdfLib(`Franchise contractuelle : ${FRANCHISE_RC_FABRIQUANT_EUR.toLocaleString("fr-FR")} €.`),
+    { x: 50, y, size: 10, font }
+  )
   y -= 18
   page.drawText(sanitizeForPdfLib(`Assuré : ${c.clientName}`), { x: 50, y, size: 10, font })
   y -= 18
