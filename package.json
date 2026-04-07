@@ -30,6 +30,7 @@
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "e2e:seed-admin": "node scripts/seed-e2e-admin.mjs",
     "db:push": "prisma db push",
     "db:sync-url-vercel": "node scripts/sync-database-url-from-vercel-pull.mjs",
     "db:migrate:prod": "node scripts/prisma-migrate-prod.mjs",

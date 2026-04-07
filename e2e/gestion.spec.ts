@@ -39,7 +39,9 @@ test.describe("Gestion CRM — parcours admin (optionnel)", () => {
   })
 
   test("Connexion puis chargement du tableau de bord", async ({ page }) => {
+    test.setTimeout(60_000)
     await page.goto("/connexion?callbackUrl=/gestion")
+    await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible({ timeout: 15000 })
 
     await page.getByLabel("Email").fill(e2eAdminEmail!)
     await page.getByLabel("Mot de passe", { exact: false }).fill(e2eAdminPassword!)

@@ -60,11 +60,13 @@ function ConnexionForm() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block mb-2 font-medium text-black">
+            <label htmlFor="connexion-email" className="block mb-2 font-medium text-black">
               Email
             </label>
             <input
+              id="connexion-email"
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -74,13 +76,17 @@ function ConnexionForm() {
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="block font-medium text-black">Mot de passe</label>
+              <label htmlFor="connexion-password" className="block font-medium text-black">
+                Mot de passe
+              </label>
               <Link href="/mot-de-passe-oublie" className="text-sm text-[#2563eb] hover:underline">
                 Mot de passe oublié ?
               </Link>
             </div>
             <input
+              id="connexion-password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
