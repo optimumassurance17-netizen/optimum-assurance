@@ -3,6 +3,31 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { createInsuranceContract } from "@/lib/insurance-contract-service"
 
+function asTrimmedString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined
+  const normalized = value.trim()
+  return normalized.length > 0 ? normalized : undefined
+}
+
+function asPositiveNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) return value
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(",", ".").trim())
+    if (Number.isFinite(parsed) && parsed > 0) return parsed
+  }
+  return null
+}
+
+function asOptionalNonNegativeNumber(value: unknown): number | null | undefined {
+  if (value == null) return null
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(",", ".").trim())
+    if (Number.isFinite(parsed) && parsed >= 0) return parsed
+  }
+  return undefined
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -10,48 +35,69 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Authentification requise" }, { status: 401 })
     }
 
-    const body = (await request.json()) as {
-      productType?: "decennale" | "do"
-      clientName?: string
-      siret?: string
-      address?: string
-      activities?: string[]
-      exclusions?: string[]
-      projectName?: string
-      projectAddress?: string
-      constructionNature?: string
-      premium?: number
-      missingDocuments?: boolean
-      companyAgeMonths?: number | null
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
     }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const raw = body as Record<string, unknown>
+    const productType = raw.productType === "decennale" || raw.productType === "do" ? raw.productType : undefined
+    const clientName = asTrimmedString(raw.clientName)
+    const address = asTrimmedString(raw.address)
+    const premium = asPositiveNumber(raw.premium)
+    const activities = Array.isArray(raw.activities)
+      ? raw.activities
+          .filter((value): value is string => typeof value === "string")
+          .map((value) => value.trim())
+          .filter((value) => value.length > 0)
+      : undefined
+    const exclusions = Array.isArray(raw.exclusions)
+      ? raw.exclusions
+          .filter((value): value is string => typeof value === "string")
+          .map((value) => value.trim())
+          .filter((value) => value.length > 0)
+      : undefined
+    const siret = asTrimmedString(raw.siret)
+    const projectName = asTrimmedString(raw.projectName)
+    const projectAddress = asTrimmedString(raw.projectAddress)
+    const constructionNature = asTrimmedString(raw.constructionNature)
+    const missingDocuments = typeof raw.missingDocuments === "boolean" ? raw.missingDocuments : undefined
+    const companyAgeMonths = asOptionalNonNegativeNumber(raw.companyAgeMonths)
 
-    if (!body.productType || !body.clientName?.trim() || !body.address?.trim()) {
+    if (!productType || !clientName || !address) {
       return NextResponse.json({ error: "Champs requis : productType, clientName, address" }, { status: 400 })
     }
-    if (typeof body.premium !== "number" || body.premium <= 0) {
+    if (premium == null) {
       return NextResponse.json({ error: "premium invalide" }, { status: 400 })
     }
-    if (body.productType === "decennale" && (!body.activities || body.activities.length === 0)) {
+    if (productType === "decennale" && (!activities || activities.length === 0)) {
       return NextResponse.json({ error: "activities requis (décennale)" }, { status: 400 })
     }
-    if (body.productType === "do" && (!body.projectName?.trim() || !body.projectAddress?.trim())) {
+    if (productType === "do" && (!projectName || !projectAddress)) {
       return NextResponse.json({ error: "projectName et projectAddress requis (DO)" }, { status: 400 })
+    }
+    if (companyAgeMonths === undefined) {
+      return NextResponse.json({ error: "companyAgeMonths invalide" }, { status: 400 })
     }
 
     const { contract, risk } = await createInsuranceContract({
-      productType: body.productType,
-      clientName: body.clientName.trim(),
-      siret: body.siret,
-      address: body.address.trim(),
-      activities: body.activities,
-      exclusions: body.exclusions,
-      projectName: body.projectName,
-      projectAddress: body.projectAddress,
-      constructionNature: body.constructionNature,
-      premium: body.premium,
+      productType,
+      clientName,
+      siret,
+      address,
+      activities,
+      exclusions,
+      projectName,
+      projectAddress,
+      constructionNature,
+      premium,
       userId: session.user.id,
-      missingDocuments: body.missingDocuments,
-      companyAgeMonths: body.companyAgeMonths,
+      missingDocuments,
+      companyAgeMonths,
     })
 
     return NextResponse.json({

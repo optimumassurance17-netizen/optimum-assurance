@@ -115,4 +115,37 @@ test.describe("API validations critiques", () => {
     })
     expect(res.status()).toBe(401)
   })
+
+  test("Devis calculate: JSON invalide rejeté en 400", async ({ request }) => {
+    const res = await request.fetch("/api/devis/calculate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      data: "{invalid-json",
+    })
+    expect(res.status()).toBe(400)
+    const data = (await res.json()) as { error?: string }
+    expect(data.error).toMatch(/JSON invalide|Objet JSON attendu/i)
+  })
+
+  test("Reset password: JSON invalide rejeté en 400", async ({ request }) => {
+    const res = await request.fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      data: "{invalid-json",
+    })
+    expect(res.status()).toBe(400)
+    const data = (await res.json()) as { error?: string }
+    expect(data.error).toMatch(/JSON invalide|Objet JSON attendu/i)
+  })
+
+  test("Forgot password: JSON invalide rejeté en 400", async ({ request }) => {
+    const res = await request.fetch("/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      data: "{invalid-json",
+    })
+    expect(res.status()).toBe(400)
+    const data = (await res.json()) as { error?: string }
+    expect(data.error).toMatch(/JSON invalide|Objet JSON attendu/i)
+  })
 })

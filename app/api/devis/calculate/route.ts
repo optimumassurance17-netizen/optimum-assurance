@@ -3,8 +3,22 @@ import { calculerTarif, CA_MINIMUM } from "@/lib/tarification"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { chiffreAffaires, sinistres, jamaisAssure, resilieNonPaiement, activites, reprisePasse } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const raw = body as Record<string, unknown>
+    const chiffreAffaires = raw.chiffreAffaires
+    const sinistres = raw.sinistres
+    const jamaisAssure = raw.jamaisAssure
+    const resilieNonPaiement = raw.resilieNonPaiement
+    const activites = raw.activites
+    const reprisePasse = raw.reprisePasse
 
     if (
       typeof chiffreAffaires !== "number" ||

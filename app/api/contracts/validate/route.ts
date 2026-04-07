@@ -11,21 +11,29 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as {
-      contractId?: string
-      approve?: boolean
-      reason?: string
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
     }
-    if (!body.contractId || typeof body.approve !== "boolean") {
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const raw = body as Record<string, unknown>
+    const contractId = typeof raw.contractId === "string" ? raw.contractId.trim() : ""
+    const approve = raw.approve
+    const reasonRaw = typeof raw.reason === "string" ? raw.reason.trim() : ""
+    if (!contractId || typeof approve !== "boolean") {
       return NextResponse.json({ error: "contractId et approve requis" }, { status: 400 })
     }
 
-    if (body.approve) {
-      const c = await approveInsuranceContract(body.contractId, session.user.email)
+    if (approve) {
+      const c = await approveInsuranceContract(contractId, session.user.email)
       return NextResponse.json({ contract: { id: c.id, status: c.status } })
     }
-    const reason = body.reason?.trim() || "Refus administratif"
-    const c = await rejectInsuranceContract(body.contractId, reason, session.user.email)
+    const reason = reasonRaw || "Refus administratif"
+    const c = await rejectInsuranceContract(contractId, reason, session.user.email)
     return NextResponse.json({ contract: { id: c.id, status: c.status } })
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur"

@@ -8,9 +8,18 @@ const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000 // 1 heure
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json()
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ ok: true })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ ok: true })
+    }
+    const email = (body as Record<string, unknown>).email
     if (!email || typeof email !== "string") {
-      return NextResponse.json({ error: "Email requis" }, { status: 400 })
+      return NextResponse.json({ ok: true })
     }
 
     const user = await prisma.user.findUnique({

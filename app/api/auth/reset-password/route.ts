@@ -4,8 +4,21 @@ import bcrypt from "bcryptjs"
 
 export async function POST(request: NextRequest) {
   try {
-    const { token, password } = await request.json()
-    if (!token || !password || typeof password !== "string") {
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+
+    const raw = body as Record<string, unknown>
+    const token = typeof raw.token === "string" ? raw.token.trim() : ""
+    const password = typeof raw.password === "string" ? raw.password : ""
+
+    if (!token || !password) {
       return NextResponse.json({ error: "Token et mot de passe requis" }, { status: 400 })
     }
     if (password.length < 8) {
