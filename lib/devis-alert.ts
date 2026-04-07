@@ -87,3 +87,66 @@ ${htmlLines}
     )
   )
 }
+
+/**
+ * Alerte interne lorsque le client enregistre le questionnaire d’étude DO (espace client).
+ * Ne bloque pas le parcours si l’envoi échoue.
+ */
+export async function sendDoEtudeSavedAlert(params: {
+  clientEmail: string
+  souscripteurNom?: string
+  chantierLieu?: string
+  isUpdate: boolean
+}): Promise<void> {
+  const recipients = getDevisAlertRecipientEmails()
+  if (recipients.length === 0) {
+    console.warn(
+      "[devis-alert] DO étude : aucun destinataire — définissez DEVIS_ALERT_EMAILS, ADMIN_EMAILS, CONTACT_EMAIL ou NEXT_PUBLIC_EMAIL."
+    )
+    return
+  }
+
+  const clientEmail = params.clientEmail.trim()
+  const action = params.isUpdate ? "mis à jour" : "enregistré"
+  const subject = `[Optimum] Questionnaire d’étude DO ${action}`
+  const lines: string[] = [
+    `Le client a ${action} son questionnaire d’étude dommage ouvrage depuis l’espace client.`,
+    params.souscripteurNom ? `Souscripteur / raison sociale (formulaire) : ${params.souscripteurNom}` : "",
+    params.chantierLieu ? `Chantier (ville) : ${params.chantierLieu}` : "",
+    `Lien espace client : ${SITE_URL}/espace-client`,
+    `Questionnaire : ${SITE_URL}/espace-client/questionnaire-do-etude`,
+  ].filter(Boolean)
+
+  const textBody = [
+    `Questionnaire d’étude DO ${action}.`,
+    "",
+    `Email du client : ${clientEmail}`,
+    "",
+    ...lines,
+    "",
+    `Site : ${SITE_URL}`,
+    "",
+    "---",
+    "Notification automatique — Optimum Assurance",
+  ].join("\n")
+
+  const htmlLines = lines
+    .map((l) => `<p style="margin:0 0 8px;color:#0f172a;">${escapeHtmlForEmail(l)}</p>`)
+    .join("")
+  const html = `<p style="font-weight:600;font-size:16px;margin:0 0 14px;color:#0f172a;">Questionnaire d’étude DO — ${escapeHtmlForEmail(action)}</p>
+<p style="margin:0 0 12px;"><strong>Email du client :</strong> <a href="mailto:${escapeHtmlForEmail(clientEmail)}" style="color:#2563eb;">${escapeHtmlForEmail(clientEmail)}</a></p>
+${htmlLines}
+<p style="margin-top:18px;font-size:12px;color:#64748b;">Répondre à ce message pour écrire directement au client (Reply-To).</p>`.trim()
+
+  await Promise.all(
+    recipients.map((to) =>
+      sendEmail({
+        to,
+        replyTo: clientEmail,
+        subject,
+        text: textBody,
+        html,
+      })
+    )
+  )
+}

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import type { DevisDommageOuvrageData } from "@/lib/dommage-ouvrage-types"
+import { sendDoEtudeSavedAlert } from "@/lib/devis-alert"
 import { mergeDoEtudeForm, prefillDoEtudeFromInitial } from "@/lib/do-etude-prefill"
 import { DO_ETUDE_VERSION, emptyDoEtudeQuestionnaire, type DoEtudeQuestionnaireV1 } from "@/lib/do-etude-questionnaire-types"
 
@@ -88,10 +89,31 @@ export async function PUT(request: Request) {
     if (!body?.form || body.form.version !== DO_ETUDE_VERSION) {
       return NextResponse.json({ error: "Formulaire invalide" }, { status: 400 })
     }
+    const emailClient = session.user.email?.trim()
+    if (!emailClient) {
+      return NextResponse.json({ error: "Email de session manquant" }, { status: 400 })
+    }
+
+    const avant = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { doEtudeQuestionnaireJson: true },
+    })
+    const isUpdate = Boolean(avant?.doEtudeQuestionnaireJson?.trim())
+
     await prisma.user.update({
       where: { id: session.user.id },
       data: { doEtudeQuestionnaireJson: JSON.stringify(body.form) },
     })
+
+    const nom = body.form.souscripteur?.nomRaisonSociale?.trim()
+    const villeChantier = body.form.operation?.ville?.trim()
+    void sendDoEtudeSavedAlert({
+      clientEmail: emailClient,
+      souscripteurNom: nom || undefined,
+      chantierLieu: villeChantier || undefined,
+      isUpdate,
+    }).catch((e) => console.error("[do-questionnaire PUT] alerte interne:", e))
+
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error("[do-questionnaire PUT]", e)

@@ -39,6 +39,15 @@ function isValidSiret(s: string): boolean {
   return /^\d{14}$/.test(s)
 }
 
+/** Année extraite du champ dateCreationSociete Sirene (AAAA-MM-JJ). */
+function anneeFromDateCreationSociete(raw?: string): number | undefined {
+  if (!raw || !/^\d{4}-\d{2}-\d{2}/.test(raw)) return undefined
+  const y = Number.parseInt(raw.slice(0, 4), 10)
+  const max = new Date().getFullYear()
+  if (!Number.isFinite(y) || y < 1800 || y > max) return undefined
+  return y
+}
+
 function needsCertQuestions(t?: RcTypeProduit): boolean {
   return t === "batterie" || t === "electronique"
 }
@@ -51,6 +60,8 @@ export function FormulaireRcFabriquant() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  const [siretLoading, setSiretLoading] = useState(false)
+  const [siretError, setSiretError] = useState<string | null>(null)
 
   const update = <K extends keyof DevisRcFabriquantData>(key: K, value: DevisRcFabriquantData[K]) => {
     setData((d) => ({ ...d, [key]: value }))
@@ -214,15 +225,58 @@ export function FormulaireRcFabriquant() {
             <label htmlFor="rc-siret" className="block text-sm font-medium text-slate-800 mb-1">
               SIRET <span className="text-red-600">*</span> <span className="text-slate-500 font-normal">14 chiffres</span>
             </label>
-            <input
-              id="rc-siret"
-              type="text"
-              inputMode="numeric"
-              required
-              value={data.siret}
-              onChange={(e) => update("siret", e.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
-            />
+            <div className="flex gap-3">
+              <input
+                id="rc-siret"
+                type="text"
+                inputMode="numeric"
+                required
+                maxLength={14}
+                placeholder="12345678900012"
+                value={data.siret}
+                onChange={(e) => {
+                  setSiretError(null)
+                  update("siret", e.target.value.replace(/\D/g, "").slice(0, 14))
+                }}
+                className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none font-mono"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  const s = normalizeSiret(data.siret)
+                  if (s.length !== 14) return
+                  setSiretLoading(true)
+                  setSiretError(null)
+                  try {
+                    const res = await fetch(`/api/siret?siret=${encodeURIComponent(s)}`)
+                    const d = await readResponseJson<{
+                      error?: string
+                      raisonSociale?: string
+                      dateCreationSociete?: string
+                    }>(res)
+                    if (res.ok && d.raisonSociale) {
+                      update("raisonSociale", d.raisonSociale)
+                      const y = anneeFromDateCreationSociete(d.dateCreationSociete)
+                      if (y != null) update("anneeCreation", y)
+                    } else {
+                      setSiretError(d.error || "Entreprise introuvable. Vérifiez le SIRET.")
+                    }
+                  } catch {
+                    setSiretError("Impossible de récupérer les données. Réessayez.")
+                  } finally {
+                    setSiretLoading(false)
+                  }
+                }}
+                disabled={!isValidSiret(normalizeSiret(data.siret)) || siretLoading}
+                className="shrink-0 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
+              >
+                {siretLoading ? "…" : "Remplir"}
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-slate-600">
+              Saisissez le SIRET puis cliquez sur Remplir pour pré-remplir la raison sociale et l’année de création (API Sirene).
+            </p>
+            {siretError ? <p className="mt-2 text-sm font-medium text-red-600">{siretError}</p> : null}
           </div>
           <div>
             <label htmlFor="rc-tel" className="block text-sm font-medium text-slate-800 mb-1">
