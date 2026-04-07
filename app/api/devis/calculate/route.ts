@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { calculerTarif, CA_MINIMUM } from "@/lib/tarification"
+import { asJsonObject } from "@/lib/json-object"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = asJsonObject<{
+      chiffreAffaires?: number
+      sinistres?: number
+      jamaisAssure?: boolean
+      resilieNonPaiement?: boolean
+      activites?: string[]
+      reprisePasse?: boolean
+    }>(await request.json())
     const { chiffreAffaires, sinistres, jamaisAssure, resilieNonPaiement, activites, reprisePasse } = body
 
     if (

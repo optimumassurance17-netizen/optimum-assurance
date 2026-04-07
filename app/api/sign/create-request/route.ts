@@ -9,8 +9,34 @@ import { getNextNumero } from "@/lib/documents"
 import { prisma } from "@/lib/prisma"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
+import { asJsonObject } from "@/lib/json-object"
 
 export const runtime = "nodejs"
+
+type SouscriptionTarif = {
+  primeAnnuelle?: number
+  primeMensuelle?: number
+  primeTrimestrielle?: number
+  franchise?: number
+  plafond?: number
+}
+
+type SouscriptionPayload = {
+  raisonSociale?: string
+  email?: string
+  representantLegal?: string
+  siret?: string
+  adresse?: string
+  codePostal?: string
+  ville?: string
+  civilite?: string
+  activites?: string[]
+  chiffreAffaires?: number
+  tarif?: SouscriptionTarif
+  jamaisAssure?: boolean
+  reprisePasse?: boolean
+  dateCreationSociete?: string
+}
 
 /** Décennale : PDF contrat + ligne `sign_requests` (Supabase) + `pendingSignature`. */
 export async function POST(request: NextRequest) {
@@ -20,10 +46,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { souscription } = body
+    const body = asJsonObject<{ souscription?: unknown }>(await request.json())
+    const souscription = asJsonObject<SouscriptionPayload>(body.souscription)
 
-    if (!souscription?.raisonSociale || !souscription?.email || !souscription?.representantLegal) {
+    if (!souscription.raisonSociale || !souscription.email || !souscription.representantLegal) {
       return NextResponse.json(
         { error: "Données de souscription incomplètes" },
         { status: 400 }

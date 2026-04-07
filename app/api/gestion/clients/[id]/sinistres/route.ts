@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
+import { asJsonObject } from "@/lib/json-object"
 import { prisma } from "@/lib/prisma"
 
 /**
@@ -57,7 +58,12 @@ export async function POST(
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
     }
 
-    const body = await request.json()
+    const body = asJsonObject<{
+      dateSinistre?: string
+      montantIndemnisation?: number | string
+      description?: string
+      userDocumentId?: string
+    }>(await request.json())
     const { dateSinistre, montantIndemnisation, description, userDocumentId } = body
 
     if (!dateSinistre) {

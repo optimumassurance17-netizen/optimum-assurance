@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import crypto from "crypto"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { SITE_URL } from "@/lib/site-url"
@@ -8,7 +9,8 @@ const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000 // 1 heure
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json()
+    const body = asJsonObject<{ email?: string }>(await request.json())
+    const { email } = body
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email requis" }, { status: 400 })
     }

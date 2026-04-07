@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 
@@ -18,17 +19,18 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const body = await request.json()
+    const body = asJsonObject<{ status?: string; motif?: string }>(await request.json())
     const { status, motif } = body
 
-    if (!["valide", "suspendu", "resilie"].includes(status)) {
+    if (!["valide", "suspendu", "resilie"].includes(status ?? "")) {
       return NextResponse.json({ error: "Statut invalide" }, { status: 400 })
     }
+    const nextStatus = status
 
     const document = await prisma.document.findFirst({
       where: {
         id,
-        type: status === "resilie" ? { in: ["attestation", "contrat"] } : "attestation",
+        type: nextStatus === "resilie" ? { in: ["attestation", "contrat"] } : "attestation",
       },
       include: { user: true },
     })
@@ -39,18 +41,18 @@ export async function PATCH(
 
     await prisma.document.update({
       where: { id },
-      data: { status },
+      data: { status: nextStatus },
     })
 
     await logAdminActivity({
       adminEmail: session.user.email || "admin",
-      action: status === "resilie" ? "resiliation" : "status_change",
+      action: nextStatus === "resilie" ? "resiliation" : "status_change",
       targetType: "document",
       targetId: id,
-      details: { status, documentType: document.type },
+      details: { status: nextStatus, documentType: document.type },
     })
 
-    if (status === "suspendu") {
+    if (nextStatus === "suspendu") {
       const data = JSON.parse(document.data) as { raisonSociale?: string }
       const template = EMAIL_TEMPLATES.alerteImpaye(data.raisonSociale || document.user.raisonSociale || document.user.email)
       await sendEmail({
@@ -61,7 +63,7 @@ export async function PATCH(
       })
     }
 
-    if (status === "resilie") {
+    if (nextStatus === "resilie") {
       await prisma.resiliationLog.create({
         data: {
           documentId: id,
@@ -84,7 +86,7 @@ export async function PATCH(
       })
     }
 
-    return NextResponse.json({ ok: true, status })
+    return NextResponse.json({ ok: true, status: nextStatus })
   } catch (error) {
     console.error("Erreur mise à jour statut:", error)
     return NextResponse.json(

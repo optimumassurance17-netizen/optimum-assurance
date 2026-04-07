@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import { getNextNumero } from "@/lib/documents"
 
 export async function POST(request: NextRequest) {
@@ -12,7 +13,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    const body = await request.json()
+    const body = asJsonObject<{
+      userId?: string
+      contractNumero?: string
+      modifications?: Record<string, unknown>
+      motif?: string
+    }>(await request.json())
     const { userId, contractNumero, modifications, motif } = body
 
     if (!userId || !contractNumero || !modifications || typeof modifications !== "object") {

@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { hash } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = asJsonObject<{ email?: string; password?: string; raisonSociale?: string; siret?: string }>(
+      await request.json()
+    )
     const { email, password, raisonSociale, siret } = body
 
     if (!email || !password || password.length < 8) {

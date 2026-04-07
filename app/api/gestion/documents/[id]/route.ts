@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { IDENTITY_DOC_KEYS, syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
 
@@ -62,7 +63,7 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const body = await request.json()
+    const body = asJsonObject<{ data?: Record<string, unknown> }>(await request.json())
     const { data: modifications } = body
 
     if (!modifications || typeof modifications !== "object") {

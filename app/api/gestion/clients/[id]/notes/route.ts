@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import { logAdminActivity } from "@/lib/admin-activity"
 
 export async function GET(
@@ -40,7 +41,7 @@ export async function POST(
     }
 
     const { id } = await params
-    const body = await request.json()
+    const body = asJsonObject<{ content?: string }>(await request.json())
     const { content } = body
 
     if (!content || typeof content !== "string") {

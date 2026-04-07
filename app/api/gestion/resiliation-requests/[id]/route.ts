@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 
@@ -17,10 +18,10 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const body = await request.json()
+    const body = asJsonObject<{ action?: string }>(await request.json())
     const { action } = body // "approve" | "reject"
 
-    if (!["approve", "reject"].includes(action)) {
+    if (action !== "approve" && action !== "reject") {
       return NextResponse.json({ error: "action invalide" }, { status: 400 })
     }
 

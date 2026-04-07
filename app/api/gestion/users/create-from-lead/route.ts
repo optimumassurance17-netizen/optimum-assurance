@@ -4,6 +4,7 @@ import { hash } from "bcryptjs"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import { sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { SITE_URL } from "@/lib/site-url"
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    const body = await request.json()
+    const body = asJsonObject<{ leadId?: string }>(await request.json())
     const { leadId } = body
 
     if (!leadId) {

@@ -4,6 +4,7 @@ import { randomBytes } from "crypto"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import { getNextNumero } from "@/lib/documents"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
@@ -24,7 +25,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    const body = await request.json()
+    const body = asJsonObject<{ userId?: string; type?: string; data?: unknown; numero?: string }>(
+      await request.json()
+    )
     const { userId, type, data, numero: customNumero } = body
 
     if (!userId || !type) {

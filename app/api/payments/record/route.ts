@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +11,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const body = await request.json()
+    const body = asJsonObject<{
+      molliePaymentId?: string
+      amount?: number | string
+      status?: string
+      metadata?: unknown
+    }>(await request.json())
     const { molliePaymentId, amount, status: paymentStatus } = body
 
     if (!molliePaymentId || amount == null) {

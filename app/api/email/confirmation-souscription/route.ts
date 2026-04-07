@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { asJsonObject } from "@/lib/json-object"
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const body = await request.json()
+    const body = asJsonObject<{ raisonSociale?: string; email?: string }>(await request.json())
     const { raisonSociale, email } = body
 
     if (!email) {

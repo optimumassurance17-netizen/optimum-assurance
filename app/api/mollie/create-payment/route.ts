@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createMollieClient, Locale, PaymentMethod } from "@mollie/api-client"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
+import { asJsonObject } from "@/lib/json-object"
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +13,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
+    const body = asJsonObject<{
+      amount?: number | string
+      description?: string
+      redirectUrl?: string
+      webhookUrl?: string
+      metadata?: Record<string, unknown>
+      customerEmail?: string
+      method?: string
+      consumerName?: string
+      consumerAccount?: string
+    }>(await request.json())
     const {
       amount,
       description,

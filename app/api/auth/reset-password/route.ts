@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import bcrypt from "bcryptjs"
 
 export async function POST(request: NextRequest) {
   try {
-    const { token, password } = await request.json()
+    const body = asJsonObject<{ token?: string; password?: string }>(await request.json())
+    const { token, password } = body
     if (!token || !password || typeof password !== "string") {
       return NextResponse.json({ error: "Token et mot de passe requis" }, { status: 400 })
     }

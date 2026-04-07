@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import crypto from "crypto"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    const body = await request.json()
+    const body = asJsonObject<{ etudeLeadId?: string; primeAnnuelle?: number }>(await request.json())
     const { etudeLeadId, primeAnnuelle } = body
 
     if (!etudeLeadId || typeof primeAnnuelle !== "number" || primeAnnuelle <= 0) {
