@@ -95,8 +95,9 @@ jobs:
 
       # Base Postgres éphémère : `db push` aligne le schéma sans historique de migrations
       # (évite les écarts baseline / shadow DB sur runner GitHub).
+      # --accept-data-loss : runner non interactif ; base vide / jetable uniquement.
       - name: Prisma — pousser le schéma vers Postgres (CI e2e)
-        run: npx prisma db push --skip-generate
+        run: npx prisma db push --skip-generate --accept-data-loss
 
       - name: Prisma generate + Next build
         run: npm run build
