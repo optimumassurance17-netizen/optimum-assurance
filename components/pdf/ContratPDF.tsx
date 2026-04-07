@@ -130,6 +130,15 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
             d&apos;échéance (31 décembre). Un minimum d&apos;un an de contrat est requis.
           </Text>
         </View>
+        <Text style={[pdfTheme.p, { fontSize: 9, color: "#64748b", marginTop: 8 }]}>
+          Suite des clauses contractuelles et signature en page suivante.
+        </Text>
+      </Page>
+
+      <Page size="A4" style={pdfTheme.page}>
+        <PdfBrandHeader tagline="Assurance décennale professionnelle — suite du contrat type" />
+        <Text style={pdfTheme.h2}>CONTRAT D&apos;ASSURANCE DÉCENNALE — SUITE</Text>
+        <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#1e40af" }]}>N° {numero}</Text>
 
         <View style={pdfTheme.section}>
           <Text style={pdfTheme.h3}>Article 7 - Étendue de la garantie et exclusions</Text>
