@@ -3,11 +3,10 @@ import type { InsuranceContract } from "@/lib/prisma-client"
 import { createSupabaseServiceClient } from "@/lib/supabase"
 import { ESIGN_BUCKET_SIGNED } from "@/lib/esign/buckets"
 import { generateDecennaleCertificate } from "@/lib/pdf/decennale/generateCertificate"
-import { generateDecennalePolicy } from "@/lib/pdf/decennale/generatePolicy"
-import { generateDecennaleQuote } from "@/lib/pdf/decennale/generateQuote"
+import { generateDecennaleQuotePolicyBundle } from "@/lib/pdf/decennale/generateQuotePolicyBundle"
 import { generateDOCertificate } from "@/lib/pdf/do/generateCertificate"
-import { generateDOPolicy } from "@/lib/pdf/do/generatePolicy"
-import { generateDOQuote } from "@/lib/pdf/do/generateQuote"
+import { generateDOQuotePolicyBundle } from "@/lib/pdf/do/generateQuotePolicyBundle"
+import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import type { InsuranceCertificateData, InsuranceData } from "@/lib/pdf/types"
 import {
   INVOICE_FIRST_SETTLEMENT_NOTE,
@@ -21,6 +20,11 @@ import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/sha
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
+
+/** Contrat actif : PDF devis+CP en version « contrat » + mentions légales complémentaires. */
+function platformQuotePolicyBundleMode(c: InsuranceContract): "proposition" | "contrat" {
+  return c.status === CONTRACT_STATUS.active ? "contrat" : "proposition"
+}
 
 function contractToInsuranceData(c: InsuranceContract): InsuranceData {
   const activities = parseActivitiesJson(c.activitiesJson)
@@ -214,13 +218,17 @@ export async function renderContractPdf(c: InsuranceContract, docType: DocPdfTyp
     if (c.productType === "rc_fabriquant" && c.signedQuoteStorageKey?.trim()) {
       return loadSignedQuotePdfBytes(c.signedQuoteStorageKey.trim())
     }
-    if (c.productType === "do") return generateDOQuote(data)
-    return generateDecennaleQuote(data)
+    if (c.productType === "do") {
+      return generateDOQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
+    }
+    return generateDecennaleQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
   }
   if (docType === "policy") {
     if (c.productType === "rc_fabriquant") return generateRcFabPolicyPlaceholderPdf(c)
-    if (c.productType === "do") return generateDOPolicy(data)
-    return generateDecennalePolicy(data)
+    if (c.productType === "do") {
+      return generateDOQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
+    }
+    return generateDecennaleQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
   }
   if (docType === "certificate") {
     const cert = toCertificateData(c)

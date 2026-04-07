@@ -29,15 +29,24 @@ export function InsuranceContractPdfLinks({
   const showQuarterlySchedule =
     (productType === "decennale" || productType === "rc_fabriquant") &&
     (status === CONTRACT_STATUS.active || status === CONTRACT_STATUS.approved)
+  const bundleDevisCp = productType === "do" || productType === "decennale"
 
   return (
     <div className={`flex flex-wrap gap-x-4 gap-y-2 items-center ${className ?? ""}`}>
-      <a href={`${base}/quote`} target="_blank" rel="noreferrer" className={linkClass}>
-        Devis PDF
-      </a>
-      <a href={`${base}/policy`} target="_blank" rel="noreferrer" className={linkClass}>
-        Conditions (CP)
-      </a>
+      {bundleDevisCp ? (
+        <a href={`${base}/quote`} target="_blank" rel="noreferrer" className={linkClass}>
+          Devis et conditions (PDF)
+        </a>
+      ) : (
+        <>
+          <a href={`${base}/quote`} target="_blank" rel="noreferrer" className={linkClass}>
+            Devis PDF
+          </a>
+          <a href={`${base}/policy`} target="_blank" rel="noreferrer" className={linkClass}>
+            Conditions (CP)
+          </a>
+        </>
+      )}
       {showQuarterlySchedule ? (
         <a href={`${base}/schedule`} target="_blank" rel="noreferrer" className={linkClass}>
           Échéancier (trimestriel)

@@ -179,22 +179,35 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                         >
                           Vérifier
                         </a>
-                        <a
-                          href={`/api/contracts/${c.id}/pdf/quote`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-sky-400 hover:text-sky-300 text-xs"
-                        >
-                          PDF devis
-                        </a>
-                        <a
-                          href={`/api/contracts/${c.id}/pdf/policy`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-sky-400 hover:text-sky-300 text-xs"
-                        >
-                          PDF CP
-                        </a>
+                        {c.productType === "do" || c.productType === "decennale" ? (
+                          <a
+                            href={`/api/contracts/${c.id}/pdf/quote`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sky-400 hover:text-sky-300 text-xs"
+                          >
+                            PDF devis + CP
+                          </a>
+                        ) : (
+                          <>
+                            <a
+                              href={`/api/contracts/${c.id}/pdf/quote`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-sky-400 hover:text-sky-300 text-xs"
+                            >
+                              PDF devis
+                            </a>
+                            <a
+                              href={`/api/contracts/${c.id}/pdf/policy`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-sky-400 hover:text-sky-300 text-xs"
+                            >
+                              PDF CP
+                            </a>
+                          </>
+                        )}
                         {(c.productType === "decennale" || c.productType === "rc_fabriquant") &&
                         (c.status === CONTRACT_STATUS.approved || c.status === CONTRACT_STATUS.active) ? (
                           <a

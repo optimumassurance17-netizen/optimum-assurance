@@ -34,11 +34,17 @@ export async function GET(
     }
 
     const bytes = await renderContractPdf(contract, docType as DocPdfType)
+    const bundleDevisCp =
+      (contract.productType === "do" || contract.productType === "decennale") &&
+      (docType === "quote" || docType === "policy")
+    const filename = bundleDevisCp
+      ? `${contract.contractNumber}-devis-et-cp.pdf`
+      : `${contract.contractNumber}-${docType}.pdf`
     return new NextResponse(Buffer.from(bytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${contract.contractNumber}-${docType}.pdf"`,
+        "Content-Disposition": `inline; filename="${filename}"`,
       },
     })
   } catch (e) {
