@@ -4,7 +4,7 @@
 
 ## Git, CI et déploiement automatique
 
-- **GitHub Actions** : `.github/workflows/ci.yml` exécute **ESLint** et **`npm run build`** sur chaque push et chaque pull request vers `main` ou `master`.
+- **GitHub Actions** : `.github/workflows/ci.yml` exécute **ESLint**, **`npm run build`**, et un job **e2e** (Postgres service + **`prisma db push`** + Playwright) sur chaque push et chaque pull request vers `main` ou `master`.
 - **Vercel** : dans le [dashboard Vercel](https://vercel.com), **Importer le projet** et lier ce dépôt Git. Les pushes sur la branche **Production** déclenchent un déploiement ; les PR ont des **Preview deployments**. Le `vercel.json` à la racine définit déjà la commande de build.
 
 ## 1. Base de données

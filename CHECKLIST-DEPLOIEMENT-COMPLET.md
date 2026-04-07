@@ -28,7 +28,7 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 
 - **SEO — URL canonique** : **`NEXT_PUBLIC_SITE_CANONICAL`** = `https://www.optimum-assurance.fr` sur Vercel Production (utilisée par `lib/site-url.ts` pour sitemap, robots, métadonnées). Redéployer après changement de cette variable.
 
-- **Prisma** : migration baseline appliquée côté base utilisée ; **`prisma/migrations/migration_lock.toml`** versionné (`provider = "postgresql"`) — requis pour `migrate deploy` (dont CI e2e). Scripts `db:sync-url-vercel`, `verify-supabase`, etc. documentés dans `DEPLOY.md`.
+- **Prisma** : migration baseline appliquée côté base utilisée ; **`prisma/migrations/migration_lock.toml`** versionné (`provider = "postgresql"`) — requis pour **`migrate deploy`** (prod / bases persistantes). Le job CI **e2e** applique le schéma avec **`prisma db push`** sur une base Postgres jetable. Scripts `db:sync-url-vercel`, `verify-supabase`, etc. documentés dans `DEPLOY.md`.
 
 - **Supabase Auth / session (Next.js 16)** : fichier racine **`proxy.ts`** (remplace l’ancienne convention `middleware`) + helpers **`utils/supabase/`** (`server`, `client`, session). Variables : `NEXT_PUBLIC_SUPABASE_URL` + **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** ou **`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY`**.
 
@@ -38,7 +38,7 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 
 - **Qualité locale** : `npm run lint`, `preflight`, `build` OK.
 
-- **CI GitHub** : job **e2e** — Postgres 16 (service), `prisma migrate deploy`, `npm run build`, Playwright Chromium sur **`e2e/*.spec.ts`**. Pas de fichier `.env.e2e` dans le dépôt → le test « connexion admin gestion » reste **ignoré** en CI ; le reste (devis, health API, redirections) est couvert.
+- **CI GitHub** : job **e2e** — Postgres 16 (service), **`prisma db push --skip-generate --accept-data-loss`**, `npm run build`, Playwright Chromium sur **`e2e/*.spec.ts`**. Pas de fichier `.env.e2e` dans le dépôt → le test « connexion admin gestion » reste **ignoré** en CI ; le reste (devis, health API, redirections) est couvert.
 
 - **E2E en local (admin gestion)** : `npm run e2e:seed-admin` génère **`.env.e2e`** (gitignored), puis `npm run test:e2e`. Reproduire le mode CI (après build) : définir **`PLAYWRIGHT_USE_BUILD_SERVER=1`** et **`CI=true`**, puis `npx playwright test` (port **3000** libre, base migrée).
 
