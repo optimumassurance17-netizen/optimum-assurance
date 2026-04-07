@@ -2,8 +2,9 @@
  * En-tête et styles communs pour les PDF @react-pdf/renderer (contrats, attestations, résumés).
  */
 import React from "react"
-import { Text, View, StyleSheet } from "@react-pdf/renderer"
+import { Image, Text, View, StyleSheet } from "@react-pdf/renderer"
 import { LEGAL_ORIAS_LINE } from "@/lib/legal-branding"
+import { ACCELERANT_LOGO_WIDTH_PT, getAccelerantLogoDataUriSync } from "@/lib/pdf/shared/accelerantLogoDataUri"
 
 export const pdfTheme = StyleSheet.create({
   page: {
@@ -130,11 +131,21 @@ const brandStyles = StyleSheet.create({
   brandMeta: { fontSize: 7.5, color: "#64748b", lineHeight: 1.35 },
   accentBar: { height: 2.5, backgroundColor: "#2563eb", width: "100%", marginBottom: 8 },
   tagline: { fontSize: 9, color: "#64748b" },
+  logoWrap: { alignItems: "center", marginBottom: 10 },
+  /** Ratio large ≈ 4:1 (logo paysage Accelerant) */
+  logoImage: { width: ACCELERANT_LOGO_WIDTH_PT, height: 42, objectFit: "contain" as const },
 })
 
 export function PdfBrandHeader({ tagline }: { tagline: string }) {
+  const accelerantLogoUri = getAccelerantLogoDataUriSync()
   return (
     <View style={brandStyles.header}>
+      {accelerantLogoUri ? (
+        <View style={brandStyles.logoWrap}>
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image : logo marque */}
+          <Image src={accelerantLogoUri} style={brandStyles.logoImage} />
+        </View>
+      ) : null}
       <View style={brandStyles.brandRow}>
         <View style={brandStyles.monogram}>
           <Text style={brandStyles.monogramLetter}>O</Text>

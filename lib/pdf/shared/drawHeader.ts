@@ -1,10 +1,11 @@
-import type { PDFPage, PDFFont } from "pdf-lib"
+import type { PDFImage, PDFPage, PDFFont } from "pdf-lib"
 import { LEGAL_ORIAS_LINE } from "@/lib/legal-branding"
+import { drawAccelerantLogoOnPage } from "./accelerantLogo"
 import { PDF_COLORS, PDF_PAGE } from "./pdfLayout"
 import { drawTextPdf, drawWrappedText } from "./pdfUtils"
 
 /**
- * En-tête PDF (pdf-lib) : monogramme, marque, barre d’accent, titre document.
+ * En-tête PDF (pdf-lib) : logo Accelerant (optionnel, centré en tête), monogramme, marque, barre d’accent, titre document.
  * @returns Ordonnée Y pour la suite du contenu (texte sous le bloc titre).
  */
 export function drawOptimumHeader(
@@ -12,9 +13,16 @@ export function drawOptimumHeader(
   font: PDFFont,
   fontBold: PDFFont,
   title: string,
-  subtitle: string
+  subtitle: string,
+  accelerantLogo?: PDFImage | null
 ): number {
-  const top = PDF_PAGE.height - PDF_PAGE.marginTop
+  let top: number
+  if (accelerantLogo) {
+    const { imgBottom } = drawAccelerantLogoOnPage(page, accelerantLogo)
+    top = imgBottom - 12
+  } else {
+    top = PDF_PAGE.height - PDF_PAGE.marginTop
+  }
   const x0 = PDF_PAGE.marginX
   const monogramSize = 44
   const rectBottom = top - monogramSize

@@ -7,6 +7,7 @@ import {
   QUARTERLY_SCHEDULE_LEGAL_PARAGRAPHS,
 } from "@/lib/legal-branding"
 import { SITE_URL } from "@/lib/site-url"
+import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { PdfValidationError } from "@/lib/pdf/errors"
@@ -109,7 +110,12 @@ export async function generateQuarterlyScheduleInsurancePdf(c: InsuranceContract
   let page = pdf.addPage([595.28, 841.89])
   const margin = 50
   const maxW = 495
+  const accelLogo = await loadAccelerantLogoImage(pdf)
   let y = 800
+  if (accelLogo) {
+    const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
+    y = imgBottom - 20
+  }
 
   page.drawText(sanitizeForPdfLib("ÉCHÉANCIER ANNUEL DE COTISATION (TRIMESTRIEL)"), {
     x: margin,

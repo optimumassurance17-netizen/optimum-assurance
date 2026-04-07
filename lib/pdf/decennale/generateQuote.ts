@@ -3,6 +3,7 @@ import { SITE_URL } from "@/lib/site-url"
 import type { InsuranceData } from "../types"
 import { validateDecennaleQuote } from "../shared/pdfUtils"
 import { embedStandardFonts } from "../shared/initPdf"
+import { loadAccelerantLogoImage } from "../shared/accelerantLogo"
 import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
@@ -19,13 +20,15 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
   const page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+  const accelerantLogo = await loadAccelerantLogoImage(pdfDoc)
 
   let y = drawOptimumHeader(
     page,
     font,
     fontBold,
     "DEVIS — Assurance responsabilité civile décennale",
-    "Assurance décennale professionnelle"
+    "Assurance décennale professionnelle",
+    accelerantLogo
   )
 
   drawTextPdf(page, `N° ${data.contractNumber}`, {

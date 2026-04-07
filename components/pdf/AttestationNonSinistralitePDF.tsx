@@ -1,5 +1,6 @@
 import React from "react"
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
+import { Document, Image, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
+import { ACCELERANT_LOGO_WIDTH_PT, getAccelerantLogoDataUriSync } from "@/lib/pdf/shared/accelerantLogoDataUri"
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10 },
@@ -8,6 +9,13 @@ const styles = StyleSheet.create({
     borderBottomColor: "#2563eb",
     paddingBottom: 15,
     marginBottom: 20,
+    alignItems: "center",
+  },
+  logoImage: {
+    width: ACCELERANT_LOGO_WIDTH_PT,
+    height: 42,
+    marginBottom: 12,
+    objectFit: "contain" as const,
   },
   title: { fontSize: 18, color: "#2563eb", marginBottom: 4 },
   subtitle: { fontSize: 9, color: "#333333" },
@@ -50,11 +58,16 @@ export function AttestationNonSinistralitePDF({
 }: AttestationNonSinistralitePDFProps) {
   const dateDebutFr = formatDateFr(data.dateDebut)
   const dateFinFr = formatDateFr(data.dateFin)
+  const accelerantLogoUri = getAccelerantLogoDataUriSync()
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
+          {accelerantLogoUri ? (
+            /* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image : logo marque */
+            <Image src={accelerantLogoUri} style={styles.logoImage} />
+          ) : null}
           <Text style={styles.title}>Optimum Assurance</Text>
           <Text style={styles.subtitle}>Assurance décennale professionnelle</Text>
         </View>

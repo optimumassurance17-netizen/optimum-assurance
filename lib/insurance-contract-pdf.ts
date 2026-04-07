@@ -17,6 +17,7 @@ import {
 } from "@/lib/legal-branding"
 import { SITE_URL } from "@/lib/site-url"
 import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
+import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
@@ -58,8 +59,12 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
   const font = await pdf.embedFont(StandardFonts.Helvetica)
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
   const page = pdf.addPage([595.28, 841.89])
-  const y0 = 800
-  let y = y0
+  const accelLogo = await loadAccelerantLogoImage(pdf)
+  let y = 800
+  if (accelLogo) {
+    const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
+    y = imgBottom - 22
+  }
   page.drawText(sanitizeForPdfLib("FACTURE ACQUITTÉE"), { x: 50, y, size: 14, font: bold })
   y -= 28
   page.drawText(sanitizeForPdfLib(`Contrat ${c.contractNumber}`), { x: 50, y, size: 10, font })
@@ -129,7 +134,12 @@ async function generateRcFabPolicyPlaceholderPdf(c: InsuranceContract): Promise<
   const font = await pdf.embedFont(StandardFonts.Helvetica)
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
   const page = pdf.addPage([595.28, 841.89])
+  const accelLogo = await loadAccelerantLogoImage(pdf)
   let y = 780
+  if (accelLogo) {
+    const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
+    y = imgBottom - 22
+  }
   page.drawText(sanitizeForPdfLib("Conditions — RC Fabriquant"), { x: 50, y, size: 16, font: bold })
   y -= 28
   page.drawText(sanitizeForPdfLib(`Contrat ${c.contractNumber}`), { x: 50, y, size: 11, font: bold })
@@ -155,7 +165,12 @@ async function generateRcFabAttestationPdf(c: InsuranceContract): Promise<Uint8A
   const font = await pdf.embedFont(StandardFonts.Helvetica)
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
   const page = pdf.addPage([595.28, 841.89])
+  const accelLogo = await loadAccelerantLogoImage(pdf)
   let y = 780
+  if (accelLogo) {
+    const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
+    y = imgBottom - 22
+  }
   page.drawText(sanitizeForPdfLib("ATTESTATION D’ASSURANCE"), { x: 50, y, size: 16, font: bold })
   y -= 28
   page.drawText(sanitizeForPdfLib("Responsabilité civile fabricant"), { x: 50, y, size: 12, font: bold })

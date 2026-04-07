@@ -3,6 +3,7 @@ import { SITE_URL } from "@/lib/site-url"
 import type { InsuranceCertificateData } from "../types"
 import { validateCertificateData } from "../shared/pdfUtils"
 import { embedStandardFonts } from "../shared/initPdf"
+import { loadAccelerantLogoImage } from "../shared/accelerantLogo"
 import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
@@ -24,13 +25,15 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
 
   const verifyUrl = `${SITE_URL}/verify/${encodeURIComponent(data.contractNumber)}`
   const qrImage = await embedVerificationQr(pdfDoc, verifyUrl)
+  const accelerantLogo = await loadAccelerantLogoImage(pdfDoc)
 
   let y = drawOptimumHeader(
     page,
     font,
     fontBold,
     "ATTESTATION D’ASSURANCE — Dommages-ouvrage",
-    "Document officiel"
+    "Document officiel",
+    accelerantLogo
   )
 
   drawTextPdf(page, `N° ${data.contractNumber}`, {
