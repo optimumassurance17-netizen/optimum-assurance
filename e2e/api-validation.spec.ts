@@ -41,7 +41,7 @@ test.describe("API validations critiques", () => {
     })
     expect(res.status()).toBe(400)
     const data = (await res.json()) as { error?: string }
-    expect(data.error).toMatch(/JSON invalide/i)
+    expect(data.error).toMatch(/JSON invalide|Objet JSON attendu/i)
   })
 
   test("Signature: UUID invalide rejeté en 400", async ({ request }) => {
