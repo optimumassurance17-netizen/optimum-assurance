@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { renderContractPdf, type DocPdfType } from "@/lib/insurance-contract-pdf"
 import { PdfValidationError } from "@/lib/pdf/errors"
 
-const ALLOWED: DocPdfType[] = ["quote", "policy", "certificate", "invoice"]
+const ALLOWED: DocPdfType[] = ["quote", "policy", "certificate", "invoice", "schedule"]
 
 export async function GET(
   _request: NextRequest,

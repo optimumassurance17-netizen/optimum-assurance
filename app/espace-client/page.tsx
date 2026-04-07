@@ -223,6 +223,7 @@ export default function EspaceClientPage() {
                       contractId={c.id}
                       contractNumber={c.contractNumber}
                       status={c.status}
+                      productType={c.productType}
                     />
                     {(c.status === CONTRACT_STATUS.approved ||
                       (c.status === CONTRACT_STATUS.active && c.productType === "rc_fabriquant")) && (

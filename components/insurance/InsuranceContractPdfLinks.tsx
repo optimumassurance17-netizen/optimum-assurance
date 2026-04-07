@@ -7,6 +7,7 @@ type Props = {
   contractId: string
   contractNumber: string
   status: string
+  productType: string
   className?: string
 }
 
@@ -16,9 +17,18 @@ const linkClass =
 /**
  * Liens PDF authentifiés (session) — pas de doublon d’URL ailleurs.
  */
-export function InsuranceContractPdfLinks({ contractId, contractNumber, status, className }: Props) {
+export function InsuranceContractPdfLinks({
+  contractId,
+  contractNumber,
+  status,
+  productType,
+  className,
+}: Props) {
   const base = `/api/contracts/${contractId}/pdf`
   const isActive = status === CONTRACT_STATUS.active
+  const showQuarterlySchedule =
+    (productType === "decennale" || productType === "rc_fabriquant") &&
+    (status === CONTRACT_STATUS.active || status === CONTRACT_STATUS.approved)
 
   return (
     <div className={`flex flex-wrap gap-x-4 gap-y-2 items-center ${className ?? ""}`}>
@@ -28,6 +38,11 @@ export function InsuranceContractPdfLinks({ contractId, contractNumber, status, 
       <a href={`${base}/policy`} target="_blank" rel="noreferrer" className={linkClass}>
         Conditions (CP)
       </a>
+      {showQuarterlySchedule ? (
+        <a href={`${base}/schedule`} target="_blank" rel="noreferrer" className={linkClass}>
+          Échéancier (trimestriel)
+        </a>
+      ) : null}
       {isActive ? (
         <>
           <a href={`${base}/certificate`} target="_blank" rel="noreferrer" className={linkClass}>

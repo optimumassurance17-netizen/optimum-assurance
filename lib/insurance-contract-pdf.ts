@@ -19,6 +19,7 @@ import { SITE_URL } from "@/lib/site-url"
 import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
+import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
 
 function contractToInsuranceData(c: InsuranceContract): InsuranceData {
   const activities = parseActivitiesJson(c.activitiesJson)
@@ -108,7 +109,7 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
   return pdf.save()
 }
 
-export type DocPdfType = "quote" | "policy" | "certificate" | "invoice"
+export type DocPdfType = "quote" | "policy" | "certificate" | "invoice" | "schedule"
 
 async function loadSignedQuotePdfBytes(storageKey: string): Promise<Uint8Array> {
   const supabase = createSupabaseServiceClient()
@@ -188,6 +189,9 @@ async function generateRcFabAttestationPdf(c: InsuranceContract): Promise<Uint8A
 
 export async function renderContractPdf(c: InsuranceContract, docType: DocPdfType): Promise<Uint8Array> {
   const data = contractToInsuranceData(c)
+  if (docType === "schedule") {
+    return generateQuarterlyScheduleInsurancePdf(c)
+  }
   if (docType === "invoice") {
     return generateSimpleInvoicePdf(c)
   }

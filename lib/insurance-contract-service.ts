@@ -165,19 +165,34 @@ export function premiumMatchesMollieAmount(contractPremium: number, paidAmount: 
 async function generatePostPaymentPdfs(contractId: string, fresh: InsuranceContract): Promise<void> {
   const certBytes = await renderContractPdf(fresh, "certificate")
   const invBytes = await renderContractPdf(fresh, "invoice")
+  let scheduleBytes: Uint8Array | null = null
+  if (fresh.productType === "decennale" || fresh.productType === "rc_fabriquant") {
+    try {
+      scheduleBytes = await renderContractPdf(fresh, "schedule")
+    } catch (e) {
+      console.error("[generatePostPaymentPdfs] schedule:", e)
+    }
+  }
   const baseUrl = `${SITE_URL}/api/contracts/${contractId}/pdf`
+  const deleteTypes =
+    fresh.productType === "decennale" || fresh.productType === "rc_fabriquant"
+      ? (["certificate", "invoice", "schedule"] as const)
+      : (["certificate", "invoice"] as const)
   await prisma.contractStoredDocument.deleteMany({
-    where: { contractId, type: { in: ["certificate", "invoice"] } },
+    where: { contractId, type: { in: [...deleteTypes] } },
   })
-  await prisma.contractStoredDocument.createMany({
-    data: [
-      { contractId, type: "certificate", url: `${baseUrl}/certificate` },
-      { contractId, type: "invoice", url: `${baseUrl}/invoice` },
-    ],
-  })
+  const rows: { contractId: string; type: string; url: string }[] = [
+    { contractId, type: "certificate", url: `${baseUrl}/certificate` },
+    { contractId, type: "invoice", url: `${baseUrl}/invoice` },
+  ]
+  if (scheduleBytes) {
+    rows.push({ contractId, type: "schedule", url: `${baseUrl}/schedule` })
+  }
+  await prisma.contractStoredDocument.createMany({ data: rows })
   await logContractAction(contractId, "pdfs_generated", {
     certificateBytes: certBytes.byteLength,
     invoiceBytes: invBytes.byteLength,
+    ...(scheduleBytes ? { scheduleBytes: scheduleBytes.byteLength } : {}),
   })
 }
 
@@ -356,11 +371,11 @@ export async function processInsuranceContractPaymentSuccess(
 export async function regenerateContractPdfs(contractId: string, actorEmail: string) {
   const c = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
   if (!c) throw new Error("NOT_FOUND")
-  for (const t of ["quote", "policy", "certificate", "invoice"] as const) {
+  for (const t of ["quote", "policy", "certificate", "invoice", "schedule"] as const) {
     try {
       await renderContractPdf(c, t)
     } catch {
-      /* cert / invoice requièrent paiement + validation */
+      /* cert / invoice / échéancier selon statut ou produit */
     }
   }
   await logContractAction(contractId, "pdfs_regenerated", {}, actorEmail)

@@ -195,6 +195,17 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                         >
                           PDF CP
                         </a>
+                        {(c.productType === "decennale" || c.productType === "rc_fabriquant") &&
+                        (c.status === CONTRACT_STATUS.approved || c.status === CONTRACT_STATUS.active) ? (
+                          <a
+                            href={`/api/contracts/${c.id}/pdf/schedule`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sky-400 hover:text-sky-300 text-xs"
+                          >
+                            Échéancier trimestriel
+                          </a>
+                        ) : null}
                         {c.status === CONTRACT_STATUS.active ? (
                           <>
                             <a
