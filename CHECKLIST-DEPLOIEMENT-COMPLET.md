@@ -28,7 +28,7 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 
 - **SEO — URL canonique** : **`NEXT_PUBLIC_SITE_CANONICAL`** = `https://www.optimum-assurance.fr` sur Vercel Production (utilisée par `lib/site-url.ts` pour sitemap, robots, métadonnées). Redéployer après changement de cette variable.
 
-- **Prisma** : migration baseline appliquée côté base utilisée ; scripts `db:sync-url-vercel`, `verify-supabase`, etc. documentés dans `DEPLOY.md`.
+- **Prisma** : migration baseline appliquée côté base utilisée ; **`prisma/migrations/migration_lock.toml`** versionné (`provider = "postgresql"`) — requis pour `migrate deploy` (dont CI e2e). Scripts `db:sync-url-vercel`, `verify-supabase`, etc. documentés dans `DEPLOY.md`.
 
 - **Supabase Auth / session (Next.js 16)** : fichier racine **`proxy.ts`** (remplace l’ancienne convention `middleware`) + helpers **`utils/supabase/`** (`server`, `client`, session). Variables : `NEXT_PUBLIC_SUPABASE_URL` + **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** ou **`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY`**.
 

@@ -70,7 +70,8 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/optimum_ci
+      # 127.0.0.1 : évite ambiguïtés IPv6 sur le runner ; sslmode=disable pour Postgres service local
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/optimum_ci?sslmode=disable
       NEXTAUTH_SECRET: ci-build-secret-minimum-32-characters-long
       NEXTAUTH_URL: http://127.0.0.1:3000
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
