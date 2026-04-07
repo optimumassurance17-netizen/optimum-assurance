@@ -156,5 +156,67 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
     PDF_COLORS.muted
   )
 
+  // Page 2 : annexe informative détaillée
+  const page2 = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+  let y2 = drawOptimumHeader(
+    page2,
+    font,
+    fontBold,
+    "DEVIS DO — Annexe informative",
+    "Portée de la garantie et obligations du souscripteur",
+    accelerantLogo
+  )
+
+  drawTextPdf(page2, `Référence devis : ${data.contractNumber}`, {
+    x: PDF_PAGE.marginX,
+    y: y2,
+    size: 10,
+    font: fontBold,
+    color: PDF_COLORS.text,
+  })
+  y2 -= 18
+
+  const details: string[] = [
+    "1) Objet de la DO : préfinancer les réparations relevant de la garantie décennale, sans attendre la détermination définitive des responsabilités.",
+    "2) Périmètre : dommages compromettant la solidité de l’ouvrage ou l’affectant dans sa destination, selon les conditions contractuelles.",
+    "3) Exclusions usuelles : usure normale, défaut d’entretien, dommages purement esthétiques isolés et cas exclus aux conditions générales.",
+    "4) Déclarations techniques : le souscripteur doit communiquer des informations exactes (nature des travaux, destination, intervenants, montants).",
+    "5) Pièces dossier : l’assureur peut demander des documents complémentaires (plans, permis, pièces entreprises, attestations techniques).",
+    "6) Déclaration de sinistre : à formuler par écrit, avec date d’apparition, description, éléments techniques et pièces justificatives.",
+    "7) Validité du devis : 30 jours sous réserve de stabilité des éléments techniques et économiques transmis.",
+  ]
+
+  for (const line of details) {
+    y2 = drawWrappedText(page2, line, PDF_PAGE.marginX, y2, PDF_PAGE.contentWidth, font, 9, 12)
+    y2 -= 8
+  }
+
+  y2 -= 2
+  y2 = drawWrappedText(
+    page2,
+    "Important : ce devis ne vaut pas contrat ni attestation. La couverture débute après validation du risque et émission des pièces contractuelles.",
+    PDF_PAGE.marginX,
+    y2,
+    PDF_PAGE.contentWidth,
+    fontBold,
+    9,
+    12,
+    PDF_COLORS.primary
+  )
+  y2 -= 10
+  y2 = drawWrappedText(
+    page2,
+    `Références : ${SITE_URL}/conditions-generales-dommage-ouvrage — ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`,
+    PDF_PAGE.marginX,
+    y2,
+    PDF_PAGE.contentWidth,
+    font,
+    8,
+    11,
+    PDF_COLORS.muted
+  )
+  y2 -= 10
+  drawWrappedText(page2, ANTI_FRAUD_LINE, PDF_PAGE.marginX, y2, PDF_PAGE.contentWidth, font, 8, 11, PDF_COLORS.muted)
+
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }
