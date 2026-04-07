@@ -23,6 +23,11 @@ async function check(pathname) {
       if (j.crons?.secret === "missing") {
         console.log("   ⚠️  crons.secret = missing → les routes /api/cron/* renverront 503 en prod (définir CRON_SECRET sur Vercel).")
       }
+      if (j.esign && j.esign.ready === false) {
+        console.log(
+          "   ⚠️  esign.ready = false → signature électronique indisponible (NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY sur Vercel)."
+        )
+      }
     }
     return ok
   } catch (e) {

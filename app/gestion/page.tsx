@@ -275,6 +275,7 @@ export default function GestionPage() {
     primeAnnuelle: string
   } | null>(null)
   const [etudeMiseSubmitting, setEtudeMiseSubmitting] = useState(false)
+  const [cancellingSignatureId, setCancellingSignatureId] = useState<string | null>(null)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
   const customDevisPdfInputRef = useRef<HTMLInputElement>(null)
   const [customDevisUserFilter, setCustomDevisUserFilter] = useState("")
@@ -1005,6 +1006,38 @@ export default function GestionPage() {
               >
                 Contrats
               </a>
+              {(data.devisLeads?.length ?? 0) > 0 && (
+                <a
+                  href="#leads-decennale"
+                  className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+                >
+                  Leads déc.
+                </a>
+              )}
+              {(data.devisDrafts?.length ?? 0) > 0 && (
+                <a
+                  href="#brouillons-devis"
+                  className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+                >
+                  Brouillons
+                </a>
+              )}
+              {data.devisEtudeLeads && data.devisEtudeLeads.length > 0 && (
+                <a
+                  href="#demandes-etude"
+                  className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+                >
+                  Études
+                </a>
+              )}
+              {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
+                <a
+                  href="#rc-fab-leads"
+                  className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+                >
+                  RC Fab
+                </a>
+              )}
             </nav>
             <section
               id="devis-pdf-perso"
@@ -1267,7 +1300,7 @@ export default function GestionPage() {
         )}
 
         {data && (data.devisLeads?.length ?? 0) > 0 && (
-          <section id="leads-decennale">
+          <section id="leads-decennale" className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-4">Leads devis décennale (tarificateur)</h2>
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[640px]">
@@ -1299,7 +1332,7 @@ export default function GestionPage() {
         )}
 
         {data && (data.devisDrafts?.length ?? 0) > 0 && (
-          <section id="brouillons-devis">
+          <section id="brouillons-devis" className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-4">Brouillons devis (liens de reprise)</h2>
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[560px]">
@@ -1353,7 +1386,7 @@ export default function GestionPage() {
               sur le même compte.
             </p>
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
-              <table className="w-full text-sm min-w-[640px]">
+              <table className="w-full text-sm min-w-[720px]">
                 <thead>
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-3 sm:p-4 font-medium">Date</th>
@@ -1362,12 +1395,13 @@ export default function GestionPage() {
                     <th className="text-left p-3 sm:p-4 font-medium">Client</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">ID demande</th>
                     <th className="text-left p-3 sm:p-4 font-medium">CRM</th>
+                    <th className="text-left p-3 sm:p-4 font-medium w-[5.5rem]">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(data.pendingSignatures?.length ?? 0) === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-4 text-gray-200">
+                      <td colSpan={7} className="p-4 text-gray-200">
                         Aucune signature en attente.
                       </td>
                     </tr>
@@ -1411,6 +1445,43 @@ export default function GestionPage() {
                             ) : (
                               "—"
                             )}
+                          </td>
+                          <td className="p-3 sm:p-4 align-top">
+                            <button
+                              type="button"
+                              disabled={cancellingSignatureId === s.signatureRequestId}
+                              onClick={async () => {
+                                if (
+                                  !window.confirm(
+                                    "Annuler cette demande de signature ? Le lien envoyé au client ne fonctionnera plus ; vous pourrez en envoyer une nouvelle."
+                                  )
+                                ) {
+                                  return
+                                }
+                                setCancellingSignatureId(s.signatureRequestId)
+                                try {
+                                  const res = await fetch(
+                                    `/api/gestion/pending-signatures/${encodeURIComponent(s.signatureRequestId)}`,
+                                    { method: "DELETE" }
+                                  )
+                                  const j = (await readResponseJson(res)) as { error?: string; message?: string }
+                                  if (!res.ok) throw new Error(j.error || res.statusText)
+                                  setToast({ message: j.message || "Demande annulée.", type: "success" })
+                                  const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+                                  if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                } catch (e) {
+                                  setToast({
+                                    message: e instanceof Error ? e.message : "Annulation impossible.",
+                                    type: "error",
+                                  })
+                                } finally {
+                                  setCancellingSignatureId(null)
+                                }
+                              }}
+                              className="text-red-400 hover:text-red-300 text-sm disabled:opacity-40 whitespace-nowrap"
+                            >
+                              {cancellingSignatureId === s.signatureRequestId ? "…" : "Annuler"}
+                            </button>
                           </td>
                         </tr>
                       )
@@ -1711,7 +1782,7 @@ export default function GestionPage() {
 
         {/* Demandes d'étude approfondie - remise personnalisée */}
         {data?.devisEtudeLeads && data.devisEtudeLeads.length > 0 && (
-          <section>
+          <section id="demandes-etude" className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-4">Demandes d&apos;étude (remise personnalisée)</h2>
             <p className="text-sm text-gray-200 mb-4">
               Dossiers sinistres (&gt;1 sinistre) ou <strong className="text-gray-200">activité non listée</strong> (/etude/domaine). Faire une remise pour envoyer une proposition avec prime personnalisée.
@@ -2208,7 +2279,7 @@ export default function GestionPage() {
 
         {/* Demandes devis DO en attente */}
         {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
-          <section>
+          <section id="rc-fab-leads" className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-2">Demandes RC Fabriquant</h2>
             <p className="text-sm text-gray-200 mb-4 max-w-3xl">
               Statut et notes sont visibles uniquement en gestion. Aucun refus ni tarif n’est communiqué automatiquement au
