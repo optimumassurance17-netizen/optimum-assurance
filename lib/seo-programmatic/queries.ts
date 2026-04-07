@@ -511,12 +511,27 @@ export async function fetchDoSiblingVilles(
 
 /** Limite les URLs programmatiques dans le sitemap (évite timeout serverless / réponse trop lourde). */
 const PROGRAMMATIC_SITEMAP_MAX = 5000
+/** Si Supabase est lent, on préfère un sitemap partiel (pages statiques inchangées) qu’un 504. */
+const PROGRAMMATIC_SITEMAP_FETCH_MS = 12_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let id: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    id = setTimeout(() => reject(new Error(`timeout ${ms}ms`)), ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => {
+    if (id !== undefined) clearTimeout(id)
+  }) as Promise<T>
+}
 
 export async function fetchProgrammaticSitemapUrls(): Promise<
   { path: string; changeFrequency: "weekly" | "monthly"; priority: number }[]
 > {
   try {
-    const [dec, ddo] = await Promise.all([fetchDecennaleStaticParams(), fetchDoStaticParams()])
+    const [dec, ddo] = await withTimeout(
+      Promise.all([fetchDecennaleStaticParams(), fetchDoStaticParams()]),
+      PROGRAMMATIC_SITEMAP_FETCH_MS
+    )
     const out: { path: string; changeFrequency: "weekly" | "monthly"; priority: number }[] = []
     for (const p of dec) {
       if (out.length >= PROGRAMMATIC_SITEMAP_MAX) break

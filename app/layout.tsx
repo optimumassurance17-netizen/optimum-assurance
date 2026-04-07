@@ -32,6 +32,8 @@ const baseUrl = SITE_URL
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   applicationName: "Optimum Assurance",
+  /** Indication thématique pour certains agrégateurs / aperçus (Next 14+). */
+  category: "insurance",
   title: {
     default: "Assurance Décennale BTP en Ligne | Devis 3 min | Optimum Assurance",
     template: "%s | Optimum Assurance",
