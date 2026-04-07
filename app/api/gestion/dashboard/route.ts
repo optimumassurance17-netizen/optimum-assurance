@@ -197,14 +197,30 @@ export async function GET() {
           })
         : []
     const pendingUserById = Object.fromEntries(pendingUsers.map((u) => [u.id, u]))
-    const pendingSignatures = pendingSignaturesRaw.map((p) => ({
-      id: p.id,
-      signatureRequestId: p.signatureRequestId,
-      contractNumero: p.contractNumero,
-      createdAt: p.createdAt,
-      userId: p.userId,
-      user: pendingUserById[p.userId] ?? null,
-    }))
+    const pendingSignatures = pendingSignaturesRaw.map((p) => {
+      let signatureFlow: "custom_pdf" | "decennale" = "decennale"
+      let signatureFlowLabel: string | undefined
+      try {
+        const j = JSON.parse(p.contractData || "{}") as Record<string, unknown>
+        if (j.customUploadedDevisFlow === true) {
+          signatureFlow = "custom_pdf"
+          const pl = typeof j.produitLabel === "string" ? j.produitLabel.trim() : ""
+          signatureFlowLabel = pl ? pl.slice(0, 120) : undefined
+        }
+      } catch {
+        /* ignore */
+      }
+      return {
+        id: p.id,
+        signatureRequestId: p.signatureRequestId,
+        contractNumero: p.contractNumero,
+        createdAt: p.createdAt,
+        userId: p.userId,
+        user: pendingUserById[p.userId] ?? null,
+        signatureFlow,
+        signatureFlowLabel,
+      }
+    })
 
     return NextResponse.json({
       users,

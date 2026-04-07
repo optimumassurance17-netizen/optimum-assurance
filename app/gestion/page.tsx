@@ -206,6 +206,8 @@ interface DashboardData {
     createdAt: string
     userId: string
     user: { id: string; email: string; raisonSociale: string | null } | null
+    signatureFlow: "custom_pdf" | "decennale"
+    signatureFlowLabel?: string
   }[]
   insuranceContractsCount?: number
 }
@@ -253,6 +255,7 @@ export default function GestionPage() {
     dateCreationSociete: "",
   })
   const [devisDecActivitePick, setDevisDecActivitePick] = useState("")
+  const [devisDecUserFilter, setDevisDecUserFilter] = useState("")
   const [devisDecSubmitting, setDevisDecSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [docTypeFilter, setDocTypeFilter] = useState<string>("all")
@@ -297,6 +300,23 @@ export default function GestionPage() {
     list.sort((a, b) => a.email.localeCompare(b.email))
     return list.slice(0, 300)
   }, [data?.users, customDevisUserFilter])
+
+  const devisDecUserOptions = useMemo(() => {
+    if (!data?.users) return []
+    const q = devisDecUserFilter.trim().toLowerCase()
+    let list = [...data.users]
+    if (q) {
+      list = list.filter(
+        (u) =>
+          u.email.toLowerCase().includes(q) ||
+          (u.raisonSociale || "").toLowerCase().includes(q) ||
+          (u.siret || "").toLowerCase().includes(q)
+      )
+    }
+    list.sort((a, b) => a.email.localeCompare(b.email))
+    return list.slice(0, 300)
+  }, [data?.users, devisDecUserFilter])
+
   const [rcFabDrafts, setRcFabDrafts] = useState<Record<string, { statut: string; notes: string }>>({})
   const [rcFabSavingId, setRcFabSavingId] = useState<string | null>(null)
   const [rcFabPropositionModal, setRcFabPropositionModal] = useState<{
@@ -599,6 +619,7 @@ export default function GestionPage() {
         dateCreationSociete: "",
       })
       setDevisDecActivitePick("")
+      setDevisDecUserFilter("")
       const dashRes = await fetch("/api/gestion/dashboard")
       if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
     } catch (err) {
@@ -925,10 +946,80 @@ export default function GestionPage() {
                 className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-80"
               />
             </div>
-            <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4">
+            <nav
+              className="flex flex-wrap gap-2 items-center rounded-xl border border-gray-700 bg-[#222] px-4 py-3"
+              aria-label="Accès rapide sections gestion"
+            >
+              <span className="text-xs text-gray-500 w-full sm:w-auto sm:mr-1">Accès rapide</span>
+              <a
+                href="#devis-pdf-perso"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Devis PDF perso
+              </a>
+              <a
+                href="#stats-gestion"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Indicateurs
+              </a>
+              <a
+                href="#clients"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Clients
+              </a>
+              <a
+                href="#signatures-attente"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Signatures
+              </a>
+              <a
+                href="#devis-decennale-manuel"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Devis déc. manuel
+              </a>
+              <a
+                href="#devis-do-manuel"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Devis DO
+              </a>
+              <a
+                href="#paiements"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Paiements
+              </a>
+              <a
+                href="#attestations"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Attestations
+              </a>
+              <a
+                href="#contrats"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Contrats
+              </a>
+            </nav>
+            <section
+              id="devis-pdf-perso"
+              className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 scroll-mt-24"
+            >
               <h2 className="text-lg font-semibold text-white">Devis PDF personnalisé → signature → paiement</h2>
               <p className="text-sm text-gray-400">
                 Joignez un PDF (devis ou proposition), choisissez le client et le montant TTC. Après signature électronique, un contrat RC Fabriquant est créé (statut approuvé) et le client peut payer depuis son espace.
+              </p>
+              <p className="text-xs text-amber-200/80 border border-amber-900/40 rounded-lg px-3 py-2 bg-amber-950/20">
+                Une seule demande de signature à la fois par client. Si l&apos;envoi est refusé, vérifiez la section{" "}
+                <a href="#signatures-attente" className="text-amber-100 underline hover:no-underline">
+                  Signatures en attente
+                </a>{" "}
+                ou la fiche client avant de renvoyer.
               </p>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -1049,7 +1140,7 @@ export default function GestionPage() {
                 {customDevisSending ? "Envoi…" : "Envoyer l’invitation de signature"}
               </button>
             </section>
-            <section className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            <section id="stats-gestion" className="grid grid-cols-2 md:grid-cols-6 gap-4 scroll-mt-24">
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">Clients</p>
                 <Link href="#clients" className="text-2xl font-bold text-white hover:text-[#2563eb] block">
@@ -1137,7 +1228,7 @@ export default function GestionPage() {
 
         {/* Liste clients - accès fiche détaillée */}
         {data && (
-          <section id="clients">
+          <section id="clients" className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-4">Clients</h2>
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[400px]">
@@ -1253,42 +1344,78 @@ export default function GestionPage() {
           </section>
         )}
 
-        {data && (data.pendingSignatures?.length ?? 0) > 0 && (
-          <section id="signatures-attente">
-            <h2 className="text-lg font-semibold text-white mb-4">Signatures électroniques en attente</h2>
+        {data && (
+          <section id="signatures-attente" className="scroll-mt-24">
+            <h2 className="text-lg font-semibold text-white mb-2">Signatures électroniques en attente</h2>
+            <p className="text-sm text-gray-400 mb-4 max-w-2xl">
+              Décennale (contrat généré depuis un devis) ou <strong className="text-gray-200">PDF personnalisé</strong> (RC
+              après signature). Tant qu&apos;une ligne est présente, le client ne peut pas recevoir une nouvelle invitation
+              sur le même compte.
+            </p>
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
-              <table className="w-full text-sm min-w-[560px]">
+              <table className="w-full text-sm min-w-[640px]">
                 <thead>
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-3 sm:p-4 font-medium">Date</th>
-                    <th className="text-left p-3 sm:p-4 font-medium">N° contrat</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Flux</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">N° / ref.</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Client</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">ID demande</th>
                     <th className="text-left p-3 sm:p-4 font-medium">CRM</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.pendingSignatures!.map((s) => (
-                    <tr key={s.id} className="border-b border-gray-700/50">
-                      <td className="p-3 sm:p-4 whitespace-nowrap">{new Date(s.createdAt).toLocaleString("fr-FR")}</td>
-                      <td className="p-3 sm:p-4 font-mono text-white">{s.contractNumero}</td>
-                      <td className="p-3 sm:p-4">
-                        {s.user ? s.user.raisonSociale || s.user.email : "—"}
-                      </td>
-                      <td className="p-3 sm:p-4 font-mono text-xs text-gray-200 hidden sm:table-cell max-w-[12rem] truncate" title={s.signatureRequestId}>
-                        {s.signatureRequestId}
-                      </td>
-                      <td className="p-3 sm:p-4">
-                        {s.user ? (
-                          <Link href={`/gestion/clients/${s.userId}`} className="text-[#2563eb] hover:underline text-sm">
-                            Fiche →
-                          </Link>
-                        ) : (
-                          "—"
-                        )}
+                  {(data.pendingSignatures?.length ?? 0) === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-4 text-gray-200">
+                        Aucune signature en attente.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    data.pendingSignatures!.map((s) => {
+                      const flow = s.signatureFlow ?? "decennale"
+                      return (
+                        <tr key={s.id} className="border-b border-gray-700/50">
+                          <td className="p-3 sm:p-4 whitespace-nowrap">{new Date(s.createdAt).toLocaleString("fr-FR")}</td>
+                          <td className="p-3 sm:p-4 align-top">
+                            {flow === "custom_pdf" ? (
+                              <span className="inline-block text-xs font-medium uppercase tracking-wide bg-teal-900/50 text-teal-200 px-2 py-0.5 rounded">
+                                PDF perso
+                              </span>
+                            ) : (
+                              <span className="inline-block text-xs font-medium uppercase tracking-wide bg-violet-900/50 text-violet-200 px-2 py-0.5 rounded">
+                                Décennale
+                              </span>
+                            )}
+                            {s.signatureFlowLabel ? (
+                              <div className="text-xs text-gray-400 mt-1 max-w-[14rem] line-clamp-2" title={s.signatureFlowLabel}>
+                                {s.signatureFlowLabel}
+                              </div>
+                            ) : null}
+                          </td>
+                          <td className="p-3 sm:p-4 font-mono text-white text-xs">{s.contractNumero}</td>
+                          <td className="p-3 sm:p-4">
+                            {s.user ? s.user.raisonSociale || s.user.email : "—"}
+                          </td>
+                          <td
+                            className="p-3 sm:p-4 font-mono text-xs text-gray-200 hidden sm:table-cell max-w-[12rem] truncate"
+                            title={s.signatureRequestId}
+                          >
+                            {s.signatureRequestId}
+                          </td>
+                          <td className="p-3 sm:p-4">
+                            {s.user ? (
+                              <Link href={`/gestion/clients/${s.userId}`} className="text-[#2563eb] hover:underline text-sm">
+                                Fiche →
+                              </Link>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1373,7 +1500,7 @@ export default function GestionPage() {
           </div>
         )}
         {/* Paiements */}
-        <section>
+        <section id="paiements" className="scroll-mt-24">
           <h2 className="text-lg font-semibold text-white mb-4">Paiements</h2>
           <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
             <table className="w-full text-sm min-w-[500px]">
@@ -1420,7 +1547,7 @@ export default function GestionPage() {
         </section>
 
         {/* Attestations et suspension */}
-        <section>
+        <section id="attestations" className="scroll-mt-24">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
             <h2 className="text-lg font-semibold text-white">Attestations</h2>
             <select
@@ -1519,7 +1646,7 @@ export default function GestionPage() {
         </section>
 
         {/* Contrats - autorisation annulation */}
-        <section>
+        <section id="contrats" className="scroll-mt-24">
           <h2 className="text-lg font-semibold text-white mb-4">Contrats</h2>
           <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
             <table className="w-full text-sm min-w-[400px]">
@@ -1658,7 +1785,7 @@ export default function GestionPage() {
         )}
 
         {/* Devis décennale — saisie manuelle puis envoi lien /sign depuis la fiche document */}
-        <section>
+        <section id="devis-decennale-manuel" className="scroll-mt-24">
           <h2 className="text-lg font-semibold text-white mb-4">Devis décennale (manuel)</h2>
           <p className="text-sm text-gray-200 mb-4 max-w-2xl">
             Créez un devis pour un client existant. Ensuite, ouvrez le document depuis le tableau des documents
@@ -1667,7 +1794,15 @@ export default function GestionPage() {
             ligne).
           </p>
           <form onSubmit={handleCreateDevisDecennale} className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 max-w-xl mb-10">
-            <div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-200 mb-1">Filtrer les clients</label>
+              <input
+                type="search"
+                value={devisDecUserFilter}
+                onChange={(e) => setDevisDecUserFilter(e.target.value)}
+                placeholder="Email, raison sociale, SIRET…"
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+              />
               <label className="block text-sm font-medium text-gray-200 mb-1">Client</label>
               <select
                 required
@@ -1676,9 +1811,10 @@ export default function GestionPage() {
                 className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
               >
                 <option value="">— Sélectionner —</option>
-                {data.users.map((u) => (
+                {devisDecUserOptions.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.email} {u.raisonSociale ? `— ${u.raisonSociale}` : ""}
+                    {u.email}
+                    {u.raisonSociale ? ` — ${u.raisonSociale}` : ""}
                   </option>
                 ))}
               </select>
@@ -1862,7 +1998,7 @@ export default function GestionPage() {
         </section>
 
         {/* Devis dommage ouvrage - ajout manuel */}
-        <section>
+        <section id="devis-do-manuel" className="scroll-mt-24">
           <h2 className="text-lg font-semibold text-white mb-4">Ajouter un devis dommage ouvrage</h2>
           <p className="text-sm text-gray-200 mb-4 max-w-2xl">
             Le devis est ajouté à l&apos;espace client. Paiement :{" "}
