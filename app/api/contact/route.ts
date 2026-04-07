@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { rateLimitResponse } from "@/lib/rate-limit"
 import { sendEmail } from "@/lib/email"
+import { asJsonObject } from "@/lib/json-object"
 import { escapeHtmlForEmail } from "@/lib/email-layout"
 
 export async function POST(request: NextRequest) {
@@ -8,7 +9,9 @@ export async function POST(request: NextRequest) {
   if (limited) return limited
 
   try {
-    const body = await request.json()
+    const body = asJsonObject<{ nom?: string; email?: string; sujet?: string; message?: string }>(
+      await request.json()
+    )
     const { nom, email, sujet, message } = body
 
     if (!nom?.trim() || !email?.trim() || !message?.trim()) {

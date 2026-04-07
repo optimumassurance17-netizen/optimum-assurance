@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 
 function parseDate(str: string): Date | null {
   if (!str || typeof str !== "string") return null
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const body = await request.json()
+    const body = asJsonObject<{ documentId?: string; motif?: string }>(await request.json())
     const { documentId, motif } = body
 
     if (!documentId) {

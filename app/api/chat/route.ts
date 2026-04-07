@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { CHATBOT_SYSTEM_PROMPT, findBestFaqMatch } from "@/lib/chatbot-context"
 import { rateLimitResponse } from "@/lib/rate-limit"
+import { asJsonObject } from "@/lib/json-object"
 
 const FALLBACK_REPLY =
   "Je n'ai pas trouvé de réponse précise à votre question. Pour une réponse personnalisée, contactez-nous par email à contact@optimum-assurance.fr — nous répondons sous 24h. Vous pouvez aussi consulter notre FAQ : /faq"
@@ -18,7 +19,8 @@ export async function POST(req: NextRequest) {
   if (limited) return limited
 
   try {
-    const { message } = await req.json()
+    const body = asJsonObject<{ message?: string }>(await req.json())
+    const { message } = body
     if (!message || typeof message !== "string") {
       return NextResponse.json({ error: "Message requis" }, { status: 400 })
     }

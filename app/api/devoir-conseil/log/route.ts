@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { page, produit } = body as { page?: string; produit?: string }
+    const body = asJsonObject<{ page?: string; produit?: string; email?: string }>(await request.json())
+    const { page, produit } = body
 
     if (!page || !produit) {
       return NextResponse.json({ error: "page et produit requis" }, { status: 400 })

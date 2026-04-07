@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 
 /**
  * Enregistre une demande d'étude :
@@ -8,7 +9,9 @@ import { prisma } from "@/lib/prisma"
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = asJsonObject<{ email?: string; raisonSociale?: string; siret?: string; data?: unknown }>(
+      await request.json()
+    )
     const { email, raisonSociale, siret, data } = body
 
     if (!email || typeof email !== "string" || !email.includes("@")) {

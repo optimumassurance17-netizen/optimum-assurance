@@ -8,6 +8,7 @@ import { generateDOQuote } from "@/lib/pdf/do/generateQuote"
 import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
 import { logPdfGeneration } from "@/lib/pdf/logPdfGeneration"
 import { insuranceDataFromDoQuestionnaire } from "@/lib/pdf/quote-email-data"
+import { asJsonObject } from "@/lib/json-object"
 import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
 
 /**
@@ -15,7 +16,7 @@ import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = asJsonObject<{ email?: string; data?: unknown; coutTotal?: number | string }>(await request.json())
     const { email, data, coutTotal } = body
 
     if (!email || !data) {

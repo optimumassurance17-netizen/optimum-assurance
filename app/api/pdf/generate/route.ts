@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { renderContractPdf, type DocPdfType } from "@/lib/insurance-contract-pdf"
 import { PdfValidationError } from "@/lib/pdf/errors"
+import { asJsonObject } from "@/lib/json-object"
 
 /**
  * Génère un PDF pour un InsuranceContract (admin ou propriétaire du contrat).
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as { contractId?: string; docType?: DocPdfType }
+    const body = asJsonObject<{ contractId?: string; docType?: DocPdfType }>(await request.json())
     if (!body.contractId || !body.docType) {
       return NextResponse.json({ error: "contractId et docType requis" }, { status: 400 })
     }

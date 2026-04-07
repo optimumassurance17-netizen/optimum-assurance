@@ -9,17 +9,18 @@ import {
   pdfBufferResponse,
 } from "@/lib/pdf/api-helpers"
 import type { InsuranceCertificateData } from "@/lib/pdf/types"
+import { asJsonObject } from "@/lib/json-object"
 
 export async function POST(request: NextRequest) {
   if (!isPdfApiAuthorized(request)) {
     return pdfApiUnauthorizedResponse()
   }
   try {
-    const body = (await request.json()) as {
+    const body = asJsonObject<{
       data?: InsuranceCertificateData
       allocateContractNumber?: boolean
       userId?: string
-    }
+    }>(await request.json())
     if (!body.data) {
       return NextResponse.json({ error: "Champ data requis" }, { status: 400 })
     }
