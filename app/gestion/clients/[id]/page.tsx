@@ -52,8 +52,10 @@ const typeLabels: Record<string, string> = {
 
 export default function ClientDetailPage() {
   const params = useParams()
+  const safeParams = params ?? {}
   const router = useRouter()
   const { status, data: authSession } = useSession()
+  const clientId = typeof safeParams.id === "string" ? safeParams.id : ""
   const [data, setData] = useState<ClientData | null>(null)
   const [notes, setNotes] = useState<{ id: string; content: string; adminEmail: string; createdAt: string }[]>([])
   const [noteInput, setNoteInput] = useState("")
@@ -98,8 +100,13 @@ export default function ClientDetailPage() {
     if (status !== "authenticated") return
 
     const fetchData = async () => {
+      if (!clientId) {
+        setError("Client introuvable")
+        setLoading(false)
+        return
+      }
       try {
-        const res = await fetch(`/api/gestion/clients/${params.id}`)
+        const res = await fetch(`/api/gestion/clients/${clientId}`)
         if (res.status === 403) {
           setError("Accès refusé")
           return
@@ -128,7 +135,7 @@ export default function ClientDetailPage() {
     }
 
     fetchData()
-  }, [params.id, status, router])
+  }, [clientId, status, router])
 
   if (status === "loading" || loading) {
     return (
@@ -151,7 +158,7 @@ export default function ClientDetailPage() {
 
   const { user, documents, payments, avenantFees } = data
   const caTotal = payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0)
-  const isOwnAdminAccount = authSession?.user?.id === params.id
+  const isOwnAdminAccount = authSession?.user?.id === clientId
 
   return (
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
@@ -195,7 +202,7 @@ export default function ClientDetailPage() {
               e.preventDefault()
               setProfileSaving(true)
               try {
-                const res = await fetch(`/api/gestion/clients/${params.id}`, {
+                const res = await fetch(`/api/gestion/clients/${clientId}`, {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
@@ -440,7 +447,7 @@ export default function ClientDetailPage() {
                 if (!noteInput.trim()) return
                 setNoteLoading(true)
                 try {
-                  const res = await fetch(`/api/gestion/clients/${params.id}/notes`, {
+                  const res = await fetch(`/api/gestion/clients/${clientId}/notes`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ content: noteInput }),
@@ -557,7 +564,7 @@ export default function ClientDetailPage() {
                 if (!sinistreForm.dateSinistre) return
                 setSinistreLoading(true)
                 try {
-                  const res = await fetch(`/api/gestion/clients/${params.id}/sinistres`, {
+                  const res = await fetch(`/api/gestion/clients/${clientId}/sinistres`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -691,7 +698,7 @@ export default function ClientDetailPage() {
                 onClick={async () => {
                   setDeleteLoading(true)
                   try {
-                    const res = await fetch(`/api/gestion/clients/${params.id}`, {
+                    const res = await fetch(`/api/gestion/clients/${clientId}`, {
                       method: "DELETE",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ confirmEmail: deleteConfirmEmail }),

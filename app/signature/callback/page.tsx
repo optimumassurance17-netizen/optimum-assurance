@@ -7,7 +7,9 @@ import { Header } from "@/components/Header"
 
 function SignatureCallbackContent() {
   const searchParams = useSearchParams()
-  const error = searchParams.get("error") === "1"
+  const resolvedSearchParams =
+    searchParams ?? (typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null)
+  const error = resolvedSearchParams?.get("error") === "1"
   const status: "success" | "error" = error ? "error" : "success"
 
   return (

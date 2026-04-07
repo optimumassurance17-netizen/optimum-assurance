@@ -23,6 +23,7 @@ const AvenantTemplate = dynamic(() => import("@/components/documents/AvenantTemp
 
 export default function GestionDocumentPage() {
   const params = useParams()
+  const routeId = typeof params?.id === "string" ? params.id : null
   const router = useRouter()
   const { status } = useSession()
   const [document, setDocument] = useState<{
@@ -43,10 +44,15 @@ export default function GestionDocumentPage() {
       return
     }
     if (status !== "authenticated") return
+    if (!routeId) {
+      setDocument(null)
+      setLoading(false)
+      return
+    }
 
     const fetchDoc = async () => {
       try {
-        const res = await fetch(`/api/gestion/documents/${params.id}`)
+        const res = await fetch(`/api/gestion/documents/${routeId}`)
         const data = await readResponseJson<{
           id: string
           type: string
@@ -65,7 +71,7 @@ export default function GestionDocumentPage() {
     }
 
     fetchDoc()
-  }, [params.id, status, router])
+  }, [routeId, status, router])
 
   if (status === "loading" || loading) {
     return (

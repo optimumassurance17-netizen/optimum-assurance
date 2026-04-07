@@ -26,6 +26,7 @@ const AvenantTemplate = dynamic(() => import("@/components/documents/AvenantTemp
 
 export default function DocumentPage() {
   const params = useParams()
+  const routeId = typeof params?.id === "string" ? params.id : ""
   const router = useRouter()
   const { status } = useSession()
   const [devoirConseilAccepte, setDevoirConseilAccepte] = useState(false)
@@ -52,7 +53,7 @@ export default function DocumentPage() {
 
     const fetchDoc = async () => {
       try {
-        const res = await fetch(`/api/documents/${params.id}`)
+        const res = await fetch(`/api/documents/${routeId}`)
         const data = await readResponseJson<{
           id: string
           type: string
@@ -71,7 +72,7 @@ export default function DocumentPage() {
     }
 
     fetchDoc()
-  }, [params.id, status, router])
+  }, [routeId, status, router])
 
   const handlePrint = () => {
     window.print()

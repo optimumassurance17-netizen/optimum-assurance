@@ -9,7 +9,7 @@ import { readResponseJson } from "@/lib/read-response-json"
 export default function DevisResumePage() {
   const params = useParams()
   const router = useRouter()
-  const token = params.token as string | undefined
+  const token = typeof params?.token === "string" ? params.token : undefined
   const [status, setStatus] = useState<"loading" | "ok" | "error">(() =>
     token ? "loading" : "error",
   )
