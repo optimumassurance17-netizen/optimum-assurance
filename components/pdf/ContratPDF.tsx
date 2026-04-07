@@ -131,6 +131,36 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
           </Text>
         </View>
 
+        <View style={pdfTheme.section}>
+          <Text style={pdfTheme.h3}>Article 7 - Étendue de la garantie et exclusions</Text>
+          <Text style={pdfTheme.p}>
+            La garantie couvre la responsabilité décennale de l&apos;assuré pour les dommages matériels relevant des
+            dispositions légales applicables aux constructeurs, dans la limite des plafonds contractuels.
+          </Text>
+          <Text style={pdfTheme.p}>
+            Restent notamment exclus les dommages résultant d&apos;une activité non déclarée, d&apos;une faute intentionnelle,
+            d&apos;un défaut d&apos;entretien ou des exclusions prévues par les conditions générales.
+          </Text>
+        </View>
+
+        <View style={pdfTheme.section}>
+          <Text style={pdfTheme.h3}>Article 8 - Obligations du souscripteur</Text>
+          <Text style={pdfTheme.p}>
+            L&apos;assuré s&apos;engage à déclarer avec exactitude ses activités et son chiffre d&apos;affaires, à signaler toute
+            modification significative (activité, structure, adresse, mode d&apos;intervention) et à régler les primes aux
+            échéances prévues.
+          </Text>
+        </View>
+
+        <View style={pdfTheme.section}>
+          <Text style={pdfTheme.h3}>Article 9 - Déclaration de sinistre</Text>
+          <Text style={pdfTheme.p}>
+            Tout sinistre doit être déclaré dans les meilleurs délais avec les éléments utiles (référence chantier,
+            description des dommages, date de survenance, pièces justificatives). L&apos;instruction suit les modalités
+            prévues aux conditions générales.
+          </Text>
+        </View>
+
         <View style={pdfTheme.signatureZone}>
           <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold" }]}>Signature du représentant légal</Text>
           <Text style={[pdfTheme.p, { fontSize: 9, color: "#475569", marginTop: 6 }]}>

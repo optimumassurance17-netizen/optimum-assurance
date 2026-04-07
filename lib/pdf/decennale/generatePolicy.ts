@@ -54,8 +54,16 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
     `Adresse : ${data.address}.`,
     `Période : du ${data.startDate} au ${data.endDate}.`,
     `Activités garanties : ${data.activities!.join(", ")}.`,
+    data.activityExclusions?.length
+      ? `Activités / travaux exclus : ${data.activityExclusions.join(", ")}.`
+      : "Activités / travaux exclus : aucun libellé d’exclusion spécifique déclaré à l’émission.",
     `Prime annuelle TTC : ${formatEuro(data.premium)}.`,
     "Paiement : prélèvement SEPA selon mandat et échéances contractuelles.",
+    "Périmètre de garantie : responsabilité civile décennale de l’assuré pour les dommages matériels compromettant la solidité de l’ouvrage ou le rendant impropre à sa destination, dans la limite des conditions générales et particulières.",
+    "Franchise et plafonds : applicables selon les conditions particulières signées et les conditions générales en vigueur à la date du sinistre.",
+    "Obligations déclaratives : toute modification substantielle de l’activité, du chiffre d’affaires, du mode d’exécution des travaux ou de la situation juridique doit être déclarée sans délai.",
+    "Sinistre : déclaration écrite dès connaissance du fait dommageable, avec pièces justificatives (référence chantier, nature des dommages, date d’apparition, éléments techniques disponibles).",
+    "Résiliation : conformément aux conditions contractuelles, notamment en cas de non-paiement, de fausse déclaration ou à l’échéance selon préavis prévu.",
     "Le souscripteur atteste l’exactitude de ses déclarations. Signature et paiement valent engagement sous réserve d’acceptation du risque par l’assureur.",
     `Conditions générales et attestations : ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`,
   ]

@@ -55,6 +55,13 @@ export async function generateDOPolicy(data: InsuranceData): Promise<Uint8Array>
     `Prime TTC : ${formatEuro(data.premium)}.`,
     "Franchise : aucune (garantie obligatoire dommages-ouvrage).",
     "Paiement : selon modalités contractuelles (virement ou prélèvement selon proposition).",
+    "Objet : préfinancement rapide des travaux de réparation relevant de la garantie décennale, sans attendre une décision au fond sur les responsabilités.",
+    "Déclenchement : après réception d’une déclaration de sinistre complète et instruite selon les délais légaux applicables en dommages-ouvrage.",
+    "Périmètre : dommages compromettant la solidité de l’ouvrage ou l’affectant dans son usage normal, sous réserve des conditions, exclusions et limites prévues au contrat.",
+    "Exclusions usuelles : défaut d’entretien, usure normale, dommages esthétiques isolés, non-conformités sans atteinte décennale, et cas listés aux conditions générales.",
+    "Obligations du souscripteur : exactitude des déclarations techniques (destination, nature des travaux, intervenants), conservation des pièces du chantier, information en cas de modification substantielle du projet.",
+    "Sinistre : notification écrite avec description circonstanciée, date d’apparition, photos/constats et pièces techniques utiles pour instruction.",
+    "Résiliation / nullité : selon les dispositions contractuelles, notamment en cas de non-paiement ou de fausse déclaration intentionnelle.",
     "Le souscripteur atteste l’exactitude des informations techniques. La garantie est subordonnée à l’étude du dossier et à l’acceptation du risque par l’assureur.",
     `Références : ${SITE_URL}/conditions-generales-dommage-ouvrage — ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`,
   ].filter(Boolean) as string[]
