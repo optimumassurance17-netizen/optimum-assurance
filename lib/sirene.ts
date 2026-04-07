@@ -182,6 +182,17 @@ function hasInseeConfig(): boolean {
   )
 }
 
+/** Pour health / monitoring : présence des clés (aucun appel réseau). */
+export function getSireneEnvStatus(): {
+  insee: "configured" | "missing"
+  pappers: "configured" | "missing"
+} {
+  return {
+    insee: hasInseeConfig() ? "configured" : "missing",
+    pappers: process.env.PAPPERS_API_KEY?.trim() ? "configured" : "missing",
+  }
+}
+
 /** Recherche entreprise par SIRET - INSEE en priorité, puis Pappers */
 export async function fetchEntrepriseBySiret(siret: string): Promise<SireneResult | null> {
   const normalized = siret.replace(/\s/g, "")

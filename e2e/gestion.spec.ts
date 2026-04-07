@@ -19,14 +19,18 @@ test.describe("Gestion CRM — accès et API", () => {
     expect(j.error).toBeTruthy()
   })
 
-  test("API health : champ esign présent", async ({ request }) => {
+  test("API health : champs esign et sirene présents", async ({ request }) => {
     const res = await request.get("/api/health")
     expect(res.ok()).toBeTruthy()
     const j = (await res.json()) as {
       esign?: { supabaseUrl?: string; serviceRole?: string; ready?: boolean }
+      sirene?: { insee?: string; pappers?: string }
     }
     expect(j.esign).toBeDefined()
     expect(typeof j.esign?.ready).toBe("boolean")
+    expect(j.sirene).toBeDefined()
+    expect(j.sirene?.insee).toMatch(/configured|missing/)
+    expect(j.sirene?.pappers).toMatch(/configured|missing/)
   })
 })
 

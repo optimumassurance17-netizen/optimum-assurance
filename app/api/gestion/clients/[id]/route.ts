@@ -35,6 +35,8 @@ export async function GET(
         ville: true,
         telephone: true,
         createdAt: true,
+        doInitialQuestionnaireJson: true,
+        doEtudeQuestionnaireJson: true,
       },
     })
 
@@ -172,6 +174,8 @@ export async function PATCH(
         ville: true,
         telephone: true,
         createdAt: true,
+        doInitialQuestionnaireJson: true,
+        doEtudeQuestionnaireJson: true,
       },
     })
 

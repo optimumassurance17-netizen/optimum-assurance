@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { getSireneEnvStatus } from "@/lib/sirene"
 
 /** Toujours à jour (monitoring / Vercel), pas de cache edge statique. */
 export const dynamic = "force-dynamic"
@@ -36,12 +37,14 @@ function esignEnv() {
  * Ne teste pas l’API Resend (pas d’email envoyé) — indique seulement si les variables sont présentes.
  * Les crons `/api/cron/*` refusent les appels en prod sans `CRON_SECRET` (503) ; Vercel envoie `Authorization: Bearer …` si la variable est définie.
  * `esign` : présence de NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (signature électronique).
+ * `sirene` : clés INSEE et/ou Pappers pour `/api/siret` (préremplissage SIRET) — pas d’appel API ici.
  */
 export async function GET() {
   const crons = {
     secret: cronSecretConfigured() ? "configured" : "missing",
   }
   const esign = esignEnv()
+  const sirene = getSireneEnvStatus()
   try {
     await prisma.$queryRaw`SELECT 1`
     return NextResponse.json({
@@ -54,6 +57,7 @@ export async function GET() {
       },
       crons,
       esign,
+      sirene,
     })
   } catch (error) {
     console.error("Health check failed:", error)
@@ -68,6 +72,7 @@ export async function GET() {
         },
         crons,
         esign,
+        sirene,
       },
       { status: 503 }
     )

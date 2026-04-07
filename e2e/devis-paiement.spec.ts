@@ -48,6 +48,12 @@ test.describe("Parcours devis → paiement → attestation", () => {
     await expect(page.locator("h1")).toContainText(/dommage ouvrage|devis/i)
   })
 
+  test("Page devis RC fabriquant — bouton Sirene Remplir", async ({ page }) => {
+    await page.goto("/devis-rc-fabriquant")
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Remplir" })).toBeVisible()
+  })
+
   test("Liens footer et mentions légales", async ({ page }) => {
     await page.goto("/")
     await dismissCookieBanner(page)

@@ -7,8 +7,29 @@ import { useSession } from "next-auth/react"
 import { readResponseJson } from "@/lib/read-response-json"
 import { Toast } from "@/components/Toast"
 
+function prettyQuestionnaireJson(raw: string | null | undefined): string {
+  if (!raw?.trim()) return ""
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2)
+  } catch {
+    return raw
+  }
+}
+
 interface ClientData {
-  user: { id: string; email: string; raisonSociale: string | null; siret: string | null; adresse?: string | null; codePostal?: string | null; ville?: string | null; telephone?: string | null; createdAt: string }
+  user: {
+    id: string
+    email: string
+    raisonSociale: string | null
+    siret: string | null
+    adresse?: string | null
+    codePostal?: string | null
+    ville?: string | null
+    telephone?: string | null
+    createdAt: string
+    doInitialQuestionnaireJson?: string | null
+    doEtudeQuestionnaireJson?: string | null
+  }
   documents: { id: string; type: string; numero: string; status: string; createdAt: string }[]
   payments: { id: string; amount: number; status: string; paidAt: string | null; createdAt: string }[]
   avenantFees: { id: string; amount: number; status: string; createdAt: string }[]
@@ -283,6 +304,35 @@ export default function ClientDetailPage() {
             </div>
           </form>
         </section>
+
+        {(user.doInitialQuestionnaireJson?.trim() || user.doEtudeQuestionnaireJson?.trim()) && (
+          <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4">
+            <h2 className="text-lg font-semibold text-white">Questionnaires dommage ouvrage</h2>
+            <p className="text-xs text-gray-400">
+              Données issues du premier devis en ligne et du questionnaire d&apos;étude (espace client). Lecture seule.
+            </p>
+            {user.doInitialQuestionnaireJson?.trim() ? (
+              <details className="group">
+                <summary className="cursor-pointer text-sm font-medium text-[#93c5fd] hover:text-[#bfdbfe]">
+                  Premier questionnaire (devis en ligne)
+                </summary>
+                <pre className="mt-2 max-h-80 overflow-auto rounded-lg bg-[#1a1a1a] p-3 text-xs text-gray-300 border border-gray-600 whitespace-pre-wrap break-words">
+                  {prettyQuestionnaireJson(user.doInitialQuestionnaireJson)}
+                </pre>
+              </details>
+            ) : null}
+            {user.doEtudeQuestionnaireJson?.trim() ? (
+              <details className="group">
+                <summary className="cursor-pointer text-sm font-medium text-[#93c5fd] hover:text-[#bfdbfe]">
+                  Questionnaire d&apos;étude (espace client)
+                </summary>
+                <pre className="mt-2 max-h-80 overflow-auto rounded-lg bg-[#1a1a1a] p-3 text-xs text-gray-300 border border-gray-600 whitespace-pre-wrap break-words">
+                  {prettyQuestionnaireJson(user.doEtudeQuestionnaireJson)}
+                </pre>
+              </details>
+            ) : null}
+          </section>
+        )}
 
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
