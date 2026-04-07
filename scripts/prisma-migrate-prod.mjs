@@ -14,7 +14,6 @@ import { config } from "dotenv"
 
 const root = resolve(process.cwd())
 const pullPath = resolve(root, ".env.vercel.pull")
-const prismaBin = resolve(root, "node_modules", ".bin", process.platform === "win32" ? "prisma.cmd" : "prisma")
 
 if (!existsSync(pullPath)) {
   console.error("Fichier manquant : .env.vercel.pull")
@@ -30,11 +29,12 @@ if (!url?.startsWith("postgres")) {
   process.exit(1)
 }
 
-const r = spawnSync(prismaBin, ["migrate", "deploy"], {
+// shell: true — sous Windows, l’exécutable .cmd de Prisma ne se lance pas fiablement sans shell
+const r = spawnSync("npx", ["prisma", "migrate", "deploy"], {
   cwd: root,
   stdio: "inherit",
   env: { ...process.env, DATABASE_URL: url },
-  shell: false,
+  shell: true,
 })
 
 process.exit(r.status ?? 1)
