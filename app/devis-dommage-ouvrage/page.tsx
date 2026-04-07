@@ -2,6 +2,7 @@ import Link from "next/link"
 import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
+import { DevisDommageOuvrageClientGate } from "@/components/DevisDommageOuvrageClientGate"
 import { FormulaireDevisDommageOuvrage } from "@/components/FormulaireDevisDommageOuvrage"
 import { seoBreadcrumbListNode, seoJsonLdGraph, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
 import { SITE_URL } from "@/lib/site-url"
@@ -87,7 +88,9 @@ export default function DevisDommageOuvragePage() {
           </div>
         </div>
 
-        <FormulaireDevisDommageOuvrage />
+        <DevisDommageOuvrageClientGate>
+          <FormulaireDevisDommageOuvrage />
+        </DevisDommageOuvrageClientGate>
       </div>
     </main>
   )

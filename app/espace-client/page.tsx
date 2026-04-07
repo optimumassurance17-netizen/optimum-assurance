@@ -66,17 +66,19 @@ export default function EspaceClientPage() {
   const [activeTab, setActiveTab] = useState<"documents" | "paiements" | "profil">("documents")
   const [exportingPdf, setExportingPdf] = useState(false)
   const [insuranceContracts, setInsuranceContracts] = useState<InsuranceContractListItem[]>([])
+  const [doEtudeBanner, setDoEtudeBanner] = useState<{ show: boolean; hasSaved: boolean } | null>(null)
 
   useEffect(() => {
     if (status !== "authenticated") return
 
     const fetchData = async () => {
       try {
-        const [docsRes, summaryRes, paymentsRes, insRes] = await Promise.all([
+        const [docsRes, summaryRes, paymentsRes, insRes, doqRes] = await Promise.all([
           fetch("/api/documents/list"),
           fetch("/api/client/summary"),
           fetch("/api/client/payments"),
           fetch("/api/client/insurance-contracts"),
+          fetch("/api/client/do-questionnaire"),
         ])
         if (docsRes.ok) setDocuments(await docsRes.json())
         if (summaryRes.ok) setSummary(await summaryRes.json())
@@ -84,6 +86,12 @@ export default function EspaceClientPage() {
         if (insRes.ok) {
           const j = (await insRes.json()) as { contracts?: InsuranceContractListItem[] }
           setInsuranceContracts(Array.isArray(j.contracts) ? j.contracts : [])
+        }
+        if (doqRes.ok) {
+          const dq = (await doqRes.json()) as { hasInitial?: boolean; hasEtudeSaved?: boolean }
+          setDoEtudeBanner({ show: !!dq.hasInitial, hasSaved: !!dq.hasEtudeSaved })
+        } else {
+          setDoEtudeBanner(null)
         }
         const profileRes = await fetch("/api/client/profile")
         if (profileRes.ok) setProfile(await profileRes.json())
@@ -122,6 +130,23 @@ export default function EspaceClientPage() {
         <p className="text-[#171717] mb-6 text-lg">
           Bienvenue, {session?.user?.name || session?.user?.email}
         </p>
+
+        {!loading && doEtudeBanner?.show && (
+          <div className="mb-8 rounded-2xl border border-[#2563eb]/30 bg-[#eff6ff] p-5 text-[#0a0a0a]">
+            <p className="font-semibold mb-1">Dommage ouvrage — questionnaire d&apos;étude</p>
+            <p className="text-sm text-[#171717] mb-3">
+              {doEtudeBanner.hasSaved
+                ? "Vous pouvez mettre à jour votre dossier technique détaillé (données préremplies depuis votre première demande)."
+                : "Complétez le questionnaire d’étude pour faciliter l’analyse de votre dossier (champs repris de votre première demande lorsque possible)."}
+            </p>
+            <Link
+              href="/espace-client/questionnaire-do-etude"
+              className="inline-flex text-sm font-semibold text-[#2563eb] hover:underline"
+            >
+              {doEtudeBanner.hasSaved ? "Modifier le questionnaire d’étude →" : "Remplir le questionnaire d’étude →"}
+            </Link>
+          </div>
+        )}
 
         {/* Onglets */}
         <div className="flex gap-1 p-1 bg-[#e4e4e4] rounded-xl mb-10 w-fit" role="tablist">

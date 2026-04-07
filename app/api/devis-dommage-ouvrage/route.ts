@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import type { DevisDommageOuvrageData } from "@/lib/dommage-ouvrage-types"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
@@ -30,6 +32,19 @@ export async function POST(request: NextRequest) {
         coutTotal: coutTotal ? Number(coutTotal) : null,
       },
     })
+
+    const session = await getServerSession(authOptions)
+    const emailTrim = String(email).trim().toLowerCase()
+    if (session?.user?.id && session.user.email?.trim().toLowerCase() === emailTrim) {
+      try {
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: { doInitialQuestionnaireJson: JSON.stringify(data) },
+        })
+      } catch (e) {
+        console.error("[devis-dommage-ouvrage] save user initial JSON:", e)
+      }
+    }
 
     const cout = coutTotal ? Number(coutTotal) : 0
     const parsed = data as Partial<DevisDommageOuvrageData>

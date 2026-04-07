@@ -20,6 +20,10 @@ model User {
   codePostal            String?
   ville                 String?
   telephone             String?
+  /// Premier questionnaire DO (devis public) — JSON, pour préremplir le questionnaire d’étude espace client
+  doInitialQuestionnaireJson String?           @db.Text
+  /// Questionnaire d’étude DO complété depuis l’espace client — JSON
+  doEtudeQuestionnaireJson   String?           @db.Text
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   documents             Document[]
