@@ -6,6 +6,14 @@ import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 
+function parseDocumentData(value: string): { raisonSociale?: string } {
+  try {
+    return JSON.parse(value || "{}") as { raisonSociale?: string }
+  } catch {
+    return {}
+  }
+}
+
 /** Suspension pour impayé : **attestation décennale** uniquement (`type === "attestation"`). L’attestation DO n’est pas dans ce flux. */
 export async function PATCH(
   request: NextRequest,
@@ -18,8 +26,18 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const body = await request.json()
-    const { status, motif } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const payload = body as Record<string, unknown>
+    const status = typeof payload.status === "string" ? payload.status.trim() : ""
+    const motif = typeof payload.motif === "string" ? payload.motif.trim() : undefined
 
     if (!["valide", "suspendu", "resilie"].includes(status)) {
       return NextResponse.json({ error: "Statut invalide" }, { status: 400 })
@@ -51,7 +69,7 @@ export async function PATCH(
     })
 
     if (status === "suspendu") {
-      const data = JSON.parse(document.data) as { raisonSociale?: string }
+      const data = parseDocumentData(document.data)
       const template = EMAIL_TEMPLATES.alerteImpaye(data.raisonSociale || document.user.raisonSociale || document.user.email)
       await sendEmail({
         to: document.user.email,
@@ -69,7 +87,7 @@ export async function PATCH(
           motif: motif || null,
         },
       })
-      const data = JSON.parse(document.data) as { raisonSociale?: string }
+      const data = parseDocumentData(document.data)
       const typeDoc = document.type === "attestation" ? "attestation" : "contrat"
       const template = EMAIL_TEMPLATES.confirmationResiliation(
         data.raisonSociale || document.user.raisonSociale || document.user.email,

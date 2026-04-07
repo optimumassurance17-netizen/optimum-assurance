@@ -6,6 +6,14 @@ import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { IDENTITY_DOC_KEYS, syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
 
+function parseDocumentData(value: string | null): Record<string, unknown> {
+  try {
+    return JSON.parse(value || "{}") as Record<string, unknown>
+  } catch {
+    return {}
+  }
+}
+
 /**
  * GET - Récupérer un document (admin uniquement, pour consultation)
  */
@@ -30,7 +38,7 @@ export async function GET(
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
-    const data = JSON.parse(document.data || "{}") as Record<string, unknown>
+    const data = parseDocumentData(document.data)
     if (document.user) {
       data.raisonSociale = document.user.raisonSociale ?? data.raisonSociale
       data.email = document.user.email ?? data.email
@@ -62,8 +70,16 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const body = await request.json()
-    const { data: modifications } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const modifications = (body as { data?: unknown }).data
 
     if (!modifications || typeof modifications !== "object") {
       return NextResponse.json({ error: "data requis (objet)" }, { status: 400 })
@@ -77,7 +93,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
-    const currentData = JSON.parse(document.data || "{}") as Record<string, unknown>
+    const currentData = parseDocumentData(document.data)
 
     const allowedKeys = [
       "chiffreAffaires", "primeAnnuelle", "activites", "motifAvenant",

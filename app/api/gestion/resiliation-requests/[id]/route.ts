@@ -6,6 +6,14 @@ import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 
+function parseDocumentData(value: string): { raisonSociale?: string } {
+  try {
+    return JSON.parse(value || "{}") as { raisonSociale?: string }
+  } catch {
+    return {}
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -17,8 +25,17 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const body = await request.json()
-    const { action } = body // "approve" | "reject"
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const actionRaw = (body as { action?: unknown }).action
+    const action = typeof actionRaw === "string" ? actionRaw.trim() : "" // "approve" | "reject"
 
     if (!["approve", "reject"].includes(action)) {
       return NextResponse.json({ error: "action invalide" }, { status: 400 })
@@ -69,7 +86,7 @@ export async function PATCH(
         },
       })
 
-      const data = JSON.parse(resiliationRequest.document.data || "{}") as { raisonSociale?: string }
+      const data = parseDocumentData(resiliationRequest.document.data || "{}")
       const typeDoc = resiliationRequest.document.type === "attestation" ? "attestation" : "contrat"
       const template = EMAIL_TEMPLATES.confirmationResiliation(
         data.raisonSociale || resiliationRequest.document.user.raisonSociale || resiliationRequest.document.user.email,

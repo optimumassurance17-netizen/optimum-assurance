@@ -111,7 +111,16 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const body = (await request.json()) as Record<string, unknown>
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const payload = body as Record<string, unknown>
 
     const current = await prisma.user.findUnique({ where: { id } })
     if (!current) {
@@ -133,15 +142,15 @@ export async function PATCH(
       return s === "" ? null : s
     }
 
-    if ("raisonSociale" in body) data.raisonSociale = opt(body.raisonSociale)
-    if ("siret" in body) data.siret = opt(body.siret)
-    if ("adresse" in body) data.adresse = opt(body.adresse)
-    if ("codePostal" in body) data.codePostal = opt(body.codePostal)
-    if ("ville" in body) data.ville = opt(body.ville)
-    if ("telephone" in body) data.telephone = opt(body.telephone)
+    if ("raisonSociale" in payload) data.raisonSociale = opt(payload.raisonSociale)
+    if ("siret" in payload) data.siret = opt(payload.siret)
+    if ("adresse" in payload) data.adresse = opt(payload.adresse)
+    if ("codePostal" in payload) data.codePostal = opt(payload.codePostal)
+    if ("ville" in payload) data.ville = opt(payload.ville)
+    if ("telephone" in payload) data.telephone = opt(payload.telephone)
 
-    if ("email" in body) {
-      const raw = String(body.email ?? "").trim().toLowerCase()
+    if ("email" in payload) {
+      const raw = String(payload.email ?? "").trim().toLowerCase()
       if (!raw) {
         return NextResponse.json({ error: "L'email ne peut pas être vide" }, { status: 400 })
       }

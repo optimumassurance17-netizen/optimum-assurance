@@ -6,6 +6,14 @@ import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 
+function parseDocumentData(value: string): { raisonSociale?: string } {
+  try {
+    return JSON.parse(value || "{}") as { raisonSociale?: string }
+  } catch {
+    return {}
+  }
+}
+
 /** Renvoie l’email de relance impayé (décennale uniquement). */
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -32,7 +40,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       )
     }
 
-    const data = JSON.parse(document.data) as { raisonSociale?: string }
+    const data = parseDocumentData(document.data)
     const template = EMAIL_TEMPLATES.alerteImpaye(
       data.raisonSociale || document.user.raisonSociale || document.user.email
     )

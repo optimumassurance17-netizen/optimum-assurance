@@ -103,6 +103,34 @@ test.describe("API validations critiques", () => {
     expect(res.status()).toBe(401)
   })
 
+  test("Gestion documents create: route protégée sans session", async ({ request }) => {
+    const res = await request.post("/api/gestion/documents/create", {
+      data: { userId: "c123", type: "devis" },
+    })
+    expect(res.status()).toBe(403)
+  })
+
+  test("Gestion documents status: route protégée sans session", async ({ request }) => {
+    const res = await request.patch("/api/gestion/documents/test-id/status", {
+      data: { status: "suspendu" },
+    })
+    expect(res.status()).toBe(403)
+  })
+
+  test("Gestion client patch: route protégée sans session", async ({ request }) => {
+    const res = await request.patch("/api/gestion/clients/test-id", {
+      data: { raisonSociale: "Nouvelle société" },
+    })
+    expect(res.status()).toBe(403)
+  })
+
+  test("Gestion résiliation patch: route protégée sans session", async ({ request }) => {
+    const res = await request.patch("/api/gestion/resiliation-requests/test-id", {
+      data: { action: "approve" },
+    })
+    expect(res.status()).toBe(403)
+  })
+
   test("Création demande signature: route protégée sans session", async ({ request }) => {
     const res = await request.post("/api/sign/create-request", {
       data: {

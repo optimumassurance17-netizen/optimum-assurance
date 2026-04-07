@@ -24,8 +24,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    const body = await request.json()
-    const { userId, type, data, numero: customNumero } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+
+    const payload = body as Record<string, unknown>
+    const userId = typeof payload.userId === "string" ? payload.userId.trim() : ""
+    const type = typeof payload.type === "string" ? payload.type.trim() : ""
+    const data = payload.data
+    const customNumero =
+      typeof payload.numero === "string" && payload.numero.trim().length > 0
+        ? payload.numero.trim()
+        : undefined
 
     if (!userId || !type) {
       return NextResponse.json(
@@ -51,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     const numero =
-      customNumero && typeof customNumero === "string" && customNumero.length > 0
+      customNumero
         ? customNumero
         : await getNextNumero(type)
 
