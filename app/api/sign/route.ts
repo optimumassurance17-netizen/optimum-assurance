@@ -15,25 +15,25 @@ export const runtime = "nodejs"
 const SIGNED_DOWNLOAD_TTL_SEC = 60 * 60 * 24 * 7
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const MAX_SIGNATURE_IMAGE_BYTES = 2 * 1024 * 1024
+const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
 
 function isValidPngDataUrl(s: string): boolean {
   if (!s.startsWith("data:image/png;base64,")) return false
   const b64 = s.slice("data:image/png;base64,".length).trim()
   if (b64.length < 80) return false
+  if (b64.length > MAX_SIGNATURE_IMAGE_BYTES * 4) return false
   try {
     const buf = Buffer.from(b64, "base64")
-    return buf.length >= 32
+    if (buf.length < 32 || buf.length > MAX_SIGNATURE_IMAGE_BYTES) return false
+    return buf.subarray(0, 8).equals(PNG_SIGNATURE)
   } catch {
     return false
   }
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServiceClient()
-  if (!supabase) {
-    return NextResponse.json({ error: "Configuration Supabase incomplète (clé service)." }, { status: 500 })
-  }
-
   let body: unknown
   try {
     body = await request.json()
@@ -51,16 +51,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Vous devez accepter de signer le document." }, { status: 400 })
   }
 
-  if (typeof documentId !== "string" || !/^[0-9a-f-]{36}$/i.test(documentId.trim())) {
+  if (typeof documentId !== "string" || !UUID_RE.test(documentId.trim())) {
     return NextResponse.json({ error: "Identifiant de document invalide." }, { status: 400 })
   }
 
-  if (typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
+  if (typeof email !== "string" || email.trim().length > 254 || !EMAIL_RE.test(email.trim())) {
     return NextResponse.json({ error: "Adresse e-mail invalide." }, { status: 400 })
   }
 
   if (typeof signature !== "string" || !isValidPngDataUrl(signature)) {
     return NextResponse.json({ error: "Signature vide ou image invalide." }, { status: 400 })
+  }
+
+  const supabase = createSupabaseServiceClient()
+  if (!supabase) {
+    return NextResponse.json({ error: "Configuration Supabase incomplète (clé service)." }, { status: 500 })
   }
 
   const id = documentId.trim()
