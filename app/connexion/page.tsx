@@ -9,8 +9,9 @@ import { Header } from "@/components/Header"
 function ConnexionForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const from = searchParams.get("from")
-  const callbackUrl = searchParams.get("callbackUrl") || (from === "signature" ? "/signature" : "/espace-client")
+  const safeSearchParams = searchParams ?? new URLSearchParams()
+  const from = safeSearchParams.get("from")
+  const callbackUrl = safeSearchParams.get("callbackUrl") || (from === "signature" ? "/signature" : "/espace-client")
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")

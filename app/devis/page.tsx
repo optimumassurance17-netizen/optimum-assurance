@@ -20,6 +20,7 @@ import { readResponseJson } from "@/lib/read-response-json"
 function DevisPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const safeSearchParams = searchParams ?? new URLSearchParams()
   const [activites, setActivites] = useState<string[]>([])
   const [activiteSelectionnee, setActiviteSelectionnee] = useState("")
   const [siret, setSiret] = useState("")
@@ -86,7 +87,7 @@ function DevisPageContent() {
 
   /** Préremplissage activité(s) depuis /assurance-decennale/[metier] (?metier=slug) */
   useEffect(() => {
-    const slug = searchParams.get("metier")
+    const slug = safeSearchParams.get("metier")
     if (!slug || typeof window === "undefined") return
     const prefill = getMetierPrefillActivites(slug)
     if (prefill.length === 0) return
@@ -95,10 +96,10 @@ function DevisPageContent() {
       const merged = prefill.filter((a) => ACTIVITES_BTP.includes(a as (typeof ACTIVITES_BTP)[number]))
       return merged.slice(0, 8)
     })
-  }, [searchParams])
+  }, [safeSearchParams])
 
   useEffect(() => {
-    if (searchParams.get("resume") === "1" && typeof window !== "undefined") {
+    if (safeSearchParams.get("resume") === "1" && typeof window !== "undefined") {
       try {
         const saved = sessionStorage.getItem("optimum-devis-resume")
         if (saved) {
@@ -127,7 +128,7 @@ function DevisPageContent() {
         /* ignore */
       }
     }
-  }, [searchParams, router])
+  }, [safeSearchParams, router])
 
   const ajouterActivite = () => {
     if (activiteSelectionnee && activites.length < 8 && !activites.includes(activiteSelectionnee)) {

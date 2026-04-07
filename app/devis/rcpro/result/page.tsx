@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/Header"
@@ -12,7 +13,7 @@ function parsePrice(raw: string | null): number | null {
   return Math.round(value * 100) / 100
 }
 
-export default function RcProResultPage() {
+function RcProResultContent() {
   const searchParams = useSearchParams()
   const quoteId = searchParams?.get("id")?.trim() || ""
   const price = parsePrice(searchParams?.get("price") ?? null)
@@ -57,5 +58,22 @@ export default function RcProResultPage() {
         </section>
       </div>
     </main>
+  )
+}
+
+export default function RcProResultPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[var(--background)]">
+          <Header />
+          <div className="mx-auto max-w-3xl px-4 py-12">
+            <p className="text-sm text-[#475569]">Chargement du resultat...</p>
+          </div>
+        </main>
+      }
+    >
+      <RcProResultContent />
+    </Suspense>
   )
 }
