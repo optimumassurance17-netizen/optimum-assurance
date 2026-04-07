@@ -1,6 +1,7 @@
 "use client"
 
 import { Suspense, useState, useEffect, useCallback } from "react"
+import dynamic from "next/dynamic"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/Header"
@@ -11,11 +12,19 @@ import type { DevisData } from "@/lib/types"
 import { STORAGE_KEYS } from "@/lib/types"
 import { ACTIVITES_BTP } from "@/lib/activites-btp"
 import { CA_MINIMUM } from "@/lib/tarification"
-import { faqDevis } from "@/lib/garanties-data"
-import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { getMetierPrefillActivites } from "@/lib/metier-devis-prefill"
 import { readResponseJson } from "@/lib/read-response-json"
+
+const AdresseAutocomplete = dynamic(
+  () => import("@/components/AdresseAutocomplete").then((m) => m.AdresseAutocomplete),
+  { ssr: false },
+)
+
+const DevisFaq = dynamic(
+  () => import("@/components/devis/DevisFaq").then((m) => m.DevisFaq),
+  { ssr: false },
+)
 
 function DevisPageContent() {
   const router = useRouter()
@@ -629,26 +638,7 @@ function DevisPageContent() {
           </button>
         </form>
 
-        {/* Mini-FAQ */}
-        <section className="mt-16 pt-8 border-t border-[#e5e5e5]">
-          <h2 className="text-xl font-bold text-slate-900 mb-6">Questions fréquentes</h2>
-          <div className="space-y-4">
-            {faqDevis.map((faq, i) => (
-              <details key={i} className="bg-white rounded-xl border border-[#e5e5e5] overflow-hidden group">
-                <summary className="px-5 py-4 font-medium text-slate-900 cursor-pointer list-none flex justify-between items-center hover:bg-blue-50/50 transition-colors [&::-webkit-details-marker]:hidden">
-                  {faq.q}
-                  <span className="text-blue-600 text-lg group-open:rotate-180 transition-transform">▾</span>
-                </summary>
-                <div className="px-5 pb-4 text-[#171717] text-sm leading-relaxed">
-                  {faq.r}
-                </div>
-              </details>
-            ))}
-          </div>
-          <p className="text-center mt-6">
-            <Link href="/faq" className="text-blue-600 font-medium hover:underline">Voir toutes les questions →</Link>
-          </p>
-        </section>
+        <DevisFaq />
 
         <p className="text-center text-sm text-[#171717] mt-8">
           <Link href="/" className="text-blue-600 font-medium hover:underline">
