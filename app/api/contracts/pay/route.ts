@@ -14,6 +14,8 @@ import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 
 /** Statuts Mollie pour lesquels le client peut encore utiliser le même paiement. */
 const MOLLIE_REUSABLE_STATUSES = new Set(["open", "pending", "authorized"])
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const CONTRACT_ID_RE = /^[a-z0-9]{10,64}$/i
 
 /**
  * Crée un paiement Mollie (virement) pour un InsuranceContract approuvé.
@@ -34,14 +36,26 @@ export async function POST(request: NextRequest) {
   const userId = session.user.id
 
   try {
-    const body = (await request.json()) as { contractId?: string }
-    if (!body.contractId) {
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const contractId =
+      typeof (body as Record<string, unknown>).contractId === "string"
+        ? (body as Record<string, unknown>).contractId.trim()
+        : ""
+    if (!contractId || !CONTRACT_ID_RE.test(contractId)) {
       return NextResponse.json({ error: "contractId requis" }, { status: 400 })
     }
 
     const contractPreview = await prisma.insuranceContract.findFirst({
       where: {
-        id: body.contractId,
+        id: contractId,
         userId,
         OR: [
           { status: CONTRACT_STATUS.approved },
@@ -63,8 +77,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Montant invalide" }, { status: 400 })
     }
 
-    const email = session.user.email?.trim()
-    if (!email) {
+    const email = session.user.email?.trim().toLowerCase()
+    if (!email || !EMAIL_RE.test(email)) {
       return NextResponse.json({ error: "Email requis" }, { status: 400 })
     }
 
@@ -74,10 +88,10 @@ export async function POST(request: NextRequest) {
     const dueDate = due.toISOString().slice(0, 10)
 
     const mollieClient = createMollieClient({ apiKey })
-    const contractId = contractPreview.id
+    const contractIdLocked = contractPreview.id
 
     const payload = await prisma.$transaction(async (tx) => {
-      const [k1, k2] = insuranceContractPayLockKeys(contractId)
+      const [k1, k2] = insuranceContractPayLockKeys(contractIdLocked)
       await tx.$executeRawUnsafe(
         "SELECT pg_advisory_xact_lock($1::integer, $2::integer)",
         k1,
@@ -86,7 +100,7 @@ export async function POST(request: NextRequest) {
 
       const contract = await tx.insuranceContract.findFirst({
         where: {
-          id: contractId,
+          id: contractIdLocked,
           userId,
           OR: [
             { status: CONTRACT_STATUS.approved },
@@ -100,7 +114,7 @@ export async function POST(request: NextRequest) {
       }
 
       const priorPayments = await tx.contractLifecyclePayment.findMany({
-        where: { contractId },
+        where: { contractId: contractIdLocked },
         orderBy: { createdAt: "desc" },
         take: 20,
       })

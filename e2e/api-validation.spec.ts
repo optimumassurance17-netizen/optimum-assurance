@@ -83,6 +83,26 @@ test.describe("API validations critiques", () => {
     expect(res.status()).toBe(401)
   })
 
+  test("Création paiement Mollie: route protégée sans session", async ({ request }) => {
+    const res = await request.post("/api/mollie/create-payment", {
+      data: {
+        amount: 120,
+        redirectUrl: "https://example.com/confirmation",
+        method: "creditcard",
+      },
+    })
+    expect(res.status()).toBe(401)
+  })
+
+  test("Paiement contrat plateforme: route protégée sans session", async ({ request }) => {
+    const res = await request.post("/api/contracts/pay", {
+      data: {
+        contractId: "c1234567890abcdef1234567",
+      },
+    })
+    expect(res.status()).toBe(401)
+  })
+
   test("Création demande signature: route protégée sans session", async ({ request }) => {
     const res = await request.post("/api/sign/create-request", {
       data: {
