@@ -1,4 +1,10 @@
+import { resolve } from "node:path"
+import { config as loadEnv } from "dotenv"
 import { defineConfig, devices } from "@playwright/test"
+
+// Charge .env / .env.local pour E2E_ADMIN_* (e2e/gestion.spec.ts) sans les exposer au navigateur
+loadEnv({ path: resolve(process.cwd(), ".env") })
+loadEnv({ path: resolve(process.cwd(), ".env.local"), override: true })
 
 export default defineConfig({
   testDir: "./e2e",
