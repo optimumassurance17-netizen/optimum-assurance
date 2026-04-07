@@ -38,6 +38,10 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 
 - **Qualité locale** : `npm run lint`, `preflight`, `build` OK.
 
+- **CI GitHub** : job **e2e** — Postgres 16 (service), `prisma migrate deploy`, `npm run build`, Playwright Chromium sur **`e2e/*.spec.ts`**. Pas de fichier `.env.e2e` dans le dépôt → le test « connexion admin gestion » reste **ignoré** en CI ; le reste (devis, health API, redirections) est couvert.
+
+- **E2E en local (admin gestion)** : `npm run e2e:seed-admin` génère **`.env.e2e`** (gitignored), puis `npm run test:e2e`. Reproduire le mode CI (après build) : définir **`PLAYWRIGHT_USE_BUILD_SERVER=1`** et **`CI=true`**, puis `npx playwright test` (port **3000** libre, base migrée).
+
 
 
 ---
