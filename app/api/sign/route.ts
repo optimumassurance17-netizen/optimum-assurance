@@ -152,7 +152,12 @@ export async function POST(request: NextRequest) {
 
   if (pending) {
     try {
-      await applyPendingFinalize(pending)
+      const raw = JSON.parse(pending.contractData || "{}") as Record<string, unknown>
+      const isCustomPdf = raw.customUploadedDevisFlow === true
+      await applyPendingFinalize(
+        pending,
+        isCustomPdf ? { signedQuoteStorageKey: objectName } : undefined
+      )
     } catch (e) {
       console.error("[api/sign] applyPendingFinalize", e)
       return NextResponse.json(

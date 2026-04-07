@@ -74,7 +74,11 @@ export default async function VerifyByContractNumberPage({
                 <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
                   <dt className="font-semibold text-slate-900">Produit</dt>
                   <dd className="text-slate-800">
-                    {ic.productType === "do" ? "Dommages-ouvrage" : "Responsabilité décennale"}
+                    {ic.productType === "do"
+                      ? "Dommages-ouvrage"
+                      : ic.productType === "rc_fabriquant"
+                        ? "RC Fabriquant"
+                        : "Responsabilité décennale"}
                   </dd>
                 </div>
                 <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">

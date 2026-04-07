@@ -199,7 +199,12 @@ export default function EspaceClientPage() {
                     <p className="font-mono text-sm text-[#0a0a0a]">{c.contractNumber}</p>
                     <p className="text-sm text-[#171717]">{c.clientName}</p>
                     <p className="text-xs text-[#666] mt-1">
-                      {c.productType === "do" ? "Dommages-ouvrage" : "Décennale"} ·{" "}
+                      {c.productType === "do"
+                        ? "Dommages-ouvrage"
+                        : c.productType === "rc_fabriquant"
+                          ? "RC Fabriquant"
+                          : "Décennale"}{" "}
+                      ·{" "}
                       {c.premium.toLocaleString("fr-FR")} € / an ·{" "}
                       <span className="font-medium">{c.status}</span>
                     </p>

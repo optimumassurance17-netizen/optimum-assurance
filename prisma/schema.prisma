@@ -55,6 +55,8 @@ model InsuranceContract {
   insurerValidatedAt DateTime?
   riskScore          Int?
   rejectedReason     String?
+  /// Devis / proposition PDF signé (bucket « signed » Supabase e-sign), clé objet — produits type rc_fabriquant
+  signedQuoteStorageKey String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   storedDocuments    ContractStoredDocument[]

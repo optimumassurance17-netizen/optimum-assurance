@@ -78,6 +78,28 @@ export async function sendEmail(params: {
 }
 
 export const EMAIL_TEMPLATES = {
+  /** Devis / proposition PDF uploadé par la gestion — signature puis paiement depuis l’espace client. */
+  invitationSignatureDevisPersonnalise: (
+    raisonSociale: string,
+    signatureLink: string,
+    opts?: { produitLabel?: string; montantTtc?: number; reference?: string }
+  ) => {
+    const ref = opts?.reference?.trim()
+    const label = opts?.produitLabel?.trim() || "Proposition commerciale"
+    const montant =
+      opts?.montantTtc != null && opts.montantTtc > 0
+        ? `Montant TTC indiqué : ${opts.montantTtc.toLocaleString("fr-FR")} €\n\n`
+        : ""
+    const refLine = ref ? `Référence dossier : ${ref}\n\n` : ""
+    const safeLabel = escapeHtmlForEmail(label)
+    const safeRef = ref ? escapeHtmlForEmail(ref) : ""
+    const safeName = escapeHtmlForEmail(raisonSociale)
+    return {
+      subject: `${label} — signature électronique — Optimum Assurance`,
+      text: `Bonjour ${raisonSociale},\n\nVeuillez signer électroniquement le document qui vous a été préparé (${label}).\n\n${refLine}${montant}Lien sécurisé :\n${signatureLink}\n\nAprès signature, votre dossier sera disponible dans votre espace client ${APP_URL}/espace-client pour le règlement (virement bancaire sécurisé), sauf instructions contraires de votre conseiller.\n\nCordialement,\nOptimum Assurance`,
+      html: `<p>Bonjour ${safeName},</p><p>Veuillez <strong>signer électroniquement</strong> le document qui vous a été préparé — <strong>${safeLabel}</strong>.</p>${ref ? `<p style="font-size:13px;color:#64748b;">Référence dossier : <strong>${safeRef}</strong></p>` : ""}${opts?.montantTtc != null && opts.montantTtc > 0 ? `<p><strong>Montant TTC indiqué :</strong> ${opts.montantTtc.toLocaleString("fr-FR")} €</p>` : ""}<p><a href="${signatureLink}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Signer le document</a></p><p style="font-size:13px;color:#64748b;">Après signature : connectez-vous à votre <a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold">espace client</a> pour le <strong>règlement</strong> (virement bancaire sécurisé), sauf instructions contraires de votre conseiller.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+    }
+  },
   invitationSignatureDecennale: (raisonSociale: string, signatureLink: string, devisNumero: string) => ({
     subject: `Signature de votre contrat décennale — devis ${devisNumero} - Optimum Assurance`,
     text: `Bonjour ${raisonSociale},\n\nVotre contrat d’assurance décennale est prêt à être signé électroniquement.\n\nLien de signature :\n${signatureLink}\n\nRéférence devis : ${devisNumero}\n\nAprès signature : connectez-vous sur ${APP_URL} avec votre compte, puis ouvrez la page Mandat SEPA (${APP_URL}/mandat-sepa) pour l’IBAN et le 1er trimestre par carte (Mollie). Les échéances suivantes : prélèvements SEPA trimestriels.\n\nCordialement,\nOptimum Assurance`,

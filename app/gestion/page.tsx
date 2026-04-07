@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 function mapTypeOuvrageToConstruction(typeOuvrage?: string): string {
   const map: Record<string, string> = {
@@ -25,6 +25,7 @@ function mapDestinationConstruction(dest?: string): string {
 }
 import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
+import { ACTIVITES_BTP } from "@/lib/activites-btp"
 import { getSession, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -240,7 +241,7 @@ export default function GestionPage() {
   const [devisDoSubmitting, setDevisDoSubmitting] = useState(false)
   const [devisDecForm, setDevisDecForm] = useState({
     userId: "",
-    activites: "",
+    activites: [] as string[],
     chiffreAffaires: "",
     primeAnnuelle: "",
     franchise: "",
@@ -251,6 +252,7 @@ export default function GestionPage() {
     reprisePasse: false,
     dateCreationSociete: "",
   })
+  const [devisDecActivitePick, setDevisDecActivitePick] = useState("")
   const [devisDecSubmitting, setDevisDecSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [docTypeFilter, setDocTypeFilter] = useState<string>("all")
@@ -271,6 +273,30 @@ export default function GestionPage() {
   } | null>(null)
   const [etudeMiseSubmitting, setEtudeMiseSubmitting] = useState(false)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
+  const customDevisPdfInputRef = useRef<HTMLInputElement>(null)
+  const [customDevisUserFilter, setCustomDevisUserFilter] = useState("")
+  const [customDevisUserId, setCustomDevisUserId] = useState("")
+  const [customDevisPrime, setCustomDevisPrime] = useState("")
+  const [customDevisRef, setCustomDevisRef] = useState("")
+  const [customDevisLabel, setCustomDevisLabel] = useState("RC Fabriquant — proposition")
+  const [customDevisNextPath, setCustomDevisNextPath] = useState("/espace-client")
+  const [customDevisSending, setCustomDevisSending] = useState(false)
+
+  const customDevisUserOptions = useMemo(() => {
+    if (!data?.users) return []
+    const q = customDevisUserFilter.trim().toLowerCase()
+    let list = [...data.users]
+    if (q) {
+      list = list.filter(
+        (u) =>
+          u.email.toLowerCase().includes(q) ||
+          (u.raisonSociale || "").toLowerCase().includes(q) ||
+          (u.siret || "").toLowerCase().includes(q)
+      )
+    }
+    list.sort((a, b) => a.email.localeCompare(b.email))
+    return list.slice(0, 300)
+  }, [data?.users, customDevisUserFilter])
   const [rcFabDrafts, setRcFabDrafts] = useState<Record<string, { statut: string; notes: string }>>({})
   const [rcFabSavingId, setRcFabSavingId] = useState<string | null>(null)
   const [rcFabPropositionModal, setRcFabPropositionModal] = useState<{
@@ -515,15 +541,12 @@ export default function GestionPage() {
       if (!selectedUser) {
         throw new Error("Choisissez un client")
       }
-      const activites = devisDecForm.activites
-        .split(",")
-        .map((a) => a.trim())
-        .filter(Boolean)
+      const activites = devisDecForm.activites.filter(Boolean)
       if (!devisDecForm.representantLegal.trim()) {
         throw new Error("Représentant légal obligatoire (pour la signature électronique ensuite)")
       }
       if (!activites.length) {
-        throw new Error("Indiquez au moins une activité (séparées par des virgules)")
+        throw new Error("Ajoutez au moins une activité depuis la liste (comme sur le tarificateur /devis)")
       }
       const pa = Number(devisDecForm.primeAnnuelle)
       if (!Number.isFinite(pa) || pa <= 0) {
@@ -564,7 +587,7 @@ export default function GestionPage() {
       })
       setDevisDecForm({
         userId: "",
-        activites: "",
+        activites: [],
         chiffreAffaires: "",
         primeAnnuelle: "",
         franchise: "",
@@ -575,6 +598,7 @@ export default function GestionPage() {
         reprisePasse: false,
         dateCreationSociete: "",
       })
+      setDevisDecActivitePick("")
       const dashRes = await fetch("/api/gestion/dashboard")
       if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
     } catch (err) {
@@ -901,6 +925,130 @@ export default function GestionPage() {
                 className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-80"
               />
             </div>
+            <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4">
+              <h2 className="text-lg font-semibold text-white">Devis PDF personnalisé → signature → paiement</h2>
+              <p className="text-sm text-gray-400">
+                Joignez un PDF (devis ou proposition), choisissez le client et le montant TTC. Après signature électronique, un contrat RC Fabriquant est créé (statut approuvé) et le client peut payer depuis son espace.
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-300">Filtrer les clients</label>
+                  <input
+                    type="search"
+                    value={customDevisUserFilter}
+                    onChange={(e) => setCustomDevisUserFilter(e.target.value)}
+                    placeholder="Email, raison sociale, SIRET…"
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                  />
+                  <label className="text-sm text-gray-300">Client destinataire</label>
+                  <select
+                    value={customDevisUserId}
+                    onChange={(e) => setCustomDevisUserId(e.target.value)}
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                  >
+                    <option value="">— Choisir un client —</option>
+                    {customDevisUserOptions.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.email}
+                        {u.raisonSociale ? ` — ${u.raisonSociale}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-300">Fichier PDF</label>
+                  <input
+                    ref={customDevisPdfInputRef}
+                    type="file"
+                    accept="application/pdf"
+                    className="block w-full text-sm text-gray-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-[#2563eb] file:text-white"
+                  />
+                  <label className="text-sm text-gray-300">Prime TTC (€)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={customDevisPrime}
+                    onChange={(e) => setCustomDevisPrime(e.target.value)}
+                    placeholder="ex. 1200"
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-300">Référence devis (optionnel)</label>
+                  <input
+                    value={customDevisRef}
+                    onChange={(e) => setCustomDevisRef(e.target.value)}
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-300">Libellé produit (email)</label>
+                  <input
+                    value={customDevisLabel}
+                    onChange={(e) => setCustomDevisLabel(e.target.value)}
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-300">Après signature (redirection)</label>
+                  <input
+                    value={customDevisNextPath}
+                    onChange={(e) => setCustomDevisNextPath(e.target.value)}
+                    placeholder="/espace-client"
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={customDevisSending}
+                onClick={async () => {
+                  const file = customDevisPdfInputRef.current?.files?.[0]
+                  if (!customDevisUserId) {
+                    setError("Choisissez un client pour le devis PDF.")
+                    return
+                  }
+                  if (!file) {
+                    setError("Sélectionnez un fichier PDF.")
+                    return
+                  }
+                  const prime = Number(customDevisPrime.replace(",", "."))
+                  if (!Number.isFinite(prime) || prime <= 0) {
+                    setError("Indiquez une prime TTC valide (> 0).")
+                    return
+                  }
+                  setCustomDevisSending(true)
+                  setError(null)
+                  try {
+                    const fd = new FormData()
+                    fd.append("pdf", file)
+                    fd.append("userId", customDevisUserId)
+                    fd.append("primeTtc", String(prime))
+                    if (customDevisRef.trim()) fd.append("devisReference", customDevisRef.trim())
+                    if (customDevisLabel.trim()) fd.append("produitLabel", customDevisLabel.trim())
+                    if (customDevisNextPath.trim()) fd.append("afterSignNextPath", customDevisNextPath.trim())
+                    const res = await fetch("/api/gestion/sign/send-custom-devis-pdf", {
+                      method: "POST",
+                      body: fd,
+                    })
+                    const j = await res.json().catch(() => ({}))
+                    if (!res.ok) throw new Error(j.error || res.statusText)
+                    setToast({ message: j.message || "Invitation envoyée.", type: "success" })
+                    if (customDevisPdfInputRef.current) customDevisPdfInputRef.current.value = ""
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : "Envoi impossible.")
+                  } finally {
+                    setCustomDevisSending(false)
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-[#2563eb] text-white text-sm font-medium disabled:opacity-50"
+              >
+                {customDevisSending ? "Envoi…" : "Envoyer l’invitation de signature"}
+              </button>
+            </section>
             <section className="grid grid-cols-2 md:grid-cols-6 gap-4">
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">Clients</p>
@@ -1536,14 +1684,72 @@ export default function GestionPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-1">Activités (virgules)</label>
-              <input
-                required
-                value={devisDecForm.activites}
-                onChange={(e) => setDevisDecForm((f) => ({ ...f, activites: e.target.value }))}
-                placeholder="ex. Maçonnerie, Couverture"
-                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder:text-gray-500"
-              />
+              <label className="block text-sm font-medium text-gray-200 mb-1">
+                Activités à assurer (liste tarificateur, max. 8)
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                <select
+                  value={devisDecActivitePick}
+                  onChange={(e) => setDevisDecActivitePick(e.target.value)}
+                  className="flex-1 bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white text-sm"
+                >
+                  <option value="">— Choisir une activité —</option>
+                  {ACTIVITES_BTP.map((act) => (
+                    <option key={act} value={act} disabled={devisDecForm.activites.includes(act)}>
+                      {act}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!devisDecActivitePick || devisDecForm.activites.length >= 8) return
+                    if (devisDecForm.activites.includes(devisDecActivitePick)) return
+                    setDevisDecForm((f) => ({
+                      ...f,
+                      activites: [...f.activites, devisDecActivitePick],
+                    }))
+                    setDevisDecActivitePick("")
+                  }}
+                  disabled={!devisDecActivitePick || devisDecForm.activites.length >= 8}
+                  className="shrink-0 px-4 py-2 rounded-lg bg-[#374151] text-white text-sm font-medium hover:bg-[#4b5563] disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  Ajouter
+                </button>
+              </div>
+              {devisDecForm.activites.length === 0 ? (
+                <p className="text-sm text-amber-400/90 mb-2">Au moins une activité est requise pour créer le devis.</p>
+              ) : (
+                <ul className="space-y-2 mb-2">
+                  {devisDecForm.activites.map((act, index) => (
+                    <li
+                      key={`${act}-${index}`}
+                      className="flex justify-between items-center gap-2 bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100"
+                    >
+                      <span className="min-w-0 break-words">{act}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDevisDecForm((f) => ({
+                            ...f,
+                            activites: f.activites.filter((_, i) => i !== index),
+                          }))
+                        }
+                        className="shrink-0 text-[#60a5fa] text-sm hover:underline"
+                      >
+                        Retirer
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-xs text-gray-400">
+                Même liste que le devis en ligne. Activité absente ?{" "}
+                <Link href="/etude/domaine" className="text-[#60a5fa] hover:underline">
+                  Demande d&apos;étude
+                </Link>
+                .
+              </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
