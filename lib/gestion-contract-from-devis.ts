@@ -59,10 +59,8 @@ export function buildContractDataFromDevisForSignature(
     modePaiement: "prelevement",
     periodicitePrelevement: "trimestriel",
     fraisGestionPrelevement: 60,
-    franchise:
-      devisData.franchise != null && Number.isFinite(Number(devisData.franchise))
-        ? Number(devisData.franchise)
-        : FRANCHISE_DECENNALE_EUR,
+    // Règle métier: franchise décennale fixe à 1 000 € (toutes activités).
+    franchise: FRANCHISE_DECENNALE_EUR,
     plafond: Number(devisData.plafond) > 0 ? Number(devisData.plafond) : 100_000,
     dateEffet,
     dateEffetIso,

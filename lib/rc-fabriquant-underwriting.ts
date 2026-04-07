@@ -4,6 +4,7 @@
  */
 
 import type { DevisRcFabriquantData, RcTypeProduit, RcZoneDistribution } from "@/lib/rc-fabriquant-types"
+import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 
 export type { RcTypeProduit, RcZoneDistribution } from "@/lib/rc-fabriquant-types"
 
@@ -26,7 +27,13 @@ export interface RcFabPremiumResult {
   tauxLabel: string
   plafond: number
   franchise: number
+  protectionJuridique: number
 }
+
+/** Franchise contractuelle RC Fabriquant (toutes typologies produit) */
+export const FRANCHISE_RC_FABRIQUANT_EUR = 3000
+/** Garantie protection juridique RC Fabriquant (défense/recours). */
+export const PROTECTION_JURIDIQUE_RC_FABRIQUANT_EUR = PROTECTION_JURIDIQUE_GARANTIE_EUR
 
 export interface RcFabIndicatifUnderwriting {
   score: number
@@ -106,7 +113,8 @@ export function calculatePremium(input: RcFabUnderwritingInput): RcFabPremiumRes
       primeTtc: Math.round(premium + frais),
       tauxLabel: "1,7 % du CA",
       plafond: 3_000_000,
-      franchise: 1000,
+      franchise: FRANCHISE_RC_FABRIQUANT_EUR,
+      protectionJuridique: PROTECTION_JURIDIQUE_RC_FABRIQUANT_EUR,
     }
   }
 
@@ -121,7 +129,8 @@ export function calculatePremium(input: RcFabUnderwritingInput): RcFabPremiumRes
     primeTtc: Math.round(premium + frais),
     tauxLabel: "standard (grille interne)",
     plafond: 3_000_000,
-    franchise: 1000,
+    franchise: FRANCHISE_RC_FABRIQUANT_EUR,
+    protectionJuridique: PROTECTION_JURIDIQUE_RC_FABRIQUANT_EUR,
   }
 }
 
@@ -168,7 +177,8 @@ export function generateRcFabContractHtml(
   <ul>
     <li>Responsabilité civile produits après livraison</li>
     <li>Plafond : 3 000 000 €</li>
-    <li>Franchise : 1 000 €</li>
+    <li>Franchise : ${FRANCHISE_RC_FABRIQUANT_EUR.toLocaleString("fr-FR")} €</li>
+    <li>Protection juridique : ${PROTECTION_JURIDIQUE_RC_FABRIQUANT_EUR.toLocaleString("fr-FR")} €</li>
   </ul>
   ${clauseBatterie}
 
@@ -208,6 +218,7 @@ export function generateRcFabAttestationHtml(
 
   <h2>Garantie</h2>
   <p>Responsabilité civile après livraison</p>
+  <p>Protection juridique : ${PROTECTION_JURIDIQUE_RC_FABRIQUANT_EUR.toLocaleString("fr-FR")} €</p>
 
   <h2>Montant</h2>
   <p><strong>3 000 000 € par sinistre</strong></p>

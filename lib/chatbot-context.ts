@@ -30,7 +30,7 @@ const FAQ_BASE: { q: string; r: string }[] = [
   },
   { q: "nettoyage toiture couvreur", r: "Oui. Nous avons une offre dédiée pour le nettoyage toiture et peinture résine (I3 à I5). Sociétés résiliées acceptées. Taux 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)." },
   { q: "plombier électricien peintre maçon carreleur", r: "Tous les corps de métier du BTP sont couverts : plombiers, électriciens, peintres, maçons, couvreurs, charpentiers, carreleurs, menuisiers, BET, architectes. Devis en 3 minutes sur /devis." },
-  { q: "franchise plafond", r: "Franchise décennale : 1 000 €. Plafond de garantie : 2× le chiffre d'affaires. Pour le dommage ouvrage : aucune franchise (garantie obligatoire)." },
+  { q: "franchise plafond", r: "Franchise décennale : 1 000 € (toutes activités). Plafond de garantie : 2× le chiffre d'affaires. Pour le dommage ouvrage : aucune franchise (garantie obligatoire). Pour la RC Fabriquant : franchise 3 000 €." },
   { q: "minimum CA 40000", r: "Le chiffre d'affaires minimum déclaratif est de 40 000 €. En dessous, contactez-nous pour une étude personnalisée." },
   { q: "espace client connexion documents attestation où", r: "Après connexion sur /connexion, ouvrez /espace-client : vous y voyez vos documents (devis, contrats, attestations). Chaque document a une page détail avec téléchargement PDF. Les attestations peuvent être vérifiées publiquement via le QR code ou un lien /v/[token]." },
   { q: "guides pratiques obligation", r: "Les guides détaillés sont sur /guides et /guides/[slug] (ex. obligation décennale, dommage ouvrage, sinistre). La FAQ complète est sur /faq." },
@@ -76,7 +76,7 @@ INFORMATIONS OPTIMUM ASSURANCE (rappel synthétique) :
 - Nettoyage toiture et peinture résine (I3 à I5) : offre dédiée, taux 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)
 - Dommage ouvrage : devis sous 24h, auto-construction, garantie clos et couvert
 - RC fabriquant : formulaire sur /devis-rc-fabriquant, réponse après étude (pas de tarificateur en ligne)
-- Franchise : 1 000 € (décennale) ; aucune (dommage ouvrage)
+- Franchise : 1 000 € (décennale, toutes activités) ; aucune (dommage ouvrage) ; 3 000 € (RC fabriquant)
 - Prélèvement trimestriel : 1er trimestre par carte (+ 60 € frais), puis SEPA trimestriel
 - Avenants : 60 €
 - Résiliation : lettre recommandée 2 mois avant échéance (31 décembre), minimum 1 an de contrat

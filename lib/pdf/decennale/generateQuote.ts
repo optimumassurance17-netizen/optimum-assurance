@@ -8,6 +8,8 @@ import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
+import { DEVOIR_CONSEIL_TEXT, DEVOIR_CONSEIL_USEFUL_LINKS_LINE } from "@/lib/devoir-conseil"
 
 const QUOTE_VALIDITY_DAYS = 30
 
@@ -109,6 +111,19 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
   })
   y -= 20
 
+  drawTextPdf(
+    page,
+    `Protection juridique : ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} €.`,
+    {
+    x: PDF_PAGE.marginX,
+    y,
+    size: 9,
+    font,
+    color: PDF_COLORS.muted,
+    }
+  )
+  y -= 18
+
   drawTextPdf(page, `Validité du devis : ${QUOTE_VALIDITY_DAYS} jours à compter de la date d'émission.`, {
     x: PDF_PAGE.marginX,
     y,
@@ -172,6 +187,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
     "6) Pièces et conformité : des justificatifs complémentaires peuvent être exigés avant l’émission définitive (Kbis, identité, antécédents, etc.).",
     "7) Déclaration du risque : toute information inexacte ou omission significative peut entraîner révision, exclusion, résiliation ou nullité selon le cadre contractuel.",
     "8) Validité : la proposition est valable 30 jours, sauf évolution du risque déclaré ou des conditions techniques de souscription.",
+    `9) Protection juridique : garantie défense/recours incluse, plafonnée à ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € par litige couvert.`,
   ]
 
   for (const line of details) {
@@ -180,6 +196,29 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
   }
 
   y2 -= 2
+  y2 = drawWrappedText(
+    page2,
+    `Devoir de conseil : ${DEVOIR_CONSEIL_TEXT.decennale}`,
+    PDF_PAGE.marginX,
+    y2,
+    PDF_PAGE.contentWidth,
+    font,
+    9,
+    12
+  )
+  y2 -= 8
+  y2 = drawWrappedText(
+    page2,
+    DEVOIR_CONSEIL_USEFUL_LINKS_LINE,
+    PDF_PAGE.marginX,
+    y2,
+    PDF_PAGE.contentWidth,
+    font,
+    8,
+    11,
+    PDF_COLORS.muted
+  )
+  y2 -= 10
   y2 = drawWrappedText(
     page2,
     "Souscription : ce document ne vaut pas attestation. La couverture démarre uniquement après validation et émission des pièces contractuelles.",

@@ -20,6 +20,14 @@ function cronSecretConfigured(): boolean {
   return Boolean(s && s.trim().length > 0)
 }
 
+const CRON_ROUTES = [
+  "/api/cron/rappels-renouvellement",
+  "/api/cron/rappel-devis-abandonne",
+  "/api/cron/rappel-signatures-en-attente",
+  "/api/cron/rappel-paiements-contrats",
+  "/api/cron/sepa-trimestriel",
+] as const
+
 /** Variables nécessaires à Supabase Sign (upload PDF, /api/sign) — pas d’appel réseau. */
 function esignEnv() {
   const supabaseUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim())
@@ -42,6 +50,8 @@ function esignEnv() {
 export async function GET() {
   const crons = {
     secret: cronSecretConfigured() ? "configured" : "missing",
+    routes: CRON_ROUTES,
+    count: CRON_ROUTES.length,
   }
   const esign = esignEnv()
   const sirene = getSireneEnvStatus()

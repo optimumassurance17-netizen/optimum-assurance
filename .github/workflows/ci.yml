@@ -50,6 +50,9 @@ jobs:
       - name: TypeScript
         run: npm run typecheck
 
+      - name: Vérification mentions contractuelles PDF
+        run: npm run test:pdf-contractual
+
       - name: Prisma generate + Next build
         run: npm run build
 

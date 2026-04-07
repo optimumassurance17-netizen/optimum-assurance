@@ -1,37 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import { getDevoirConseilContent } from "@/lib/devoir-conseil"
 
 type Produit = "decennale" | "dommage-ouvrage"
-
-type TexteDevoirConseil = {
-  titre: string
-  contenu: string
-  lienCgv: string
-  lienAttestations: string
-  lienFaq: string
-  lienGuide: string
-}
-
-const TEXTE_DECENNALE: TexteDevoirConseil = {
-  titre: "Devoir de conseil",
-  contenu:
-    "En souscrivant, vous confirmez avoir pris connaissance des garanties, exclusions et franchises de votre contrat. Le devis a été établi selon les informations que vous avez fournies. Si votre situation change ou si vous avez des questions, contactez-nous avant de signer.",
-  lienCgv: "/cgv",
-  lienAttestations: "/conditions-attestations",
-  lienFaq: "/faq",
-  lienGuide: "/guides/obligation-decennale",
-}
-
-const TEXTE_DO: TexteDevoirConseil = {
-  titre: "Devoir de conseil",
-  contenu:
-    "En validant cette demande, vous confirmez avoir pris connaissance des garanties, exclusions et conditions de l'assurance dommage ouvrage. Le devis sera établi selon les informations fournies. Consultez nos guides et la FAQ si vous avez des questions avant de vous engager.",
-  lienCgv: "/cgv",
-  lienAttestations: "/conditions-attestations",
-  lienFaq: "/faq",
-  lienGuide: "/guides/obligation-dommage-ouvrage",
-}
 
 interface DevoirConseilProps {
   produit: Produit
@@ -52,7 +24,7 @@ export function DevoirConseil({
   labelCheckbox,
   compact = false,
 }: DevoirConseilProps) {
-  const texte = produit === "decennale" ? TEXTE_DECENNALE : TEXTE_DO
+  const texte = getDevoirConseilContent(produit)
 
   return (
     <div

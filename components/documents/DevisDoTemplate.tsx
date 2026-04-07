@@ -11,6 +11,8 @@ import {
   ELEMENTS_DISSOCIABLES_NOTE,
 } from "@/lib/nomenclature-activites"
 import { COMPANY_BRAND, INSURER_NAME, LEGAL_ORIAS_LINE } from "@/lib/legal-branding"
+import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
+import { DEVOIR_CONSEIL_TEXTE_BY_PRODUCT } from "@/lib/devoir-conseil"
 
 /**
  * Template de proposition d'assurance dommage ouvrage.
@@ -46,6 +48,7 @@ const COURTIER = {
 } as const
 
 export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
+  const devoirConseil = DEVOIR_CONSEIL_TEXTE_BY_PRODUCT.do
   const dateCreation = data.dateCreation || new Date().toLocaleDateString("fr-FR")
   const fraisGestion = data.fraisGestion ?? 0
   const fraisCourtage = data.fraisCourtage ?? 0
@@ -188,6 +191,10 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
           DOMMAGES – OUVRAGE : Garantie obligatoire DO — Habitation : à hauteur du coût de réparation des dommages.
           Hors habitation : à hauteur du coût de réparation des dommages dans la limite du coût total de construction déclaré.
         </p>
+        <p className="text-xs text-[#171717] mb-3">
+          Protection juridique : défense/recours en cas de litige garanti, à hauteur de{" "}
+          {PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} €.
+        </p>
         <p className="text-xs text-[#171717] mb-3">Franchise : aucune (garantie obligatoire)</p>
         <p className="text-xs text-[#171717] mb-3">Validité : unique de 10 ans à partir de la signature. Non résiliable.</p>
         <table className="w-full border-collapse border border-[#e5e5e5] mb-3">
@@ -302,6 +309,29 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
             CGV
           </a>{" "}
           (modalités de distribution).
+        </p>
+      </div>
+
+      {/* Devoir de conseil */}
+      <div className="mb-6 p-4 rounded-lg border border-[#bfdbfe] bg-[#eff6ff] text-xs text-[#1e3a8a]">
+        <h3 className="font-bold text-black mb-2 uppercase">Devoir de conseil</h3>
+        <p>{devoirConseil.contenu}</p>
+        <p className="mt-2">
+          <a href={`${SITE_URL}${devoirConseil.lienCgv}`} className="text-[#2563eb] underline">
+            CGV
+          </a>
+          {" — "}
+          <a href={`${SITE_URL}${devoirConseil.lienAttestations}`} className="text-[#2563eb] underline">
+            Conditions d&apos;émission et de validité des attestations
+          </a>
+          {" — "}
+          <a href={`${SITE_URL}${devoirConseil.lienFaq}`} className="text-[#2563eb] underline">
+            FAQ
+          </a>
+          {" — "}
+          <a href={`${SITE_URL}${devoirConseil.lienGuide}`} className="text-[#2563eb] underline">
+            Guide obligation
+          </a>
         </p>
       </div>
 

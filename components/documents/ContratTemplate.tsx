@@ -1,6 +1,8 @@
 "use client"
 
 import { SITE_URL } from "@/lib/site-url"
+import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
+import { getDevoirConseilContent } from "@/lib/devoir-conseil"
 
 interface ContratTemplateProps {
   numero: string
@@ -29,6 +31,7 @@ interface ContratTemplateProps {
 }
 
 export function ContratTemplate({ numero, data }: ContratTemplateProps) {
+  const devoirConseil = getDevoirConseilContent("decennale")
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0">
       <div className="border-b-2 border-[#2563eb] pb-4 mb-6">
@@ -120,8 +123,40 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
         </section>
 
         <section>
-          <h3 className="font-semibold mb-2">Article 6 - Résiliation</h3>
+          <h3 className="font-semibold mb-2">Article 6 - Protection juridique</h3>
+          <p>
+            Une garantie de protection juridique est incluse à hauteur de{" "}
+            {PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € par litige garanti, selon les conditions
+            générales et particulières applicables.
+          </p>
+        </section>
+
+        <section>
+          <h3 className="font-semibold mb-2">Article 7 - Résiliation</h3>
           <p>Les demandes de résiliation doivent être adressées par lettre recommandée au plus tard 2 mois avant la date d&apos;échéance (31 décembre). Un minimum d&apos;un an de contrat est requis avant toute résiliation à l&apos;échéance.</p>
+        </section>
+
+        <section>
+          <h3 className="font-semibold mb-2">Article 8 - Devoir de conseil</h3>
+          <p>{devoirConseil.contenu}</p>
+          <p className="mt-2">
+            Références :{" "}
+            <a href={`${SITE_URL}${devoirConseil.lienCgv}`} className="text-[#2563eb] underline">
+              CGV
+            </a>
+            {" — "}
+            <a href={`${SITE_URL}${devoirConseil.lienAttestations}`} className="text-[#2563eb] underline">
+              Conditions d&apos;émission et de validité des attestations
+            </a>
+            {" — "}
+            <a href={`${SITE_URL}${devoirConseil.lienFaq}`} className="text-[#2563eb] underline">
+              FAQ
+            </a>
+            {" — "}
+            <a href={`${SITE_URL}${devoirConseil.lienGuide}`} className="text-[#2563eb] underline">
+              Guide obligation
+            </a>
+          </p>
         </section>
 
         <p className="text-xs text-[#171717] mt-8">

@@ -10,6 +10,7 @@ import {
   TRAVAUX_ACCESSOIRES_NOTE,
 } from "@/lib/nomenclature-activites"
 import { SITE_URL } from "@/lib/site-url"
+import { DEVOIR_CONSEIL_TEXT } from "@/lib/devoir-conseil"
 
 interface DevisTemplateProps {
   numero: string
@@ -255,6 +256,10 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
         La prise d&apos;effet des garanties est conditionnée à l&apos;encaissement de la première cotisation et au retour
         de la proposition signée.
       </p>
+      <div className="mt-3 rounded-lg border border-[#bfdbfe] bg-[#eff6ff] p-3 text-xs text-[#171717]">
+        <p className="font-semibold text-[#1e3a8a] mb-1">{DEVOIR_CONSEIL_TEXT.decennale.title}</p>
+        <p>{DEVOIR_CONSEIL_TEXT.decennale.content}</p>
+      </div>
       <p className="text-xs text-[#171717] mt-2">
         <a href={`${SITE_URL}/cgv`} className="text-[#2563eb] underline">
           Conditions générales de vente (CGV)

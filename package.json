@@ -29,6 +29,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test:pdf-contractual": "tsx scripts/verify-pdf-contractual-mentions.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "e2e:seed-admin": "node scripts/seed-e2e-admin.mjs",

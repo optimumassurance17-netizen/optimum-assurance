@@ -16,12 +16,15 @@ import {
 } from "@/lib/legal-branding"
 import { SITE_URL } from "@/lib/site-url"
 import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
+import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
+import { DEVOIR_CONSEIL_TEXT_BY_PRODUCT } from "@/lib/devoir-conseil"
 import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
 import { drawAttestationStampBottomRight, loadAttestationStampImage } from "@/lib/pdf/shared/attestationStamp"
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
 import { primeTrimestrielle } from "@/lib/mollie-sepa"
+import { FRANCHISE_RC_FABRIQUANT_EUR } from "@/lib/rc-fabriquant-underwriting"
 
 /** Contrat actif : PDF devis+CP en version « contrat » + mentions légales complémentaires. */
 function platformQuotePolicyBundleMode(c: InsuranceContract): "proposition" | "contrat" {
@@ -170,10 +173,34 @@ async function generateRcFabPolicyPlaceholderPdf(c: InsuranceContract): Promise<
   y -= 44
   page.drawText(sanitizeForPdfLib(`Prime convenue : ${formatEuro(c.premium)} TTC.`), { x: 50, y, size: 10, font })
   y -= 18
+  page.drawText(
+    sanitizeForPdfLib(`Franchise contractuelle : ${FRANCHISE_RC_FABRIQUANT_EUR.toLocaleString("fr-FR")} €.`),
+    { x: 50, y, size: 10, font }
+  )
+  y -= 18
+  page.drawText(
+    sanitizeForPdfLib(
+      `Protection juridique : ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € de garantie.`
+    ),
+    { x: 50, y, size: 10, font }
+  )
+  y -= 18
   page.drawText(sanitizeForPdfLib(`Assuré : ${c.clientName}`), { x: 50, y, size: 10, font })
   y -= 18
   page.drawText(sanitizeForPdfLib(`Siège / adresse déclarée : ${c.address}`), { x: 50, y, size: 10, font, maxWidth: 500 })
   y -= 36
+  const devoirConseilRcFab = DEVOIR_CONSEIL_TEXT_BY_PRODUCT.rc_fabriquant
+  page.drawText(sanitizeForPdfLib("Devoir de conseil :"), { x: 50, y, size: 10, font: bold })
+  y -= 14
+  page.drawText(sanitizeForPdfLib(devoirConseilRcFab.contenu), { x: 50, y, size: 9, font, maxWidth: 500, lineHeight: 12 })
+  y -= 46
+  page.drawText(
+    sanitizeForPdfLib(
+      `Références : ${SITE_URL}${devoirConseilRcFab.lienCgv} — ${SITE_URL}${devoirConseilRcFab.lienAttestations} — ${SITE_URL}${devoirConseilRcFab.lienFaq}`
+    ),
+    { x: 50, y, size: 8, font, maxWidth: 500 }
+  )
+  y -= 20
   page.drawText(sanitizeForPdfLib(LEGAL_DELEGATION_MANDATORY), { x: 50, y: 72, size: 8, font: bold, maxWidth: 500 })
   page.drawText(sanitizeForPdfLib(`ORIAS ${ORIAS_NUMBER}`), { x: 50, y: 56, size: 8, font })
   return pdf.save()

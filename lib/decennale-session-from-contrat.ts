@@ -38,10 +38,8 @@ export function buildSignatureSessionFromContrat(
     primeAnnuelle: pa,
     primeMensuelle,
     primeTrimestrielle,
-    franchise:
-      contratData.franchise != null && Number.isFinite(Number(contratData.franchise))
-        ? Number(contratData.franchise)
-        : FRANCHISE_DECENNALE_EUR,
+    // Règle métier: franchise décennale fixe à 1 000 €.
+    franchise: FRANCHISE_DECENNALE_EUR,
     plafond: Number(contratData.plafond) > 0 ? Number(contratData.plafond) : 100_000,
     details: {
       base: pa,
