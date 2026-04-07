@@ -20,7 +20,7 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 
 - **Vercel** : dernier déploiement **Production** **Ready** ; alias `https://www.optimum-assurance.fr`.
 
-- **Santé prod** : `https://www.optimum-assurance.fr/api/health` → base **connected**, email Resend **configured** (`RESEND_API_KEY` + `EMAIL_FROM` côté serveur).
+- **Santé prod** : `https://www.optimum-assurance.fr/api/health` → base **connected**, email Resend **configured** (`RESEND_API_KEY` + `EMAIL_FROM` côté serveur), **`sirene.insee` / `sirene.pappers`** (`configured` ou `missing` — clés pour le préremplissage SIRET `/api/siret`, sans appel INSEE dans le health).
 
 - **Smoke test prod (sans secrets)** : **`npm run verify:prod`** — `/api/health`, `/robots.txt`, **`/sitemap.xml`** en **200** (sitemap : route handler dynamique + proxy qui **n’applique pas** Supabase session sur `sitemap.xml` / `robots.txt`).
 

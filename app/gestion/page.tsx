@@ -106,7 +106,15 @@ function editFormFromDocData(parsed: Record<string, unknown>): EditContratForm {
 }
 
 interface DashboardData {
-  users: { id: string; email: string; raisonSociale: string | null; siret: string | null; createdAt: string }[]
+  users: {
+    id: string
+    email: string
+    raisonSociale: string | null
+    siret: string | null
+    createdAt: string
+    doQuestionnaireInitial?: boolean
+    doQuestionnaireEtude?: boolean
+  }[]
   devisDoLeads?: { id: string; email: string; data?: string; coutTotal: number | null; createdAt: string }[]
   devisRcFabriquantLeads?: {
     id: string
@@ -448,7 +456,9 @@ export default function GestionPage() {
       return false
     })
   }
-  const filterUsersBySearch = <T extends { email: string; raisonSociale: string | null; siret: string | null }>(
+  const filterUsersBySearch = <
+    T extends { email: string; raisonSociale: string | null; siret: string | null },
+  >(
     items: T[],
     q: string
   ): T[] => {
@@ -1317,18 +1327,37 @@ export default function GestionPage() {
                     <th className="text-left p-3 sm:p-4 font-medium">Client</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Email</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">SIRET</th>
+                    <th className="text-left p-3 sm:p-4 font-medium hidden md:table-cell">DO</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filterUsersBySearch(data.users, searchQuery).length === 0 ? (
-                    <tr><td colSpan={4} className="p-4 text-gray-200">Aucun client</td></tr>
+                    <tr><td colSpan={5} className="p-4 text-gray-200">Aucun client</td></tr>
                   ) : (
                     filterUsersBySearch(data.users, searchQuery).map((u) => (
                       <tr key={u.id} className="border-b border-gray-700/50">
                         <td className="p-3 sm:p-4">{u.raisonSociale || "—"}</td>
                         <td className="p-3 sm:p-4">{u.email}</td>
                         <td className="p-3 sm:p-4 font-mono text-gray-200 hidden sm:table-cell">{u.siret || "—"}</td>
+                        <td className="p-3 sm:p-4 hidden md:table-cell">
+                          {u.doQuestionnaireInitial || u.doQuestionnaireEtude ? (
+                            <span className="flex flex-wrap gap-1">
+                              {u.doQuestionnaireInitial ? (
+                                <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-sky-900/50 text-sky-200 border border-sky-700/50" title="Premier questionnaire DO enregistré">
+                                  1er
+                                </span>
+                              ) : null}
+                              {u.doQuestionnaireEtude ? (
+                                <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-900/40 text-amber-200 border border-amber-700/50" title="Questionnaire d’étude espace client">
+                                  Étude
+                                </span>
+                              ) : null}
+                            </span>
+                          ) : (
+                            <span className="text-gray-500">—</span>
+                          )}
+                        </td>
                         <td className="p-3 sm:p-4">
                           <Link
                             href={`/gestion/clients/${u.id}`}

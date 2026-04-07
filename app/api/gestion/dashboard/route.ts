@@ -74,6 +74,7 @@ export async function GET() {
       pendingSignaturesRaw,
       insuranceContractsCount,
       insuranceContractsList,
+      usersDoQuestionnaireRows,
     ] = await Promise.all([
       prisma.user.findMany({
         select: {
@@ -215,7 +216,37 @@ export async function GET() {
           },
         },
       }),
+      prisma.user.findMany({
+        where: {
+          OR: [{ doInitialQuestionnaireJson: { not: null } }, { doEtudeQuestionnaireJson: { not: null } }],
+        },
+        select: {
+          id: true,
+          doInitialQuestionnaireJson: true,
+          doEtudeQuestionnaireJson: true,
+        },
+        take: DASH_LIST_LIMIT,
+      }),
     ])
+
+    const doQuestionnaireByUserId = new Map<
+      string,
+      { doQuestionnaireInitial: boolean; doQuestionnaireEtude: boolean }
+    >()
+    for (const row of usersDoQuestionnaireRows) {
+      doQuestionnaireByUserId.set(row.id, {
+        doQuestionnaireInitial: Boolean(row.doInitialQuestionnaireJson?.trim()),
+        doQuestionnaireEtude: Boolean(row.doEtudeQuestionnaireJson?.trim()),
+      })
+    }
+    const usersWithDoFlags = users.map((u) => {
+      const flags = doQuestionnaireByUserId.get(u.id)
+      return {
+        ...u,
+        doQuestionnaireInitial: flags?.doQuestionnaireInitial ?? false,
+        doQuestionnaireEtude: flags?.doQuestionnaireEtude ?? false,
+      }
+    })
 
     const pendingUserIds = [...new Set(pendingSignaturesRaw.map((p) => p.userId))]
     const pendingUsers =
@@ -252,7 +283,7 @@ export async function GET() {
     })
 
     return NextResponse.json({
-      users,
+      users: usersWithDoFlags,
       documents,
       payments,
       avenantFees,
