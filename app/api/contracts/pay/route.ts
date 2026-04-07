@@ -5,7 +5,10 @@ import { createMollieClient, Locale, PaymentMethod } from "@mollie/api-client"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
-import { premiumMatchesMollieAmount } from "@/lib/insurance-contract-service"
+import {
+  mollieExpectedAmountForInsuranceContract,
+  premiumMatchesMollieAmount,
+} from "@/lib/insurance-contract-service"
 import { insuranceContractPayLockKeys } from "@/lib/insurance-contract-pay-lock"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 
@@ -52,7 +55,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Contrat introuvable ou non payable" }, { status: 404 })
     }
 
-    const amount = Math.round(contractPreview.premium * 100) / 100
+    const amount = mollieExpectedAmountForInsuranceContract(
+      contractPreview.productType,
+      contractPreview.premium
+    )
     if (amount <= 0) {
       return NextResponse.json({ error: "Montant invalide" }, { status: 400 })
     }

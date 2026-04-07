@@ -75,9 +75,9 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
       <div className="mb-4 p-4 rounded-xl border border-amber-800/60 bg-amber-950/25 text-sm text-amber-100/95">
         <p className="font-medium text-amber-200 mb-1">RC Fabriquant — cotisation trimestrielle (comme la décennale)</p>
         <p className="text-amber-100/90">
-          Le champ <strong>Prime TTC</strong> sur le contrat sert de <strong>montant Mollie pour la prochaine échéance</strong> (virement).
-          En usage trimestriel, fixez typiquement <strong>prime annuelle ÷ 4</strong> (indicatif affiché pour RC Fab). Entre deux échéances, ajustez la
-          prime via « Modifier prime ». Valider / refuser, régénérer les PDF, liens vérification et fiche client restent ici — pas d’automatisation
+          <strong>Décennale :</strong> le champ <strong>Prime TTC</strong> = prime <strong>annuelle</strong> (comme au souscription) — le virement Mollie
+          côté client est automatiquement <strong>1/4 (trimestre)</strong>. <strong>RC Fabriquant :</strong> la prime = montant de la{" "}
+          <strong>prochaine échéance</strong> Mollie (souvent annuelle ÷ 4). Entre deux échéances, ajustez via « Modifier prime ». Pas d’automatisation
           SEPA dédiée RC sur ce flux.
         </p>
       </div>
@@ -147,6 +147,12 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                     </td>
                     <td className="p-3 sm:p-4">
                       <p className="text-white font-medium">{c.premium.toLocaleString("fr-FR")} €</p>
+                      {c.productType === "decennale" ? (
+                        <p className="text-xs text-sky-300/90 mt-1">
+                          Prime <strong>annuelle</strong> — prochain virement client ≈{" "}
+                          <strong>{primeTrimestrielle(c.premium).toLocaleString("fr-FR")} €</strong> / trimestre (Mollie)
+                        </p>
+                      ) : null}
                       {showRcFabHints ? (
                         <p className="text-xs text-teal-300/90 mt-1">
                           Indic. : si prime = <strong>annuelle</strong> → {primeTrimestrielle(c.premium).toLocaleString("fr-FR")} €/trim · si

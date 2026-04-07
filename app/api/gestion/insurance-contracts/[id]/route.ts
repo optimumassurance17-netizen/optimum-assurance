@@ -6,7 +6,11 @@ import { prisma } from "@/lib/prisma"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { logContractAction } from "@/lib/insurance-contract-service"
 
-/** Ajustement manuel du montant Mollie (prochaine échéance), RC Fab / contrats plateforme. */
+/**
+ * Ajustement manuel de la prime contrat.
+ * - **RC Fab** : prime = prochain montant Mollie (échéance).
+ * - **Décennale** : prime = prime **annuelle** TTC (le virement Mollie client = 1/4 — voir `/api/contracts/pay`).
+ */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.email || !isAdmin(session)) {

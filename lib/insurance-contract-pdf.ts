@@ -21,6 +21,7 @@ import { drawAttestationStampBottomRight, loadAttestationStampImage } from "@/li
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
+import { primeTrimestrielle } from "@/lib/mollie-sepa"
 
 /** Contrat actif : PDF devis+CP en version « contrat » + mentions légales complémentaires. */
 function platformQuotePolicyBundleMode(c: InsuranceContract): "proposition" | "contrat" {
@@ -89,8 +90,22 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
   y -= 16
   page.drawText(sanitizeForPdfLib(`Client : ${c.clientName}`), { x: 50, y, size: 10, font })
   y -= 14
-  page.drawText(sanitizeForPdfLib(`Montant TTC : ${formatEuro(c.premium)}`), { x: 50, y, size: 11, font: bold })
-  y -= 18
+  const montantFactureTtc =
+    c.productType === "decennale" ? primeTrimestrielle(c.premium) : c.premium
+  page.drawText(sanitizeForPdfLib(`Montant TTC : ${formatEuro(montantFactureTtc)}`), { x: 50, y, size: 11, font: bold })
+  y -= 16
+  if (c.productType === "decennale") {
+    page.drawText(
+      sanitizeForPdfLib(
+        `(Échéance trimestrielle — prime annuelle de référence ${formatEuro(c.premium)} TTC)`
+      ),
+      { x: 50, y, size: 9, font, maxWidth: 500 }
+    )
+    y -= 22
+  } else {
+    y -= 4
+  }
+  y -= 14
   page.drawText(sanitizeForPdfLib(`Moyen de paiement : ${INVOICE_PAYMENT_METHOD_PRIMARY}`), {
     x: 50,
     y,

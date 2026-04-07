@@ -13,6 +13,7 @@ import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import type { InsuranceContractListItem } from "@/lib/insurance-contract-types"
 import { PayInsuranceContractButton } from "@/components/insurance/PayInsuranceContractButton"
 import { InsuranceContractPdfLinks } from "@/components/insurance/InsuranceContractPdfLinks"
+import { primeTrimestrielle } from "@/lib/mollie-sepa"
 
 interface DocumentItem {
   id: string
@@ -234,8 +235,13 @@ export default function EspaceClientPage() {
                         <>
                           {c.premium.toLocaleString("fr-FR")} € — montant de l&apos;échéance en cours (trimestriel) ·{" "}
                         </>
+                      ) : c.productType === "decennale" ? (
+                        <>
+                          {c.premium.toLocaleString("fr-FR")} € / an — virement Mollie ≈{" "}
+                          {primeTrimestrielle(c.premium).toLocaleString("fr-FR")} € / trimestre ·{" "}
+                        </>
                       ) : (
-                        <>{c.premium.toLocaleString("fr-FR")} € / an · </>
+                        <>{c.premium.toLocaleString("fr-FR")} € TTC · </>
                       )}
                       <span className="font-medium">{c.status}</span>
                     </p>

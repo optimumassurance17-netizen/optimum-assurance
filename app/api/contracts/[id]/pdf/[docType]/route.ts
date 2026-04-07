@@ -40,11 +40,16 @@ export async function GET(
     const filename = bundleDevisCp
       ? `${contract.contractNumber}-devis-et-cp.pdf`
       : `${contract.contractNumber}-${docType}.pdf`
-    return new NextResponse(Buffer.from(bytes), {
+    const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
+    const buf = Buffer.from(u8)
+    const safeFilename = filename.replace(/"/g, "_")
+    return new NextResponse(buf, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${filename}"`,
+        "Content-Disposition": `inline; filename="${safeFilename}"`,
+        "Content-Length": String(buf.byteLength),
+        "Cache-Control": "private, no-store, must-revalidate",
       },
     })
   } catch (e) {

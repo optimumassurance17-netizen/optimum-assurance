@@ -5,6 +5,7 @@ import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { calculateRiskScore, requiresManualReview } from "@/lib/risk-scoring"
 import { renderContractPdf } from "@/lib/insurance-contract-pdf"
 import { SITE_URL } from "@/lib/site-url"
+import { primeTrimestrielle } from "@/lib/mollie-sepa"
 
 export type CreateContractInput = {
   productType: "decennale" | "do"
@@ -162,6 +163,30 @@ export function premiumMatchesMollieAmount(contractPremium: number, paidAmount: 
   return Math.abs(exp - got) <= PREMIUM_PAYMENT_EPS
 }
 
+/**
+ * Montant attendu pour un paiement Mollie `insurance_contract` (virement).
+ * - **Décennale** : `premium` en base = prime **annuelle** TTC → chaque virement = 1 trimestre (hors parcours 1er trimestre CB + SEPA).
+ * - **DO** : `premium` = montant unique du contrat.
+ * - **RC Fabriquant** : `premium` = montant de l’échéance courante (saisi en gestion).
+ */
+export function mollieExpectedAmountForInsuranceContract(productType: string, premiumAnnualOrInstallment: number): number {
+  const p = Math.round(premiumAnnualOrInstallment * 100) / 100
+  if (productType === "decennale") {
+    return primeTrimestrielle(premiumAnnualOrInstallment)
+  }
+  return p
+}
+
+/** Comparaison paiement ↔ contrat (prend en compte la décennale = trimestre). */
+export function insuranceContractPaymentAmountMatches(
+  productType: string,
+  contractPremium: number,
+  paidAmount: number
+): boolean {
+  const expected = mollieExpectedAmountForInsuranceContract(productType, contractPremium)
+  return premiumMatchesMollieAmount(expected, paidAmount)
+}
+
 async function generatePostPaymentPdfs(contractId: string, fresh: InsuranceContract): Promise<void> {
   const certBytes = await renderContractPdf(fresh, "certificate")
   const invBytes = await renderContractPdf(fresh, "invoice")
@@ -297,10 +322,11 @@ export async function processInsuranceContractPaymentSuccess(
     return { ok: false, error: "INVALID_STATE_FOR_PAYMENT" }
   }
 
-  if (!premiumMatchesMollieAmount(c.premium, amount)) {
+  if (!insuranceContractPaymentAmountMatches(c.productType, c.premium, amount)) {
     await logContractAction(contractId, "payment_amount_mismatch", {
       molliePaymentId,
       expectedPremium: c.premium,
+      expectedMollieSlice: mollieExpectedAmountForInsuranceContract(c.productType, c.premium),
       paidAmount: amount,
     })
     return { ok: false, error: "AMOUNT_MISMATCH" }
