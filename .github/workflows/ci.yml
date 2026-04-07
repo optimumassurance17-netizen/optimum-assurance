@@ -93,8 +93,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Prisma migrate (schéma à jour)
-        run: npx prisma migrate deploy
+      # Base Postgres éphémère : `db push` aligne le schéma sans historique de migrations
+      # (évite les écarts baseline / shadow DB sur runner GitHub).
+      - name: Prisma — pousser le schéma vers Postgres (CI e2e)
+        run: npx prisma db push --skip-generate
 
       - name: Prisma generate + Next build
         run: npm run build
