@@ -17,6 +17,7 @@ import {
 import { SITE_URL } from "@/lib/site-url"
 import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
 import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
+import { drawAttestationStampBottomRight, loadAttestationStampImage } from "@/lib/pdf/shared/attestationStamp"
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
@@ -203,6 +204,8 @@ async function generateRcFabAttestationPdf(c: InsuranceContract): Promise<Uint8A
   })
   y -= 36
   page.drawText(sanitizeForPdfLib(LEGAL_DELEGATION_MANDATORY), { x: 50, y: 72, size: 8, font: bold, maxWidth: 500 })
+  const stamp = await loadAttestationStampImage(pdf)
+  if (stamp) drawAttestationStampBottomRight(page, stamp)
   return pdf.save()
 }
 
