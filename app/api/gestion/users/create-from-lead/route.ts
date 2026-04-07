@@ -24,8 +24,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    const body = await request.json()
-    const { leadId } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const leadId =
+      typeof (body as Record<string, unknown>).leadId === "string"
+        ? (body as Record<string, unknown>).leadId.trim()
+        : ""
 
     if (!leadId) {
       return NextResponse.json({ error: "leadId requis" }, { status: 400 })

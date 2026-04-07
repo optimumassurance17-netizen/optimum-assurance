@@ -12,10 +12,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    const body = await request.json()
-    const { userId, contractNumero, modifications, motif } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const payload = body as Record<string, unknown>
+    const userId = typeof payload.userId === "string" ? payload.userId.trim() : ""
+    const contractNumero =
+      typeof payload.contractNumero === "string" ? payload.contractNumero.trim() : ""
+    const modifications =
+      payload.modifications && typeof payload.modifications === "object"
+        ? (payload.modifications as Record<string, unknown>)
+        : null
+    const motif = typeof payload.motif === "string" ? payload.motif.trim() : ""
 
-    if (!userId || !contractNumero || !modifications || typeof modifications !== "object") {
+    if (!userId || !contractNumero || !modifications) {
       return NextResponse.json(
         { error: "userId, contractNumero et modifications requis" },
         { status: 400 }

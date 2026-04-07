@@ -144,6 +144,38 @@ test.describe("API validations critiques", () => {
     expect(res.status()).toBe(401)
   })
 
+  test("Gestion signature depuis devis: route admin protégée sans session", async ({ request }) => {
+    const res = await request.post("/api/gestion/sign/send-from-devis", {
+      data: { documentId: "doc_test" },
+    })
+    expect(res.status()).toBe(403)
+  })
+
+  test("Gestion création user depuis lead: route admin protégée sans session", async ({ request }) => {
+    const res = await request.post("/api/gestion/users/create-from-lead", {
+      data: { leadId: "lead_test" },
+    })
+    expect(res.status()).toBe(403)
+  })
+
+  test("Gestion création avenant: route admin protégée sans session", async ({ request }) => {
+    const res = await request.post("/api/gestion/avenants", {
+      data: {
+        userId: "user_test",
+        contractNumero: "CTR-TEST",
+        modifications: { primeAnnuelle: 1000 },
+      },
+    })
+    expect(res.status()).toBe(403)
+  })
+
+  test("Gestion création sinistre: route admin protégée sans session", async ({ request }) => {
+    const res = await request.post("/api/gestion/clients/user_test/sinistres", {
+      data: { dateSinistre: "2026-01-01" },
+    })
+    expect(res.status()).toBe(403)
+  })
+
   test("Devis calculate: JSON invalide rejeté en 400", async ({ request }) => {
     const res = await request.fetch("/api/devis/calculate", {
       method: "POST",

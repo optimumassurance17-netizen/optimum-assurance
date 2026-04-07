@@ -57,14 +57,59 @@ export async function POST(
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
     }
 
-    const body = await request.json()
-    const { dateSinistre, montantIndemnisation, description, userDocumentId } = body
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
+    }
+    const payload = body as Record<string, unknown>
+    const dateSinistreRaw = payload.dateSinistre
+    const montantIndemnisationRaw = payload.montantIndemnisation
+    const descriptionRaw = payload.description
+    const userDocumentIdRaw = payload.userDocumentId
 
+    const dateSinistre = typeof dateSinistreRaw === "string" ? dateSinistreRaw.trim() : ""
     if (!dateSinistre) {
       return NextResponse.json(
         { error: "La date du sinistre est requise" },
         { status: 400 }
       )
+    }
+    const parsedDate = new Date(dateSinistre)
+    if (Number.isNaN(parsedDate.getTime())) {
+      return NextResponse.json({ error: "dateSinistre invalide" }, { status: 400 })
+    }
+
+    const userDocumentId =
+      typeof userDocumentIdRaw === "string" ? userDocumentIdRaw.trim() : ""
+    const description =
+      descriptionRaw == null
+        ? null
+        : typeof descriptionRaw === "string"
+          ? descriptionRaw.trim() || null
+          : null
+
+    let montantIndemnisation: number | null = null
+    if (
+      montantIndemnisationRaw !== null &&
+      montantIndemnisationRaw !== undefined &&
+      montantIndemnisationRaw !== ""
+    ) {
+      const parsed =
+        typeof montantIndemnisationRaw === "number"
+          ? montantIndemnisationRaw
+          : Number(montantIndemnisationRaw)
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        return NextResponse.json(
+          { error: "montantIndemnisation invalide (nombre >= 0 attendu)" },
+          { status: 400 }
+        )
+      }
+      montantIndemnisation = parsed
     }
 
     if (userDocumentId) {
@@ -82,10 +127,9 @@ export async function POST(
     const sinistre = await prisma.sinistre.create({
       data: {
         userId,
-        dateSinistre: new Date(dateSinistre),
-        montantIndemnisation:
-          montantIndemnisation != null ? Number(montantIndemnisation) : null,
-        description: description?.trim() || null,
+        dateSinistre: parsedDate,
+        montantIndemnisation,
+        description,
         userDocumentId: userDocumentId || null,
       },
       include: {
