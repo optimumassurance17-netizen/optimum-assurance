@@ -5,39 +5,46 @@ import Link from "next/link"
 import { useSession } from "next-auth/react"
 import type { ReactNode } from "react"
 
+type GateResolved = { userId: string; useEspaceClientOnly: boolean }
+
 /**
  * Si le client est connecté et qu’une 1ère demande DO est déjà connue, on oriente vers le questionnaire d’étude (espace client).
  */
 export function DevisDommageOuvrageClientGate({ children }: { children: ReactNode }) {
-  const { status } = useSession()
-  const [mode, setMode] = useState<"load" | "public" | "redirect">("load")
+  const { status, data: session } = useSession()
+  const userId = session?.user?.id ?? null
+  const [resolved, setResolved] = useState<GateResolved | null>(null)
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      setMode("public")
-      return
-    }
-    if (status !== "authenticated") return
+    if (status !== "authenticated" || !userId) return
     let cancelled = false
     ;(async () => {
       try {
         const res = await fetch("/api/client/do-questionnaire")
         const j = (await res.json().catch(() => ({}))) as { useEspaceClientOnly?: boolean }
-        if (!cancelled) setMode(j.useEspaceClientOnly ? "redirect" : "public")
+        if (!cancelled) setResolved({ userId, useEspaceClientOnly: Boolean(j.useEspaceClientOnly) })
       } catch {
-        if (!cancelled) setMode("public")
+        if (!cancelled) setResolved({ userId, useEspaceClientOnly: false })
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [status])
+  }, [status, userId])
 
-  if (mode === "load") {
+  if (status === "loading") {
     return <p className="text-black py-8">Chargement…</p>
   }
 
-  if (mode === "redirect") {
+  if (status === "unauthenticated") {
+    return <>{children}</>
+  }
+
+  if (!userId || !resolved || resolved.userId !== userId) {
+    return <p className="text-black py-8">Chargement…</p>
+  }
+
+  if (resolved.useEspaceClientOnly) {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-black shadow-sm">
         <h2 className="font-bold text-lg mb-2 text-[#0a0a0a]">Suite de votre dossier dommage ouvrage</h2>
