@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { buildSitemapEntries, minimalSitemapEntries, type SitemapEntry } from "@/lib/sitemap/build-sitemap-entries"
 
 export const runtime = "nodejs"
 
@@ -8,6 +7,13 @@ export const runtime = "nodejs"
  * avec ancien code (ex. 500) après déploiement.
  */
 export const dynamic = "force-dynamic"
+
+type SitemapEntry = {
+  url: string
+  lastModified: Date
+  changeFrequency?: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never"
+  priority?: number
+}
 
 function escapeXml(unsafe: string): string {
   return unsafe
@@ -35,12 +41,24 @@ ${entries.map(entryToXml).join("\n")}
 </urlset>`
 }
 
+function localMinimalEntries(): SitemapEntry[] {
+  return [
+    {
+      url: "https://www.optimum-assurance.fr",
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 1,
+    },
+  ]
+}
+
 /**
  * Génération XML explicite : évite les 500 du générateur Metadata sitemap Next (gros tableaux / ISR).
  * En cas d’erreur, renvoie toujours 200 + sitemap minimal pour ne pas casser la GSC.
  */
 export async function GET() {
   try {
+    const { buildSitemapEntries } = await import("@/lib/sitemap/build-sitemap-entries")
     const entries = await buildSitemapEntries()
     const xml = renderXml(entries)
     return new NextResponse(xml, {
@@ -52,7 +70,7 @@ export async function GET() {
     })
   } catch (e) {
     console.error("[sitemap.xml] GET:", e)
-    const xml = renderXml(minimalSitemapEntries())
+    const xml = renderXml(localMinimalEntries())
     return new NextResponse(xml, {
       status: 200,
       headers: {
