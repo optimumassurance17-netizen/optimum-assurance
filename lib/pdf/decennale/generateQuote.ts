@@ -10,6 +10,7 @@ import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 import { DEVOIR_CONSEIL_TEXT, DEVOIR_CONSEIL_USEFUL_LINKS_LINE } from "@/lib/devoir-conseil"
+import { DECENNALE_CLAUSE_BLOCS } from "@/lib/decennale-legal-clauses"
 
 const QUOTE_VALIDITY_DAYS = 30
 
@@ -205,6 +206,28 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
     font,
     9,
     12
+  )
+  y2 -= 8
+  y2 = drawWrappedText(
+    page2,
+    `${DECENNALE_CLAUSE_BLOCS.exclusionsResponsabiliteCivileDecennaleTitre} ${DECENNALE_CLAUSE_BLOCS.exclusionsResponsabiliteCivileDecennaleContenu}`,
+    PDF_PAGE.marginX,
+    y2,
+    PDF_PAGE.contentWidth,
+    font,
+    8,
+    11
+  )
+  y2 -= 8
+  y2 = drawWrappedText(
+    page2,
+    `${DECENNALE_CLAUSE_BLOCS.decheanceGarantieTitre} ${DECENNALE_CLAUSE_BLOCS.decheanceGarantieContenu}`,
+    PDF_PAGE.marginX,
+    y2,
+    PDF_PAGE.contentWidth,
+    font,
+    8,
+    11
   )
   y2 -= 8
   y2 = drawWrappedText(

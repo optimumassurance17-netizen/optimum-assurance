@@ -3,6 +3,7 @@ import { Document, Page, Text, View } from "@react-pdf/renderer"
 import { pdfTheme, PdfBrandHeader } from "@/lib/pdf/react-pdf-brand"
 import { pdfLegalLinksLine } from "@/lib/pdf-legal-links"
 import { DEVOIR_CONSEIL_TEXT_BY_PRODUCT } from "@/lib/devoir-conseil"
+import { DECENNALE_CUSTOM_LEGAL_CLAUSES } from "@/lib/decennale-legal-clauses"
 
 interface ContratPDFProps {
   numero: string
@@ -173,7 +174,16 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
         </View>
 
         <View style={pdfTheme.section}>
-          <Text style={pdfTheme.h3}>Article 10 - Devoir de conseil</Text>
+          <Text style={pdfTheme.h3}>Article 10 - Exclusions et déchéance de garantie</Text>
+          {DECENNALE_CUSTOM_LEGAL_CLAUSES.map((clause, idx) => (
+            <Text key={idx} style={pdfTheme.p}>
+              {clause}
+            </Text>
+          ))}
+        </View>
+
+        <View style={pdfTheme.section}>
+          <Text style={pdfTheme.h3}>Article 11 - Devoir de conseil</Text>
           <Text style={pdfTheme.p}>{devoirConseil.contenu}</Text>
         </View>
 

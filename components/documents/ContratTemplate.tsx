@@ -3,6 +3,7 @@
 import { SITE_URL } from "@/lib/site-url"
 import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 import { getDevoirConseilContent } from "@/lib/devoir-conseil"
+import { DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSE_TEXT } from "@/lib/decennale-legal-clauses"
 
 interface ContratTemplateProps {
   numero: string
@@ -137,7 +138,14 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
         </section>
 
         <section>
-          <h3 className="font-semibold mb-2">Article 8 - Devoir de conseil</h3>
+          <h3 className="font-semibold mb-2">Article 8 - Exclusions et déchéance de garantie</h3>
+          <p className="text-xs text-[#171717] whitespace-pre-line">
+            {DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSE_TEXT}
+          </p>
+        </section>
+
+        <section>
+          <h3 className="font-semibold mb-2">Article 9 - Devoir de conseil</h3>
           <p>{devoirConseil.contenu}</p>
           <p className="mt-2">
             Références :{" "}

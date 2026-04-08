@@ -11,6 +11,7 @@ import {
 } from "@/lib/nomenclature-activites"
 import { SITE_URL } from "@/lib/site-url"
 import { DEVOIR_CONSEIL_TEXT } from "@/lib/devoir-conseil"
+import { DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSES } from "@/lib/decennale-legal-clauses"
 
 interface DevisTemplateProps {
   numero: string
@@ -209,6 +210,15 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
           ))}
         </ul>
         <p className="text-xs text-[#171717] italic">{TRAVAUX_ACCESSOIRES_NOTE}</p>
+      </div>
+
+      <div className="mb-6">
+        <h3 className="font-bold text-black mb-2 uppercase text-xs">
+          Clauses exclusions et déchéance (décennale)
+        </h3>
+        <p className="text-xs text-[#171717] leading-relaxed whitespace-pre-wrap">
+          {DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSES}
+        </p>
       </div>
 
       {/* Prime annuelle */}
