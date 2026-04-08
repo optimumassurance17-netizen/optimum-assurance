@@ -76,6 +76,10 @@ export default function CreerComptePage() {
           password,
           raisonSociale: data.raisonSociale,
           siret: data.siret,
+          adresse: data.adresse,
+          codePostal: data.codePostal,
+          ville: data.ville,
+          telephone: data.telephone,
         }),
       })
 

@@ -3,10 +3,27 @@ import { hash } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 
+function optionalTrimmed(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const normalized = value.trim()
+  return normalized.length > 0 ? normalized : null
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { email, password, raisonSociale, siret } = body
+    const bodyRaw: unknown = await request.json()
+    if (!bodyRaw || typeof bodyRaw !== "object" || Array.isArray(bodyRaw)) {
+      return NextResponse.json({ error: "Corps JSON invalide" }, { status: 400 })
+    }
+    const body = bodyRaw as Record<string, unknown>
+    const email = optionalTrimmed(body.email)?.toLowerCase() ?? ""
+    const password = typeof body.password === "string" ? body.password : ""
+    const raisonSociale = optionalTrimmed(body.raisonSociale)
+    const siret = optionalTrimmed(body.siret)
+    const adresse = optionalTrimmed(body.adresse)
+    const codePostal = optionalTrimmed(body.codePostal)
+    const ville = optionalTrimmed(body.ville)
+    const telephone = optionalTrimmed(body.telephone)
 
     if (!email || !password || password.length < 8) {
       return NextResponse.json(
@@ -29,14 +46,18 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.create({
       data: {
-        email: email.toLowerCase(),
+        email,
         passwordHash,
-        raisonSociale: raisonSociale || null,
-        siret: siret || null,
+        raisonSociale,
+        siret,
+        adresse,
+        codePostal,
+        ville,
+        telephone,
       },
     })
 
-    const template = EMAIL_TEMPLATES.bienvenue(raisonSociale || user.email)
+    const template = EMAIL_TEMPLATES.bienvenue(raisonSociale ?? user.email)
     await sendEmail({
       to: user.email,
       subject: template.subject,
