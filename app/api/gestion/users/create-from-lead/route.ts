@@ -36,7 +36,12 @@ export async function POST(request: NextRequest) {
     const payload = body as { leadId?: unknown; leadType?: unknown }
     const leadId = typeof payload.leadId === "string" ? payload.leadId.trim() : ""
     const leadTypeRaw = typeof payload.leadType === "string" ? payload.leadType.trim().toLowerCase() : ""
-    const leadType = leadTypeRaw === "rc_fabriquant" ? "rc_fabriquant" : "dommage_ouvrage"
+    const isRcFabLeadType =
+      leadTypeRaw === "rc_fabriquant" ||
+      leadTypeRaw === "rc-fabriquant" ||
+      leadTypeRaw === "rc fabricant" ||
+      leadTypeRaw === "rc_fabricant"
+    const leadType = isRcFabLeadType ? "rc_fabriquant" : "dommage_ouvrage"
 
     if (!leadId) {
       return NextResponse.json({ error: "leadId requis" }, { status: 400 })

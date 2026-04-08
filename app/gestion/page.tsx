@@ -2535,8 +2535,8 @@ export default function GestionPage() {
             <h2 className="text-lg font-semibold text-white mb-2">Demandes RC Fabriquant</h2>
             <p className="text-sm text-gray-200 mb-4 max-w-3xl">
               Statut et notes sont visibles uniquement en gestion. Aucun refus ni tarif n’est communiqué automatiquement au
-              prospect — tout passe par votre action. Vous pouvez maintenant créer un dossier étude natif (devis + contrat
-              + attestation selon paiement) directement depuis cette table.
+              prospect — tout passe par votre action. Vous pouvez créer l’espace client puis lancer un dossier étude natif
+              (devis + contrat + attestation selon paiement) directement depuis cette table.
             </p>
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[720px]">
@@ -2660,7 +2660,7 @@ export default function GestionPage() {
                               title={
                                 matchedUser
                                   ? "Créer un devis étude RC Fabriquant avec signature électronique"
-                                  : "Créez d’abord le compte client"
+                                  : "Créez d’abord l’espace client"
                               }
                               onClick={() => {
                                 if (!matchedUser) return
@@ -2734,7 +2734,7 @@ export default function GestionPage() {
                                     const json = await readResponseJson<{ error?: string; email?: string }>(res)
                                     if (!res.ok) throw new Error(json.error || "Erreur")
                                     setToast({
-                                      message: `Compte créé pour ${json.email || d.email}`,
+                                      message: `Espace client créé pour ${json.email || d.email}`,
                                       type: "success",
                                     })
                                     const dashRes = await fetch("/api/gestion/dashboard")
@@ -2748,7 +2748,7 @@ export default function GestionPage() {
                                 }}
                                 className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-sky-500/70 text-sky-200 hover:bg-sky-900/30"
                               >
-                                Créer compte
+                                Créer espace client
                               </button>
                             )}
                           </div>
