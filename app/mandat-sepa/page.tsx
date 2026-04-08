@@ -159,6 +159,14 @@ export default function MandatSepaPage() {
           Renseignez l&apos;IBAN pour les <strong>prélèvements SEPA trimestriels</strong> (après le premier règlement par carte).
         </p>
 
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
+          <p className="text-sm text-blue-900 leading-relaxed">
+            <strong>Information importante :</strong> pour obtenir votre attestation rapidement, le{" "}
+            <strong>premier paiement doit être effectué par carte bancaire</strong> à l&apos;étape suivante.
+            Les prélèvements SEPA concernent ensuite les échéances trimestrielles restantes.
+          </p>
+        </div>
+
         <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-6">
           <h2 className="font-semibold text-black mb-3">Récapitulatif</h2>
           <dl className="grid gap-2 text-sm">
