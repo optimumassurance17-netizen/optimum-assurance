@@ -20,6 +20,10 @@
       "schedule": "0 12 * * *"
     },
     {
+      "path": "/api/cron/rappel-dossiers-incomplets",
+      "schedule": "30 12 * * *"
+    },
+    {
       "path": "/api/cron/sepa-trimestriel",
       "schedule": "0 7 * * *"
     }

@@ -239,6 +239,26 @@ interface DashboardData {
       createdAt: string
     }[]
   }[]
+  dashboardActions?: {
+    id: string
+    kind:
+      | "signature_pending"
+      | "approved_unpaid_contract"
+      | "decennale_lead_followup"
+      | "do_etude_pending"
+      | "rc_fabriquant_pending"
+    priority: "high" | "medium"
+    title: string
+    description: string
+    href: string
+    ageHours: number
+  }[]
+  dashboardActionsSummary?: {
+    total: number
+    high: number
+    medium: number
+    overdue72h: number
+  }
 }
 
 export default function GestionPage() {
@@ -1333,6 +1353,49 @@ export default function GestionPage() {
                 <p className="text-xs text-gray-200 mt-1">Tableau manuel + lien admin</p>
               </div>
             </section>
+
+            {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
+              <section id="actions-du-jour" className="scroll-mt-24 bg-[#252525] rounded-xl p-5 border border-amber-700/60">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <h2 className="text-lg font-semibold text-white">Actions du jour (automatique)</h2>
+                  <div className="text-xs text-gray-200 flex flex-wrap gap-2">
+                    <span className="px-2 py-1 rounded bg-red-900/40 text-red-200 border border-red-700/50">
+                      Urgent 72h+ : {data.dashboardActionsSummary.overdue72h}
+                    </span>
+                    <span className="px-2 py-1 rounded bg-amber-900/40 text-amber-200 border border-amber-700/50">
+                      Priorité haute : {data.dashboardActionsSummary.high}
+                    </span>
+                    <span className="px-2 py-1 rounded bg-blue-900/40 text-blue-200 border border-blue-700/50">
+                      Priorité moyenne : {data.dashboardActionsSummary.medium}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {(data.dashboardActions ?? []).map((a) => (
+                    <a
+                      key={a.id}
+                      href={a.href}
+                      className="block rounded-lg border border-gray-700 bg-[#1f1f1f] px-3 py-2 hover:border-[#2563eb] transition-colors"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${
+                            a.priority === "high"
+                              ? "bg-red-900/40 text-red-200 border border-red-700/50"
+                              : "bg-amber-900/40 text-amber-200 border border-amber-700/50"
+                          }`}
+                        >
+                          {a.priority === "high" ? "Haute" : "Moyenne"}
+                        </span>
+                        <span className="text-sm font-medium text-white">{a.title}</span>
+                        <span className="text-xs text-gray-400">{a.ageHours}h</span>
+                      </div>
+                      <p className="text-xs text-gray-300 mt-1">{a.description}</p>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
           </>
         )}
 
@@ -1899,7 +1962,7 @@ export default function GestionPage() {
 
         {/* Demandes d'étude approfondie - remise personnalisée */}
         {data?.devisEtudeLeads && data.devisEtudeLeads.length > 0 && (
-          <section id="demandes-etude" className="scroll-mt-24">
+          <section id="etudes-do" className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-4">Demandes d&apos;étude (remise personnalisée)</h2>
             <p className="text-sm text-gray-200 mb-4">
               Dossiers sinistres (&gt;1 sinistre) ou <strong className="text-gray-200">activité non listée</strong> (/etude/domaine). Faire une remise pour envoyer une proposition avec prime personnalisée.
@@ -2396,7 +2459,7 @@ export default function GestionPage() {
 
         {/* Demandes devis DO en attente */}
         {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
-          <section id="rc-fab-leads" className="scroll-mt-24">
+          <section id="rc-fabriquant-leads" className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-2">Demandes RC Fabriquant</h2>
             <p className="text-sm text-gray-200 mb-4 max-w-3xl">
               Statut et notes sont visibles uniquement en gestion. Aucun refus ni tarif n’est communiqué automatiquement au

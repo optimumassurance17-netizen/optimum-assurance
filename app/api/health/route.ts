@@ -23,6 +23,7 @@ function cronSecretConfigured(): boolean {
 const CRON_ROUTES = [
   "/api/cron/rappels-renouvellement",
   "/api/cron/rappel-devis-abandonne",
+  "/api/cron/rappel-dossiers-incomplets",
   "/api/cron/rappel-signatures-en-attente",
   "/api/cron/rappel-paiements-contrats",
   "/api/cron/sepa-trimestriel",

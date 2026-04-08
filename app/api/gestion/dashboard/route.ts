@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -282,6 +283,113 @@ export async function GET() {
       }
     })
 
+    const now = new Date()
+    const reminder24hMs = 24 * 60 * 60 * 1000
+    const overdue72hMs = 72 * 60 * 60 * 1000
+    type DashboardAction = {
+      id: string
+      kind:
+        | "signature_pending"
+        | "approved_unpaid_contract"
+        | "decennale_lead_followup"
+        | "do_etude_pending"
+        | "rc_fabriquant_pending"
+      priority: "high" | "medium"
+      title: string
+      description: string
+      href: string
+      ageHours: number
+    }
+    const dashboardActions: DashboardAction[] = []
+
+    for (const p of pendingSignaturesRaw) {
+      const ageMs = now.getTime() - p.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `sig-${p.signatureRequestId}`,
+        kind: "signature_pending",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Signature en attente",
+        description: `Référence ${p.contractNumero} — ${ageHours}h`,
+        href: "#signatures-attente",
+        ageHours,
+      })
+    }
+
+    for (const c of insuranceContractsList) {
+      if (c.status !== "approved" || c.paidAt) continue
+      const ageMs = now.getTime() - c.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `ctr-${c.id}`,
+        kind: "approved_unpaid_contract",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Contrat approuvé non payé",
+        description: `${c.contractNumber} (${c.productType}) — ${ageHours}h`,
+        href: "#contrats-plateforme",
+        ageHours,
+      })
+    }
+
+    for (const d of devisLeads) {
+      if (d.rappelSentAt) continue
+      const ageMs = now.getTime() - d.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `lead-dec-${d.id}`,
+        kind: "decennale_lead_followup",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Lead devis décennale à relancer",
+        description: `${d.email} — ${ageHours}h`,
+        href: "#leads-decennale",
+        ageHours,
+      })
+    }
+
+    for (const e of devisEtudeLeads) {
+      if (e.statut !== "pending") continue
+      const ageMs = now.getTime() - e.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `lead-etude-${e.id}`,
+        kind: "do_etude_pending",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Demande étude à traiter",
+        description: `${e.email} — ${ageHours}h`,
+        href: "#etudes-do",
+        ageHours,
+      })
+    }
+
+    for (const l of devisRcFabriquantLeads) {
+      if (normalizeRcFabriquantLeadStatut(l.statut) !== "a_traiter") continue
+      const ageMs = now.getTime() - l.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `lead-rcfab-${l.id}`,
+        kind: "rc_fabriquant_pending",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Lead RC Fabriquant à traiter",
+        description: `${l.email} — ${ageHours}h`,
+        href: "#rc-fabriquant-leads",
+        ageHours,
+      })
+    }
+
+    dashboardActions.sort((a, b) => b.ageHours - a.ageHours)
+    const dashboardActionsLimited = dashboardActions.slice(0, 20)
+    const dashboardActionsSummary = {
+      total: dashboardActionsLimited.length,
+      high: dashboardActionsLimited.filter((a) => a.priority === "high").length,
+      medium: dashboardActionsLimited.filter((a) => a.priority === "medium").length,
+      overdue72h: dashboardActionsLimited.filter((a) => a.ageHours >= 72).length,
+    }
+
     return NextResponse.json({
       users: usersWithDoFlags,
       documents,
@@ -299,6 +407,8 @@ export async function GET() {
       pendingSignatures,
       insuranceContractsCount,
       insuranceContracts: insuranceContractsList,
+      dashboardActions: dashboardActionsLimited,
+      dashboardActionsSummary,
     })
   } catch (error) {
     console.error("Erreur dashboard gestion:", error)

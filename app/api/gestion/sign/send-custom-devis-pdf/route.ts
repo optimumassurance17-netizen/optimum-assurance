@@ -13,6 +13,7 @@ import {
   normalizeRcFabPeriodicity,
   serializeRcFabDossierConfig,
 } from "@/lib/rc-fabriquant-dossier-config"
+import { runSignatureQualityGates, type SignatureQualityGatePayload } from "@/lib/signature-quality-gates"
 
 export const runtime = "nodejs"
 
@@ -171,6 +172,25 @@ export async function POST(request: NextRequest) {
       ...(devisReference ? { devisReference } : {}),
       produitLabel,
       afterSignNextPath,
+    }
+    const qualityPayload: SignatureQualityGatePayload = {
+      flow: "custom_pdf",
+      clientLabel: user.raisonSociale || user.email,
+      reference: devisReference || provisionalNumero,
+      email: user.email,
+      annualTtc: dossierConfig.primeAnnuelleTtc,
+      periodicity: dossierConfig.periodicite,
+      hasPdfFile: true,
+    }
+    const qualityIssues = runSignatureQualityGates(qualityPayload)
+    if (qualityIssues.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Pré-contrôle qualité bloquant : corrigez le dossier avant envoi signature.",
+          issues: qualityIssues,
+        },
+        { status: 400 }
+      )
     }
 
     await prisma.pendingSignature.create({
