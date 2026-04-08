@@ -16,15 +16,18 @@ import {
 } from "@/lib/legal-branding"
 import { SITE_URL } from "@/lib/site-url"
 import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
-import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
-import { DEVOIR_CONSEIL_TEXT_BY_PRODUCT } from "@/lib/devoir-conseil"
 import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
-import { drawAttestationStampBottomRight, loadAttestationStampImage } from "@/lib/pdf/shared/attestationStamp"
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
 import { primeTrimestrielle } from "@/lib/mollie-sepa"
-import { FRANCHISE_RC_FABRIQUANT_EUR } from "@/lib/rc-fabriquant-underwriting"
+import {
+  generateRcFabBatteriesCertificatePdf,
+  generateRcFabBatteriesFicPdf,
+  generateRcFabBatteriesPolicyPdf,
+  generateRcFabBatteriesQuotePdf,
+} from "@/lib/pdf/rc-fabriquant/generateDossier"
+import { hasRcFabDossierConfig, readRcFabDossierConfig } from "@/lib/rc-fabriquant-dossier-config"
 
 /** Contrat actif : PDF devis+CP en version « contrat » + mentions légales complémentaires. */
 function platformQuotePolicyBundleMode(c: InsuranceContract): "proposition" | "contrat" {
@@ -32,12 +35,15 @@ function platformQuotePolicyBundleMode(c: InsuranceContract): "proposition" | "c
 }
 
 function contractToInsuranceData(c: InsuranceContract): InsuranceData {
+  if (c.productType !== "decennale" && c.productType !== "do") {
+    throw new Error("INSURANCE_DATA_UNSUPPORTED_PRODUCT")
+  }
   const activities = parseActivitiesJson(c.activitiesJson)
   const exclusions = parseExclusionsJson(c.exclusionsJson)
   const vf = c.validFrom ?? c.paidAt ?? c.createdAt
   const vu = c.validUntil ?? c.createdAt
   return {
-    productType: c.productType === "do" ? "do" : "decennale",
+    productType: c.productType,
     clientName: c.clientName,
     siret: c.siret ?? undefined,
     address: c.address,
@@ -137,7 +143,7 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
   return pdf.save()
 }
 
-export type DocPdfType = "quote" | "policy" | "certificate" | "invoice" | "schedule"
+export type DocPdfType = "quote" | "fic" | "policy" | "certificate" | "invoice" | "schedule"
 
 async function loadSignedQuotePdfBytes(storageKey: string): Promise<Uint8Array> {
   const supabase = createSupabaseServiceClient()
@@ -151,138 +157,82 @@ async function loadSignedQuotePdfBytes(storageKey: string): Promise<Uint8Array> 
   return new Uint8Array(await data.arrayBuffer())
 }
 
-/** CP synthétique : le contrat détaillé est le PDF devis signé par le client. */
-async function generateRcFabPolicyPlaceholderPdf(c: InsuranceContract): Promise<Uint8Array> {
-  const pdf = await PDFDocument.create()
-  const font = await pdf.embedFont(StandardFonts.Helvetica)
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
-  const page = pdf.addPage([595.28, 841.89])
-  const accelLogo = await loadAccelerantLogoImage(pdf)
-  let y = 780
-  if (accelLogo) {
-    const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
-    y = imgBottom - 22
-  }
-  page.drawText(sanitizeForPdfLib("Conditions — RC Fabriquant"), { x: 50, y, size: 16, font: bold })
-  y -= 28
-  page.drawText(sanitizeForPdfLib(`Contrat ${c.contractNumber}`), { x: 50, y, size: 11, font: bold })
-  y -= 20
-  const p1 =
-    "Les stipulations contractuelles applicables sont celles du document de proposition / devis que vous avez signé électroniquement. Ce document est disponible dans votre espace client sous « Devis PDF »."
-  page.drawText(sanitizeForPdfLib(p1), { x: 50, y, size: 10, font, maxWidth: 500 })
-  y -= 44
-  page.drawText(sanitizeForPdfLib(`Prime convenue : ${formatEuro(c.premium)} TTC.`), { x: 50, y, size: 10, font })
-  y -= 18
-  page.drawText(
-    sanitizeForPdfLib(`Franchise contractuelle : ${FRANCHISE_RC_FABRIQUANT_EUR.toLocaleString("fr-FR")} €.`),
-    { x: 50, y, size: 10, font }
-  )
-  y -= 18
-  page.drawText(
-    sanitizeForPdfLib(
-      `Protection juridique : ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € de garantie.`
-    ),
-    { x: 50, y, size: 10, font }
-  )
-  y -= 18
-  page.drawText(sanitizeForPdfLib(`Assuré : ${c.clientName}`), { x: 50, y, size: 10, font })
-  y -= 18
-  page.drawText(sanitizeForPdfLib(`Siège / adresse déclarée : ${c.address}`), { x: 50, y, size: 10, font, maxWidth: 500 })
-  y -= 36
-  const devoirConseilRcFab = DEVOIR_CONSEIL_TEXT_BY_PRODUCT.rc_fabriquant
-  page.drawText(sanitizeForPdfLib("Devoir de conseil :"), { x: 50, y, size: 10, font: bold })
-  y -= 14
-  page.drawText(sanitizeForPdfLib(devoirConseilRcFab.contenu), { x: 50, y, size: 9, font, maxWidth: 500, lineHeight: 12 })
-  y -= 46
-  page.drawText(
-    sanitizeForPdfLib(
-      `Références : ${SITE_URL}${devoirConseilRcFab.lienCgv} — ${SITE_URL}${devoirConseilRcFab.lienAttestations} — ${SITE_URL}${devoirConseilRcFab.lienFaq}`
-    ),
-    { x: 50, y, size: 8, font, maxWidth: 500 }
-  )
-  y -= 20
-  page.drawText(sanitizeForPdfLib(LEGAL_DELEGATION_MANDATORY), { x: 50, y: 72, size: 8, font: bold, maxWidth: 500 })
-  page.drawText(sanitizeForPdfLib(`ORIAS ${ORIAS_NUMBER}`), { x: 50, y: 56, size: 8, font })
-  return pdf.save()
-}
-
-/** Attestation courte après encaissement (complément au devis signé). */
-async function generateRcFabAttestationPdf(c: InsuranceContract): Promise<Uint8Array> {
-  const pdf = await PDFDocument.create()
-  const font = await pdf.embedFont(StandardFonts.Helvetica)
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
-  const page = pdf.addPage([595.28, 841.89])
-  const accelLogo = await loadAccelerantLogoImage(pdf)
-  let y = 780
-  if (accelLogo) {
-    const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
-    y = imgBottom - 22
-  }
-  page.drawText(sanitizeForPdfLib("ATTESTATION D’ASSURANCE"), { x: 50, y, size: 16, font: bold })
-  y -= 28
-  page.drawText(sanitizeForPdfLib("Responsabilité civile fabricant"), { x: 50, y, size: 12, font: bold })
-  y -= 24
-  page.drawText(sanitizeForPdfLib(`Contrat ${c.contractNumber}`), { x: 50, y, size: 10, font })
-  y -= 18
-  page.drawText(sanitizeForPdfLib(`Assuré : ${c.clientName}`), { x: 50, y, size: 10, font })
-  y -= 16
-  page.drawText(sanitizeForPdfLib(`Adresse : ${c.address}`), { x: 50, y, size: 10, font, maxWidth: 500 })
-  y -= 28
+function toRcFabDossierData(c: InsuranceContract) {
+  const cfg = readRcFabDossierConfig(c.exclusionsJson, c.premium, c.contractNumber)
   const vf = c.validFrom ?? c.paidAt ?? c.createdAt
   const vu = c.validUntil ?? c.createdAt
-  page.drawText(
-    sanitizeForPdfLib(
-      `Garantie souscrite — effet au paiement enregistré. Période : du ${vf.toLocaleDateString("fr-FR")} au ${vu.toLocaleDateString("fr-FR")} (sous réserve des conditions du devis signé).`
-    ),
-    { x: 50, y, size: 10, font, maxWidth: 500 }
-  )
-  y -= 40
-  page.drawText(sanitizeForPdfLib("Vérification : " + SITE_URL + "/verify/" + encodeURIComponent(c.contractNumber)), {
-    x: 50,
-    y,
-    size: 9,
-    font,
-    maxWidth: 500,
-  })
-  y -= 36
-  page.drawText(sanitizeForPdfLib(LEGAL_DELEGATION_MANDATORY), { x: 50, y: 72, size: 8, font: bold, maxWidth: 500 })
-  const stamp = await loadAttestationStampImage(pdf)
-  if (stamp) drawAttestationStampBottomRight(page, stamp)
-  return pdf.save()
+  return {
+    nomSociete: c.clientName,
+    siret: c.siret ?? undefined,
+    adresse: c.address,
+    activite: cfg.activite,
+    dateEffet: vf.toLocaleDateString("fr-FR"),
+    dateEcheance: vu.toLocaleDateString("fr-FR"),
+    referenceContrat: c.contractNumber,
+    config: cfg,
+  } as const
 }
 
 export async function renderContractPdf(c: InsuranceContract, docType: DocPdfType): Promise<Uint8Array> {
-  const data = contractToInsuranceData(c)
   if (docType === "schedule") {
+    if (c.productType !== "decennale" && c.productType !== "rc_fabriquant") {
+      throw new Error("DOC_NOT_AVAILABLE_FOR_PRODUCT")
+    }
     return generateQuarterlyScheduleInsurancePdf(c)
   }
   if (docType === "invoice") {
     return generateSimpleInvoicePdf(c)
   }
+  if (docType === "fic") {
+    if (c.productType !== "rc_fabriquant") {
+      throw new Error("DOC_NOT_AVAILABLE_FOR_PRODUCT")
+    }
+    return generateRcFabBatteriesFicPdf(toRcFabDossierData(c))
+  }
   if (docType === "quote") {
-    if (c.productType === "rc_fabriquant" && c.signedQuoteStorageKey?.trim()) {
-      return loadSignedQuotePdfBytes(c.signedQuoteStorageKey.trim())
+    if (c.productType === "rc_fabriquant") {
+      if (!hasRcFabDossierConfig(c.exclusionsJson) && c.signedQuoteStorageKey?.trim()) {
+        return loadSignedQuotePdfBytes(c.signedQuoteStorageKey.trim())
+      }
+      return generateRcFabBatteriesQuotePdf(toRcFabDossierData(c))
     }
     if (c.productType === "do") {
+      const data = contractToInsuranceData(c)
       return generateDOQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
     }
-    return generateDecennaleQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
+    if (c.productType === "decennale") {
+      const data = contractToInsuranceData(c)
+      return generateDecennaleQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
+    }
+    throw new Error("UNKNOWN_PRODUCT_TYPE")
   }
   if (docType === "policy") {
-    if (c.productType === "rc_fabriquant") return generateRcFabPolicyPlaceholderPdf(c)
+    if (c.productType === "rc_fabriquant") {
+      return generateRcFabBatteriesPolicyPdf(toRcFabDossierData(c))
+    }
     if (c.productType === "do") {
+      const data = contractToInsuranceData(c)
       return generateDOQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
     }
-    return generateDecennaleQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
+    if (c.productType === "decennale") {
+      const data = contractToInsuranceData(c)
+      return generateDecennaleQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
+    }
+    throw new Error("UNKNOWN_PRODUCT_TYPE")
   }
   if (docType === "certificate") {
-    const cert = toCertificateData(c)
-    if (!cert.paymentConfirmed || !cert.insurerValidated) {
+    if (!c.paidAt || !c.insurerValidatedAt) {
       throw new Error("CERTIFICATE_NOT_ALLOWED")
     }
-    if (c.productType === "rc_fabriquant") return generateRcFabAttestationPdf(c)
+    if (c.productType === "rc_fabriquant") {
+      return generateRcFabBatteriesCertificatePdf(toRcFabDossierData(c))
+    }
+    const cert = toCertificateData(c)
+    if (c.productType === "decennale") {
+      return generateDecennaleCertificate(cert)
+    }
     if (c.productType === "do") return generateDOCertificate(cert)
-    return generateDecennaleCertificate(cert)
+    throw new Error("UNKNOWN_PRODUCT_TYPE")
   }
   throw new Error("UNKNOWN_DOC_TYPE")
 }

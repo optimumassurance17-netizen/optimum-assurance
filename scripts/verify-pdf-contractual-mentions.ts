@@ -18,6 +18,12 @@ const COMMON_MENTIONS: MentionCheck[] = [
   { label: "mention devoir de conseil", regex: /devoir\s+de\s+conseil/i },
 ]
 
+const RC_FAB_MENTIONS: MentionCheck[] = [
+  { label: "mention protection juridique", regex: /protection\s+juridique/i },
+  { label: "montant protection juridique 20 000", regex: /20[\s\u00a0\u202f]*000/i },
+  { label: "mention devoir de conseil", regex: /devoir\s+de\s+conseil/i },
+]
+
 function normalizeExtractedPdfText(input: string): string {
   return input
     .replace(/\r/g, "\n")
@@ -107,14 +113,17 @@ async function main(): Promise<void> {
   const decQuotePolicyPdf = await generateDecennaleQuotePolicyBundle(sampleDecennaleData(), "proposition")
   const doQuotePolicyPdf = await generateDOQuotePolicyBundle(sampleDoData(), "proposition")
   const rcFabPolicyPdf = await renderContractPdf(sampleRcFabContract(), "policy")
+  const rcFabFicPdf = await renderContractPdf(sampleRcFabContract(), "fic")
 
   const decText = await extractPdfText(decQuotePolicyPdf)
   const doText = await extractPdfText(doQuotePolicyPdf)
   const rcFabText = await extractPdfText(rcFabPolicyPdf)
+  const rcFabFicText = await extractPdfText(rcFabFicPdf)
 
   assertMentions(decText, "devis+conditions particulières décennale", COMMON_MENTIONS)
   assertMentions(doText, "devis+conditions particulières dommage-ouvrage", COMMON_MENTIONS)
-  assertMentions(rcFabText, "conditions RC Fabriquant", COMMON_MENTIONS)
+  assertMentions(rcFabText, "conditions RC Fabriquant", RC_FAB_MENTIONS)
+  assertMentions(rcFabFicText, "FIC RC Fabriquant", RC_FAB_MENTIONS)
 
   console.log("OK: Mentions contractuelles PDF conformes (devoir de conseil + protection juridique).")
 }

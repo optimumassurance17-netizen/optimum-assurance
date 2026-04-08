@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { renderToBuffer } from "@react-pdf/renderer"
 import React from "react"
@@ -7,11 +7,40 @@ import { prisma } from "@/lib/prisma"
 import { DocumentsCombinedPDF } from "@/components/pdf/DocumentsCombinedPDF"
 import { qrCodePngDataUri } from "@/lib/qr-pdf"
 
-export async function GET() {
+type AssuranceFilter = "decennale" | "do" | "rc_fabriquant"
+
+const DOC_TYPES_BY_ASSURANCE: Record<AssuranceFilter, Set<string>> = {
+  decennale: new Set([
+    "devis",
+    "contrat",
+    "attestation",
+    "attestation_non_sinistralite",
+    "facture_decennale",
+    "avenant",
+  ]),
+  do: new Set(["devis_do", "attestation_do", "facture_do"]),
+  // RC Fabriquant passe principalement par les PDFs de contrats plateforme (/api/contracts/:id/pdf/*).
+  rc_fabriquant: new Set(),
+}
+
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const assurance = searchParams.get("assurance")
+    if (
+      assurance !== "decennale" &&
+      assurance !== "do" &&
+      assurance !== "rc_fabriquant"
+    ) {
+      return NextResponse.json(
+        { error: "Paramètre assurance requis: decennale, do ou rc_fabriquant" },
+        { status: 400 }
+      )
     }
 
     const documents = await prisma.document.findMany({
@@ -20,14 +49,21 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     })
 
-    if (documents.length === 0) {
-      return NextResponse.json({ error: "Aucun document à exporter" }, { status: 400 })
+    const allowedTypes = DOC_TYPES_BY_ASSURANCE[assurance]
+    const filteredDocuments = documents.filter((doc) => allowedTypes.has(doc.type))
+
+    if (filteredDocuments.length === 0) {
+      const message =
+        assurance === "rc_fabriquant"
+          ? "Aucun document exportable RC Fabriquant sur ce flux (utilisez les PDFs du contrat plateforme)."
+          : "Aucun document à exporter pour cette assurance."
+      return NextResponse.json({ error: message }, { status: 400 })
     }
 
     const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "")
 
     const docsWithData = await Promise.all(
-      documents.map(async (doc) => {
+      filteredDocuments.map(async (doc) => {
         const data = JSON.parse(doc.data) as Record<string, unknown>
         if (doc.type === "devis_do" && doc.user) {
           data.raisonSociale = doc.user.raisonSociale ?? data.raisonSociale
@@ -58,7 +94,7 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- renderToBuffer attend un Document react-pdf
     const pdfBuffer = await renderToBuffer(pdfElement as any)
 
-    const filename = `documents-optimum-${new Date().toISOString().slice(0, 10)}.pdf`
+    const filename = `documents-optimum-${assurance}-${new Date().toISOString().slice(0, 10)}.pdf`
 
     return new NextResponse(Buffer.from(pdfBuffer), {
       status: 200,

@@ -160,18 +160,20 @@ export default async function VerifyByContractNumberPage({
     )
   }
 
-  const document = await prisma.document.findFirst({
+  const fallbackDocuments = await prisma.document.findMany({
     where: {
       numero: contractNumber,
       type: { in: ["attestation", "attestation_do"] },
       verificationToken: { not: null },
     },
+    orderBy: { createdAt: "desc" },
     select: { verificationToken: true },
+    take: 2,
   })
 
-  if (!document?.verificationToken) {
+  if (fallbackDocuments.length !== 1 || !fallbackDocuments[0]?.verificationToken) {
     notFound()
   }
 
-  redirect(`/v/${document.verificationToken}`)
+  redirect(`/v/${fallbackDocuments[0].verificationToken}`)
 }

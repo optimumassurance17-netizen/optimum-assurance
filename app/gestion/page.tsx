@@ -310,6 +310,8 @@ export default function GestionPage() {
   const [customDevisUserFilter, setCustomDevisUserFilter] = useState("")
   const [customDevisUserId, setCustomDevisUserId] = useState("")
   const [customDevisPrime, setCustomDevisPrime] = useState("")
+  const [customDevisPrimeHt, setCustomDevisPrimeHt] = useState("")
+  const [customDevisPeriodicity, setCustomDevisPeriodicity] = useState("trimestriel")
   const [customDevisRef, setCustomDevisRef] = useState("")
   const [customDevisLabel, setCustomDevisLabel] = useState("RC Fabriquant — proposition")
   const [customDevisNextPath, setCustomDevisNextPath] = useState("/espace-client")
@@ -1139,9 +1141,30 @@ export default function GestionPage() {
                     step="0.01"
                     value={customDevisPrime}
                     onChange={(e) => setCustomDevisPrime(e.target.value)}
-                    placeholder="ex. 1200"
+                    placeholder="ex. 2400 (annuel TTC)"
                     className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
                   />
+                  <label className="text-sm text-gray-300">Prime annuelle HT (€) — optionnel</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={customDevisPrimeHt}
+                    onChange={(e) => setCustomDevisPrimeHt(e.target.value)}
+                    placeholder="ex. 2000"
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                  />
+                  <label className="text-sm text-gray-300">Échéancier RC Fabriquant</label>
+                  <select
+                    value={customDevisPeriodicity}
+                    onChange={(e) => setCustomDevisPeriodicity(e.target.value)}
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                  >
+                    <option value="mensuel">Mensuel (12 échéances)</option>
+                    <option value="trimestriel">Trimestriel (4 échéances)</option>
+                    <option value="semestriel">Semestriel (2 échéances)</option>
+                    <option value="annuel">Annuel (1 échéance)</option>
+                  </select>
                 </div>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
@@ -1184,9 +1207,16 @@ export default function GestionPage() {
                     setError("Sélectionnez un fichier PDF.")
                     return
                   }
-                  const prime = Number(customDevisPrime.replace(",", "."))
-                  if (!Number.isFinite(prime) || prime <= 0) {
-                    setError("Indiquez une prime TTC valide (> 0).")
+                  const primeTtcAnnuel = Number(customDevisPrime.replace(",", "."))
+                  if (!Number.isFinite(primeTtcAnnuel) || primeTtcAnnuel <= 0) {
+                    setError("Indiquez une prime annuelle TTC valide (> 0).")
+                    return
+                  }
+                  const primeHtTrim = customDevisPrimeHt.trim()
+                  const primeHtAnnuel =
+                    primeHtTrim.length > 0 ? Number(primeHtTrim.replace(",", ".")) : undefined
+                  if (primeHtAnnuel != null && (!Number.isFinite(primeHtAnnuel) || primeHtAnnuel <= 0)) {
+                    setError("Prime annuelle HT invalide.")
                     return
                   }
                   setCustomDevisSending(true)
@@ -1195,7 +1225,9 @@ export default function GestionPage() {
                     const fd = new FormData()
                     fd.append("pdf", file)
                     fd.append("userId", customDevisUserId)
-                    fd.append("primeTtc", String(prime))
+                    fd.append("primeTtc", String(primeTtcAnnuel))
+                    if (primeHtAnnuel != null) fd.append("primeHtAnnuel", String(primeHtAnnuel))
+                    fd.append("periodicite", customDevisPeriodicity)
                     if (customDevisRef.trim()) fd.append("devisReference", customDevisRef.trim())
                     if (customDevisLabel.trim()) fd.append("produitLabel", customDevisLabel.trim())
                     if (customDevisNextPath.trim()) fd.append("afterSignNextPath", customDevisNextPath.trim())

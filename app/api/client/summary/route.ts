@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const [documents, payments] = await Promise.all([
+    const [documents, payments, activeContractsWithCertificate] = await Promise.all([
       prisma.document.findMany({
         where: { userId: session.user.id },
         select: { type: true, status: true },
@@ -21,6 +21,15 @@ export async function GET() {
         where: { userId: session.user.id },
         select: { amount: true, status: true, paidAt: true },
         orderBy: { createdAt: "desc" },
+      }),
+      prisma.insuranceContract.count({
+        where: {
+          userId: session.user.id,
+          status: "active",
+          storedDocuments: {
+            some: { type: "certificate" },
+          },
+        },
       }),
     ])
 
@@ -33,7 +42,7 @@ export async function GET() {
 
     return NextResponse.json({
       documentsCount: documents.length,
-      attestationsCount: attestations.length,
+      attestationsCount: attestations.length + activeContractsWithCertificate,
       suspendedCount,
       paymentsCount: payments.length,
       paidTotal,

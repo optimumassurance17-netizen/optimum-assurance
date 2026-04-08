@@ -9,6 +9,12 @@ import { SITE_URL } from "@/lib/site-url"
 import { logContractAction } from "@/lib/insurance-contract-service"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { IDENTITY_DOC_KEYS, syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
+import {
+  buildRcFabDossierConfig,
+  normalizeRcFabPeriodicity,
+  serializeRcFabDossierConfig,
+  type RcFabPeriodicity,
+} from "@/lib/rc-fabriquant-dossier-config"
 
 export type PendingFinalizeOptions = {
   /** Objet fichier dans le bucket « signed » (PDF signé) — flux devis PDF personnalisé */
@@ -47,6 +53,26 @@ export async function applyPendingFinalize(
     }
 
     const contractNumber = await allocateNextContractNumber("rc_fabriquant")
+    const periodiciteRaw = typeof raw.periodicitePaiement === "string" ? raw.periodicitePaiement : undefined
+    const periodicite = normalizeRcFabPeriodicity(periodiciteRaw)
+    const primeAnnuelleTtcRaw = Number(raw.primeAnnuelleTtc)
+    const primeAnnuelleHtRaw = Number(raw.primeAnnuelleHt)
+    const primeAnnuelleTtc =
+      Number.isFinite(primeAnnuelleTtcRaw) && primeAnnuelleTtcRaw > 0
+        ? Math.round(primeAnnuelleTtcRaw * 100) / 100
+        : Math.round(premium * 4 * 100) / 100
+    const primeAnnuelleHt =
+      Number.isFinite(primeAnnuelleHtRaw) && primeAnnuelleHtRaw > 0
+        ? Math.round(primeAnnuelleHtRaw * 100) / 100
+        : Math.round((primeAnnuelleTtc / 1.2) * 100) / 100
+    const dossierConfigJson = serializeRcFabDossierConfig(
+      buildRcFabDossierConfig({
+      referenceContrat: contractNumber,
+      periodicite: periodicite as RcFabPeriodicity,
+      primeAnnuelleTtc,
+      primeAnnuelleHt,
+      })
+    )
     const address =
       [user.adresse, user.codePostal, user.ville].filter(Boolean).join(" ").trim() || "—"
 
@@ -62,6 +88,7 @@ export async function applyPendingFinalize(
         status: CONTRACT_STATUS.approved,
         insurerValidatedAt: new Date(),
         signedQuoteStorageKey: signedKey,
+        exclusionsJson: dossierConfigJson,
       },
     })
 
@@ -77,6 +104,9 @@ export async function applyPendingFinalize(
       signatureRequestId: pending.signatureRequestId,
       devisReference: raw.devisReference,
       produitLabel: raw.produitLabel,
+      periodicitePaiement: periodicite,
+      primeAnnuelleTtc,
+      primeAnnuelleHt,
     })
 
     await prisma.pendingSignature.delete({

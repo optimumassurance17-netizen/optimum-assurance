@@ -42,6 +42,9 @@ export function InsuranceContractPdfLinks({
           <a href={`${base}/quote`} target="_blank" rel="noreferrer" className={linkClass}>
             Devis PDF
           </a>
+          <a href={`${base}/fic`} target="_blank" rel="noreferrer" className={linkClass}>
+            FIC
+          </a>
           <a href={`${base}/policy`} target="_blank" rel="noreferrer" className={linkClass}>
             Conditions (CP)
           </a>

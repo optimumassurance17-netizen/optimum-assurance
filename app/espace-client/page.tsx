@@ -430,31 +430,40 @@ export default function EspaceClientPage() {
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <h2 className="font-bold text-[#0a0a0a] text-lg">Devis, contrats et attestations</h2>
             {documents.length > 0 && (
-              <button
-                type="button"
-                disabled={exportingPdf}
-                onClick={async () => {
-                  setExportingPdf(true)
-                  try {
-                    const res = await fetch("/api/documents/export-all-pdf")
-                    if (!res.ok) throw new Error("Erreur")
-                    const blob = await res.blob()
-                    const url = URL.createObjectURL(blob)
-                    const a = document.createElement("a")
-                    a.href = url
-                    a.download = `documents-optimum-${new Date().toISOString().slice(0, 10)}.pdf`
-                    a.click()
-                    URL.revokeObjectURL(url)
-                  } catch {
-                    // Erreur silencieuse — l'utilisateur peut réessayer
-                  } finally {
-                    setExportingPdf(false)
-                  }
-                }}
-                className="inline-flex items-center gap-2 bg-[#2563eb] text-white px-4 py-2.5 rounded-xl hover:bg-[#1d4ed8] font-medium text-sm transition-colors disabled:opacity-50"
-              >
-                {exportingPdf ? "Génération..." : "Télécharger tout en PDF"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                {(["decennale", "do"] as const).map((assurance) => (
+                  <button
+                    key={assurance}
+                    type="button"
+                    disabled={exportingPdf}
+                    onClick={async () => {
+                      setExportingPdf(true)
+                      try {
+                        const res = await fetch(`/api/documents/export-all-pdf?assurance=${assurance}`)
+                        if (!res.ok) throw new Error("Erreur")
+                        const blob = await res.blob()
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement("a")
+                        a.href = url
+                        a.download = `documents-optimum-${assurance}-${new Date().toISOString().slice(0, 10)}.pdf`
+                        a.click()
+                        URL.revokeObjectURL(url)
+                      } catch {
+                        // Erreur silencieuse — l'utilisateur peut réessayer
+                      } finally {
+                        setExportingPdf(false)
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 bg-[#2563eb] text-white px-4 py-2.5 rounded-xl hover:bg-[#1d4ed8] font-medium text-sm transition-colors disabled:opacity-50"
+                  >
+                    {exportingPdf
+                      ? "Génération..."
+                      : assurance === "decennale"
+                        ? "Exporter PDF Décennale"
+                        : "Exporter PDF DO"}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
           {loading ? (

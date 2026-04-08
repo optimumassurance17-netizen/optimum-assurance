@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { renderContractPdf, type DocPdfType } from "@/lib/insurance-contract-pdf"
 import { PdfValidationError } from "@/lib/pdf/errors"
 
-const ALLOWED: DocPdfType[] = ["quote", "policy", "certificate", "invoice", "schedule"]
+const ALLOWED: DocPdfType[] = ["quote", "fic", "policy", "certificate", "invoice", "schedule"]
 
 export async function GET(
   _request: NextRequest,
@@ -39,7 +39,9 @@ export async function GET(
       (docType === "quote" || docType === "policy")
     const filename = bundleDevisCp
       ? `${contract.contractNumber}-devis-et-cp.pdf`
-      : `${contract.contractNumber}-${docType}.pdf`
+      : docType === "fic"
+        ? `${contract.contractNumber}-fic.pdf`
+        : `${contract.contractNumber}-${docType}.pdf`
     const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
     const buf = Buffer.from(u8)
     const safeFilename = filename.replace(/"/g, "_")
@@ -54,12 +56,27 @@ export async function GET(
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur"
-    if (msg === "CERTIFICATE_NOT_ALLOWED" || msg === "QR_CODE_GENERATION_FAILED") {
+    if (
+      msg === "CERTIFICATE_NOT_ALLOWED" ||
+      msg === "QR_CODE_GENERATION_FAILED" ||
+      msg === "DOC_NOT_AVAILABLE_FOR_PRODUCT" ||
+      msg === "INSURANCE_DATA_UNSUPPORTED_PRODUCT" ||
+      msg === "UNKNOWN_PRODUCT_TYPE" ||
+      msg === "UNKNOWN_DOC_TYPE"
+    ) {
       const body =
         msg === "QR_CODE_GENERATION_FAILED"
           ? "Génération du QR de vérification impossible. Réessayez ou contactez le support."
-          : "Attestation non disponible (paiement ou validation assureur requis)"
-      return NextResponse.json({ error: body }, { status: msg === "QR_CODE_GENERATION_FAILED" ? 503 : 403 })
+          : msg === "CERTIFICATE_NOT_ALLOWED"
+            ? "Attestation non disponible (paiement ou validation assureur requis)"
+            : "Document indisponible pour ce produit d'assurance."
+      const status =
+        msg === "QR_CODE_GENERATION_FAILED"
+          ? 503
+          : msg === "CERTIFICATE_NOT_ALLOWED"
+            ? 403
+            : 400
+      return NextResponse.json({ error: body }, { status })
     }
     if (e instanceof PdfValidationError) {
       const status = e.code === "CERTIFICATE_BLOCKED" ? 403 : 400

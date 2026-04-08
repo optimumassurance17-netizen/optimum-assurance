@@ -8,6 +8,11 @@ import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert
 import { createSupabaseServiceClient } from "@/lib/supabase"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
+import {
+  buildRcFabDossierConfig,
+  normalizeRcFabPeriodicity,
+  serializeRcFabDossierConfig,
+} from "@/lib/rc-fabriquant-dossier-config"
 
 export const runtime = "nodejs"
 
@@ -47,13 +52,10 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = typeof form.get("userId") === "string" ? (form.get("userId") as string).trim() : ""
-    const primeRaw = form.get("primeTtc")
-    const primeTtc =
-      typeof primeRaw === "string"
-        ? Number(primeRaw.replace(",", "."))
-        : typeof primeRaw === "number"
-          ? primeRaw
-          : NaN
+    const primeTtcRaw = form.get("primeTtc")
+    const primeAnnuelleTtcRaw = form.get("primeAnnuelleTtc")
+    const primeAnnuelleHtRaw = form.get("primeAnnuelleHt")
+    const periodiciteRaw = form.get("periodicite")
     const devisReference =
       typeof form.get("devisReference") === "string" ? (form.get("devisReference") as string).trim().slice(0, 120) : ""
     const produitLabel =
@@ -68,8 +70,43 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: "Client (userId) requis" }, { status: 400 })
     }
-    if (!Number.isFinite(primeTtc) || primeTtc <= 0) {
-      return NextResponse.json({ error: "Montant TTC à payer requis (nombre > 0)" }, { status: 400 })
+
+    const periodicite = normalizeRcFabPeriodicity(
+      typeof periodiciteRaw === "string" ? periodiciteRaw.trim().toLowerCase() : null
+    )
+    const primeAnnuelleTtcParsed =
+      typeof primeAnnuelleTtcRaw === "string"
+        ? Number(primeAnnuelleTtcRaw.replace(",", "."))
+        : typeof primeAnnuelleTtcRaw === "number"
+          ? primeAnnuelleTtcRaw
+          : NaN
+    const legacyPrimePerInstallmentParsed =
+      typeof primeTtcRaw === "string"
+        ? Number(primeTtcRaw.replace(",", "."))
+        : typeof primeTtcRaw === "number"
+          ? primeTtcRaw
+          : NaN
+    const installmentsPerYear = periodicite === "mensuel" ? 12 : periodicite === "semestriel" ? 2 : periodicite === "annuel" ? 1 : 4
+    const primeAnnuelleTtc =
+      Number.isFinite(primeAnnuelleTtcParsed) && primeAnnuelleTtcParsed > 0
+        ? primeAnnuelleTtcParsed
+        : Number.isFinite(legacyPrimePerInstallmentParsed) && legacyPrimePerInstallmentParsed > 0
+          ? legacyPrimePerInstallmentParsed * installmentsPerYear
+          : NaN
+    const primeAnnuelleHt =
+      typeof primeAnnuelleHtRaw === "string" && primeAnnuelleHtRaw.trim().length > 0
+        ? Number(primeAnnuelleHtRaw.replace(",", "."))
+        : NaN
+
+    if (!Number.isFinite(primeAnnuelleTtc) || primeAnnuelleTtc <= 0) {
+      return NextResponse.json({ error: "Prime annuelle TTC requise (nombre > 0)" }, { status: 400 })
+    }
+    if (
+      typeof primeAnnuelleHtRaw === "string" &&
+      primeAnnuelleHtRaw.trim().length > 0 &&
+      (!Number.isFinite(primeAnnuelleHt) || primeAnnuelleHt <= 0)
+    ) {
+      return NextResponse.json({ error: "Prime annuelle HT invalide" }, { status: 400 })
     }
 
     if (!file || !(file instanceof Blob) || file.size === 0) {
@@ -114,10 +151,23 @@ export async function POST(request: NextRequest) {
     const { id: signRequestId } = await uploadPdfAndInsertSignRequest(buf, storagePath)
 
     const provisionalNumero = `PDF-PENDING-${Date.now()}`
+    const dossierConfig = buildRcFabDossierConfig({
+      referenceContrat: devisReference || provisionalNumero,
+      periodicite,
+      primeAnnuelleTtc,
+      primeAnnuelleHt: Number.isFinite(primeAnnuelleHt) ? primeAnnuelleHt : undefined,
+    })
     const contractData = {
       signatureProvider: "supabase" as const,
       customUploadedDevisFlow: true,
-      primeTtc: Math.round(primeTtc * 100) / 100,
+      modeEtude: true,
+      activite: dossierConfig.activite,
+      periodicite: dossierConfig.periodicite,
+      primeAnnuelleHt: dossierConfig.primeAnnuelleHt,
+      primeAnnuelleTtc: dossierConfig.primeAnnuelleTtc,
+      primeTtc: dossierConfig.montantParEcheanceTtc,
+      rcFabriquantDossierConfig: dossierConfig,
+      rcFabriquantDossierConfigSerialized: serializeRcFabDossierConfig(dossierConfig),
       ...(devisReference ? { devisReference } : {}),
       produitLabel,
       afterSignNextPath,
@@ -139,7 +189,7 @@ export async function POST(request: NextRequest) {
     const raison = (user.raisonSociale || user.email).trim()
     const tpl = EMAIL_TEMPLATES.invitationSignatureDevisPersonnalise(raison, signatureLink, {
       produitLabel,
-      montantTtc: contractData.primeTtc,
+      montantTtc: dossierConfig.primeAnnuelleTtc,
       reference: devisReference || undefined,
     })
 
@@ -165,7 +215,14 @@ export async function POST(request: NextRequest) {
       action: "custom_devis_pdf_signature_sent",
       targetType: "user",
       targetId: user.id,
-      details: { signRequestId, produitLabel, primeTtc: contractData.primeTtc },
+      details: {
+        signRequestId,
+        produitLabel,
+        modeEtude: true,
+        primeAnnuelleTtc: dossierConfig.primeAnnuelleTtc,
+        montantParEcheanceTtc: dossierConfig.montantParEcheanceTtc,
+        periodicite: dossierConfig.periodicite,
+      },
     })
 
     return NextResponse.json({

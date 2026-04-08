@@ -7,6 +7,8 @@ import { renderContractPdf, type DocPdfType } from "@/lib/insurance-contract-pdf
 import { PdfValidationError } from "@/lib/pdf/errors"
 import { asJsonObject } from "@/lib/json-object"
 
+const ALLOWED_DOC_TYPES: DocPdfType[] = ["quote", "fic", "policy", "certificate", "invoice", "schedule"]
+
 /**
  * Génère un PDF pour un InsuranceContract (admin ou propriétaire du contrat).
  */
@@ -21,6 +23,9 @@ export async function POST(request: NextRequest) {
     if (!body.contractId || !body.docType) {
       return NextResponse.json({ error: "contractId et docType requis" }, { status: 400 })
     }
+    if (!ALLOWED_DOC_TYPES.includes(body.docType)) {
+      return NextResponse.json({ error: "Type inconnu" }, { status: 400 })
+    }
 
     const contract = await prisma.insuranceContract.findUnique({ where: { id: body.contractId } })
     if (!contract) {
@@ -30,6 +35,18 @@ export async function POST(request: NextRequest) {
     const admin = isAdmin(session)
     if (!admin && contract.userId !== session.user.id) {
       return NextResponse.json({ error: "Interdit" }, { status: 403 })
+    }
+
+    if (
+      body.docType === "fic" &&
+      contract.productType === "rc_fabriquant" &&
+      contract.status !== "approved" &&
+      contract.status !== "active"
+    ) {
+      return NextResponse.json(
+        { error: "FIC indisponible (contrat RC Fabriquant en étude uniquement)." },
+        { status: 403 }
+      )
     }
 
     const bytes = await renderContractPdf(contract, body.docType)
@@ -42,15 +59,25 @@ export async function POST(request: NextRequest) {
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : ""
-    if (msg === "CERTIFICATE_NOT_ALLOWED" || msg === "QR_CODE_GENERATION_FAILED") {
+    if (
+      msg === "CERTIFICATE_NOT_ALLOWED" ||
+      msg === "QR_CODE_GENERATION_FAILED" ||
+      msg === "DOC_NOT_AVAILABLE_FOR_PRODUCT" ||
+      msg === "INSURANCE_DATA_UNSUPPORTED_PRODUCT" ||
+      msg === "UNKNOWN_PRODUCT_TYPE" ||
+      msg === "UNKNOWN_DOC_TYPE"
+    ) {
       const isQr = msg === "QR_CODE_GENERATION_FAILED"
+      const isCert = msg === "CERTIFICATE_NOT_ALLOWED"
       return NextResponse.json(
         {
           error: isQr
             ? "Génération du QR de vérification impossible."
-            : "Attestation non disponible (paiement ou validation assureur requis)",
+            : isCert
+              ? "Attestation non disponible (paiement ou validation assureur requis)"
+              : "Document indisponible pour ce produit d'assurance.",
         },
-        { status: isQr ? 503 : 403 }
+        { status: isQr ? 503 : isCert ? 403 : 400 }
       )
     }
     if (e instanceof PdfValidationError) {
