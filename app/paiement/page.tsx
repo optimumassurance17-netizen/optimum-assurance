@@ -235,7 +235,7 @@ export default function PaiementPage() {
           Paiement
         </h1>
         <p className="text-black mb-6">
-          Le premier trimestre (avec frais de gestion) est réglé par <strong>carte bancaire</strong> (Mollie). Les trois trimestres suivants sont prélevés par <strong>SEPA trimestriel</strong> sur l’IBAN du mandat.
+          Le premier trimestre (avec frais de gestion) est réglé par <strong>carte bancaire</strong> (Mollie). Les échéances suivantes sont prélevées par <strong>SEPA trimestriel</strong> sur l’IBAN du mandat, avec <strong>reconduction automatique annuelle</strong>.
         </p>
 
         <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-6">
@@ -289,7 +289,7 @@ export default function PaiementPage() {
             1er règlement par <strong>carte bancaire</strong> (1er trimestre + {FRAIS_GESTION_PRELEVEMENT} € de frais de gestion)
           </p>
           <p className="text-sm text-black mt-1">
-            Puis <strong>3 prélèvements SEPA trimestriels</strong> de {ech.montantEcheance.toLocaleString("fr-FR")} € sur l’IBAN ci-dessus (mandat SEPA).
+            Puis <strong>prélèvements SEPA trimestriels</strong> de {ech.montantEcheance.toLocaleString("fr-FR")} € sur l’IBAN ci-dessus (mandat SEPA), en reconduction automatique annuelle.
           </p>
         </div>
 

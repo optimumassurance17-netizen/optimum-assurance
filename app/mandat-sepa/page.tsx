@@ -177,7 +177,7 @@ export default function MandatSepaPage() {
           <div className="p-4 bg-slate-100 rounded-xl border border-slate-200">
             <h3 className="font-medium text-black mb-2">Paiement trimestriel</h3>
             <p className="text-sm text-[#171717] mb-3">
-              <strong>4 échéances par an</strong> : le <strong>1er trimestre</strong> (avec {FRAIS_GESTION_PRELEVEMENT} € de frais de gestion) est réglé par <strong>carte bancaire</strong> à l&apos;étape suivante. Les <strong>3 trimestres suivants</strong> sont prélevés par <strong>SEPA</strong> sur l&apos;IBAN ci-dessous (montant par trimestre : 1/4 de la prime annuelle).
+              <strong>4 échéances par an</strong> : le <strong>1er trimestre</strong> (avec {FRAIS_GESTION_PRELEVEMENT} € de frais de gestion) est réglé par <strong>carte bancaire</strong> à l&apos;étape suivante. Les <strong>échéances suivantes</strong> sont prélevées par <strong>SEPA trimestriel</strong> sur l&apos;IBAN ci-dessous (montant par trimestre : 1/4 de la prime annuelle), avec <strong>reconduction automatique annuelle</strong>.
             </p>
             <p className="text-sm font-medium text-black">
               1er montant à régler par carte : {premierMontant.toLocaleString("fr-FR")} €
