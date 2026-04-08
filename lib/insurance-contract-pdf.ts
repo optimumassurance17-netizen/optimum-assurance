@@ -25,6 +25,13 @@ import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
 import { primeTrimestrielle } from "@/lib/mollie-sepa"
 import { FRANCHISE_RC_FABRIQUANT_EUR } from "@/lib/rc-fabriquant-underwriting"
+import {
+  generateRcFabBatteriesCertificatePdf,
+  generateRcFabBatteriesFicPdf,
+  generateRcFabBatteriesPolicyPdf,
+  generateRcFabBatteriesQuotePdf,
+} from "@/lib/pdf/rc-fabriquant/generateDossier"
+import { hasRcFabDossierConfig, readRcFabDossierConfig } from "@/lib/rc-fabriquant-dossier-config"
 
 /** Contrat actif : PDF devis+CP en version « contrat » + mentions légales complémentaires. */
 function platformQuotePolicyBundleMode(c: InsuranceContract): "proposition" | "contrat" {
@@ -140,7 +147,7 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
   return pdf.save()
 }
 
-export type DocPdfType = "quote" | "policy" | "certificate" | "invoice" | "schedule"
+export type DocPdfType = "quote" | "fic" | "policy" | "certificate" | "invoice" | "schedule"
 
 async function loadSignedQuotePdfBytes(storageKey: string): Promise<Uint8Array> {
   const supabase = createSupabaseServiceClient()
@@ -294,6 +301,22 @@ async function generateRcFabAttestationPdf(c: InsuranceContract): Promise<Uint8A
   return pdf.save()
 }
 
+function toRcFabDossierData(c: InsuranceContract) {
+  const cfg = readRcFabDossierConfig(c.exclusionsJson, c.premium, c.contractNumber)
+  const vf = c.validFrom ?? c.paidAt ?? c.createdAt
+  const vu = c.validUntil ?? c.createdAt
+  return {
+    nomSociete: c.clientName,
+    siret: c.siret ?? undefined,
+    adresse: c.address,
+    activite: cfg.activite,
+    dateEffet: vf.toLocaleDateString("fr-FR"),
+    dateEcheance: vu.toLocaleDateString("fr-FR"),
+    referenceContrat: c.contractNumber,
+    config: cfg,
+  } as const
+}
+
 export async function renderContractPdf(c: InsuranceContract, docType: DocPdfType): Promise<Uint8Array> {
   if (docType === "schedule") {
     if (c.productType !== "decennale" && c.productType !== "rc_fabriquant") {
@@ -304,12 +327,18 @@ export async function renderContractPdf(c: InsuranceContract, docType: DocPdfTyp
   if (docType === "invoice") {
     return generateSimpleInvoicePdf(c)
   }
+  if (docType === "fic") {
+    if (c.productType !== "rc_fabriquant") {
+      throw new Error("DOC_NOT_AVAILABLE_FOR_PRODUCT")
+    }
+    return generateRcFabBatteriesFicPdf(toRcFabDossierData(c))
+  }
   if (docType === "quote") {
     if (c.productType === "rc_fabriquant") {
-      if (c.signedQuoteStorageKey?.trim()) {
+      if (!hasRcFabDossierConfig(c.exclusionsJson) && c.signedQuoteStorageKey?.trim()) {
         return loadSignedQuotePdfBytes(c.signedQuoteStorageKey.trim())
       }
-      return generateRcFabQuotePlaceholderPdf(c)
+      return generateRcFabBatteriesQuotePdf(toRcFabDossierData(c))
     }
     if (c.productType === "do") {
       const data = contractToInsuranceData(c)
@@ -322,7 +351,9 @@ export async function renderContractPdf(c: InsuranceContract, docType: DocPdfTyp
     throw new Error("UNKNOWN_PRODUCT_TYPE")
   }
   if (docType === "policy") {
-    if (c.productType === "rc_fabriquant") return generateRcFabPolicyPlaceholderPdf(c)
+    if (c.productType === "rc_fabriquant") {
+      return generateRcFabBatteriesPolicyPdf(toRcFabDossierData(c))
+    }
     if (c.productType === "do") {
       const data = contractToInsuranceData(c)
       return generateDOQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
@@ -337,7 +368,9 @@ export async function renderContractPdf(c: InsuranceContract, docType: DocPdfTyp
     if (!c.paidAt || !c.insurerValidatedAt) {
       throw new Error("CERTIFICATE_NOT_ALLOWED")
     }
-    if (c.productType === "rc_fabriquant") return generateRcFabAttestationPdf(c)
+    if (c.productType === "rc_fabriquant") {
+      return generateRcFabBatteriesCertificatePdf(toRcFabDossierData(c))
+    }
     const cert = toCertificateData(c)
     if (c.productType === "decennale") {
       return generateDecennaleCertificate(cert)

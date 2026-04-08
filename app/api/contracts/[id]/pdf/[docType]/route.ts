@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { renderContractPdf, type DocPdfType } from "@/lib/insurance-contract-pdf"
 import { PdfValidationError } from "@/lib/pdf/errors"
 
-const ALLOWED: DocPdfType[] = ["quote", "policy", "certificate", "invoice", "schedule"]
+const ALLOWED: DocPdfType[] = ["quote", "fic", "policy", "certificate", "invoice", "schedule"]
 
 export async function GET(
   _request: NextRequest,
@@ -39,7 +39,9 @@ export async function GET(
       (docType === "quote" || docType === "policy")
     const filename = bundleDevisCp
       ? `${contract.contractNumber}-devis-et-cp.pdf`
-      : `${contract.contractNumber}-${docType}.pdf`
+      : docType === "fic"
+        ? `${contract.contractNumber}-fic.pdf`
+        : `${contract.contractNumber}-${docType}.pdf`
     const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
     const buf = Buffer.from(u8)
     const safeFilename = filename.replace(/"/g, "_")

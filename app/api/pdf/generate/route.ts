@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma"
 import { renderContractPdf, type DocPdfType } from "@/lib/insurance-contract-pdf"
 import { PdfValidationError } from "@/lib/pdf/errors"
 
+const ALLOWED_DOC_TYPES: DocPdfType[] = ["quote", "fic", "policy", "certificate", "invoice", "schedule"]
+
 /**
  * Génère un PDF pour un InsuranceContract (admin ou propriétaire du contrat).
  */
@@ -20,6 +22,9 @@ export async function POST(request: NextRequest) {
     if (!body.contractId || !body.docType) {
       return NextResponse.json({ error: "contractId et docType requis" }, { status: 400 })
     }
+    if (!ALLOWED_DOC_TYPES.includes(body.docType)) {
+      return NextResponse.json({ error: "Type inconnu" }, { status: 400 })
+    }
 
     const contract = await prisma.insuranceContract.findUnique({ where: { id: body.contractId } })
     if (!contract) {
@@ -29,6 +34,18 @@ export async function POST(request: NextRequest) {
     const admin = isAdmin(session)
     if (!admin && contract.userId !== session.user.id) {
       return NextResponse.json({ error: "Interdit" }, { status: 403 })
+    }
+
+    if (
+      body.docType === "fic" &&
+      contract.productType === "rc_fabriquant" &&
+      contract.status !== "approved" &&
+      contract.status !== "active"
+    ) {
+      return NextResponse.json(
+        { error: "FIC indisponible (contrat RC Fabriquant en étude uniquement)." },
+        { status: 403 }
+      )
     }
 
     const bytes = await renderContractPdf(contract, body.docType)

@@ -10,6 +10,7 @@ export type InsuranceContractGestionRow = {
   id: string
   contractNumber: string
   productType: string
+  exclusionsJson?: string | null
   clientName: string
   userId: string | null
   premium: number
@@ -32,6 +33,27 @@ type Props = {
   searchQuery: string
   onRefresh: () => Promise<void>
   setToast: (t: { message: string; type?: "success" | "error" }) => void
+}
+
+function rcFabInstallmentsFromExclusionsJson(raw: string | null | undefined): number {
+  if (!raw?.trim()) return 4
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return 4
+    const cfg = (parsed as { rcFabriquantDossierConfig?: unknown }).rcFabriquantDossierConfig
+    if (!cfg || typeof cfg !== "object" || Array.isArray(cfg)) return 4
+    const installments = (cfg as { installmentsPerYear?: unknown }).installmentsPerYear
+    if (typeof installments === "number" && Number.isFinite(installments) && installments > 0) {
+      return Math.max(1, Math.round(installments))
+    }
+    const periodicite = (cfg as { periodicite?: unknown }).periodicite
+    if (periodicite === "mensuel") return 12
+    if (periodicite === "semestriel") return 2
+    if (periodicite === "annuel") return 1
+    return 4
+  } catch {
+    return 4
+  }
 }
 
 function matchesSearch(c: InsuranceContractGestionRow, q: string): boolean {
@@ -135,6 +157,11 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
               filtered.map((c) => {
                 const paidCount = c.lifecyclePayments.filter((p) => p.status === "paid").length
                 const showRcFabHints = c.productType === "rc_fabriquant" && c.premium > 0
+                const rcFabInstallments =
+                  c.productType === "rc_fabriquant"
+                    ? rcFabInstallmentsFromExclusionsJson(c.exclusionsJson ?? null)
+                    : 4
+                const rcFabAnnual = c.premium * rcFabInstallments
                 return (
                   <tr key={c.id} className="border-b border-gray-700/50">
                     <td className="p-3 sm:p-4">
@@ -155,8 +182,9 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                       ) : null}
                       {showRcFabHints ? (
                         <p className="text-xs text-teal-300/90 mt-1">
-                          Indic. : si prime = <strong>annuelle</strong> → {primeTrimestrielle(c.premium).toLocaleString("fr-FR")} €/trim · si
-                          prime = <strong>1 trimestre</strong> → {(c.premium * 4).toLocaleString("fr-FR")} €/an
+                          Échéancier paramétré : <strong>{rcFabInstallments}</strong> échéance(s)/an · montant échéance{" "}
+                          <strong>{c.premium.toLocaleString("fr-FR")} €</strong> · annuel indicatif{" "}
+                          <strong>{rcFabAnnual.toLocaleString("fr-FR")} €</strong>
                         </p>
                       ) : null}
                       {c.productType === "rc_fabriquant" ? (
@@ -222,7 +250,17 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                             rel="noreferrer"
                             className="text-sky-400 hover:text-sky-300 text-xs"
                           >
-                            Échéancier trimestriel
+                            Échéancier
+                          </a>
+                        ) : null}
+                        {c.productType === "rc_fabriquant" ? (
+                          <a
+                            href={`/api/contracts/${c.id}/pdf/fic`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sky-400 hover:text-sky-300 text-xs"
+                          >
+                            FIC
                           </a>
                         ) : null}
                         {c.status === CONTRACT_STATUS.active ? (

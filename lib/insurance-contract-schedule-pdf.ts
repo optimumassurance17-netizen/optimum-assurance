@@ -12,11 +12,38 @@ import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { PdfValidationError } from "@/lib/pdf/errors"
 import { primeTrimestrielle } from "@/lib/mollie-sepa"
+import {
+  getRcFabPeriodicityMeta,
+  normalizeRcFabPeriodicity,
+  type RcFabPeriodicity,
+} from "@/lib/rc-fabriquant-dossier-config"
 
 function addMonths(d: Date, months: number): Date {
   const out = new Date(d.getTime())
   out.setMonth(out.getMonth() + months)
   return out
+}
+
+function parseRcFabPeriodicityFromExclusionsJson(raw: string | null | undefined): RcFabPeriodicity | null {
+  if (!raw?.trim()) return null
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null
+    const cfgRaw = (parsed as { rcFabriquantDossierConfig?: unknown }).rcFabriquantDossierConfig
+    if (!cfgRaw || typeof cfgRaw !== "object" || Array.isArray(cfgRaw)) return null
+    const periodicite = (cfgRaw as { periodicite?: unknown }).periodicite
+    if (
+      periodicite === "mensuel" ||
+      periodicite === "trimestriel" ||
+      periodicite === "semestriel" ||
+      periodicite === "annuel"
+    ) {
+      return periodicite
+    }
+  } catch {
+    return null
+  }
+  return null
 }
 
 function wrapLine(text: string, maxChars: number): string[] {
@@ -62,15 +89,29 @@ function scheduleAmounts(c: InsuranceContract): {
   annualIndicative: number
   modeLabel: string
   assumptionNote: string
+  scheduleLabel: string
 } {
   if (c.productType === "rc_fabriquant") {
+    const periodicityRaw = parseRcFabPeriodicityFromExclusionsJson(c.exclusionsJson)
+    const periodicity = normalizeRcFabPeriodicity(periodicityRaw)
+    const meta = getRcFabPeriodicityMeta(periodicity)
     const per = Math.round(c.premium * 100) / 100
+    const annual = Math.round(per * meta.installmentsPerYear * 100) / 100
+    const scheduleLabel =
+      periodicity === "mensuel"
+        ? "mensuel"
+        : periodicity === "semestriel"
+          ? "semestriel"
+          : periodicity === "annuel"
+            ? "annuel"
+            : "trimestriel"
     return {
       perQuarter: per,
-      annualIndicative: Math.round(per * 4 * 100) / 100,
+      annualIndicative: annual,
       modeLabel: "Virement bancaire sécurisé (Mollie) — montant du contrat à chaque échéance",
       assumptionNote:
-        "Hypothèse : la prime indiquée sur le contrat correspond à une échéance trimestrielle ; la prime annuelle indicative est 4 × ce montant (sauf avenant).",
+        `Échéancier ${scheduleLabel} paramétré en gestion : ${meta.installmentsPerYear} échéance(s) par an. La prime annuelle indicative est calculée à partir du montant d'échéance × ${meta.installmentsPerYear} (sauf avenant).`,
+      scheduleLabel,
     }
   }
   if (c.productType === "decennale") {
@@ -83,16 +124,18 @@ function scheduleAmounts(c: InsuranceContract): {
         "1er trimestre : carte bancaire (Mollie) + frais de dossier selon parcours ; trimestres suivants : prélèvement SEPA sur mandat",
       assumptionNote:
         "Hypothèse : la prime TTC du contrat correspond à la prime annuelle, répartie en 4 échéances trimestrielles égales (hors frais éventuels du 1er appel).",
+      scheduleLabel: "trimestriel",
     }
   }
   throw new PdfValidationError("Échéancier trimestriel non applicable à ce produit.", "SCHEDULE_NOT_APPLICABLE")
 }
 
 /**
- * PDF « Échéancier annuel » (4 trimestres) + mentions légales — décennale plateforme ou RC Fabriquant.
+ * PDF « Échéancier annuel » + mentions légales — fréquence selon le contrat
+ * (décennale ou RC Fabriquant).
  */
 export async function generateQuarterlyScheduleInsurancePdf(c: InsuranceContract): Promise<Uint8Array> {
-  const { perQuarter, annualIndicative, modeLabel, assumptionNote } = scheduleAmounts(c)
+  const { perQuarter, annualIndicative, modeLabel, assumptionNote, scheduleLabel } = scheduleAmounts(c)
 
   const anchor = c.validFrom ?? c.paidAt ?? c.createdAt
   const t1 = anchor
@@ -117,7 +160,15 @@ export async function generateQuarterlyScheduleInsurancePdf(c: InsuranceContract
     y = imgBottom - 20
   }
 
-  page.drawText(sanitizeForPdfLib("ÉCHÉANCIER ANNUEL DE COTISATION (TRIMESTRIEL)"), {
+  const scheduleTitle =
+    scheduleLabel === "mensuel"
+      ? "ÉCHÉANCIER ANNUEL DE COTISATION (MENSUEL)"
+      : scheduleLabel === "semestriel"
+        ? "ÉCHÉANCIER ANNUEL DE COTISATION (SEMESTRIEL)"
+        : scheduleLabel === "annuel"
+          ? "ÉCHÉANCIER ANNUEL DE COTISATION (ANNUEL)"
+          : "ÉCHÉANCIER ANNUEL DE COTISATION (TRIMESTRIEL)"
+  page.drawText(sanitizeForPdfLib(scheduleTitle), {
     x: margin,
     y,
     size: 14,
@@ -146,12 +197,25 @@ export async function generateQuarterlyScheduleInsurancePdf(c: InsuranceContract
   page.drawText(sanitizeForPdfLib("Tableau des échéances"), { x: margin, y, size: 11, font: bold })
   y -= 18
 
-  const rows: [string, string, string][] = [
-    ["1er trimestre (T1)", t1.toLocaleDateString("fr-FR"), formatEuro(perQuarter)],
-    ["2e trimestre (T2)", t2.toLocaleDateString("fr-FR"), formatEuro(perQuarter)],
-    ["3e trimestre (T3)", t3.toLocaleDateString("fr-FR"), formatEuro(perQuarter)],
-    ["4e trimestre (T4)", t4.toLocaleDateString("fr-FR"), formatEuro(perQuarter)],
-  ]
+  const rows: [string, string, string][] =
+    scheduleLabel === "mensuel"
+      ? Array.from({ length: 12 }).map((_, idx) => {
+          const d = addMonths(t1, idx)
+          return [`M${idx + 1}`, d.toLocaleDateString("fr-FR"), formatEuro(perQuarter)] as [string, string, string]
+        })
+      : scheduleLabel === "semestriel"
+        ? [
+            ["S1", t1.toLocaleDateString("fr-FR"), formatEuro(perQuarter)],
+            ["S2", addMonths(t1, 6).toLocaleDateString("fr-FR"), formatEuro(perQuarter)],
+          ]
+        : scheduleLabel === "annuel"
+          ? [["A1", t1.toLocaleDateString("fr-FR"), formatEuro(perQuarter)]]
+          : [
+              ["1er trimestre (T1)", t1.toLocaleDateString("fr-FR"), formatEuro(perQuarter)],
+              ["2e trimestre (T2)", t2.toLocaleDateString("fr-FR"), formatEuro(perQuarter)],
+              ["3e trimestre (T3)", t3.toLocaleDateString("fr-FR"), formatEuro(perQuarter)],
+              ["4e trimestre (T4)", t4.toLocaleDateString("fr-FR"), formatEuro(perQuarter)],
+            ]
 
   page.drawText(sanitizeForPdfLib("Échéance"), { x: margin, y, size: 9, font: bold })
   page.drawText(sanitizeForPdfLib("Date indicative"), { x: margin + 200, y, size: 9, font: bold })
@@ -168,7 +232,8 @@ export async function generateQuarterlyScheduleInsurancePdf(c: InsuranceContract
   }
 
   y -= 10
-  page.drawText(sanitizeForPdfLib(`Total indicatif sur 12 mois (4 × échéance) : ${formatEuro(perQuarter * 4)}`), {
+  const totalIndicatif = rows.length * perQuarter
+  page.drawText(sanitizeForPdfLib(`Total indicatif sur 12 mois (${rows.length} × échéance) : ${formatEuro(totalIndicatif)}`), {
     x: margin,
     y,
     size: 9,
