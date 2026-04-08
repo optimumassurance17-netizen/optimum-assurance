@@ -51,6 +51,10 @@ const DASH_LIST_LIMIT = 3000
 /** Pour le calcul des stats DO (sommes JSON) — plafond pour ne pas charger 100k lignes. */
 const DO_STATS_ATTESTATIONS_CAP = 10_000
 
+function startOfUtcDay(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -284,6 +288,7 @@ export async function GET() {
     })
 
     const now = new Date()
+    const todayStart = startOfUtcDay(now)
     const reminder24hMs = 24 * 60 * 60 * 1000
     const overdue72hMs = 72 * 60 * 60 * 1000
     type DashboardAction = {
@@ -300,6 +305,18 @@ export async function GET() {
       href: string
       ageHours: number
     }
+    const dismissedLogs = await prisma.adminActivityLog.findMany({
+      where: {
+        action: "dashboard_action_dismissed",
+        targetType: "dashboard_action",
+        createdAt: { gte: todayStart },
+      },
+      select: { targetId: true },
+    })
+    const dismissedActionIds = new Set(
+      dismissedLogs.map((l) => (typeof l.targetId === "string" ? l.targetId : "")).filter(Boolean)
+    )
+
     const dashboardActions: DashboardAction[] = []
 
     for (const p of pendingSignaturesRaw) {
@@ -381,13 +398,15 @@ export async function GET() {
       })
     }
 
-    dashboardActions.sort((a, b) => b.ageHours - a.ageHours)
-    const dashboardActionsLimited = dashboardActions.slice(0, 20)
+    const dashboardActionsVisible = dashboardActions.filter((a) => !dismissedActionIds.has(a.id))
+    dashboardActionsVisible.sort((a, b) => b.ageHours - a.ageHours)
+    const dashboardActionsLimited = dashboardActionsVisible.slice(0, 20)
     const dashboardActionsSummary = {
       total: dashboardActionsLimited.length,
       high: dashboardActionsLimited.filter((a) => a.priority === "high").length,
       medium: dashboardActionsLimited.filter((a) => a.priority === "medium").length,
       overdue72h: dashboardActionsLimited.filter((a) => a.ageHours >= 72).length,
+      dismissedToday: dismissedActionIds.size,
     }
 
     return NextResponse.json({

@@ -258,6 +258,7 @@ interface DashboardData {
     high: number
     medium: number
     overdue72h: number
+    dismissedToday?: number
   }
 }
 
@@ -325,6 +326,7 @@ export default function GestionPage() {
   } | null>(null)
   const [etudeMiseSubmitting, setEtudeMiseSubmitting] = useState(false)
   const [cancellingSignatureId, setCancellingSignatureId] = useState<string | null>(null)
+  const [dismissingActionId, setDismissingActionId] = useState<string | null>(null)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
   const customDevisPdfInputRef = useRef<HTMLInputElement>(null)
   const [customDevisUserFilter, setCustomDevisUserFilter] = useState("")
@@ -1368,30 +1370,66 @@ export default function GestionPage() {
                     <span className="px-2 py-1 rounded bg-blue-900/40 text-blue-200 border border-blue-700/50">
                       Priorité moyenne : {data.dashboardActionsSummary.medium}
                     </span>
+                    <span className="px-2 py-1 rounded bg-gray-800 text-gray-200 border border-gray-600">
+                      Traitées aujourd&apos;hui : {data.dashboardActionsSummary.dismissedToday ?? 0}
+                    </span>
                   </div>
                 </div>
                 <div className="space-y-2">
                   {(data.dashboardActions ?? []).map((a) => (
-                    <a
+                    <div
                       key={a.id}
-                      href={a.href}
-                      className="block rounded-lg border border-gray-700 bg-[#1f1f1f] px-3 py-2 hover:border-[#2563eb] transition-colors"
+                      className="rounded-lg border border-gray-700 bg-[#1f1f1f] px-3 py-2"
                     >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${
-                            a.priority === "high"
-                              ? "bg-red-900/40 text-red-200 border border-red-700/50"
-                              : "bg-amber-900/40 text-amber-200 border border-amber-700/50"
-                          }`}
+                      <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-3">
+                        <a href={a.href} className="block min-w-0 flex-1 hover:text-[#2563eb] transition-colors">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${
+                                a.priority === "high"
+                                  ? "bg-red-900/40 text-red-200 border border-red-700/50"
+                                  : "bg-amber-900/40 text-amber-200 border border-amber-700/50"
+                              }`}
+                            >
+                              {a.priority === "high" ? "Haute" : "Moyenne"}
+                            </span>
+                            <span className="text-sm font-medium text-white">{a.title}</span>
+                            <span className="text-xs text-gray-400">{a.ageHours}h</span>
+                          </div>
+                          <p className="text-xs text-gray-300 mt-1">{a.description}</p>
+                        </a>
+                        <button
+                          type="button"
+                          disabled={dismissingActionId === a.id}
+                          onClick={async () => {
+                            setDismissingActionId(a.id)
+                            try {
+                              const res = await fetch("/api/gestion/actions-du-jour/dismiss", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ actionId: a.id }),
+                              })
+                              const j = await readResponseJson<{ error?: string }>(res)
+                              if (!res.ok) throw new Error(j.error || "Impossible de marquer l'action comme traitée.")
+
+                              const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+                              if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                              setToast({ message: "Action marquée comme traitée.", type: "success" })
+                            } catch (err) {
+                              setToast({
+                                message: err instanceof Error ? err.message : "Erreur lors de la mise à jour",
+                                type: "error",
+                              })
+                            } finally {
+                              setDismissingActionId(null)
+                            }
+                          }}
+                          className="shrink-0 text-xs px-2.5 py-1.5 rounded border border-gray-600 text-gray-100 hover:border-[#2563eb] hover:text-[#60a5fa] disabled:opacity-50"
                         >
-                          {a.priority === "high" ? "Haute" : "Moyenne"}
-                        </span>
-                        <span className="text-sm font-medium text-white">{a.title}</span>
-                        <span className="text-xs text-gray-400">{a.ageHours}h</span>
+                          {dismissingActionId === a.id ? "…" : "Marquer traité"}
+                        </button>
                       </div>
-                      <p className="text-xs text-gray-300 mt-1">{a.description}</p>
-                    </a>
+                    </div>
                   ))}
                 </div>
               </section>
