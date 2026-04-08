@@ -26,6 +26,21 @@ export const faqs = [
     r: "1) Devis en ligne (/devis) — tarif en quelques minutes, présenté en équivalent mensuel (prime annuelle ÷ 12) avec rappel du prélèvement trimestriel. 2) Souscription — coordonnées de l'entreprise. 3) Création de compte — email et mot de passe. 4) Signature électronique du contrat sur le PDF. 5) Mandat SEPA — IBAN pour des prélèvements trimestriels. 6) Paiement — le premier trimestre et les frais de gestion (60 €) sont réglés par carte bancaire (Mollie) ; les trois trimestres suivants sont prélevés par SEPA sur l'IBAN du mandat. 7) Confirmation — votre attestation est disponible dans l'espace client peu après validation du paiement.",
     id: "parcours-decennale",
   },
+  {
+    q: "Quel est le parcours client complet (devis à attestation) ?",
+    r: "Parcours décennale : 1) Devis en ligne. 2) Souscription (coordonnées entreprise). 3) Création de compte. 4) Signature électronique du contrat. 5) Mandat SEPA (IBAN). 6) Paiement du 1er trimestre + frais par carte bancaire (Mollie). 7) Après validation du paiement, l'abonnement de prélèvements SEPA est activé pour les échéances suivantes (T2 à T4). 8) Attestation disponible dans l'espace client. Parcours dommage ouvrage : 1) Formulaire DO. 2) Étude et tarif définitif sous environ 24 h. 3) Devis ajouté à l'espace client + dépôt de pièces. 4) Signature électronique. 5) Paiement par virement via Mollie. 6) Attestation après réception du virement.",
+    id: "parcours-client",
+  },
+  {
+    q: "Le mandat SEPA apparaît à quel moment ?",
+    r: "Pour la décennale, c'est normal qu'il ne soit pas visible avant : le mandat SEPA est finalisé après le premier paiement carte bancaire validé (statut paid côté Mollie). Ensuite, les prélèvements trimestriels suivants utilisent ce mandat (T2, T3, T4).",
+    id: "parcours-sepa",
+  },
+  {
+    q: "J'ai payé le 1er trimestre, mais je ne vois pas encore le SEPA : que faire ?",
+    r: "Vérifiez d'abord que le paiement carte est bien confirmé. Le mandat SEPA est créé juste après via le webhook de paiement. Si l'information n'apparaît pas dans un délai raisonnable, contactez le support avec l'email du compte et l'identifiant de paiement Mollie (tr_xxx) pour vérification immédiate.",
+    id: "parcours-sepa-blocage",
+  },
   // FAQ parcours souscription
   { q: "Quelles sont les étapes de la souscription ?", r: "Sept étapes : devis → souscription → compte → signature électronique du contrat → mandat SEPA (IBAN, prélèvement trimestriel) → paiement (1er trimestre + frais par carte, puis prélèvements trimestriels) → confirmation (attestation dans l'espace client). Le détail pas à pas est dans la question « Quel est le parcours assurance décennale BTP ? ».", id: "souscription" },
   { q: "Dois-je créer un compte pour souscrire ?", r: "Oui. Après avoir rempli le formulaire de souscription, vous créez un compte avec votre email et un mot de passe. Ce compte vous permet d'accéder à votre attestation, de gérer vos documents et de déclarer un sinistre. La création du compte est rapide et sécurisée." },
