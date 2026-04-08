@@ -103,7 +103,7 @@ model ContractActionLog {
   createdAt  DateTime          @default(now())
 }
 
-/// Abonnement prélèvements SEPA trimestriels (T2–T4) après 1er trimestre CB — Mollie Customer + mandate.
+/// Abonnement prélèvements SEPA trimestriels après 1er trimestre CB — reconduction automatique annuelle.
 model SepaSubscription {
   id                  String    @id @default(cuid())
   userId              String    @unique
@@ -117,7 +117,7 @@ model SepaSubscription {
   firstTrimesterPaidAt DateTime?
   /// Prochaine échéance SEPA à traiter
   nextSepaDue         DateTime?
-  status              String    @default("active") // active | completed | pending_mandate | failed | cancelled
+  status              String    @default("active") // active | completed(legacy) | pending_mandate | failed | cancelled
   lastError           String?
   /// Prélèvement SEPA lancé, en attente du webhook Mollie (évite un doublon si le cron repasse)
   sepaPendingPaymentId String?

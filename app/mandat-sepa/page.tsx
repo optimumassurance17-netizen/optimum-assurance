@@ -14,7 +14,7 @@ import type { PeriodicitePrelevement } from "@/lib/types"
 import { getIbanValidationMessage, normalizeIban } from "@/lib/iban"
 import { readResponseJson } from "@/lib/read-response-json"
 
-/** Unique mode : trimestriel — 1er trimestre + frais en CB, puis 3 prélèvements SEPA trimestriels. */
+/** Unique mode : trimestriel — 1er trimestre + frais en CB, puis prélèvements SEPA trimestriels automatiques. */
 const PERIODICITE: PeriodicitePrelevement = "trimestriel"
 
 function calculerPremierMontant(primeAnnuelle: number): number {
@@ -156,7 +156,7 @@ export default function MandatSepaPage() {
           IBAN et mandat SEPA
         </h1>
         <p className="text-[#171717] mb-6">
-          Renseignez l&apos;IBAN pour les <strong>prélèvements SEPA trimestriels</strong> (après le premier règlement par carte).
+          Renseignez l&apos;IBAN pour les <strong>prélèvements SEPA trimestriels</strong> (après le premier règlement par carte), avec reconduction automatique annuelle.
         </p>
 
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
@@ -185,7 +185,7 @@ export default function MandatSepaPage() {
           <div className="p-4 bg-slate-100 rounded-xl border border-slate-200">
             <h3 className="font-medium text-black mb-2">Paiement trimestriel</h3>
             <p className="text-sm text-[#171717] mb-3">
-              <strong>4 échéances par an</strong> : le <strong>1er trimestre</strong> (avec {FRAIS_GESTION_PRELEVEMENT} € de frais de gestion) est réglé par <strong>carte bancaire</strong> à l&apos;étape suivante. Les <strong>3 trimestres suivants</strong> sont prélevés par <strong>SEPA</strong> sur l&apos;IBAN ci-dessous (montant par trimestre : 1/4 de la prime annuelle).
+              <strong>4 échéances par an</strong> : le <strong>1er trimestre</strong> (avec {FRAIS_GESTION_PRELEVEMENT} € de frais de gestion) est réglé par <strong>carte bancaire</strong> à l&apos;étape suivante. Les échéances suivantes sont prélevées par <strong>SEPA</strong> sur l&apos;IBAN ci-dessous (montant par trimestre : 1/4 de la prime annuelle), avec reconduction automatique.
             </p>
             <p className="text-sm font-medium text-black">
               1er montant à régler par carte : {premierMontant.toLocaleString("fr-FR")} €

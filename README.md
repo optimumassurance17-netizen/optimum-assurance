@@ -59,7 +59,7 @@ Documentation détaillée : **[docs/PARCOURS.md](./docs/PARCOURS.md)** (récap D
 
 `/devis` → `/souscription` → `/creer-compte` → `/signature` → `/mandat-sepa` → `/paiement` → `/confirmation`
 
-- **Paiement** : 1er trimestre + 60 € frais en **carte bancaire** ; suivants en **prélèvement SEPA trimestriel** (les montants du site sont des équivalents mensuels à titre indicatif).
+- **Paiement** : 1er trimestre + 60 € frais en **carte bancaire** ; suivants en **prélèvement SEPA trimestriel automatique** (reconduction annuelle ; les montants du site sont des équivalents mensuels à titre indicatif).
 - **Attestation** : disponible peu après validation du paiement en ligne.
 
 FAQ site : `/faq#parcours-do` et `/faq#parcours-decennale`
@@ -74,4 +74,4 @@ Utiliser [ngrok](https://ngrok.com) pour exposer le serveur :
 - **[MISE-EN-LIGNE.md](./MISE-EN-LIGNE.md)** — Étapes à suivre pour déployer (guide pas à pas)
 - [DEPLOYMENT.md](./DEPLOYMENT.md) — Référence technique complète
 - **[docs/OPS-CHECKLIST.md](./docs/OPS-CHECKLIST.md)** — Checklist rapide (HTTPS, crons, webhooks, ORIAS…)
-- **[docs/SEPA-RECURRENT-MOLLIE.md](./docs/SEPA-RECURRENT-MOLLIE.md)** — Feuille de route prélèvements SEPA T2–T4 (Mollie)
+- **[docs/SEPA-RECURRENT-MOLLIE.md](./docs/SEPA-RECURRENT-MOLLIE.md)** — Feuille de route prélèvements SEPA trimestriels (reconduction automatique, Mollie)

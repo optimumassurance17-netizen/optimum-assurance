@@ -1,16 +1,16 @@
-# Prélèvements SEPA trimestriels (T2–T4) — implémentation
+# Prélèvements SEPA trimestriels (reconduction automatique) — implémentation
 
 ## Parcours
 
 1. **1er trimestre** : paiement **carte** (Mollie), métadonnées avec `premierPaiementCarte`, `iban`, `titulaireCompte`, `primeAnnuelle` (`app/paiement/page.tsx`).
 2. **Webhook** `POST /api/mollie/webhook` : après paiement `paid`, création **Customer Mollie** + **mandat** `directdebit` sur l’IBAN, enregistrement **`SepaSubscription`** (`lib/mollie-sepa.ts` → `setupSepaSubscriptionAfterT1Card`).
 3. **Cron** `GET /api/cron/sepa-trimestriel` (sécurisé par `CRON_SECRET`, planifié dans `vercel.json`) : pour chaque abonnement avec `nextSepaDue` atteint, `customerPayments.create` avec `sequenceType: recurring`, `mandateId`, `sepaPendingPaymentId` pour éviter les doublons avant réponse webhook.
-4. **Webhook** : `metadata.type === sepa_trimestre` → incrémente `trimestresSepaPayes`, recalcule `nextSepaDue` (+3 mois) ou `completed` ; échec → `lastError` et libère `sepaPendingPaymentId`.
+4. **Webhook** : `metadata.type === sepa_trimestre` → incrémente `trimestresSepaPayes`, recalcule `nextSepaDue` (+3 mois) ; échec → `lastError` et libère `sepaPendingPaymentId`. La reconduction annuelle continue automatiquement tant que l’abonnement n’est pas annulé.
 
 ## Objectif métier
 
 - Montant : `primeTrimestrielle` = `primeAnnuelle / 4` (arrondi comme sur la page paiement / `lib/mollie-sepa.ts` → `primeTrimestrielle`).
-- Calendrier : `nextSepaDue` = +3 mois après le paiement T1 (carte), puis +3 mois après chaque prélèvement SEPA réussi.
+- Calendrier : `nextSepaDue` = +3 mois après le paiement T1 (carte), puis +3 mois après chaque prélèvement SEPA réussi (reconduction automatique).
 
 ## Données
 

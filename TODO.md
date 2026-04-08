@@ -4,7 +4,7 @@ Liste issue de l’audit projet. Cocher au fur et à mesure.
 
 ## Paiement décennale trimestriel (à finaliser côté ops / dev)
 
-- [x] **Prélèvements SEPA automatiques** (T2–T4) : **Customer + mandat** Mollie au webhook après T1 CB ; **cron** `/api/cron/sepa-trimestriel` + prélèvements `sequenceType: recurring`. Voir [docs/SEPA-RECURRENT-MOLLIE.md](./docs/SEPA-RECURRENT-MOLLIE.md). À valider en **test/live** sur votre compte Mollie (`db push`, `CRON_SECRET`, planification Vercel).
+- [x] **Prélèvements SEPA automatiques** (reconduction annuelle) : **Customer + mandat** Mollie au webhook après T1 CB ; **cron** `/api/cron/sepa-trimestriel` + prélèvements `sequenceType: recurring`. Voir [docs/SEPA-RECURRENT-MOLLIE.md](./docs/SEPA-RECURRENT-MOLLIE.md). À valider en **test/live** sur votre compte Mollie (`db push`, `CRON_SECRET`, planification Vercel).
 
 ## Technique
 

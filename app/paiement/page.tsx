@@ -12,7 +12,7 @@ import { STORAGE_KEYS, FRAIS_GESTION_PRELEVEMENT } from "@/lib/types"
 import type { PeriodicitePrelevement } from "@/lib/types"
 import { readResponseJson } from "@/lib/read-response-json"
 
-/** Échéancier trimestriel uniquement : 1er trimestre + frais (CB), puis 3 × trimestre en SEPA. */
+/** Échéancier trimestriel : 1er trimestre + frais (CB), puis prélèvements SEPA trimestriels en reconduction automatique. */
 function calculerEcheancierTrimestriel(primeAnnuelle: number) {
   const frais = FRAIS_GESTION_PRELEVEMENT
   const trimestriel = Math.round((primeAnnuelle / 4) * 100) / 100
@@ -235,7 +235,7 @@ export default function PaiementPage() {
           Paiement
         </h1>
         <p className="text-black mb-6">
-          Le premier trimestre (avec frais de gestion) est réglé par <strong>carte bancaire</strong> (Mollie). Les trois trimestres suivants sont prélevés par <strong>SEPA trimestriel</strong> sur l’IBAN du mandat.
+          Le premier trimestre (avec frais de gestion) est réglé par <strong>carte bancaire</strong> (Mollie). Les échéances suivantes sont prélevées par <strong>SEPA trimestriel</strong> sur l’IBAN du mandat, avec reconduction automatique annuelle.
         </p>
 
         <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-6">
@@ -261,7 +261,7 @@ export default function PaiementPage() {
         </div>
 
         <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-6">
-          <h3 className="font-semibold text-black mb-3">Coordonnées bancaires (prélèvements suivants)</h3>
+          <h3 className="font-semibold text-black mb-3">Coordonnées bancaires (prélèvements suivants et reconduction)</h3>
           <dl className="grid gap-2 text-sm">
             <div className="flex justify-between">
               <dt className="text-black">IBAN</dt>
@@ -289,13 +289,13 @@ export default function PaiementPage() {
             1er règlement par <strong>carte bancaire</strong> (1er trimestre + {FRAIS_GESTION_PRELEVEMENT} € de frais de gestion)
           </p>
           <p className="text-sm text-black mt-1">
-            Puis <strong>3 prélèvements SEPA trimestriels</strong> de {ech.montantEcheance.toLocaleString("fr-FR")} € sur l’IBAN ci-dessus (mandat SEPA).
+            Puis prélèvements <strong>SEPA trimestriels</strong> de {ech.montantEcheance.toLocaleString("fr-FR")} € sur l’IBAN ci-dessus (mandat SEPA), avec reconduction automatique.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <p className="text-sm text-black">
-            Paiement sécurisé : 1er trimestre par carte bancaire (Mollie), puis prélèvements SEPA trimestriels sur l’IBAN indiqué.
+            Paiement sécurisé : 1er trimestre par carte bancaire (Mollie), puis prélèvements SEPA trimestriels automatiques sur l’IBAN indiqué.
           </p>
 
           {error && (

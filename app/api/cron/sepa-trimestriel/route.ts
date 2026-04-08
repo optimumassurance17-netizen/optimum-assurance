@@ -10,9 +10,17 @@ import { prisma } from "@/lib/prisma"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 
 /**
- * Déclenche les prélèvements SEPA trimestriels (T2–T4) lorsque `nextSepaDue` est atteint.
+ * Déclenche les prélèvements SEPA trimestriels lorsque `nextSepaDue` est atteint.
+ * Reconduction automatique : la cadence trimestrielle se poursuit d'année en année
+ * tant que l'abonnement n'est pas annulé.
  * Sécurisé par CRON_SECRET (voir `lib/cron-auth.ts`).
  */
+function addMonths(d: Date, months: number): Date {
+  const out = new Date(d.getTime())
+  out.setMonth(out.getMonth() + months)
+  return out
+}
+
 export async function GET(request: NextRequest) {
   try {
     const denied = assertCronAuthorized(request)
@@ -30,10 +38,36 @@ export async function GET(request: NextRequest) {
     const now = new Date()
     const mollie = createMollieClient({ apiKey })
 
+    // Compatibilité historique: avant reconduction auto, certains abonnements étaient
+    // marqués completed avec nextSepaDue=null après T4. On les réactive.
+    const legacyCompleted = await prisma.sepaSubscription.findMany({
+      where: {
+        status: "completed",
+        nextSepaDue: null,
+      },
+      select: {
+        id: true,
+        firstTrimesterPaidAt: true,
+        createdAt: true,
+        trimestresSepaPayes: true,
+      },
+    })
+    for (const sub of legacyCompleted) {
+      const anchor = sub.firstTrimesterPaidAt ?? sub.createdAt
+      const resumedDue = addMonths(anchor, (sub.trimestresSepaPayes + 1) * 3)
+      await prisma.sepaSubscription.update({
+        where: { id: sub.id },
+        data: {
+          status: "active",
+          nextSepaDue: resumedDue,
+        },
+      })
+    }
+
     const due = await prisma.sepaSubscription.findMany({
       where: {
         status: { in: ["active", "pending_mandate"] },
-        trimestresSepaPayes: { lt: 3 },
+        sepaPendingPaymentId: null,
         nextSepaDue: { lte: now },
       },
       include: { user: { select: { id: true, email: true, raisonSociale: true } } },
@@ -80,7 +114,7 @@ export async function GET(request: NextRequest) {
           customerId: sub.mollieCustomerId,
           mandateId: sub.mollieMandateId,
           amount,
-          description: `Décennale — trimestre SEPA ${idx}/3 — ${sub.user.raisonSociale || sub.user.email}`,
+          description: `Décennale — prélèvement SEPA trimestriel #${idx} — ${sub.user.raisonSociale || sub.user.email}`,
           webhookUrl,
           redirectUrl,
           metadata: {
@@ -89,7 +123,7 @@ export async function GET(request: NextRequest) {
             userId: sub.userId,
             email: sub.user.email,
             raisonSociale: sub.user.raisonSociale || "",
-            trimestreIndex: String(idx),
+            sepaInstallmentNumber: String(idx),
           },
           idempotencyKey,
         })

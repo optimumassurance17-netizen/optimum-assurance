@@ -9,7 +9,7 @@
 | 3 | Secrets | `CRON_SECRET` défini en prod (les crons Vercel renvoient **503** si absent en production — voir `lib/cron-auth.ts`). |
 | 4 | Webhooks | Mollie → `/api/mollie/webhook`. |
 | 5 | Signature | Supabase : `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` + SQL `sign_*` (voir `sql/supabase-esign-complete.sql`). |
-| 6 | SEPA T2–T4 | Table `SepaSubscription` : `npx prisma db push` après déploiement ; cron `/api/cron/sepa-trimestriel` (Vercel 07:00 UTC) + doc [SEPA-RECURRENT-MOLLIE.md](./SEPA-RECURRENT-MOLLIE.md). |
+| 6 | SEPA trimestriel (reconduction auto) | Table `SepaSubscription` : `npx prisma db push` après déploiement ; cron `/api/cron/sepa-trimestriel` (Vercel 07:00 UTC) + doc [SEPA-RECURRENT-MOLLIE.md](./SEPA-RECURRENT-MOLLIE.md). |
 | 7 | Légal | Relire CGV / contrats ; renseigner `NEXT_PUBLIC_ORIAS_*`, `NEXT_PUBLIC_LEGAL_*` dans `.env`. |
 
 Guides détaillés : `GUIDE-MISE-EN-LIGNE-SIMPLE.md`, `DEPLOYMENT.md`.
