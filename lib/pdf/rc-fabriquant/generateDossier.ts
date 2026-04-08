@@ -8,7 +8,6 @@ import { embedStandardFonts } from "@/lib/pdf/shared/initPdf"
 import { finalizeWithFooters } from "@/lib/pdf/shared/finalizePdf"
 import { loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
 import type { RcFabDossierConfig } from "@/lib/rc-fabriquant-dossier-config"
-import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 
 export type RcFabBatteriesDocumentData = {
   nomSociete: string
@@ -173,7 +172,7 @@ export async function generateRcFabBatteriesQuotePdf(
     13
   )
   state = drawParagraph(state, `Mentions utiles : ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`, font, 8, 11)
-  state = drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 11)
+  drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 11)
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }
@@ -237,7 +236,7 @@ export async function generateRcFabBatteriesFicPdf(
   )
 
   state = drawParagraph(state, `Devoir de conseil : ${DEVOIR_CONSEIL_TEXT_BY_PRODUCT.rc_fabriquant.contenu}`, font, 8.8, 11)
-  state = drawParagraph(state, getDevoirConseilLinksLine("rc_fabriquant"), font, 8, 10)
+  drawParagraph(state, getDevoirConseilLinksLine("rc_fabriquant"), font, 8, 10)
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }
@@ -417,7 +416,7 @@ export async function generateRcFabBatteriesCertificatePdf(
   )
   state = drawParagraph(state, `Vérification publique : ${SITE_URL}/verify/${encodeURIComponent(data.referenceContrat)}`, font, 8.4, 10)
   state = drawParagraph(state, `Mentions utiles : ${SITE_URL}/conditions-attestations`, font, 8, 10)
-  state = drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
+  drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }

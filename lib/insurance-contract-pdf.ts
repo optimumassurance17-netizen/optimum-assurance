@@ -16,15 +16,11 @@ import {
 } from "@/lib/legal-branding"
 import { SITE_URL } from "@/lib/site-url"
 import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
-import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
-import { DEVOIR_CONSEIL_TEXT_BY_PRODUCT } from "@/lib/devoir-conseil"
 import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
-import { drawAttestationStampBottomRight, loadAttestationStampImage } from "@/lib/pdf/shared/attestationStamp"
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
 import { primeTrimestrielle } from "@/lib/mollie-sepa"
-import { FRANCHISE_RC_FABRIQUANT_EUR } from "@/lib/rc-fabriquant-underwriting"
 import {
   generateRcFabBatteriesCertificatePdf,
   generateRcFabBatteriesFicPdf,
@@ -159,146 +155,6 @@ async function loadSignedQuotePdfBytes(storageKey: string): Promise<Uint8Array> 
     throw new Error("Fichier PDF signé introuvable ou expiré.")
   }
   return new Uint8Array(await data.arrayBuffer())
-}
-
-/** CP synthétique : le contrat détaillé est le PDF devis signé par le client. */
-async function generateRcFabQuotePlaceholderPdf(c: InsuranceContract): Promise<Uint8Array> {
-  const pdf = await PDFDocument.create()
-  const font = await pdf.embedFont(StandardFonts.Helvetica)
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
-  const page = pdf.addPage([595.28, 841.89])
-  const accelLogo = await loadAccelerantLogoImage(pdf)
-  let y = 780
-  if (accelLogo) {
-    const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
-    y = imgBottom - 22
-  }
-  page.drawText(sanitizeForPdfLib("Devis — RC Fabriquant"), { x: 50, y, size: 16, font: bold })
-  y -= 28
-  page.drawText(sanitizeForPdfLib(`Contrat ${c.contractNumber}`), { x: 50, y, size: 11, font: bold })
-  y -= 20
-  const p1 =
-    "Le devis contractuel RC Fabriquant est le PDF signé électroniquement par le client. Ce document est disponible dès signature dans l'espace client."
-  page.drawText(sanitizeForPdfLib(p1), { x: 50, y, size: 10, font, maxWidth: 500 })
-  y -= 44
-  page.drawText(
-    sanitizeForPdfLib(
-      "Aucun contenu Décennale/DO n'est utilisé dans ce flux: génération et pièces strictement dédiées RC Fabriquant."
-    ),
-    { x: 50, y, size: 10, font, maxWidth: 500 }
-  )
-  y -= 32
-  page.drawText(sanitizeForPdfLib(`Prime convenue : ${formatEuro(c.premium)} TTC.`), { x: 50, y, size: 10, font })
-  y -= 18
-  page.drawText(
-    sanitizeForPdfLib(`Franchise contractuelle : ${FRANCHISE_RC_FABRIQUANT_EUR.toLocaleString("fr-FR")} €.`),
-    { x: 50, y, size: 10, font }
-  )
-  y -= 18
-  page.drawText(sanitizeForPdfLib(`Assuré : ${c.clientName}`), { x: 50, y, size: 10, font })
-  page.drawText(sanitizeForPdfLib(LEGAL_DELEGATION_MANDATORY), { x: 50, y: 72, size: 8, font: bold, maxWidth: 500 })
-  page.drawText(sanitizeForPdfLib(`ORIAS ${ORIAS_NUMBER}`), { x: 50, y: 56, size: 8, font })
-  return pdf.save()
-}
-
-/** CP synthétique : le contrat détaillé est le PDF devis signé par le client. */
-async function generateRcFabPolicyPlaceholderPdf(c: InsuranceContract): Promise<Uint8Array> {
-  const pdf = await PDFDocument.create()
-  const font = await pdf.embedFont(StandardFonts.Helvetica)
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
-  const page = pdf.addPage([595.28, 841.89])
-  const accelLogo = await loadAccelerantLogoImage(pdf)
-  let y = 780
-  if (accelLogo) {
-    const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
-    y = imgBottom - 22
-  }
-  page.drawText(sanitizeForPdfLib("Conditions — RC Fabriquant"), { x: 50, y, size: 16, font: bold })
-  y -= 28
-  page.drawText(sanitizeForPdfLib(`Contrat ${c.contractNumber}`), { x: 50, y, size: 11, font: bold })
-  y -= 20
-  const p1 =
-    "Les stipulations contractuelles applicables sont celles du document de proposition / devis que vous avez signé électroniquement. Ce document est disponible dans votre espace client sous « Devis PDF »."
-  page.drawText(sanitizeForPdfLib(p1), { x: 50, y, size: 10, font, maxWidth: 500 })
-  y -= 44
-  page.drawText(sanitizeForPdfLib(`Prime convenue : ${formatEuro(c.premium)} TTC.`), { x: 50, y, size: 10, font })
-  y -= 18
-  page.drawText(
-    sanitizeForPdfLib(`Franchise contractuelle : ${FRANCHISE_RC_FABRIQUANT_EUR.toLocaleString("fr-FR")} €.`),
-    { x: 50, y, size: 10, font }
-  )
-  y -= 18
-  page.drawText(
-    sanitizeForPdfLib(
-      `Protection juridique : ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € de garantie.`
-    ),
-    { x: 50, y, size: 10, font }
-  )
-  y -= 18
-  page.drawText(sanitizeForPdfLib(`Assuré : ${c.clientName}`), { x: 50, y, size: 10, font })
-  y -= 18
-  page.drawText(sanitizeForPdfLib(`Siège / adresse déclarée : ${c.address}`), { x: 50, y, size: 10, font, maxWidth: 500 })
-  y -= 36
-  const devoirConseilRcFab = DEVOIR_CONSEIL_TEXT_BY_PRODUCT.rc_fabriquant
-  page.drawText(sanitizeForPdfLib("Devoir de conseil :"), { x: 50, y, size: 10, font: bold })
-  y -= 14
-  page.drawText(sanitizeForPdfLib(devoirConseilRcFab.contenu), { x: 50, y, size: 9, font, maxWidth: 500, lineHeight: 12 })
-  y -= 46
-  page.drawText(
-    sanitizeForPdfLib(
-      `Références : ${SITE_URL}${devoirConseilRcFab.lienCgv} — ${SITE_URL}${devoirConseilRcFab.lienAttestations} — ${SITE_URL}${devoirConseilRcFab.lienFaq}`
-    ),
-    { x: 50, y, size: 8, font, maxWidth: 500 }
-  )
-  y -= 20
-  page.drawText(sanitizeForPdfLib(LEGAL_DELEGATION_MANDATORY), { x: 50, y: 72, size: 8, font: bold, maxWidth: 500 })
-  page.drawText(sanitizeForPdfLib(`ORIAS ${ORIAS_NUMBER}`), { x: 50, y: 56, size: 8, font })
-  return pdf.save()
-}
-
-/** Attestation courte après encaissement (complément au devis signé). */
-async function generateRcFabAttestationPdf(c: InsuranceContract): Promise<Uint8Array> {
-  const pdf = await PDFDocument.create()
-  const font = await pdf.embedFont(StandardFonts.Helvetica)
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
-  const page = pdf.addPage([595.28, 841.89])
-  const accelLogo = await loadAccelerantLogoImage(pdf)
-  let y = 780
-  if (accelLogo) {
-    const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
-    y = imgBottom - 22
-  }
-  page.drawText(sanitizeForPdfLib("ATTESTATION D’ASSURANCE"), { x: 50, y, size: 16, font: bold })
-  y -= 28
-  page.drawText(sanitizeForPdfLib("Responsabilité civile fabricant"), { x: 50, y, size: 12, font: bold })
-  y -= 24
-  page.drawText(sanitizeForPdfLib(`Contrat ${c.contractNumber}`), { x: 50, y, size: 10, font })
-  y -= 18
-  page.drawText(sanitizeForPdfLib(`Assuré : ${c.clientName}`), { x: 50, y, size: 10, font })
-  y -= 16
-  page.drawText(sanitizeForPdfLib(`Adresse : ${c.address}`), { x: 50, y, size: 10, font, maxWidth: 500 })
-  y -= 28
-  const vf = c.validFrom ?? c.paidAt ?? c.createdAt
-  const vu = c.validUntil ?? c.createdAt
-  page.drawText(
-    sanitizeForPdfLib(
-      `Garantie souscrite — effet au paiement enregistré. Période : du ${vf.toLocaleDateString("fr-FR")} au ${vu.toLocaleDateString("fr-FR")} (sous réserve des conditions du devis signé).`
-    ),
-    { x: 50, y, size: 10, font, maxWidth: 500 }
-  )
-  y -= 40
-  page.drawText(sanitizeForPdfLib("Vérification : " + SITE_URL + "/verify/" + encodeURIComponent(c.contractNumber)), {
-    x: 50,
-    y,
-    size: 9,
-    font,
-    maxWidth: 500,
-  })
-  y -= 36
-  page.drawText(sanitizeForPdfLib(LEGAL_DELEGATION_MANDATORY), { x: 50, y: 72, size: 8, font: bold, maxWidth: 500 })
-  const stamp = await loadAttestationStampImage(pdf)
-  if (stamp) drawAttestationStampBottomRight(page, stamp)
-  return pdf.save()
 }
 
 function toRcFabDossierData(c: InsuranceContract) {

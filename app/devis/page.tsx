@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState, useEffect, useCallback } from "react"
+import { Suspense, useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/Header"
@@ -20,7 +20,10 @@ import { readResponseJson } from "@/lib/read-response-json"
 function DevisPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const safeSearchParams = searchParams ?? new URLSearchParams()
+  const safeSearchParams = useMemo(
+    () => searchParams ?? new URLSearchParams(),
+    [searchParams]
+  )
   const [activites, setActivites] = useState<string[]>([])
   const [activiteSelectionnee, setActiviteSelectionnee] = useState("")
   const [siret, setSiret] = useState("")
