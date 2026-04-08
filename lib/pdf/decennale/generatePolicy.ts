@@ -10,6 +10,7 @@ import { PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 import { getDevoirConseilText, getDevoirConseilLinksLine } from "@/lib/devoir-conseil"
+import { DECENNALE_LEGAL_CLAUSES } from "@/lib/decennale-legal-clauses"
 
 /**
  * Conditions particulières — contrat décennale (pdf-lib).
@@ -73,6 +74,10 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
     getDevoirConseilLinksLine(),
     `Conditions générales et attestations : ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`,
   ]
+
+  const exclusionsUpper = DECENNALE_LEGAL_CLAUSES.EXCLUSIONS_RC_DECENNALE.toUpperCase()
+  const decheanceUpper = DECENNALE_LEGAL_CLAUSES.DECHEANCE_GARANTIE.toUpperCase()
+  clauses.push(exclusionsUpper, decheanceUpper)
 
   for (const c of clauses) {
     y = drawWrappedText(page, c, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 9, 12)
