@@ -287,6 +287,28 @@ export async function GET() {
       }
     })
 
+    const rcLeadEmails = [
+      ...new Set(
+        devisRcFabriquantLeads
+          .map((lead) => lead.email.trim().toLowerCase())
+          .filter((email) => email.length > 0)
+      ),
+    ]
+    const rcLeadUsers =
+      rcLeadEmails.length > 0
+        ? await prisma.user.findMany({
+            where: { email: { in: rcLeadEmails } },
+            select: { id: true, email: true, raisonSociale: true },
+          })
+        : []
+    const rcLeadUserByEmail = new Map(
+      rcLeadUsers.map((u) => [u.email.trim().toLowerCase(), u] as const)
+    )
+    const devisRcFabriquantLeadsWithUser = devisRcFabriquantLeads.map((lead) => ({
+      ...lead,
+      matchedUser: rcLeadUserByEmail.get(lead.email.trim().toLowerCase()) ?? null,
+    }))
+
     const now = new Date()
     const todayStart = startOfUtcDay(now)
     const reminder24hMs = 24 * 60 * 60 * 1000
@@ -382,7 +404,7 @@ export async function GET() {
       })
     }
 
-    for (const l of devisRcFabriquantLeads) {
+    for (const l of devisRcFabriquantLeadsWithUser) {
       if (normalizeRcFabriquantLeadStatut(l.statut) !== "a_traiter") continue
       const ageMs = now.getTime() - l.createdAt.getTime()
       if (ageMs < reminder24hMs) continue
@@ -415,7 +437,7 @@ export async function GET() {
       payments,
       avenantFees,
       devisDoLeads,
-      devisRcFabriquantLeads,
+      devisRcFabriquantLeads: devisRcFabriquantLeadsWithUser,
       devisEtudeLeads,
       resiliationLogs,
       resiliationRequests,

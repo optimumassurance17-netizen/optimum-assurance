@@ -126,6 +126,7 @@ interface DashboardData {
     propositionEnvoyeeAt: string | null
     createdAt: string
     updatedAt: string
+    userId: string | null
   }[]
   devisEtudeLeads?: { id: string; email: string; raisonSociale: string | null; siret: string | null; data: string; statut: string; createdAt: string }[]
   documents: {
@@ -2535,6 +2536,10 @@ export default function GestionPage() {
                     const serverNotes = d.notesInternes ?? ""
                     const dirty =
                       draft.statut !== serverSt || draft.notes.trim() !== serverNotes.trim()
+                    const matchedUser =
+                      d.userId && d.userId.trim().length > 0
+                        ? data.users.find((u) => u.id === d.userId) ?? null
+                        : data.users.find((u) => u.email.toLowerCase() === d.email.toLowerCase()) ?? null
                     return (
                       <tr key={d.id} className="border-b border-gray-700/50 align-top">
                         <td className="p-3 sm:p-4">{d.email}</td>
@@ -2649,6 +2654,43 @@ export default function GestionPage() {
                             >
                               E-mail proposition
                             </button>
+                            {matchedUser ? (
+                              <Link
+                                href={`/gestion/clients/${matchedUser.id}`}
+                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-[#2563eb]/60 text-[#93c5fd] hover:bg-[#2563eb]/20 inline-flex items-center justify-center"
+                              >
+                                Fiche client
+                              </Link>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch("/api/gestion/users/create-from-lead", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ leadId: d.id, leadType: "rc_fabriquant" }),
+                                    })
+                                    const json = await readResponseJson<{ error?: string; email?: string }>(res)
+                                    if (!res.ok) throw new Error(json.error || "Erreur")
+                                    setToast({
+                                      message: `Compte créé pour ${json.email || d.email}`,
+                                      type: "success",
+                                    })
+                                    const dashRes = await fetch("/api/gestion/dashboard")
+                                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                  } catch (err) {
+                                    setToast({
+                                      message: err instanceof Error ? err.message : "Erreur",
+                                      type: "error",
+                                    })
+                                  }
+                                }}
+                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-sky-500/70 text-sky-200 hover:bg-sky-900/30"
+                              >
+                                Créer compte
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
