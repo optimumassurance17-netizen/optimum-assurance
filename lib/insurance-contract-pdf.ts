@@ -32,12 +32,15 @@ function platformQuotePolicyBundleMode(c: InsuranceContract): "proposition" | "c
 }
 
 function contractToInsuranceData(c: InsuranceContract): InsuranceData {
+  if (c.productType !== "decennale" && c.productType !== "do") {
+    throw new Error("INSURANCE_DATA_UNSUPPORTED_PRODUCT")
+  }
   const activities = parseActivitiesJson(c.activitiesJson)
   const exclusions = parseExclusionsJson(c.exclusionsJson)
   const vf = c.validFrom ?? c.paidAt ?? c.createdAt
   const vu = c.validUntil ?? c.createdAt
   return {
-    productType: c.productType === "do" ? "do" : "decennale",
+    productType: c.productType,
     clientName: c.clientName,
     siret: c.siret ?? undefined,
     address: c.address,
@@ -152,6 +155,46 @@ async function loadSignedQuotePdfBytes(storageKey: string): Promise<Uint8Array> 
 }
 
 /** CP synthétique : le contrat détaillé est le PDF devis signé par le client. */
+async function generateRcFabQuotePlaceholderPdf(c: InsuranceContract): Promise<Uint8Array> {
+  const pdf = await PDFDocument.create()
+  const font = await pdf.embedFont(StandardFonts.Helvetica)
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
+  const page = pdf.addPage([595.28, 841.89])
+  const accelLogo = await loadAccelerantLogoImage(pdf)
+  let y = 780
+  if (accelLogo) {
+    const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
+    y = imgBottom - 22
+  }
+  page.drawText(sanitizeForPdfLib("Devis — RC Fabriquant"), { x: 50, y, size: 16, font: bold })
+  y -= 28
+  page.drawText(sanitizeForPdfLib(`Contrat ${c.contractNumber}`), { x: 50, y, size: 11, font: bold })
+  y -= 20
+  const p1 =
+    "Le devis contractuel RC Fabriquant est le PDF signé électroniquement par le client. Ce document est disponible dès signature dans l'espace client."
+  page.drawText(sanitizeForPdfLib(p1), { x: 50, y, size: 10, font, maxWidth: 500 })
+  y -= 44
+  page.drawText(
+    sanitizeForPdfLib(
+      "Aucun contenu Décennale/DO n'est utilisé dans ce flux: génération et pièces strictement dédiées RC Fabriquant."
+    ),
+    { x: 50, y, size: 10, font, maxWidth: 500 }
+  )
+  y -= 32
+  page.drawText(sanitizeForPdfLib(`Prime convenue : ${formatEuro(c.premium)} TTC.`), { x: 50, y, size: 10, font })
+  y -= 18
+  page.drawText(
+    sanitizeForPdfLib(`Franchise contractuelle : ${FRANCHISE_RC_FABRIQUANT_EUR.toLocaleString("fr-FR")} €.`),
+    { x: 50, y, size: 10, font }
+  )
+  y -= 18
+  page.drawText(sanitizeForPdfLib(`Assuré : ${c.clientName}`), { x: 50, y, size: 10, font })
+  page.drawText(sanitizeForPdfLib(LEGAL_DELEGATION_MANDATORY), { x: 50, y: 72, size: 8, font: bold, maxWidth: 500 })
+  page.drawText(sanitizeForPdfLib(`ORIAS ${ORIAS_NUMBER}`), { x: 50, y: 56, size: 8, font })
+  return pdf.save()
+}
+
+/** CP synthétique : le contrat détaillé est le PDF devis signé par le client. */
 async function generateRcFabPolicyPlaceholderPdf(c: InsuranceContract): Promise<Uint8Array> {
   const pdf = await PDFDocument.create()
   const font = await pdf.embedFont(StandardFonts.Helvetica)
@@ -252,37 +295,55 @@ async function generateRcFabAttestationPdf(c: InsuranceContract): Promise<Uint8A
 }
 
 export async function renderContractPdf(c: InsuranceContract, docType: DocPdfType): Promise<Uint8Array> {
-  const data = contractToInsuranceData(c)
   if (docType === "schedule") {
+    if (c.productType !== "decennale" && c.productType !== "rc_fabriquant") {
+      throw new Error("DOC_NOT_AVAILABLE_FOR_PRODUCT")
+    }
     return generateQuarterlyScheduleInsurancePdf(c)
   }
   if (docType === "invoice") {
     return generateSimpleInvoicePdf(c)
   }
   if (docType === "quote") {
-    if (c.productType === "rc_fabriquant" && c.signedQuoteStorageKey?.trim()) {
-      return loadSignedQuotePdfBytes(c.signedQuoteStorageKey.trim())
+    if (c.productType === "rc_fabriquant") {
+      if (c.signedQuoteStorageKey?.trim()) {
+        return loadSignedQuotePdfBytes(c.signedQuoteStorageKey.trim())
+      }
+      return generateRcFabQuotePlaceholderPdf(c)
     }
     if (c.productType === "do") {
+      const data = contractToInsuranceData(c)
       return generateDOQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
     }
-    return generateDecennaleQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
+    if (c.productType === "decennale") {
+      const data = contractToInsuranceData(c)
+      return generateDecennaleQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
+    }
+    throw new Error("UNKNOWN_PRODUCT_TYPE")
   }
   if (docType === "policy") {
     if (c.productType === "rc_fabriquant") return generateRcFabPolicyPlaceholderPdf(c)
     if (c.productType === "do") {
+      const data = contractToInsuranceData(c)
       return generateDOQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
     }
-    return generateDecennaleQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
+    if (c.productType === "decennale") {
+      const data = contractToInsuranceData(c)
+      return generateDecennaleQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
+    }
+    throw new Error("UNKNOWN_PRODUCT_TYPE")
   }
   if (docType === "certificate") {
-    const cert = toCertificateData(c)
-    if (!cert.paymentConfirmed || !cert.insurerValidated) {
+    if (!c.paidAt || !c.insurerValidatedAt) {
       throw new Error("CERTIFICATE_NOT_ALLOWED")
     }
     if (c.productType === "rc_fabriquant") return generateRcFabAttestationPdf(c)
+    const cert = toCertificateData(c)
+    if (c.productType === "decennale") {
+      return generateDecennaleCertificate(cert)
+    }
     if (c.productType === "do") return generateDOCertificate(cert)
-    return generateDecennaleCertificate(cert)
+    throw new Error("UNKNOWN_PRODUCT_TYPE")
   }
   throw new Error("UNKNOWN_DOC_TYPE")
 }

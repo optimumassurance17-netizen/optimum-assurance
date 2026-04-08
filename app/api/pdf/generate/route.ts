@@ -41,15 +41,25 @@ export async function POST(request: NextRequest) {
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : ""
-    if (msg === "CERTIFICATE_NOT_ALLOWED" || msg === "QR_CODE_GENERATION_FAILED") {
+    if (
+      msg === "CERTIFICATE_NOT_ALLOWED" ||
+      msg === "QR_CODE_GENERATION_FAILED" ||
+      msg === "DOC_NOT_AVAILABLE_FOR_PRODUCT" ||
+      msg === "INSURANCE_DATA_UNSUPPORTED_PRODUCT" ||
+      msg === "UNKNOWN_PRODUCT_TYPE" ||
+      msg === "UNKNOWN_DOC_TYPE"
+    ) {
       const isQr = msg === "QR_CODE_GENERATION_FAILED"
+      const isCert = msg === "CERTIFICATE_NOT_ALLOWED"
       return NextResponse.json(
         {
           error: isQr
             ? "Génération du QR de vérification impossible."
-            : "Attestation non disponible (paiement ou validation assureur requis)",
+            : isCert
+              ? "Attestation non disponible (paiement ou validation assureur requis)"
+              : "Document indisponible pour ce produit d'assurance.",
         },
-        { status: isQr ? 503 : 403 }
+        { status: isQr ? 503 : isCert ? 403 : 400 }
       )
     }
     if (e instanceof PdfValidationError) {
