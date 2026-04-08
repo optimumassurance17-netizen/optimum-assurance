@@ -1,5 +1,6 @@
 /**
- * Score de risque souscription — si > seuil → examen manuel (pending_validation).
+ * Score de risque souscription.
+ * Règle produit: aucun refus automatique, uniquement validation manuelle.
  */
 
 export type RiskInput = {
@@ -14,6 +15,7 @@ export type RiskInput = {
 
 export type RiskResult = {
   score: number
+  /** Conservé pour compatibilité: true = validation manuelle renforcée. */
   reject: boolean
   reasons: string[]
 }
@@ -28,7 +30,7 @@ export function calculateRiskScore(data: RiskInput): RiskResult {
   let score = 0
 
   if (!data.siret?.trim()) {
-    return { score: 100, reject: true, reasons: ["SIRET requis — dossier refusé"] }
+    return { score: 100, reject: true, reasons: ["SIRET requis — validation manuelle obligatoire"] }
   }
 
   if (data.missingDocuments) {
