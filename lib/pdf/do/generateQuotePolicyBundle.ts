@@ -9,7 +9,6 @@ import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
-import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 import { DEVOIR_CONSEIL_DO } from "@/lib/devoir-conseil"
 
 const QUOTE_VALIDITY_DAYS = 30
@@ -137,7 +136,7 @@ export async function generateDOQuotePolicyBundle(
   y -= 14
   drawTextPdf(
     page1,
-    `Protection juridique : défense/recours jusqu’à ${formatEuro(PROTECTION_JURIDIQUE_GARANTIE_EUR)}.`,
+    "Protection juridique : défense/recours selon les conditions contractuelles applicables.",
     {
       x: PDF_PAGE.marginX,
       y,
@@ -245,7 +244,7 @@ export async function generateDOQuotePolicyBundle(
     `Période couverte : du ${data.startDate} au ${data.endDate}.`,
     `Prime TTC : ${formatEuro(data.premium)}.`,
     "Franchise : aucune (garantie obligatoire dommages-ouvrage).",
-    `Protection juridique : garantie défense/recours à hauteur de ${formatEuro(PROTECTION_JURIDIQUE_GARANTIE_EUR)} par litige couvert.`,
+    "Protection juridique : garantie défense/recours selon les conditions contractuelles applicables.",
     "Paiement : selon modalités contractuelles (virement ou prélèvement selon proposition).",
     `Devoir de conseil : ${DEVOIR_CONSEIL_DO.contenu}`,
     "Le souscripteur atteste l’exactitude des informations techniques. La garantie est subordonnée à l’étude du dossier et à l’acceptation du risque par l’assureur.",

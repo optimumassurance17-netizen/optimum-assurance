@@ -1,7 +1,6 @@
 import { PDFDocument } from "pdf-lib"
 import { SITE_URL } from "@/lib/site-url"
 import { contractBundleLegalParagraphs } from "@/lib/legal-branding"
-import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 import { DEVOIR_CONSEIL_DECENNALE_PDF } from "@/lib/devoir-conseil"
 import type { InsuranceData } from "../types"
 import { validateDecennaleQuote } from "../shared/pdfUtils"
@@ -118,18 +117,6 @@ export async function generateDecennaleQuotePolicyBundle(
     font: fontBold,
     color: PDF_COLORS.primary,
   })
-  y -= 20
-  drawTextPdf(
-    page1,
-    `Protection juridique incluse : ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € de garantie.`,
-    {
-      x: PDF_PAGE.marginX,
-      y,
-      size: 9,
-      font,
-      color: PDF_COLORS.muted,
-    }
-  )
   y -= 16
 
   if (mode === "proposition") {
@@ -217,7 +204,6 @@ export async function generateDecennaleQuotePolicyBundle(
     `Période : du ${data.startDate} au ${data.endDate}.`,
     `Activités garanties : ${data.activities!.join(", ")}.`,
     `Prime annuelle TTC : ${formatEuro(data.premium)}.`,
-    `Protection juridique : garantie plafonnée à ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € par litige couvert.`,
     "Paiement : prélèvement SEPA selon mandat et échéances contractuelles.",
     `Devoir de conseil : ${DEVOIR_CONSEIL_DECENNALE_PDF}`,
     "Le souscripteur atteste l’exactitude de ses déclarations. Signature et paiement valent engagement sous réserve d’acceptation du risque par l’assureur.",

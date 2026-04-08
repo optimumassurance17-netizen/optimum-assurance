@@ -11,7 +11,6 @@ import {
   ELEMENTS_DISSOCIABLES_NOTE,
 } from "@/lib/nomenclature-activites"
 import { COMPANY_BRAND, INSURER_NAME, LEGAL_ORIAS_LINE } from "@/lib/legal-branding"
-import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 import { DEVOIR_CONSEIL_TEXTE_BY_PRODUCT } from "@/lib/devoir-conseil"
 
 /**
@@ -192,8 +191,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
           Hors habitation : à hauteur du coût de réparation des dommages dans la limite du coût total de construction déclaré.
         </p>
         <p className="text-xs text-[#171717] mb-3">
-          Protection juridique : défense/recours en cas de litige garanti, à hauteur de{" "}
-          {PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} €.
+          Protection juridique : défense/recours en cas de litige garanti, selon les conditions contractuelles applicables.
         </p>
         <p className="text-xs text-[#171717] mb-3">Franchise : aucune (garantie obligatoire)</p>
         <p className="text-xs text-[#171717] mb-3">Validité : unique de 10 ans à partir de la signature. Non résiliable.</p>

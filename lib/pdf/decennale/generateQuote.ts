@@ -8,7 +8,6 @@ import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
-import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 import { DEVOIR_CONSEIL_TEXT, DEVOIR_CONSEIL_USEFUL_LINKS_LINE } from "@/lib/devoir-conseil"
 import { DECENNALE_CLAUSE_BLOCS } from "@/lib/decennale-legal-clauses"
 
@@ -114,7 +113,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
 
   drawTextPdf(
     page,
-    `Protection juridique : ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} €.`,
+    "Protection juridique : garantie défense/recours selon les conditions contractuelles.",
     {
     x: PDF_PAGE.marginX,
     y,
@@ -188,7 +187,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
     "6) Pièces et conformité : des justificatifs complémentaires peuvent être exigés avant l’émission définitive (Kbis, identité, antécédents, etc.).",
     "7) Déclaration du risque : toute information inexacte ou omission significative peut entraîner révision, exclusion, résiliation ou nullité selon le cadre contractuel.",
     "8) Validité : la proposition est valable 30 jours, sauf évolution du risque déclaré ou des conditions techniques de souscription.",
-    `9) Protection juridique : garantie défense/recours incluse, plafonnée à ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € par litige couvert.`,
+    "9) Protection juridique : garantie défense/recours incluse selon les conditions contractuelles applicables.",
   ]
 
   for (const line of details) {
