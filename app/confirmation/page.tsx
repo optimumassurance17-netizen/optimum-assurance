@@ -229,6 +229,7 @@ export default function ConfirmationPage() {
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
                     type: "attestation",
+                    paymentId,
                     data: {
                       ...docData,
                       dateEffet,

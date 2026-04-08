@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
+import { createMollieClient } from "@mollie/api-client"
 import { randomBytes } from "crypto"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
@@ -23,6 +24,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Type invalide" }, { status: 400 })
     }
 
+    if (type === "attestation") {
+      const paymentId = typeof body?.paymentId === "string" ? body.paymentId.trim() : ""
+      if (!/^tr_[A-Za-z0-9]+$/.test(paymentId)) {
+        return NextResponse.json(
+          { error: "paymentId Mollie requis pour créer une attestation" },
+          { status: 400 }
+        )
+      }
+
+      const apiKey = process.env.MOLLIE_API_KEY
+      if (!apiKey) {
+        return NextResponse.json(
+          { error: "Mollie non configuré (MOLLIE_API_KEY manquant)" },
+          { status: 503 }
+        )
+      }
+
+      const mollie = createMollieClient({ apiKey })
+      const payment = await mollie.payments.get(paymentId)
+      const metadata = (payment.metadata as Record<string, string>) || {}
+      const userMatch =
+        metadata.userId === session.user.id ||
+        (typeof session.user.email === "string" &&
+          typeof metadata.email === "string" &&
+          metadata.email.trim().toLowerCase() === session.user.email.trim().toLowerCase())
+
+      if (!userMatch || payment.status !== "paid" || metadata.type !== "decennale_premier_trimestre") {
+        return NextResponse.json(
+          { error: "Création d'attestation non autorisée pour ce paiement" },
+          { status: 403 }
+        )
+      }
+
+      const existing = await prisma.document.findFirst({
+        where: {
+          userId: session.user.id,
+          type: "attestation",
+          data: { contains: `"molliePaymentId":"${paymentId}"` },
+        },
+        select: { id: true, numero: true, verificationToken: true },
+      })
+      if (existing) {
+        return NextResponse.json(existing)
+      }
+    }
+
     const numero =
       customNumero && typeof customNumero === "string" && customNumero.length > 0
         ? customNumero
@@ -34,7 +81,17 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           type,
           numero,
-          data: JSON.stringify(data),
+          data: JSON.stringify(
+            type === "attestation" && data && typeof data === "object" && !Array.isArray(data)
+              ? {
+                  ...(data as Record<string, unknown>),
+                  molliePaymentId:
+                    typeof body?.paymentId === "string" && body.paymentId.trim().length > 0
+                      ? body.paymentId.trim()
+                      : undefined,
+                }
+              : data
+          ),
           ...(type === "attestation" && {
             verificationToken: generateVerificationToken(),
             status: "valide",
