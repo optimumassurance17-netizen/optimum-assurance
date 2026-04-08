@@ -14,7 +14,7 @@ const RC_FAB_PERIODICITY_META: Record<RcFabPeriodicity, RcFabPeriodicityMeta> = 
 }
 
 export const RC_FAB_BATTERIES_ACTIVITE = "fabrication de batteries"
-export const RC_FAB_BATTERIES_PROTECTION_JURIDIQUE_EUR = 200_000
+export const RC_FAB_BATTERIES_PROTECTION_JURIDIQUE_EUR = 20_000
 export const RC_FAB_BATTERIES_PLAFOND_EUR = 2_500_000
 export const RC_FAB_BATTERIES_FRANCHISE_EUR = 5_000
 

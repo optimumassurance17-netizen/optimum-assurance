@@ -20,7 +20,7 @@ const COMMON_MENTIONS: MentionCheck[] = [
 
 const RC_FAB_MENTIONS: MentionCheck[] = [
   { label: "mention protection juridique", regex: /protection\s+juridique/i },
-  { label: "montant protection juridique 200 000", regex: /200[\s\u00a0\u202f]*000/i },
+  { label: "montant protection juridique 20 000", regex: /20[\s\u00a0\u202f]*000/i },
   { label: "mention devoir de conseil", regex: /devoir\s+de\s+conseil/i },
 ]
 
