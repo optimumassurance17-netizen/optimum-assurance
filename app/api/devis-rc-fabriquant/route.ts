@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
 
   if (indicatif) {
     lines.push(
-      `— Indicatif interne — Score : ${indicatif.score} | Refus auto indicatif : ${indicatif.refuseAutomatiqueIndicatif ? "oui" : "non"}`
+      `— Indicatif interne — Score : ${indicatif.score} | Refus automatique : non (validation humaine)`
     )
     if (indicatif.motifRefusIndicatif) lines.push(`Motif indicatif : ${indicatif.motifRefusIndicatif}`)
     if (indicatif.primeIndicative) {

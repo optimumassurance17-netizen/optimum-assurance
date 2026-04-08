@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Mandat SEPA Mollie après 1er trimestre CB — idempotent côté DB
+      // Mandat SEPA Mollie après 1er trimestre CB — reconduction automatique annuelle (idempotent DB)
       if (
         user &&
         metadata.premierPaiementCarte === "true" &&

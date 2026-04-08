@@ -10,10 +10,8 @@ import { prisma } from "@/lib/prisma"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 
 /**
- * Déclenche les prélèvements SEPA trimestriels lorsque `nextSepaDue` est atteint.
- * Reconduction automatique : la cadence trimestrielle se poursuit d'année en année
- * tant que l'abonnement n'est pas annulé.
- * Sécurisé par CRON_SECRET (voir `lib/cron-auth.ts`).
+ * Déclenche les prélèvements SEPA trimestriels avec reconduction automatique annuelle
+ * lorsque `nextSepaDue` est atteint. Sécurisé par CRON_SECRET (voir `lib/cron-auth.ts`).
  */
 function addMonths(d: Date, months: number): Date {
   const out = new Date(d.getTime())
@@ -66,8 +64,7 @@ export async function GET(request: NextRequest) {
 
     const due = await prisma.sepaSubscription.findMany({
       where: {
-        status: { in: ["active", "pending_mandate"] },
-        sepaPendingPaymentId: null,
+        status: { in: ["active", "pending_mandate", "completed"] },
         nextSepaDue: { lte: now },
       },
       include: { user: { select: { id: true, email: true, raisonSociale: true } } },
@@ -99,7 +96,7 @@ export async function GET(request: NextRequest) {
           continue
         }
 
-        if (sub.status === "pending_mandate") {
+        if (sub.status === "pending_mandate" || sub.status === "completed") {
           await prisma.sepaSubscription.update({
             where: { id: sub.id },
             data: { status: "active", lastError: null },
@@ -114,7 +111,7 @@ export async function GET(request: NextRequest) {
           customerId: sub.mollieCustomerId,
           mandateId: sub.mollieMandateId,
           amount,
-          description: `Décennale — prélèvement SEPA trimestriel #${idx} — ${sub.user.raisonSociale || sub.user.email}`,
+          description: `Décennale — échéance SEPA trimestrielle #${idx} — ${sub.user.raisonSociale || sub.user.email}`,
           webhookUrl,
           redirectUrl,
           metadata: {

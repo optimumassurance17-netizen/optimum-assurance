@@ -46,5 +46,5 @@ Test manuel (effets réels : emails / Mollie) : en-tête Authorization Bearer = 
   Ex. curl.exe -sS -H "Authorization: Bearer VOTRE_SECRET" "${base}/api/cron/rappels-renouvellement"
 
 Dashboard : Vercel → Projet → Settings → Cron Jobs → View Logs par chemin.
-Documentation : docs/SEPA-RECURRENT-MOLLIE.md (prélèvements trimestriels avec reconduction automatique).
+Documentation : docs/SEPA-RECURRENT-MOLLIE.md (prélèvements SEPA trimestriels, reconduction auto).
 `)

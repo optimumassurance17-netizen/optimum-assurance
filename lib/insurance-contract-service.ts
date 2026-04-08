@@ -48,33 +48,9 @@ export async function createInsuranceContract(input: CreateContractInput) {
     companyAgeMonths: input.companyAgeMonths,
   })
 
-  if (risk.reject) {
-    const contractNumber = await allocateNextContractNumber(input.productType)
-    const c = await prisma.insuranceContract.create({
-      data: {
-        contractNumber,
-        userId: input.userId,
-        productType: input.productType,
-        clientName: input.clientName,
-        siret: input.siret,
-        address: input.address,
-        activitiesJson: input.activities?.length ? JSON.stringify(input.activities) : undefined,
-        exclusionsJson: input.exclusions?.length ? JSON.stringify(input.exclusions) : undefined,
-        projectName: input.projectName,
-        projectAddress: input.projectAddress,
-        constructionNature: input.constructionNature,
-        premium: input.premium,
-        status: CONTRACT_STATUS.rejected,
-        riskScore: risk.score,
-        rejectedReason: risk.reasons.join("; "),
-      },
-    })
-    await logContractAction(c.id, "created_rejected", { risk })
-    return { contract: c, risk }
-  }
-
   const contractNumber = await allocateNextContractNumber(input.productType)
-  const status = requiresManualReview(risk.score)
+  // Politique produit: aucun refus automatique, validation humaine prioritaire si risque élevé.
+  const status = (risk.reject || requiresManualReview(risk.score))
     ? CONTRACT_STATUS.pending_validation
     : CONTRACT_STATUS.approved
 
@@ -98,7 +74,12 @@ export async function createInsuranceContract(input: CreateContractInput) {
     },
   })
 
-  await logContractAction(c.id, "created", { status, riskScore: risk.score })
+  await logContractAction(c.id, "created", {
+    status,
+    riskScore: risk.score,
+    manualValidationRequired: risk.reject || requiresManualReview(risk.score),
+    riskReasons: risk.reasons,
+  })
 
   const baseUrl = `${SITE_URL}/api/contracts/${c.id}/pdf`
   for (const type of ["quote", "policy"] as const) {

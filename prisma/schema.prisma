@@ -111,7 +111,7 @@ model SepaSubscription {
   mollieCustomerId    String
   mollieMandateId     String?
   primeAnnuelle       Float
-  /// Nombre de prélèvements SEPA déjà réussis (0 à 3)
+  /// Nombre total de prélèvements SEPA déjà réussis
   trimestresSepaPayes Int       @default(0)
   /// Date du 1er trimestre payé par carte (référence calendrier)
   firstTrimesterPaidAt DateTime?

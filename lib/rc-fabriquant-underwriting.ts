@@ -37,6 +37,7 @@ export const PROTECTION_JURIDIQUE_RC_FABRIQUANT_EUR = PROTECTION_JURIDIQUE_GARAN
 
 export interface RcFabIndicatifUnderwriting {
   score: number
+  /** Conservé pour compatibilité front/back: toujours false (pas de refus automatique). */
   refuseAutomatiqueIndicatif: boolean
   primeIndicative: RcFabPremiumResult | null
   /** Motif court pour l’alerte interne */
@@ -94,15 +95,18 @@ export function riskScoring(input: RcFabUnderwritingInput): number {
 }
 
 export function shouldReject(input: RcFabUnderwritingInput): boolean {
-  if (input.typeProduit === "batterie") {
-    if (!input.certification || !input.testsSecurite) return true
+  void input
+  return false
+}
+
+function requiresManualValidationIndicative(input: RcFabUnderwritingInput): boolean {
+  if (input.typeProduit === "batterie" && (!input.certification || !input.testsSecurite)) {
+    return true
   }
   return riskScoring(input) > 80
 }
 
 export function calculatePremium(input: RcFabUnderwritingInput): RcFabPremiumResult | null {
-  if (shouldReject(input)) return null
-
   if (input.typeProduit === "batterie") {
     const premium = input.caTotal * 0.017
     const primeHt = Math.round(premium)
@@ -138,18 +142,18 @@ export function computeRcFabIndicatif(data: DevisRcFabriquantData): RcFabIndicat
   const input = toUnderwritingInput(data)
   if (!input) return null
   const score = riskScoring(input)
-  const refuse = shouldReject(input)
+  const validationManuelle = requiresManualValidationIndicative(input)
   let motif: string | undefined
   if (input.typeProduit === "batterie" && (!input.certification || !input.testsSecurite)) {
-    motif = "Batterie sans certification CE / normes ou sans tests thermiques (indicatif)"
-  } else if (refuse) {
+    motif = "Batterie sans certification CE / normes ou sans tests thermiques"
+  } else if (validationManuelle) {
     motif = "Score de risque indicatif > 80"
   }
   return {
     score,
-    refuseAutomatiqueIndicatif: refuse,
-    primeIndicative: refuse ? null : calculatePremium(input),
-    motifRefusIndicatif: refuse ? motif : undefined,
+    refuseAutomatiqueIndicatif: false,
+    primeIndicative: calculatePremium(input),
+    motifRefusIndicatif: validationManuelle ? motif : undefined,
   }
 }
 

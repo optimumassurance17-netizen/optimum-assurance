@@ -8,6 +8,7 @@ import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
 import { SITE_URL } from "@/lib/site-url"
 import { logContractAction } from "@/lib/insurance-contract-service"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import { IDENTITY_DOC_KEYS, syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
 
 export type PendingFinalizeOptions = {
   /** Objet fichier dans le bucket « signed » (PDF signé) — flux devis PDF personnalisé */
@@ -96,6 +97,19 @@ export async function applyPendingFinalize(
       status: "valide",
     },
   })
+
+  const identitySubset: Record<string, unknown> = {}
+  for (const key of IDENTITY_DOC_KEYS) {
+    if (key in contractData) {
+      identitySubset[key] = contractData[key]
+    }
+  }
+  if (Object.keys(identitySubset).length > 0) {
+    const sync = await syncUserFromDocumentMergedData(pending.userId, identitySubset)
+    if (!sync.ok) {
+      console.warn("[pending-signature-finalize] sync user identity skipped:", sync.error)
+    }
+  }
 
   const jamaisAssure = Boolean(contractData.jamaisAssure)
   const reprisePasse = Boolean(contractData.reprisePasse)
