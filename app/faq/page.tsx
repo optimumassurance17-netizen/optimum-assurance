@@ -23,6 +23,8 @@ export default function FAQPage() {
         <p className="text-[#171717] mb-8">
           Retrouvez les réponses sur l&apos;assurance décennale, le dommage ouvrage et les parcours de souscription.
           Liens directs :{" "}
+          <a href="#parcours-client" className="text-[#2563eb] font-medium hover:underline">parcours client</a>
+          {" · "}
           <a href="#parcours-do" className="text-[#2563eb] font-medium hover:underline">parcours DO</a>
           {" · "}
           <a href="#parcours-decennale" className="text-[#2563eb] font-medium hover:underline">parcours décennale</a>

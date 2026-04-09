@@ -10,7 +10,7 @@ export const faqs = [
     id: "activite-non-listee",
   },
   { q: "Quelles garanties sont couvertes ?", r: "L'assurance décennale couvre les dommages graves affectant l'ouvrage pendant 10 ans après réception des travaux. Elle garantit la solidité de l'ouvrage et son aptitude à l'usage." },
-  { q: "Puis-je payer en plusieurs fois ?", r: "Oui. La prime est payée en 4 fois par an : le premier trimestre (avec 60 € de frais de gestion) par carte bancaire, puis trois prélèvements SEPA trimestriels sur l'IBAN du mandat." },
+  { q: "Puis-je payer en plusieurs fois ?", r: "Oui. La prime est payée en 4 fois par an : le premier trimestre (avec 60 € de frais de gestion) par carte bancaire, puis prélèvements SEPA trimestriels automatiques sur l'IBAN du mandat (reconduction annuelle)." },
   { q: "Comment résilier mon contrat ?", r: "Les demandes de résiliation doivent être envoyées par lettre recommandée au plus tard 2 mois avant la date d'échéance (31 décembre). Un minimum d'un an de contrat est requis avant toute résiliation à l'échéance." },
   { q: "Quels sont les frais pour un avenant ?", r: "Les avenants de modification sont soumis à des frais de 60 € uniques. Ces frais sont automatiquement reportés sur la prochaine échéance de prélèvement SEPA." },
   { q: "Comment déclarer un sinistre ?", r: "Contactez-nous par email ou via l'assistant en ligne (bouton en bas à droite) dès que possible. Nos experts vous accompagnent pour constituer votre dossier et accélérer le traitement. Prévenez votre assureur dans les 5 jours après réception de l'avis du maître d'ouvrage.", id: "sinistre" },
@@ -23,14 +23,29 @@ export const faqs = [
   },
   {
     q: "Quel est le parcours assurance décennale BTP ?",
-    r: "1) Devis en ligne (/devis) — tarif en quelques minutes, présenté en équivalent mensuel (prime annuelle ÷ 12) avec rappel du prélèvement trimestriel. 2) Souscription — coordonnées de l'entreprise. 3) Création de compte — email et mot de passe. 4) Signature électronique du contrat sur le PDF. 5) Mandat SEPA — IBAN pour des prélèvements trimestriels. 6) Paiement — le premier trimestre et les frais de gestion (60 €) sont réglés par carte bancaire (Mollie) ; les trois trimestres suivants sont prélevés par SEPA sur l'IBAN du mandat. 7) Confirmation — votre attestation est disponible dans l'espace client peu après validation du paiement.",
+    r: "1) Devis en ligne (/devis) — tarif en quelques minutes, présenté en équivalent mensuel (prime annuelle ÷ 12) avec rappel du prélèvement trimestriel. 2) Souscription — coordonnées de l'entreprise. 3) Création de compte — email et mot de passe. 4) Signature électronique du contrat sur le PDF. 5) Mandat SEPA — IBAN pour les prélèvements trimestriels. 6) Paiement — le premier trimestre et les frais de gestion (60 €) sont réglés par carte bancaire (Mollie) ; les échéances suivantes sont prélevées par SEPA sur l'IBAN du mandat, avec reconduction automatique annuelle. 7) Confirmation — votre attestation est disponible dans l'espace client peu après validation du paiement.",
     id: "parcours-decennale",
+  },
+  {
+    q: "Quel est le parcours client complet (devis à attestation) ?",
+    r: "Parcours décennale : 1) Devis en ligne. 2) Souscription (coordonnées entreprise). 3) Création de compte. 4) Signature électronique du contrat. 5) Mandat SEPA (IBAN). 6) Paiement du 1er trimestre + frais par carte bancaire (Mollie). 7) Après validation du paiement, l'abonnement de prélèvements SEPA est activé pour les échéances suivantes (T2 à T4). 8) Attestation disponible dans l'espace client. Parcours dommage ouvrage : 1) Formulaire DO. 2) Étude et tarif définitif sous environ 24 h. 3) Devis ajouté à l'espace client + dépôt de pièces. 4) Signature électronique. 5) Paiement par virement via Mollie. 6) Attestation après réception du virement.",
+    id: "parcours-client",
+  },
+  {
+    q: "Le mandat SEPA apparaît à quel moment ?",
+    r: "Pour la décennale, c'est normal qu'il ne soit pas visible avant : le mandat SEPA est finalisé après le premier paiement carte bancaire validé (statut paid côté Mollie). Ensuite, les prélèvements trimestriels suivants utilisent ce mandat (T2, T3, T4).",
+    id: "parcours-sepa",
+  },
+  {
+    q: "J'ai payé le 1er trimestre, mais je ne vois pas encore le SEPA : que faire ?",
+    r: "Vérifiez d'abord que le paiement carte est bien confirmé. Le mandat SEPA est créé juste après via le webhook de paiement. Si l'information n'apparaît pas dans un délai raisonnable, contactez le support avec l'email du compte et l'identifiant de paiement Mollie (tr_xxx) pour vérification immédiate.",
+    id: "parcours-sepa-blocage",
   },
   // FAQ parcours souscription
   { q: "Quelles sont les étapes de la souscription ?", r: "Sept étapes : devis → souscription → compte → signature électronique du contrat → mandat SEPA (IBAN, prélèvement trimestriel) → paiement (1er trimestre + frais par carte, puis prélèvements trimestriels) → confirmation (attestation dans l'espace client). Le détail pas à pas est dans la question « Quel est le parcours assurance décennale BTP ? ».", id: "souscription" },
   { q: "Dois-je créer un compte pour souscrire ?", r: "Oui. Après avoir rempli le formulaire de souscription, vous créez un compte avec votre email et un mot de passe. Ce compte vous permet d'accéder à votre attestation, de gérer vos documents et de déclarer un sinistre. La création du compte est rapide et sécurisée." },
   { q: "Comment se déroule la signature électronique ?", r: "Après création de votre compte, vous suivez la page Signature puis vous ouvrez le PDF sur la page dédiée : vous consultez le document et vous apposez votre signature. Vous poursuivez ensuite vers le mandat SEPA et le paiement (Mollie)." },
-  { q: "Quels moyens de paiement sont acceptés ?", r: "Pour la décennale : le premier trimestre (avec frais de gestion) est réglé par carte bancaire (Mollie), puis les trois trimestres suivants par prélèvement SEPA sur l'IBAN du mandat." },
+  { q: "Quels moyens de paiement sont acceptés ?", r: "Pour la décennale : le premier trimestre (avec frais de gestion) est réglé par carte bancaire (Mollie), puis les échéances suivantes par prélèvement SEPA trimestriel sur l'IBAN du mandat, avec reconduction automatique." },
   { q: "Puis-je reprendre ma souscription plus tard ?", r: "Vos informations de devis et de souscription sont conservées temporairement. Si vous fermez la page avant de terminer, vous devrez recommencer le parcours depuis le devis. Nous vous conseillons de prévoir 10 à 15 minutes pour finaliser l'ensemble en une fois." },
   { q: "Que se passe-t-il après le paiement ?", r: "Dès validation du paiement, votre attestation décennale est disponible dans votre espace client. Vous pouvez la télécharger au format PDF et la partager avec vos clients. Un QR code permet de vérifier son authenticité en ligne." },
 ] as const

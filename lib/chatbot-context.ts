@@ -11,16 +11,16 @@ const FAQ_BASE: { q: string; r: string }[] = [
   { q: "attestation rapidement délai immédiat", r: "En souscrivant en ligne : devis en 3 minutes, signature électronique, 1er trimestre par carte puis mandat SEPA. Votre attestation est disponible peu après validation du paiement dans votre espace client, avec un QR code de vérification — pas d'attente 24 h." },
   { q: "résilié non-paiement impayé", r: "Oui. Nous acceptons les sociétés résiliées pour non-paiement pour toutes les activités. Une majoration de 10 % s'applique sur la prime. Nous acceptons également les sociétés de nettoyage toiture." },
   { q: "garanties couvertes dommages ouvrage", r: "L'assurance décennale couvre les dommages graves affectant l'ouvrage pendant 10 ans après réception des travaux. Elle garantit la solidité de l'ouvrage et son aptitude à l'usage. RC Décennale, RC Pro, bon fonctionnement (biennale), assistance juridique." },
-  { q: "payer plusieurs fois prélèvement SEPA mensuel trimestriel", r: "Oui. Paiement en 4 fois par an : 1er trimestre par carte (+ frais de gestion), puis 3 prélèvements SEPA trimestriels sur l'IBAN." },
+  { q: "payer plusieurs fois prélèvement SEPA mensuel trimestriel", r: "Oui. Paiement en 4 fois par an : 1er trimestre par carte (+ frais de gestion), puis prélèvements SEPA trimestriels automatiques sur l'IBAN (reconduction annuelle)." },
   { q: "résilier contrat lettre recommandée échéance", r: "Les demandes de résiliation doivent être envoyées par lettre recommandée au plus tard 2 mois avant la date d'échéance (31 décembre). Un minimum d'un an de contrat est requis avant toute résiliation à l'échéance." },
   { q: "avenant frais modification", r: "Les avenants de modification sont soumis à des frais de 60 € uniques. Ces frais sont automatiquement reportés sur la prochaine échéance de prélèvement SEPA." },
   { q: "sinistre déclarer avis maître ouvrage", r: "Contactez-nous par email (contact@optimum-assurance.fr) ou via le chat. Nos experts vous accompagnent pour constituer votre dossier. Prévenez votre assureur dans les 5 jours après réception de l'avis du maître d'ouvrage." },
   { q: "reprise du passé rétroactif", r: "La reprise du passé permet de couvrir rétroactivement vos ouvrages des 3 derniers mois, sous réserve de non sinistralité. Elle n'est disponible que si vous n'avez déclaré aucun sinistre sur les 5 dernières années. Une majoration de 40 % s'applique sur ces 3 mois." },
   { q: "dommage ouvrage devis DO", r: "Après envoi de votre demande sur devis-dommage-ouvrage, notre équipe vous transmet le prix définitif sous 24h. Le devis est ensuite ajouté à votre espace client. Vous signez électroniquement le contrat, puis vous payez par virement bancaire via Mollie. L'attestation arrive après réception du virement." },
-  { q: "étapes souscription parcours", r: "1) Devis — tarif en 3 minutes (équivalent mensuel, paiement trimestriel) ; 2) Souscription — coordonnées ; 3) Compte — email et mot de passe ; 4) Signature électronique du contrat ; 5) Mandat SEPA — IBAN ; 6) Paiement — 1er trimestre + frais par carte, puis prélèvements SEPA trimestriels ; 7) Confirmation — attestation dans l'espace client peu après validation du paiement." },
+  { q: "étapes souscription parcours", r: "1) Devis — tarif en 3 minutes (équivalent mensuel, paiement trimestriel) ; 2) Souscription — coordonnées ; 3) Compte — email et mot de passe ; 4) Signature électronique du contrat ; 5) Mandat SEPA — IBAN ; 6) Paiement — 1er trimestre + frais par carte, puis prélèvements SEPA trimestriels automatiques ; 7) Confirmation — attestation dans l'espace client peu après validation du paiement." },
   { q: "compte souscrire créer", r: "Oui. Après le formulaire de souscription, vous créez un compte avec email et mot de passe. Ce compte permet d'accéder à votre attestation, gérer vos documents et déclarer un sinistre." },
   { q: "signature électronique contrat", r: "Après création de votre compte, vous suivez la page Signature : vous ouvrez le PDF et apposez votre signature électronique. Vous poursuivez ensuite vers le mandat SEPA et le paiement (Mollie)." },
-  { q: "moyens paiement Mollie SEPA", r: "1er trimestre par carte bancaire (Mollie), puis prélèvements SEPA trimestriels sur l'IBAN du mandat." },
+  { q: "moyens paiement Mollie SEPA", r: "1er trimestre par carte bancaire (Mollie), puis prélèvements SEPA trimestriels automatiques sur l'IBAN du mandat (reconduction annuelle)." },
   { q: "après paiement attestation", r: "Dès validation du paiement, votre attestation décennale est disponible dans votre espace client. Vous pouvez la télécharger en PDF et la partager avec vos clients. Un QR code permet de vérifier son authenticité." },
   { q: "téléphone appeler contact", r: "Nous ne proposons pas de contact téléphonique. Toutes nos réponses se font en ligne : par email (contact@optimum-assurance.fr), via ce chat, ou via le formulaire de contact sur notre site." },
   { q: "devis obtenir tarif", r: "Rendez-vous sur /devis pour l'assurance décennale ou /devis-dommage-ouvrage pour le dommage ouvrage. Devis en 3 minutes, sans engagement." },
@@ -71,13 +71,13 @@ INFORMATIONS OPTIMUM ASSURANCE (rappel synthétique) :
 - Assurance décennale BTP : obligatoire (loi Spinetta 1978), minimum 600 €/an (affichage en équivalent mensuel ~50 €/mois ; paiement effectif trimestriel)
 - CA minimum déclaratif : 40 000 €
 - Attestation disponible peu après validation du paiement dans l'espace client (pas d'attente 24 h)
-- Devis en 3 minutes, signature électronique du contrat, 1er trimestre + frais par carte (Mollie), puis prélèvements SEPA trimestriels sur l’IBAN du mandat
+- Devis en 3 minutes, signature électronique du contrat, 1er trimestre + frais par carte (Mollie), puis prélèvements SEPA trimestriels automatiques sur l’IBAN du mandat
 - Sociétés résiliées pour non-paiement acceptées (+10 % majoration)
 - Nettoyage toiture et peinture résine (I3 à I5) : offre dédiée, taux 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)
 - Dommage ouvrage : devis sous 24h, auto-construction, garantie clos et couvert
 - RC fabriquant : formulaire sur /devis-rc-fabriquant, réponse après étude (pas de tarificateur en ligne)
 - Franchise : 1 000 € (décennale, toutes activités) ; aucune (dommage ouvrage) ; 3 000 € (RC fabriquant)
-- Prélèvement trimestriel : 1er trimestre par carte (+ 60 € frais), puis SEPA trimestriel
+- Prélèvement trimestriel : 1er trimestre par carte (+ 60 € frais), puis SEPA trimestriel automatique (reconduction)
 - Avenants : 60 €
 - Résiliation : lettre recommandée 2 mois avant échéance (31 décembre), minimum 1 an de contrat
 - Pas de téléphone — support 100 % en ligne

@@ -217,7 +217,6 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
   y2 = drawWrappedText(page2, DEVOIR_CONSEIL_LINKS_LINE, PDF_PAGE.marginX, y2, PDF_PAGE.contentWidth, font, 8, 11, PDF_COLORS.muted)
   y2 -= 10
 
-  y2 -= 2
   y2 = drawWrappedText(
     page2,
     "Important : ce devis ne vaut pas contrat ni attestation. La couverture débute après validation du risque et émission des pièces contractuelles.",

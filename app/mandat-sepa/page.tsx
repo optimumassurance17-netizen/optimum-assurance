@@ -14,7 +14,7 @@ import type { PeriodicitePrelevement } from "@/lib/types"
 import { getIbanValidationMessage, normalizeIban } from "@/lib/iban"
 import { readResponseJson } from "@/lib/read-response-json"
 
-/** Unique mode : trimestriel — 1er trimestre + frais en CB, puis 3 prélèvements SEPA trimestriels. */
+/** Unique mode : trimestriel — 1er trimestre + frais en CB, puis prélèvements SEPA trimestriels automatiques. */
 const PERIODICITE: PeriodicitePrelevement = "trimestriel"
 
 function calculerPremierMontant(primeAnnuelle: number): number {
@@ -156,8 +156,16 @@ export default function MandatSepaPage() {
           IBAN et mandat SEPA
         </h1>
         <p className="text-[#171717] mb-6">
-          Renseignez l&apos;IBAN pour les <strong>prélèvements SEPA trimestriels</strong> (après le premier règlement par carte).
+          Renseignez l&apos;IBAN pour les <strong>prélèvements SEPA trimestriels</strong> (après le premier règlement par carte), avec reconduction automatique annuelle.
         </p>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
+          <p className="text-sm text-blue-900 leading-relaxed">
+            <strong>Information importante :</strong> pour obtenir votre attestation rapidement, le{" "}
+            <strong>premier paiement doit être effectué par carte bancaire</strong> à l&apos;étape suivante.
+            Les prélèvements SEPA concernent ensuite les échéances trimestrielles restantes.
+          </p>
+        </div>
 
         <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-6">
           <h2 className="font-semibold text-black mb-3">Récapitulatif</h2>

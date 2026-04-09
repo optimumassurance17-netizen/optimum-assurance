@@ -6,6 +6,7 @@ import type { DevisDommageOuvrageData } from "@/lib/dommage-ouvrage-types"
 import { sendDoEtudeSavedAlert } from "@/lib/devis-alert"
 import { mergeDoEtudeForm, prefillDoEtudeFromInitial } from "@/lib/do-etude-prefill"
 import { DO_ETUDE_VERSION, emptyDoEtudeQuestionnaire, type DoEtudeQuestionnaireV1 } from "@/lib/do-etude-questionnaire-types"
+import { asJsonObject } from "@/lib/json-object"
 
 async function getInitialForUser(
   userId: string,
@@ -85,7 +86,8 @@ export async function PUT(request: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
-    const body = (await request.json().catch(() => null)) as { form?: DoEtudeQuestionnaireV1 } | null
+    const rawBody = await request.json().catch(() => null)
+    const body = rawBody ? asJsonObject<{ form?: DoEtudeQuestionnaireV1 }>(rawBody) : null
     if (!body?.form || body.form.version !== DO_ETUDE_VERSION) {
       return NextResponse.json({ error: "Formulaire invalide" }, { status: 400 })
     }

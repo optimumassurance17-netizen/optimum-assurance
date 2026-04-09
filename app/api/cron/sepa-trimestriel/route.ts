@@ -13,6 +13,12 @@ import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
  * Déclenche les prélèvements SEPA trimestriels avec reconduction automatique annuelle
  * lorsque `nextSepaDue` est atteint. Sécurisé par CRON_SECRET (voir `lib/cron-auth.ts`).
  */
+function addMonths(d: Date, months: number): Date {
+  const out = new Date(d.getTime())
+  out.setMonth(out.getMonth() + months)
+  return out
+}
+
 export async function GET(request: NextRequest) {
   try {
     const denied = assertCronAuthorized(request)
@@ -29,6 +35,32 @@ export async function GET(request: NextRequest) {
 
     const now = new Date()
     const mollie = createMollieClient({ apiKey })
+
+    // Compatibilité historique: avant reconduction auto, certains abonnements étaient
+    // marqués completed avec nextSepaDue=null après T4. On les réactive.
+    const legacyCompleted = await prisma.sepaSubscription.findMany({
+      where: {
+        status: "completed",
+        nextSepaDue: null,
+      },
+      select: {
+        id: true,
+        firstTrimesterPaidAt: true,
+        createdAt: true,
+        trimestresSepaPayes: true,
+      },
+    })
+    for (const sub of legacyCompleted) {
+      const anchor = sub.firstTrimesterPaidAt ?? sub.createdAt
+      const resumedDue = addMonths(anchor, (sub.trimestresSepaPayes + 1) * 3)
+      await prisma.sepaSubscription.update({
+        where: { id: sub.id },
+        data: {
+          status: "active",
+          nextSepaDue: resumedDue,
+        },
+      })
+    }
 
     const due = await prisma.sepaSubscription.findMany({
       where: {
@@ -88,7 +120,7 @@ export async function GET(request: NextRequest) {
             userId: sub.userId,
             email: sub.user.email,
             raisonSociale: sub.user.raisonSociale || "",
-            trimestreIndex: String(idx),
+            sepaInstallmentNumber: String(idx),
           },
           idempotencyKey,
         })

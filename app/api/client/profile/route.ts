@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { SITE_URL } from "@/lib/site-url"
 
@@ -43,7 +44,13 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const body = await request.json()
+    const body = asJsonObject<{
+      adresse?: string
+      codePostal?: string
+      ville?: string
+      telephone?: string
+      siret?: string
+    }>(await request.json())
     const { adresse, codePostal, ville, telephone, siret } = body
 
     const updates: Record<string, string | null> = {}

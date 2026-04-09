@@ -1,5 +1,6 @@
 /**
- * Prélèvements SEPA trimestriels via Mollie avec reconduction automatique annuelle.
+ * Prélèvements SEPA trimestriels via Mollie : Customer, mandat IBAN, paiements récurrents
+ * et reconduction automatique annuelle (tous les 3 mois).
  * @see https://docs.mollie.com/docs/recurring-payments
  */
 
@@ -136,13 +137,15 @@ export async function onSepaTrimestrePaid(subscriptionId: string): Promise<void>
     where: { id: subscriptionId },
   })
   if (!sub) return
+  if (sub.status === "cancelled") return
 
   const next = sub.trimestresSepaPayes + 1
+  const nextDueBase = sub.nextSepaDue ?? sub.firstTrimesterPaidAt ?? new Date()
   await prisma.sepaSubscription.update({
     where: { id: subscriptionId },
     data: {
       trimestresSepaPayes: next,
-      nextSepaDue: addMonths(sub.nextSepaDue ?? new Date(), 3),
+      nextSepaDue: addMonths(nextDueBase, 3),
       status: "active",
       lastError: null,
       sepaPendingPaymentId: null,

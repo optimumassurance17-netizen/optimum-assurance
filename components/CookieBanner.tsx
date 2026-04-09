@@ -11,7 +11,11 @@ export function CookieBanner() {
   useEffect(() => {
     if (typeof window === "undefined") return
     const consent = localStorage.getItem(STORAGE_KEY)
-    if (!consent) queueMicrotask(() => setVisible(true))
+    if (consent) return
+
+    // Delay banner rendering slightly to avoid impacting first paint/LCP.
+    const timer = window.setTimeout(() => setVisible(true), 1200)
+    return () => window.clearTimeout(timer)
   }, [])
 
   const accept = () => {
@@ -38,9 +42,8 @@ export function CookieBanner() {
           <h2 id="cookie-title" className="font-semibold text-[#0a0a0a] mb-1">
             Cookies et confidentialité
           </h2>
-          <p id="cookie-desc" className="text-sm text-[#171717]">
-            Nous utilisons des cookies techniques nécessaires au fonctionnement du site (session, authentification).
-            Aucun cookie publicitaire.{" "}
+          <p id="cookie-desc" className="max-w-xl text-xs leading-snug text-[#171717]">
+            Cookies strictement techniques (session, authentification), sans cookie publicitaire.{" "}
             <Link href="/confidentialite" className="text-[#2563eb] font-medium hover:underline">
               En savoir plus
             </Link>

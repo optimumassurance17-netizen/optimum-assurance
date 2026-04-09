@@ -7,9 +7,20 @@ import { generateDecennaleQuote } from "@/lib/pdf/decennale/generateQuote"
 import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
 import { logPdfGeneration } from "@/lib/pdf/logPdfGeneration"
 import { insuranceDataFromDecennaleDevis } from "@/lib/pdf/quote-email-data"
+import { asJsonObject } from "@/lib/json-object"
 import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
 
 const DRAFT_EXPIRY_DAYS = 7
+
+type DecennaleDraftTarif = {
+  primeAnnuelle?: number
+}
+
+type DecennaleDraftPayload = {
+  raisonSociale?: string
+  siret?: string
+  tarif?: DecennaleDraftTarif
+}
 
 /**
  * Envoie le devis par email avec lien de reprise
@@ -17,10 +28,11 @@ const DRAFT_EXPIRY_DAYS = 7
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { email, devis } = body
+    const body = asJsonObject<{ email?: string; devis?: unknown }>(await request.json())
+    const email = typeof body.email === "string" ? body.email : ""
+    const devis = asJsonObject<DecennaleDraftPayload>(body.devis)
 
-    if (!email || !devis) {
+    if (!email || Object.keys(devis).length === 0) {
       return NextResponse.json({ error: "Email et devis requis" }, { status: 400 })
     }
 

@@ -4,6 +4,7 @@ import { createMollieClient } from "@mollie/api-client"
 import { randomBytes } from "crypto"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { asJsonObject } from "@/lib/json-object"
 import { getNextNumero } from "@/lib/documents"
 
 function generateVerificationToken(): string {
@@ -17,7 +18,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const body = await request.json()
+    const body = asJsonObject<{ type?: string; data?: unknown; numero?: string; paymentId?: string }>(
+      await request.json()
+    )
     const { type, data, numero: customNumero } = body
 
     if (!type || !["devis", "contrat", "attestation"].includes(type)) {

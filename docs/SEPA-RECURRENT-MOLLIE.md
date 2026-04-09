@@ -10,7 +10,7 @@
 ## Objectif métier
 
 - Montant : `primeTrimestrielle` = `primeAnnuelle / 4` (arrondi comme sur la page paiement / `lib/mollie-sepa.ts` → `primeTrimestrielle`).
-- Calendrier : `nextSepaDue` = +3 mois après le paiement T1 (carte), puis +3 mois après chaque prélèvement SEPA réussi.
+- Calendrier : `nextSepaDue` = +3 mois après le paiement T1 (carte), puis +3 mois après chaque prélèvement SEPA réussi (reconduction automatique).
 
 ## Données
 
