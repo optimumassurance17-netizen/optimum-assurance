@@ -16,6 +16,7 @@ import {
 import { runSignatureQualityGates, type SignatureQualityGatePayload } from "@/lib/signature-quality-gates"
 import { generateRcFabBatteriesQuotePdf } from "@/lib/pdf/rc-fabriquant/generateDossier"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
+import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
 
 export const runtime = "nodejs"
 
@@ -278,6 +279,13 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       )
     }
+    await sendRcFabriquantEmailCopy({
+      originalTo: user.email,
+      subject: tpl.subject,
+      text: tpl.text,
+      html: tpl.html,
+      contextLabel: "invitation_signature_rc_fabriquant_etude",
+    })
 
     await prisma.devisRcFabriquantLead.update({
       where: { id: lead.id },

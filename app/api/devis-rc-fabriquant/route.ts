@@ -5,6 +5,7 @@ import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
 import { getClientIp, checkRateLimitMemory } from "@/lib/rate-limit"
 import type { DevisRcFabriquantData, RcTypeProduit, RcZoneDistribution } from "@/lib/rc-fabriquant-types"
 import { computeRcFabIndicatif } from "@/lib/rc-fabriquant-underwriting"
+import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
 
 export const runtime = "nodejs"
 
@@ -209,12 +210,23 @@ export async function POST(request: NextRequest) {
 
   try {
     const tpl = EMAIL_TEMPLATES.demandeRcFabriquantRecue(data.raisonSociale)
-    await sendEmail({
+    const sent = await sendEmail({
       to: email,
       subject: tpl.subject,
       text: tpl.text,
       html: tpl.html,
     })
+    if (!sent) {
+      console.error("[devis-rc-fabriquant] email prospect: envoi impossible")
+    } else {
+      await sendRcFabriquantEmailCopy({
+        originalTo: email,
+        subject: tpl.subject,
+        text: tpl.text,
+        html: tpl.html,
+        contextLabel: "accuse_reception_demande_rc_fabriquant",
+      })
+    }
   } catch (e) {
     console.error("[devis-rc-fabriquant] email prospect:", e)
   }
