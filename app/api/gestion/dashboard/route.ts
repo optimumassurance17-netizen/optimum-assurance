@@ -55,6 +55,17 @@ function startOfUtcDay(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
 }
 
+function parseAdminLogDetails(raw: string | null | undefined): Record<string, unknown> {
+  if (!raw?.trim()) return {}
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {}
+    return parsed as Record<string, unknown>
+  } catch {
+    return {}
+  }
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -304,10 +315,64 @@ export async function GET() {
     const rcLeadUserByEmail = new Map(
       rcLeadUsers.map((u) => [u.email.trim().toLowerCase(), u] as const)
     )
-    const devisRcFabriquantLeadsWithUser = devisRcFabriquantLeads.map((lead) => ({
-      ...lead,
-      matchedUser: rcLeadUserByEmail.get(lead.email.trim().toLowerCase()) ?? null,
-    }))
+    const rcLeadIds = devisRcFabriquantLeads.map((lead) => lead.id)
+    const rcFabLeadActivityLogs =
+      rcLeadIds.length > 0
+        ? await prisma.adminActivityLog.findMany({
+            where: {
+              targetType: "DevisRcFabriquantLead",
+              targetId: { in: rcLeadIds },
+              action: { in: ["rc_fabriquant_proposition_email", "rc_fabriquant_etude_signature_sent"] },
+            },
+            orderBy: { createdAt: "desc" },
+            select: { action: true, targetId: true, details: true, createdAt: true },
+            take: 400,
+          })
+        : []
+    const rcFabTraceByLeadId = new Map<
+      string,
+      {
+        proposition?: { copySent: boolean; at: Date }
+        signature?: { copySent: boolean; at: Date }
+      }
+    >()
+    for (const log of rcFabLeadActivityLogs) {
+      const leadId = typeof log.targetId === "string" ? log.targetId : ""
+      if (!leadId) continue
+      const current = rcFabTraceByLeadId.get(leadId) ?? {}
+      const details = parseAdminLogDetails(log.details)
+      const copySent = details.copySent === true
+      if (log.action === "rc_fabriquant_proposition_email" && !current.proposition) {
+        current.proposition = { copySent, at: log.createdAt }
+      }
+      if (log.action === "rc_fabriquant_etude_signature_sent" && !current.signature) {
+        current.signature = { copySent, at: log.createdAt }
+      }
+      rcFabTraceByLeadId.set(leadId, current)
+    }
+    const devisRcFabriquantLeadsWithUser = devisRcFabriquantLeads.map((lead) => {
+      const trace = rcFabTraceByLeadId.get(lead.id)
+      return {
+        ...lead,
+        matchedUser: rcLeadUserByEmail.get(lead.email.trim().toLowerCase()) ?? null,
+        copyTrace: trace
+          ? {
+              proposition: trace.proposition
+                ? {
+                    copySent: trace.proposition.copySent,
+                    sentAt: trace.proposition.at.toISOString(),
+                  }
+                : null,
+              signature: trace.signature
+                ? {
+                    copySent: trace.signature.copySent,
+                    sentAt: trace.signature.at.toISOString(),
+                  }
+                : null,
+            }
+          : null,
+      }
+    })
 
     const now = new Date()
     const todayStart = startOfUtcDay(now)

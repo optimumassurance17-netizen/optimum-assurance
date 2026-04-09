@@ -148,6 +148,10 @@ interface DashboardData {
     createdAt: string
     updatedAt: string
     userId: string | null
+    copyTrace?: {
+      proposition: { copySent: boolean; sentAt: string } | null
+      signature: { copySent: boolean; sentAt: string } | null
+    } | null
   }[]
   devisEtudeLeads?: { id: string; email: string; raisonSociale: string | null; siret: string | null; data: string; statut: string; createdAt: string }[]
   documents: {
@@ -2565,6 +2569,8 @@ export default function GestionPage() {
                       d.userId && d.userId.trim().length > 0
                         ? data.users.find((u) => u.id === d.userId) ?? null
                         : data.users.find((u) => u.email.toLowerCase() === d.email.toLowerCase()) ?? null
+                    const propositionCopy = d.copyTrace?.proposition
+                    const signatureCopy = d.copyTrace?.signature
                     return (
                       <tr key={d.id} className="border-b border-gray-700/50 align-top">
                         <td className="p-3 sm:p-4">{d.email}</td>
@@ -2750,6 +2756,28 @@ export default function GestionPage() {
                               >
                                 Créer espace client
                               </button>
+                            )}
+                            {(propositionCopy || signatureCopy) && (
+                              <div className="pt-1 text-[11px] text-gray-300 space-y-1">
+                                {propositionCopy ? (
+                                  <p>
+                                    Copie proposition :{" "}
+                                    <span className={propositionCopy.copySent ? "text-emerald-300" : "text-amber-300"}>
+                                      {propositionCopy.copySent ? "envoyée" : "non envoyée"}
+                                    </span>{" "}
+                                    ({new Date(propositionCopy.sentAt).toLocaleDateString("fr-FR")})
+                                  </p>
+                                ) : null}
+                                {signatureCopy ? (
+                                  <p>
+                                    Copie signature :{" "}
+                                    <span className={signatureCopy.copySent ? "text-emerald-300" : "text-amber-300"}>
+                                      {signatureCopy.copySent ? "envoyée" : "non envoyée"}
+                                    </span>{" "}
+                                    ({new Date(signatureCopy.sentAt).toLocaleDateString("fr-FR")})
+                                  </p>
+                                ) : null}
+                              </div>
                             )}
                           </div>
                         </td>

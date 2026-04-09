@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       )
     }
-    await sendRcFabriquantEmailCopy({
+    const copySent = await sendRcFabriquantEmailCopy({
       originalTo: lead.email,
       subject: template.subject,
       text: template.text,
@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
       targetId: leadId,
       details: {
         to: lead.email,
+        copySent,
         ...(primeAnnuelle != null ? { primeAnnuelle } : {}),
       },
     })

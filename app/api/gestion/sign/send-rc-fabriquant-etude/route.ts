@@ -279,7 +279,7 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       )
     }
-    await sendRcFabriquantEmailCopy({
+    const copySent = await sendRcFabriquantEmailCopy({
       originalTo: user.email,
       subject: tpl.subject,
       text: tpl.text,
@@ -309,6 +309,7 @@ export async function POST(request: NextRequest) {
         periodicite: dossierConfig.periodicite,
         primeAnnuelleTtc: dossierConfig.primeAnnuelleTtc,
         primeParEcheanceTtc: dossierConfig.montantParEcheanceTtc,
+        copySent,
       },
     })
 

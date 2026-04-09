@@ -14,13 +14,13 @@ type RcFabEmailCopyParams = {
  * Envoie une copie interne des e-mails RC Fabriquant.
  * Non bloquant : les erreurs de copie sont loggées mais ne cassent pas le parcours client.
  */
-export async function sendRcFabriquantEmailCopy(params: RcFabEmailCopyParams): Promise<void> {
+export async function sendRcFabriquantEmailCopy(params: RcFabEmailCopyParams): Promise<boolean> {
   try {
     const originalTo = params.originalTo.trim().toLowerCase()
-    if (!originalTo) return
+    if (!originalTo) return false
 
     const recipients = getDevisAlertRecipientEmails().filter((email) => email !== originalTo)
-    if (recipients.length === 0) return
+    if (recipients.length === 0) return false
 
     const subject = `[Copie RC Fabriquant] ${params.subject}`
     const text = [
@@ -43,7 +43,7 @@ export async function sendRcFabriquantEmailCopy(params: RcFabEmailCopyParams): P
       ${params.html ?? `<pre style="white-space:pre-wrap;color:#0f172a;">${escapeHtmlForEmail(params.text)}</pre>`}
     `.trim()
 
-    await Promise.all(
+    const results = await Promise.all(
       recipients.map((to) =>
         sendEmail({
           to,
@@ -53,7 +53,9 @@ export async function sendRcFabriquantEmailCopy(params: RcFabEmailCopyParams): P
         })
       )
     )
+    return results.some(Boolean)
   } catch (error) {
     console.error("[rc-fabriquant-email-copy]", error)
+    return false
   }
 }
