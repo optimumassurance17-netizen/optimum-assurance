@@ -76,6 +76,27 @@ type EditContratForm = {
   dateEcheance: string
 }
 
+type RcFabLeadStructuredData = {
+  raisonSociale?: string
+  activiteFabrication?: string
+  siret?: string
+}
+
+function parseRcFabLeadData(raw: string): RcFabLeadStructuredData {
+  try {
+    const parsed = JSON.parse(raw || "{}") as Record<string, unknown>
+    return {
+      raisonSociale:
+        typeof parsed.raisonSociale === "string" ? parsed.raisonSociale.trim() : undefined,
+      activiteFabrication:
+        typeof parsed.activiteFabrication === "string" ? parsed.activiteFabrication.trim() : undefined,
+      siret: typeof parsed.siret === "string" ? parsed.siret.trim() : undefined,
+    }
+  } catch {
+    return {}
+  }
+}
+
 function editFormFromDocData(parsed: Record<string, unknown>): EditContratForm {
   return {
     raisonSociale: String(parsed.raisonSociale ?? ""),
@@ -126,6 +147,11 @@ interface DashboardData {
     propositionEnvoyeeAt: string | null
     createdAt: string
     updatedAt: string
+    userId: string | null
+    copyTrace?: {
+      proposition: { copySent: boolean; sentAt: string } | null
+      signature: { copySent: boolean; sentAt: string } | null
+    } | null
   }[]
   devisEtudeLeads?: { id: string; email: string; raisonSociale: string | null; siret: string | null; data: string; statut: string; createdAt: string }[]
   documents: {
@@ -239,6 +265,27 @@ interface DashboardData {
       createdAt: string
     }[]
   }[]
+  dashboardActions?: {
+    id: string
+    kind:
+      | "signature_pending"
+      | "approved_unpaid_contract"
+      | "decennale_lead_followup"
+      | "do_etude_pending"
+      | "rc_fabriquant_pending"
+    priority: "high" | "medium"
+    title: string
+    description: string
+    href: string
+    ageHours: number
+  }[]
+  dashboardActionsSummary?: {
+    total: number
+    high: number
+    medium: number
+    overdue72h: number
+    dismissedToday?: number
+  }
 }
 
 export default function GestionPage() {
@@ -305,6 +352,7 @@ export default function GestionPage() {
   } | null>(null)
   const [etudeMiseSubmitting, setEtudeMiseSubmitting] = useState(false)
   const [cancellingSignatureId, setCancellingSignatureId] = useState<string | null>(null)
+  const [dismissingActionId, setDismissingActionId] = useState<string | null>(null)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
   const customDevisPdfInputRef = useRef<HTMLInputElement>(null)
   const [customDevisUserFilter, setCustomDevisUserFilter] = useState("")
@@ -359,6 +407,18 @@ export default function GestionPage() {
   const [rcFabPropositionPrime, setRcFabPropositionPrime] = useState("")
   const [rcFabPropositionMessage, setRcFabPropositionMessage] = useState("")
   const [rcFabPropositionSubmitting, setRcFabPropositionSubmitting] = useState(false)
+  const [rcFabEtudeModal, setRcFabEtudeModal] = useState<{
+    leadId: string
+    userId: string
+    email: string
+    raisonSociale: string
+    devisReference: string
+    primeAnnuelleTtc: string
+    primeAnnuelleHt: string
+    periodicite: "mensuel" | "trimestriel" | "semestriel" | "annuel"
+    produitLabel: string
+  } | null>(null)
+  const [rcFabEtudeSubmitting, setRcFabEtudeSubmitting] = useState(false)
 
   const openEditModal = useCallback((doc: { id: string; type: string; numero: string; data?: string }) => {
     let parsed: Record<string, unknown> = {}
@@ -1333,6 +1393,85 @@ export default function GestionPage() {
                 <p className="text-xs text-gray-200 mt-1">Tableau manuel + lien admin</p>
               </div>
             </section>
+
+            {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
+              <section id="actions-du-jour" className="scroll-mt-24 bg-[#252525] rounded-xl p-5 border border-amber-700/60">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <h2 className="text-lg font-semibold text-white">Actions du jour (automatique)</h2>
+                  <div className="text-xs text-gray-200 flex flex-wrap gap-2">
+                    <span className="px-2 py-1 rounded bg-red-900/40 text-red-200 border border-red-700/50">
+                      Urgent 72h+ : {data.dashboardActionsSummary.overdue72h}
+                    </span>
+                    <span className="px-2 py-1 rounded bg-amber-900/40 text-amber-200 border border-amber-700/50">
+                      Priorité haute : {data.dashboardActionsSummary.high}
+                    </span>
+                    <span className="px-2 py-1 rounded bg-blue-900/40 text-blue-200 border border-blue-700/50">
+                      Priorité moyenne : {data.dashboardActionsSummary.medium}
+                    </span>
+                    <span className="px-2 py-1 rounded bg-gray-800 text-gray-200 border border-gray-600">
+                      Traitées aujourd&apos;hui : {data.dashboardActionsSummary.dismissedToday ?? 0}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {(data.dashboardActions ?? []).map((a) => (
+                    <div
+                      key={a.id}
+                      className="rounded-lg border border-gray-700 bg-[#1f1f1f] px-3 py-2"
+                    >
+                      <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-3">
+                        <a href={a.href} className="block min-w-0 flex-1 hover:text-[#2563eb] transition-colors">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${
+                                a.priority === "high"
+                                  ? "bg-red-900/40 text-red-200 border border-red-700/50"
+                                  : "bg-amber-900/40 text-amber-200 border border-amber-700/50"
+                              }`}
+                            >
+                              {a.priority === "high" ? "Haute" : "Moyenne"}
+                            </span>
+                            <span className="text-sm font-medium text-white">{a.title}</span>
+                            <span className="text-xs text-gray-400">{a.ageHours}h</span>
+                          </div>
+                          <p className="text-xs text-gray-300 mt-1">{a.description}</p>
+                        </a>
+                        <button
+                          type="button"
+                          disabled={dismissingActionId === a.id}
+                          onClick={async () => {
+                            setDismissingActionId(a.id)
+                            try {
+                              const res = await fetch("/api/gestion/actions-du-jour/dismiss", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ actionId: a.id }),
+                              })
+                              const j = await readResponseJson<{ error?: string }>(res)
+                              if (!res.ok) throw new Error(j.error || "Impossible de marquer l'action comme traitée.")
+
+                              const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+                              if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                              setToast({ message: "Action marquée comme traitée.", type: "success" })
+                            } catch (err) {
+                              setToast({
+                                message: err instanceof Error ? err.message : "Erreur lors de la mise à jour",
+                                type: "error",
+                              })
+                            } finally {
+                              setDismissingActionId(null)
+                            }
+                          }}
+                          className="shrink-0 text-xs px-2.5 py-1.5 rounded border border-gray-600 text-gray-100 hover:border-[#2563eb] hover:text-[#60a5fa] disabled:opacity-50"
+                        >
+                          {dismissingActionId === a.id ? "…" : "Marquer traité"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </>
         )}
 
@@ -1899,7 +2038,7 @@ export default function GestionPage() {
 
         {/* Demandes d'étude approfondie - remise personnalisée */}
         {data?.devisEtudeLeads && data.devisEtudeLeads.length > 0 && (
-          <section id="demandes-etude" className="scroll-mt-24">
+          <section id="etudes-do" className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-4">Demandes d&apos;étude (remise personnalisée)</h2>
             <p className="text-sm text-gray-200 mb-4">
               Dossiers sinistres (&gt;1 sinistre) ou <strong className="text-gray-200">activité non listée</strong> (/etude/domaine). Faire une remise pour envoyer une proposition avec prime personnalisée.
@@ -2396,11 +2535,12 @@ export default function GestionPage() {
 
         {/* Demandes devis DO en attente */}
         {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
-          <section id="rc-fab-leads" className="scroll-mt-24">
+          <section id="rc-fabriquant-leads" className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-2">Demandes RC Fabriquant</h2>
             <p className="text-sm text-gray-200 mb-4 max-w-3xl">
               Statut et notes sont visibles uniquement en gestion. Aucun refus ni tarif n’est communiqué automatiquement au
-              prospect — tout passe par votre action (email, devis externe, etc.).
+              prospect — tout passe par votre action. Vous pouvez créer l’espace client puis lancer un dossier étude natif
+              (devis + contrat + attestation selon paiement) directement depuis cette table.
             </p>
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[720px]">
@@ -2417,23 +2557,20 @@ export default function GestionPage() {
                 </thead>
                 <tbody>
                   {data.devisRcFabriquantLeads.map((d) => {
-                    let rs = ""
-                    let act = ""
-                    try {
-                      const j = JSON.parse(d.data || "{}") as {
-                        raisonSociale?: string
-                        activiteFabrication?: string
-                      }
-                      rs = j.raisonSociale ?? ""
-                      act = j.activiteFabrication ?? ""
-                    } catch {
-                      /* ignore */
-                    }
+                    const leadData = parseRcFabLeadData(d.data || "{}")
+                    const rs = leadData.raisonSociale || ""
+                    const act = leadData.activiteFabrication || ""
                     const draft = getRcFabLeadDraft(d, rcFabDrafts)
                     const serverSt = normalizeRcFabriquantLeadStatut(d.statut)
                     const serverNotes = d.notesInternes ?? ""
                     const dirty =
                       draft.statut !== serverSt || draft.notes.trim() !== serverNotes.trim()
+                    const matchedUser =
+                      d.userId && d.userId.trim().length > 0
+                        ? data.users.find((u) => u.id === d.userId) ?? null
+                        : data.users.find((u) => u.email.toLowerCase() === d.email.toLowerCase()) ?? null
+                    const propositionCopy = d.copyTrace?.proposition
+                    const signatureCopy = d.copyTrace?.signature
                     return (
                       <tr key={d.id} className="border-b border-gray-700/50 align-top">
                         <td className="p-3 sm:p-4">{d.email}</td>
@@ -2524,6 +2661,41 @@ export default function GestionPage() {
                               type="button"
                               disabled={
                                 normalizeRcFabriquantLeadStatut(d.statut) === "refuse" ||
+                                rcFabEtudeSubmitting
+                              }
+                              title={
+                                matchedUser
+                                  ? "Créer un devis étude RC Fabriquant avec signature électronique"
+                                  : "Créez d’abord l’espace client"
+                              }
+                              onClick={() => {
+                                if (!matchedUser) return
+                                const defaultPrime =
+                                  d.primeProposee != null && d.primeProposee > 0
+                                    ? Math.round(d.primeProposee * 100) / 100
+                                    : 0
+                                const defaultPrimeHt =
+                                  defaultPrime > 0 ? Math.round((defaultPrime / 1.2) * 100) / 100 : 0
+                                setRcFabEtudeModal({
+                                  leadId: d.id,
+                                  userId: matchedUser.id,
+                                  email: d.email,
+                                  raisonSociale: rs || d.email,
+                                  devisReference: `RCFAB-${d.id.slice(-8).toUpperCase()}`,
+                                  primeAnnuelleTtc: defaultPrime > 0 ? String(defaultPrime) : "",
+                                  primeAnnuelleHt: defaultPrimeHt > 0 ? String(defaultPrimeHt) : "",
+                                  periodicite: "trimestriel",
+                                  produitLabel: "RC Fabriquant — étude personnalisée",
+                                })
+                              }}
+                              className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-emerald-500/70 text-emerald-100 hover:bg-emerald-900/40 disabled:opacity-40 disabled:pointer-events-none"
+                            >
+                              Créer dossier étude
+                            </button>
+                            <button
+                              type="button"
+                              disabled={
+                                normalizeRcFabriquantLeadStatut(d.statut) === "refuse" ||
                                 rcFabPropositionSubmitting
                               }
                               title={
@@ -2548,6 +2720,65 @@ export default function GestionPage() {
                             >
                               E-mail proposition
                             </button>
+                            {matchedUser ? (
+                              <Link
+                                href={`/gestion/clients/${matchedUser.id}`}
+                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-[#2563eb]/60 text-[#93c5fd] hover:bg-[#2563eb]/20 inline-flex items-center justify-center"
+                              >
+                                Fiche client
+                              </Link>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch("/api/gestion/users/create-from-lead", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ leadId: d.id, leadType: "rc_fabriquant" }),
+                                    })
+                                    const json = await readResponseJson<{ error?: string; email?: string }>(res)
+                                    if (!res.ok) throw new Error(json.error || "Erreur")
+                                    setToast({
+                                      message: `Espace client créé pour ${json.email || d.email}`,
+                                      type: "success",
+                                    })
+                                    const dashRes = await fetch("/api/gestion/dashboard")
+                                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                  } catch (err) {
+                                    setToast({
+                                      message: err instanceof Error ? err.message : "Erreur",
+                                      type: "error",
+                                    })
+                                  }
+                                }}
+                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-sky-500/70 text-sky-200 hover:bg-sky-900/30"
+                              >
+                                Créer espace client
+                              </button>
+                            )}
+                            {(propositionCopy || signatureCopy) && (
+                              <div className="pt-1 text-[11px] text-gray-300 space-y-1">
+                                {propositionCopy ? (
+                                  <p>
+                                    Copie proposition :{" "}
+                                    <span className={propositionCopy.copySent ? "text-emerald-300" : "text-amber-300"}>
+                                      {propositionCopy.copySent ? "envoyée" : "non envoyée"}
+                                    </span>{" "}
+                                    ({new Date(propositionCopy.sentAt).toLocaleDateString("fr-FR")})
+                                  </p>
+                                ) : null}
+                                {signatureCopy ? (
+                                  <p>
+                                    Copie signature :{" "}
+                                    <span className={signatureCopy.copySent ? "text-emerald-300" : "text-amber-300"}>
+                                      {signatureCopy.copySent ? "envoyée" : "non envoyée"}
+                                    </span>{" "}
+                                    ({new Date(signatureCopy.sentAt).toLocaleDateString("fr-FR")})
+                                  </p>
+                                ) : null}
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -3141,6 +3372,180 @@ export default function GestionPage() {
       )}
 
       {/* Modal proposition RC Fabriquant (e-mail au prospect) */}
+      {rcFabEtudeModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => {
+            if (!rcFabEtudeSubmitting) setRcFabEtudeModal(null)
+          }}
+        >
+          <div
+            className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-white mb-2">Créer dossier étude RC Fabriquant</h3>
+            <p className="text-sm text-gray-200 mb-4">
+              <strong>{rcFabEtudeModal.raisonSociale}</strong> — {rcFabEtudeModal.email}
+            </p>
+            <p className="text-xs text-gray-200 mb-4 leading-relaxed">
+              Ce module génère automatiquement le <strong>devis RC Fabriquant</strong>, envoie la signature
+              électronique, puis crée le <strong>contrat</strong> à la signature. L&apos;attestation sera disponible
+              après paiement.
+            </p>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Référence dossier</label>
+                <input
+                  value={rcFabEtudeModal.devisReference}
+                  onChange={(e) =>
+                    setRcFabEtudeModal((m) => (m ? { ...m, devisReference: e.target.value } : m))
+                  }
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                  placeholder="RCFAB-1234"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Périodicité</label>
+                <select
+                  value={rcFabEtudeModal.periodicite}
+                  onChange={(e) =>
+                    setRcFabEtudeModal((m) =>
+                      m
+                        ? {
+                            ...m,
+                            periodicite: e.target.value as
+                              | "mensuel"
+                              | "trimestriel"
+                              | "semestriel"
+                              | "annuel",
+                          }
+                        : m
+                    )
+                  }
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                >
+                  <option value="mensuel">Mensuel (12 échéances)</option>
+                  <option value="trimestriel">Trimestriel (4 échéances)</option>
+                  <option value="semestriel">Semestriel (2 échéances)</option>
+                  <option value="annuel">Annuel (1 échéance)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Prime annuelle TTC (€)</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  value={rcFabEtudeModal.primeAnnuelleTtc}
+                  onChange={(e) =>
+                    setRcFabEtudeModal((m) => (m ? { ...m, primeAnnuelleTtc: e.target.value } : m))
+                  }
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                  placeholder="Ex. 2400"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-200 mb-2">
+                  Prime annuelle HT (€) <span className="text-gray-400 font-normal">optionnel</span>
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  value={rcFabEtudeModal.primeAnnuelleHt}
+                  onChange={(e) =>
+                    setRcFabEtudeModal((m) => (m ? { ...m, primeAnnuelleHt: e.target.value } : m))
+                  }
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                  placeholder="Ex. 2000"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-200 mb-2">Libellé produit (email)</label>
+              <input
+                value={rcFabEtudeModal.produitLabel}
+                onChange={(e) =>
+                  setRcFabEtudeModal((m) => (m ? { ...m, produitLabel: e.target.value } : m))
+                }
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                placeholder="RC Fabriquant — étude personnalisée"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-3 justify-end mt-6">
+              <button
+                type="button"
+                disabled={rcFabEtudeSubmitting}
+                onClick={() => setRcFabEtudeModal(null)}
+                className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={
+                  rcFabEtudeSubmitting ||
+                  Number(rcFabEtudeModal.primeAnnuelleTtc.replace(",", ".")) <= 0
+                }
+                onClick={async () => {
+                  if (!rcFabEtudeModal) return
+                  const primeTtc = Number(rcFabEtudeModal.primeAnnuelleTtc.replace(",", "."))
+                  if (!Number.isFinite(primeTtc) || primeTtc <= 0) {
+                    setToast({ message: "Prime annuelle TTC invalide", type: "error" })
+                    return
+                  }
+                  const primeHtTrim = rcFabEtudeModal.primeAnnuelleHt.trim()
+                  const primeHt =
+                    primeHtTrim.length > 0 ? Number(primeHtTrim.replace(",", ".")) : undefined
+                  if (primeHt != null && (!Number.isFinite(primeHt) || primeHt <= 0)) {
+                    setToast({ message: "Prime annuelle HT invalide", type: "error" })
+                    return
+                  }
+                  setRcFabEtudeSubmitting(true)
+                  try {
+                    const res = await fetch("/api/gestion/sign/send-rc-fabriquant-etude", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        leadId: rcFabEtudeModal.leadId,
+                        userId: rcFabEtudeModal.userId,
+                        devisReference: rcFabEtudeModal.devisReference.trim(),
+                        primeAnnuelleTtc: primeTtc,
+                        ...(primeHt != null ? { primeAnnuelleHt: primeHt } : {}),
+                        periodicite: rcFabEtudeModal.periodicite,
+                        produitLabel: rcFabEtudeModal.produitLabel.trim() || undefined,
+                        afterSignNextPath: "/espace-client",
+                      }),
+                    })
+                    const json = await readResponseJson<{ error?: string; message?: string }>(res)
+                    if (!res.ok) throw new Error(json.error || "Erreur")
+                    setToast({
+                      message: json.message || "Dossier étude RC Fabriquant envoyé en signature.",
+                      type: "success",
+                    })
+                    setRcFabEtudeModal(null)
+                    const dashRes = await fetch("/api/gestion/dashboard")
+                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                  } catch (err) {
+                    setToast({ message: err instanceof Error ? err.message : "Erreur", type: "error" })
+                  } finally {
+                    setRcFabEtudeSubmitting(false)
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 font-medium"
+              >
+                {rcFabEtudeSubmitting ? "Création…" : "Créer et envoyer la signature"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {rcFabPropositionModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"

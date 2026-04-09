@@ -12,9 +12,7 @@ type MentionCheck = {
   regex: RegExp
 }
 
-const COMMON_MENTIONS: MentionCheck[] = [
-  { label: "mention protection juridique", regex: /protection\s+juridique/i },
-  { label: "montant protection juridique 20 000", regex: /20[\s\u00a0\u202f]*000/i },
+const DEVOIR_CONSEIL_ONLY: MentionCheck[] = [
   { label: "mention devoir de conseil", regex: /devoir\s+de\s+conseil/i },
 ]
 
@@ -120,8 +118,8 @@ async function main(): Promise<void> {
   const rcFabText = await extractPdfText(rcFabPolicyPdf)
   const rcFabFicText = await extractPdfText(rcFabFicPdf)
 
-  assertMentions(decText, "devis+conditions particulières décennale", COMMON_MENTIONS)
-  assertMentions(doText, "devis+conditions particulières dommage-ouvrage", COMMON_MENTIONS)
+  assertMentions(decText, "devis+conditions particulières décennale", DEVOIR_CONSEIL_ONLY)
+  assertMentions(doText, "devis+conditions particulières dommage-ouvrage", DEVOIR_CONSEIL_ONLY)
   assertMentions(rcFabText, "conditions RC Fabriquant", RC_FAB_MENTIONS)
   assertMentions(rcFabFicText, "FIC RC Fabriquant", RC_FAB_MENTIONS)
 

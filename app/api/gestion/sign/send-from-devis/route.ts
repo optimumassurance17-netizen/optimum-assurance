@@ -16,6 +16,7 @@ import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert
 import { createSupabaseServiceClient } from "@/lib/supabase"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
+import { validateSignatureQualityGate } from "@/lib/signature-quality-gates"
 
 export const runtime = "nodejs"
 
@@ -92,6 +93,29 @@ export async function POST(request: NextRequest) {
     const validationError = validateDevisContractData(baseContract)
     if (validationError) {
       return NextResponse.json({ error: validationError }, { status: 400 })
+    }
+    const qualityError = validateSignatureQualityGate({
+      flow: "decennale",
+      annualTtc: Number(baseContract.primeAnnuelle),
+      periodicity: "trimestriel",
+      clientLabel: String(baseContract.raisonSociale || doc.user.raisonSociale || doc.user.email || "Client"),
+      reference: String(baseContract.numero || contractNumero),
+      email: String(baseContract.email || doc.user.email || ""),
+      address: [baseContract.adresse, baseContract.codePostal, baseContract.ville]
+        .map((v) => String(v || "").trim())
+        .filter(Boolean)
+        .join(" "),
+      siret: String(baseContract.siret || ""),
+      legalRepresentative: String(baseContract.representantLegal || ""),
+      activitiesCount: Array.isArray(baseContract.activites) ? baseContract.activites.length : 0,
+    })
+    if (qualityError) {
+      return NextResponse.json(
+        {
+          error: qualityError,
+        },
+        { status: 400 }
+      )
     }
 
     const existingPending = await prisma.pendingSignature.findFirst({

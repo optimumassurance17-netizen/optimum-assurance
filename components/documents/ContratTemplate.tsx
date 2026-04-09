@@ -1,7 +1,6 @@
 "use client"
 
 import { SITE_URL } from "@/lib/site-url"
-import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 import { getDevoirConseilContent } from "@/lib/devoir-conseil"
 import { DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSE_TEXT } from "@/lib/decennale-legal-clauses"
 
@@ -126,9 +125,7 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
         <section>
           <h3 className="font-semibold mb-2">Article 6 - Protection juridique</h3>
           <p>
-            Une garantie de protection juridique est incluse à hauteur de{" "}
-            {PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € par litige garanti, selon les conditions
-            générales et particulières applicables.
+            Une garantie de protection juridique est incluse, selon les conditions générales et particulières applicables.
           </p>
         </section>
 

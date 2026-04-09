@@ -8,7 +8,6 @@ import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
-import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 import {
   DEVOIR_CONSEIL_TITLE,
   DEVOIR_CONSEIL_DO_TEXT,
@@ -129,7 +128,7 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
   y -= 14
   drawTextPdf(
     page,
-    `Protection juridique : ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € (défense/recours).`,
+    "Protection juridique : défense/recours selon les conditions contractuelles applicables.",
     {
       x: PDF_PAGE.marginX,
       y,
@@ -198,7 +197,7 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
     "1) Objet de la DO : préfinancer les réparations relevant de la garantie décennale, sans attendre la détermination définitive des responsabilités.",
     "2) Périmètre : dommages compromettant la solidité de l’ouvrage ou l’affectant dans sa destination, selon les conditions contractuelles.",
     "3) Exclusions usuelles : usure normale, défaut d’entretien, dommages purement esthétiques isolés et cas exclus aux conditions générales.",
-    `4) Protection juridique : défense et recours à hauteur de ${PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € (selon conditions contractuelles).`,
+    "4) Protection juridique : défense et recours selon les conditions contractuelles applicables.",
     "5) Déclarations techniques : le souscripteur doit communiquer des informations exactes (nature des travaux, destination, intervenants, montants).",
     "6) Pièces dossier : l’assureur peut demander des documents complémentaires (plans, permis, pièces entreprises, attestations techniques).",
     "7) Déclaration de sinistre : à formuler par écrit, avec date d’apparition, description, éléments techniques et pièces justificatives.",

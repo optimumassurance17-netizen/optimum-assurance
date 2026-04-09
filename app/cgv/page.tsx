@@ -1,6 +1,5 @@
 import Link from "next/link"
 import { Header } from "@/components/Header"
-import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
 
@@ -103,9 +102,7 @@ export default function CGVPage() {
               <li>Toute activité non déclarée est exclue</li>
               <li>Les chantiers réalisés hors cadre contractuel ne sont pas couverts</li>
               <li>
-                Une garantie de protection juridique est prévue à hauteur de{" "}
-                {PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} € par litige garanti, selon les conditions du
-                contrat.
+                Une garantie de protection juridique est prévue selon les conditions contractuelles applicables.
               </li>
             </ul>
           </section>

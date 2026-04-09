@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
+import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
 
 const MESSAGE_MIN = 20
 const MESSAGE_MAX = 12000
@@ -93,6 +94,13 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       )
     }
+    const copySent = await sendRcFabriquantEmailCopy({
+      originalTo: lead.email,
+      subject: template.subject,
+      text: template.text,
+      html: template.html,
+      contextLabel: "proposition_rc_fabriquant_depuis_gestion",
+    })
 
     await prisma.devisRcFabriquantLead.update({
       where: { id: leadId },
@@ -110,6 +118,7 @@ export async function POST(request: NextRequest) {
       targetId: leadId,
       details: {
         to: lead.email,
+        copySent,
         ...(primeAnnuelle != null ? { primeAnnuelle } : {}),
       },
     })

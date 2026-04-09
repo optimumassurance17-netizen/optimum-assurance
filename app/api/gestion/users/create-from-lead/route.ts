@@ -33,16 +33,30 @@ export async function POST(request: NextRequest) {
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
     }
-    const payload = body as { leadId?: unknown }
+    const payload = body as { leadId?: unknown; leadType?: unknown }
     const leadId = typeof payload.leadId === "string" ? payload.leadId.trim() : ""
+    const leadTypeRaw = typeof payload.leadType === "string" ? payload.leadType.trim().toLowerCase() : ""
+    const isRcFabLeadType =
+      leadTypeRaw === "rc_fabriquant" ||
+      leadTypeRaw === "rc-fabriquant" ||
+      leadTypeRaw === "rc fabricant" ||
+      leadTypeRaw === "rc_fabricant"
+    const leadType = isRcFabLeadType ? "rc_fabriquant" : "dommage_ouvrage"
 
     if (!leadId) {
       return NextResponse.json({ error: "leadId requis" }, { status: 400 })
     }
 
-    const lead = await prisma.devisDommageOuvrageLead.findUnique({
-      where: { id: leadId },
-    })
+    const lead =
+      leadType === "rc_fabriquant"
+        ? await prisma.devisRcFabriquantLead.findUnique({
+            where: { id: leadId },
+            select: { id: true, email: true, data: true },
+          })
+        : await prisma.devisDommageOuvrageLead.findUnique({
+            where: { id: leadId },
+            select: { id: true, email: true, data: true },
+          })
 
     if (!lead) {
       return NextResponse.json({ error: "Lead introuvable" }, { status: 404 })
@@ -63,9 +77,17 @@ export async function POST(request: NextRequest) {
     const passwordHash = await hash(tempPassword, 12)
 
     let raisonSociale: string | null = null
+    let siret: string | null = null
+    let telephone: string | null = null
     try {
-      const leadData = JSON.parse(lead.data) as { raisonSociale?: string }
+      const leadData = JSON.parse(lead.data) as {
+        raisonSociale?: string
+        siret?: string
+        telephone?: string
+      }
       raisonSociale = leadData.raisonSociale || null
+      siret = leadData.siret ? String(leadData.siret).replace(/\s/g, "").trim() : null
+      telephone = leadData.telephone ? String(leadData.telephone).trim() : null
     } catch {
       /* ignore */
     }
@@ -75,6 +97,8 @@ export async function POST(request: NextRequest) {
         email: lead.email.toLowerCase(),
         passwordHash,
         raisonSociale: raisonSociale || lead.email,
+        ...(siret ? { siret } : {}),
+        ...(telephone ? { telephone } : {}),
       },
     })
 
@@ -96,7 +120,7 @@ export async function POST(request: NextRequest) {
       action: "user_create_from_lead",
       targetType: "user",
       targetId: user.id,
-      details: { email: user.email, leadId },
+      details: { email: user.email, leadId, leadType },
     })
 
     return NextResponse.json({

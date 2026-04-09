@@ -166,6 +166,23 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nVous avez demandé un devis assurance décennale. La prime annuelle était de ${primeAnnuelle ? primeAnnuelle.toLocaleString("fr-FR") + " €" : "disponible"}.\n\nFinalisez votre souscription en ligne : ${APP_URL}/devis\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Vous avez demandé un devis assurance décennale. La prime annuelle était de <strong>${primeAnnuelle ? primeAnnuelle.toLocaleString("fr-FR") + " €" : "disponible"}</strong>.</p><p><a href="${APP_URL}/devis" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Finaliser mon devis</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
+  rappelDossierIncomplet: (
+    raisonSociale: string,
+    espaceClientUrl: string,
+    opts?: { produitLabel?: string; reference?: string }
+  ) => {
+    const produit = opts?.produitLabel?.trim() || "votre dossier"
+    const reference = opts?.reference?.trim()
+    const refTxt = reference ? `\nRéférence : ${reference}` : ""
+    const refHtml = reference
+      ? `<p style="font-size:13px;color:#64748b;margin:8px 0 0;">Référence : <strong>${escapeHtmlForEmail(reference)}</strong></p>`
+      : ""
+    return {
+      subject: `Action requise : dossier incomplet (${produit}) - Optimum Assurance`,
+      text: `Bonjour ${raisonSociale},\n\nVotre dossier ${produit} est en attente car certaines étapes ne sont pas terminées (signature, pièces ou paiement).${refTxt}\n\nFinalisez votre dossier depuis votre espace client :\n${espaceClientUrl}\n\nSi vous avez besoin d’aide, répondez directement à cet e-mail.\n\nCordialement,\nOptimum Assurance`,
+      html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre dossier <strong>${escapeHtmlForEmail(produit)}</strong> est en attente car certaines étapes ne sont pas terminées (signature, pièces ou paiement).</p>${refHtml}<p><a href="${espaceClientUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Finaliser mon dossier</a></p><p style="font-size:13px;color:#64748b;">Besoin d’aide ? Répondez directement à cet e-mail.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+    }
+  },
   bienvenue: (raisonSociale: string) => ({
     subject: "Bienvenue chez Optimum Assurance",
     text: `Bonjour ${raisonSociale},\n\nVotre compte a été créé avec succès.\n\nConnectez-vous à votre espace client pour gérer vos documents et votre assurance décennale : ${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,

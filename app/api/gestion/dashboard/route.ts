@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -49,6 +50,21 @@ export const maxDuration = 60
 const DASH_LIST_LIMIT = 3000
 /** Pour le calcul des stats DO (sommes JSON) — plafond pour ne pas charger 100k lignes. */
 const DO_STATS_ATTESTATIONS_CAP = 10_000
+
+function startOfUtcDay(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+}
+
+function parseAdminLogDetails(raw: string | null | undefined): Record<string, unknown> {
+  if (!raw?.trim()) return {}
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {}
+    return parsed as Record<string, unknown>
+  } catch {
+    return {}
+  }
+}
 
 export async function GET() {
   try {
@@ -282,13 +298,211 @@ export async function GET() {
       }
     })
 
+    const rcLeadEmails = [
+      ...new Set(
+        devisRcFabriquantLeads
+          .map((lead) => lead.email.trim().toLowerCase())
+          .filter((email) => email.length > 0)
+      ),
+    ]
+    const rcLeadUsers =
+      rcLeadEmails.length > 0
+        ? await prisma.user.findMany({
+            where: { email: { in: rcLeadEmails } },
+            select: { id: true, email: true, raisonSociale: true },
+          })
+        : []
+    const rcLeadUserByEmail = new Map(
+      rcLeadUsers.map((u) => [u.email.trim().toLowerCase(), u] as const)
+    )
+    const rcLeadIds = devisRcFabriquantLeads.map((lead) => lead.id)
+    const rcFabLeadActivityLogs =
+      rcLeadIds.length > 0
+        ? await prisma.adminActivityLog.findMany({
+            where: {
+              targetType: "DevisRcFabriquantLead",
+              targetId: { in: rcLeadIds },
+              action: { in: ["rc_fabriquant_proposition_email", "rc_fabriquant_etude_signature_sent"] },
+            },
+            orderBy: { createdAt: "desc" },
+            select: { action: true, targetId: true, details: true, createdAt: true },
+            take: 400,
+          })
+        : []
+    const rcFabTraceByLeadId = new Map<
+      string,
+      {
+        proposition?: { copySent: boolean; at: Date }
+        signature?: { copySent: boolean; at: Date }
+      }
+    >()
+    for (const log of rcFabLeadActivityLogs) {
+      const leadId = typeof log.targetId === "string" ? log.targetId : ""
+      if (!leadId) continue
+      const current = rcFabTraceByLeadId.get(leadId) ?? {}
+      const details = parseAdminLogDetails(log.details)
+      const copySent = details.copySent === true
+      if (log.action === "rc_fabriquant_proposition_email" && !current.proposition) {
+        current.proposition = { copySent, at: log.createdAt }
+      }
+      if (log.action === "rc_fabriquant_etude_signature_sent" && !current.signature) {
+        current.signature = { copySent, at: log.createdAt }
+      }
+      rcFabTraceByLeadId.set(leadId, current)
+    }
+    const devisRcFabriquantLeadsWithUser = devisRcFabriquantLeads.map((lead) => {
+      const trace = rcFabTraceByLeadId.get(lead.id)
+      return {
+        ...lead,
+        matchedUser: rcLeadUserByEmail.get(lead.email.trim().toLowerCase()) ?? null,
+        copyTrace: trace
+          ? {
+              proposition: trace.proposition
+                ? {
+                    copySent: trace.proposition.copySent,
+                    sentAt: trace.proposition.at.toISOString(),
+                  }
+                : null,
+              signature: trace.signature
+                ? {
+                    copySent: trace.signature.copySent,
+                    sentAt: trace.signature.at.toISOString(),
+                  }
+                : null,
+            }
+          : null,
+      }
+    })
+
+    const now = new Date()
+    const todayStart = startOfUtcDay(now)
+    const reminder24hMs = 24 * 60 * 60 * 1000
+    const overdue72hMs = 72 * 60 * 60 * 1000
+    type DashboardAction = {
+      id: string
+      kind:
+        | "signature_pending"
+        | "approved_unpaid_contract"
+        | "decennale_lead_followup"
+        | "do_etude_pending"
+        | "rc_fabriquant_pending"
+      priority: "high" | "medium"
+      title: string
+      description: string
+      href: string
+      ageHours: number
+    }
+    const dismissedLogs = await prisma.adminActivityLog.findMany({
+      where: {
+        action: "dashboard_action_dismissed",
+        targetType: "dashboard_action",
+        createdAt: { gte: todayStart },
+      },
+      select: { targetId: true },
+    })
+    const dismissedActionIds = new Set(
+      dismissedLogs.map((l) => (typeof l.targetId === "string" ? l.targetId : "")).filter(Boolean)
+    )
+
+    const dashboardActions: DashboardAction[] = []
+
+    for (const p of pendingSignaturesRaw) {
+      const ageMs = now.getTime() - p.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `sig-${p.signatureRequestId}`,
+        kind: "signature_pending",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Signature en attente",
+        description: `Référence ${p.contractNumero} — ${ageHours}h`,
+        href: "#signatures-attente",
+        ageHours,
+      })
+    }
+
+    for (const c of insuranceContractsList) {
+      if (c.status !== "approved" || c.paidAt) continue
+      const ageMs = now.getTime() - c.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `ctr-${c.id}`,
+        kind: "approved_unpaid_contract",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Contrat approuvé non payé",
+        description: `${c.contractNumber} (${c.productType}) — ${ageHours}h`,
+        href: "#contrats-plateforme",
+        ageHours,
+      })
+    }
+
+    for (const d of devisLeads) {
+      if (d.rappelSentAt) continue
+      const ageMs = now.getTime() - d.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `lead-dec-${d.id}`,
+        kind: "decennale_lead_followup",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Lead devis décennale à relancer",
+        description: `${d.email} — ${ageHours}h`,
+        href: "#leads-decennale",
+        ageHours,
+      })
+    }
+
+    for (const e of devisEtudeLeads) {
+      if (e.statut !== "pending") continue
+      const ageMs = now.getTime() - e.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `lead-etude-${e.id}`,
+        kind: "do_etude_pending",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Demande étude à traiter",
+        description: `${e.email} — ${ageHours}h`,
+        href: "#etudes-do",
+        ageHours,
+      })
+    }
+
+    for (const l of devisRcFabriquantLeadsWithUser) {
+      if (normalizeRcFabriquantLeadStatut(l.statut) !== "a_traiter") continue
+      const ageMs = now.getTime() - l.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `lead-rcfab-${l.id}`,
+        kind: "rc_fabriquant_pending",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Lead RC Fabriquant à traiter",
+        description: `${l.email} — ${ageHours}h`,
+        href: "#rc-fabriquant-leads",
+        ageHours,
+      })
+    }
+
+    const dashboardActionsVisible = dashboardActions.filter((a) => !dismissedActionIds.has(a.id))
+    dashboardActionsVisible.sort((a, b) => b.ageHours - a.ageHours)
+    const dashboardActionsLimited = dashboardActionsVisible.slice(0, 20)
+    const dashboardActionsSummary = {
+      total: dashboardActionsLimited.length,
+      high: dashboardActionsLimited.filter((a) => a.priority === "high").length,
+      medium: dashboardActionsLimited.filter((a) => a.priority === "medium").length,
+      overdue72h: dashboardActionsLimited.filter((a) => a.ageHours >= 72).length,
+      dismissedToday: dismissedActionIds.size,
+    }
+
     return NextResponse.json({
       users: usersWithDoFlags,
       documents,
       payments,
       avenantFees,
       devisDoLeads,
-      devisRcFabriquantLeads,
+      devisRcFabriquantLeads: devisRcFabriquantLeadsWithUser,
       devisEtudeLeads,
       resiliationLogs,
       resiliationRequests,
@@ -299,6 +513,8 @@ export async function GET() {
       pendingSignatures,
       insuranceContractsCount,
       insuranceContracts: insuranceContractsList,
+      dashboardActions: dashboardActionsLimited,
+      dashboardActionsSummary,
     })
   } catch (error) {
     console.error("Erreur dashboard gestion:", error)

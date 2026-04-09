@@ -8,7 +8,6 @@ import {
   LEGAL_DELEGATION_MANDATORY,
   ORIAS_NUMBER,
 } from "@/lib/legal-branding"
-import { PROTECTION_JURIDIQUE_GARANTIE_EUR } from "@/lib/legal-protection"
 
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
 
@@ -94,8 +93,7 @@ export default function ConditionsGeneralesDommageOuvragePage() {
               <div className="mt-5 pt-4 border-t border-slate-200 text-[15px] leading-relaxed text-[#171717]">
                 <p>
                   <strong>Protection juridique (complément plateforme) :</strong> une garantie défense/recours est prévue à
-                  hauteur de <strong>{PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} €</strong>, selon les
-                  conditions particulières remises avec le devis et le contrat.
+                  titre complémentaire, selon les conditions particulières remises avec le devis et le contrat.
                 </p>
               </div>
             </section>
@@ -161,8 +159,7 @@ export default function ConditionsGeneralesDommageOuvragePage() {
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li>
                 <strong>Protection juridique</strong> — défense/recours du souscripteur, dans la limite de{" "}
-                <strong>{PROTECTION_JURIDIQUE_GARANTIE_EUR.toLocaleString("fr-FR")} €</strong> par litige et/ou année
-                d&apos;assurance selon les conditions particulières ;
+                ce qui est prévu aux conditions particulières ;
               </li>
               <li>
                 <strong>Bon fonctionnement (biennale)</strong> — équipements dissociables, dans le délai légal applicable ;

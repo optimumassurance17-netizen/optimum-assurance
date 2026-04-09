@@ -13,6 +13,8 @@ import {
   normalizeRcFabPeriodicity,
   serializeRcFabDossierConfig,
 } from "@/lib/rc-fabriquant-dossier-config"
+import { runSignatureQualityGates, type SignatureQualityGatePayload } from "@/lib/signature-quality-gates"
+import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
 
 export const runtime = "nodejs"
 
@@ -172,6 +174,25 @@ export async function POST(request: NextRequest) {
       produitLabel,
       afterSignNextPath,
     }
+    const qualityPayload: SignatureQualityGatePayload = {
+      flow: "custom_pdf",
+      clientLabel: user.raisonSociale || user.email,
+      reference: devisReference || provisionalNumero,
+      email: user.email,
+      annualTtc: dossierConfig.primeAnnuelleTtc,
+      periodicity: dossierConfig.periodicite,
+      hasPdfFile: true,
+    }
+    const qualityIssues = runSignatureQualityGates(qualityPayload)
+    if (qualityIssues.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Pré-contrôle qualité bloquant : corrigez le dossier avant envoi signature.",
+          issues: qualityIssues,
+        },
+        { status: 400 }
+      )
+    }
 
     await prisma.pendingSignature.create({
       data: {
@@ -209,6 +230,13 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       )
     }
+    await sendRcFabriquantEmailCopy({
+      originalTo: user.email,
+      subject: tpl.subject,
+      text: tpl.text,
+      html: tpl.html,
+      contextLabel: "invitation_signature_devis_pdf_personnalise_rc_fabriquant",
+    })
 
     await logAdminActivity({
       adminEmail: session.user.email || "admin",

@@ -9,7 +9,7 @@ import { truncateForDescription } from "@/lib/seo-metadata-utils"
 const canonical = `${SITE_URL}/devis-rc-fabriquant`
 
 export const metadata: Metadata = {
-  title: "Devis RC Fabriquant | Responsabilité civile fabricant | Optimum Assurance",
+  title: "Devis RC Fabriquant | Responsabilité civile fabricant",
   description: truncateForDescription(
     "Demande de devis assurance Responsabilité Civile Fabriquant (RC Fabriquant) pour industriels et fabricants. Étude personnalisée sous 24 à 48 h.",
     158
