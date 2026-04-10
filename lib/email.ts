@@ -236,7 +236,18 @@ export const EMAIL_TEMPLATES = {
    * Proposition métier après étude (RC Fabriquant) — message rédigé par l’admin, envoyé au prospect.
    * La prime éventuelle est indicative ; pas de souscription en ligne sur ce produit.
    */
-  propositionRcFabriquant: (raisonSociale: string, messagePlain: string, primeAnnuelle?: number) => {
+  propositionRcFabriquant: (
+    raisonSociale: string,
+    messagePlain: string,
+    primeAnnuelle?: number,
+    opts?: {
+      espaceClient?: {
+        mode: "existing" | "created"
+        email: string
+        tempPassword?: string
+      }
+    }
+  ) => {
     const primeTxt =
       primeAnnuelle != null && primeAnnuelle > 0
         ? `Indication de prime annuelle proposée : ${primeAnnuelle.toLocaleString("fr-FR")} € TTC (sous réserve de validation définitive du dossier et des conditions générales).\n\n`
@@ -250,10 +261,30 @@ export const EMAIL_TEMPLATES = {
       .split(/\n\n+/)
       .map((p) => `<p>${escapeHtmlForEmail(p).replace(/\n/g, "<br/>")}</p>`)
       .join("")
+    const espaceClient = opts?.espaceClient
+    const loginUrl = `${APP_URL}/connexion`
+    const clientSpaceText =
+      espaceClient?.mode === "created"
+        ? `\n\nVotre espace client a été créé automatiquement.\nEmail de connexion : ${espaceClient.email}\nMot de passe temporaire : ${espaceClient.tempPassword ?? "—"}\nConnexion : ${loginUrl}\nMerci de changer votre mot de passe dès la première connexion.`
+        : espaceClient?.mode === "existing"
+          ? `\n\nVous pouvez suivre votre dossier depuis votre espace client : ${loginUrl}`
+          : ""
+    const clientSpaceHtml =
+      espaceClient?.mode === "created"
+        ? `<div style="margin:16px 0;padding:14px 16px;background:#eff6ff;border-radius:10px;border:1px solid #bfdbfe;">
+             <p style="margin:0 0 8px;color:#1e3a8a;font-weight:700;">Espace client ouvert</p>
+             <p style="margin:0 0 6px;"><strong>Email :</strong> ${escapeHtmlForEmail(espaceClient.email)}</p>
+             <p style="margin:0 0 10px;"><strong>Mot de passe temporaire :</strong> ${escapeHtmlForEmail(espaceClient.tempPassword ?? "—")}</p>
+             <p style="margin:0;color:#334155;font-size:13px;">Merci de changer votre mot de passe dès la première connexion.</p>
+           </div>
+           <p><a href="${loginUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Se connecter à mon espace client</a></p>`
+        : espaceClient?.mode === "existing"
+          ? `<p><a href="${loginUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p>`
+          : ""
     return {
       subject: "Votre proposition RC Fabriquant - Optimum Assurance",
-      text: `Bonjour ${raisonSociale},\n\nSuite à l’étude de votre demande d’assurance Responsabilité Civile Fabriquant, nous vous adressons les éléments suivants.\n\n${primeTxt}${messagePlain.trim()}\n\nPour toute question, répondez directement à cet e-mail ou utilisez notre formulaire : ${APP_URL}/contact\n\nCordialement,\nOptimum Assurance`,
-      html: `<p>Bonjour ${raisonSociale},</p><p>Suite à l’étude de votre demande d’assurance <strong>Responsabilité Civile Fabriquant</strong>, nous vous adressons les éléments suivants.</p>${primeHtml}<div style="margin:16px 0;color:#0f172a;line-height:1.5;">${paras}</div><p style="font-size:14px;color:#64748b;">Pour toute question, répondez à cet e-mail ou utilisez notre <a href="${APP_URL}/contact" style="color:#2563eb;font-weight:bold">formulaire de contact</a>.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+      text: `Bonjour ${raisonSociale},\n\nSuite à l’étude de votre demande d’assurance Responsabilité Civile Fabriquant, nous vous adressons les éléments suivants.\n\n${primeTxt}${messagePlain.trim()}${clientSpaceText}\n\nPour toute question, répondez directement à cet e-mail ou utilisez notre formulaire : ${APP_URL}/contact\n\nCordialement,\nOptimum Assurance`,
+      html: `<p>Bonjour ${raisonSociale},</p><p>Suite à l’étude de votre demande d’assurance <strong>Responsabilité Civile Fabriquant</strong>, nous vous adressons les éléments suivants.</p>${primeHtml}<div style="margin:16px 0;color:#0f172a;line-height:1.5;">${paras}</div>${clientSpaceHtml}<p style="font-size:14px;color:#64748b;">Pour toute question, répondez à cet e-mail ou utilisez notre <a href="${APP_URL}/contact" style="color:#2563eb;font-weight:bold">formulaire de contact</a>.</p><p>Cordialement,<br>Optimum Assurance</p>`,
     }
   },
   remisePersonnaliseeEtude: (raisonSociale: string, primeAnnuelle: number, resumeUrl: string) => ({
