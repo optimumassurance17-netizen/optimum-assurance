@@ -69,11 +69,11 @@ import {
 
 const reviewsUrl = process.env.NEXT_PUBLIC_REVIEWS_URL || "/avis"
 const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
+const HOME_SEO_TITLE = "Assurance décennale BTP en ligne | Devis 3 min & attestation | Optimum Assurance"
 
 export const metadata: Metadata = {
   title: {
-    absolute:
-      "Assurance décennale BTP en ligne | Devis 3 min & attestation | Optimum Assurance",
+    absolute: HOME_SEO_TITLE,
   },
   description: truncateForDescription(
     `Assurance décennale obligatoire (loi Spinetta) : devis en ligne en quelques minutes, attestation pour artisans et entreprises du BTP. Plomberie, électricité, maçonnerie… Dès ${EQ_MENSUEL_MIN} €/mois équivalent, prélèvement trimestriel. Sans engagement.`,
@@ -83,7 +83,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: SITE_URL,
-    title: "Assurance décennale BTP en ligne | Devis et attestation | Optimum Assurance",
+    title: HOME_SEO_TITLE,
     description: `Devis décennale immédiat, documents conformes, 100 % en ligne. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
     locale: "fr_FR",
     siteName: "Optimum Assurance",
@@ -91,7 +91,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Assurance décennale BTP en ligne | Optimum Assurance",
+    title: HOME_SEO_TITLE,
     description: `Devis en quelques minutes, attestation rapide. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
     images: [`${SITE_URL}/opengraph-image`],
   },
@@ -115,6 +115,12 @@ export default function Home() {
             className="shrink-0 text-white font-medium text-sm underline underline-offset-2 hover:text-blue-200 transition-colors"
           >
             FAQ
+          </Link>
+          <Link
+            href="/guides/obligation-decennale"
+            className="shrink-0 text-white font-medium text-sm underline underline-offset-2 hover:text-blue-200 transition-colors"
+          >
+            Guide obligation décennale
           </Link>
         </div>
       </section>

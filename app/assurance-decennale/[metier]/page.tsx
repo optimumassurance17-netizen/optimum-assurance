@@ -8,6 +8,7 @@ import {
   seoJsonLdGraph,
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
+import { truncateForDescription } from "@/lib/seo-metadata-utils"
 import { SITE_URL } from "@/lib/site-url"
 import { notFound } from "next/navigation"
 
@@ -26,10 +27,11 @@ export async function generateMetadata({
   const { metier } = await params
   const data = METIERS_SEO.find((m) => m.slug === metier)
   if (!data) return {}
+  const description = truncateForDescription(data.description, 158)
 
   return {
     title: `Assurance Décennale ${data.nom} | Devis dès ${data.prixMin} €/mois (équivalent) | Optimum`,
-    description: data.description,
+    description,
     keywords: [
       `assurance décennale ${data.nom.toLowerCase()}`,
       `décennale ${data.nom.toLowerCase()}`,
@@ -42,13 +44,13 @@ export async function generateMetadata({
       siteName: "Optimum Assurance",
       url: `${baseUrl}/assurance-decennale/${data.slug}`,
       title: `Assurance Décennale ${data.nom} | Optimum Assurance`,
-      description: data.description,
+      description,
       images: [defaultOgImage],
     },
     twitter: {
       card: "summary_large_image",
       title: `Assurance Décennale ${data.nom} | Optimum Assurance`,
-      description: data.description,
+      description,
       images: [`${baseUrl}/opengraph-image`],
     },
   }
@@ -186,6 +188,33 @@ export default async function MetierPage({
               <p className="font-semibold text-[#0a0a0a] mb-1">{faqComparatif.q}</p>
               <p className="text-[#171717] text-sm leading-relaxed">{faqComparatif.r}</p>
             </div>
+          </div>
+        </div>
+
+        <div className="bg-[#fafafa] rounded-2xl border border-[#e5e5e5] p-6 mb-10">
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Guides utiles pour votre activité</h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Link
+              href="/guides/obligation-decennale"
+              className="rounded-xl border border-[#e5e5e5] bg-white p-4 hover:border-blue-600/40 hover:bg-blue-50 transition-all"
+            >
+              <p className="font-semibold text-[#0a0a0a]">Obligation décennale</p>
+              <p className="mt-1 text-sm text-[#171717]">Rappel des règles, sanctions et attestation à remettre.</p>
+            </Link>
+            <Link
+              href="/guides/declaration-sinistre"
+              className="rounded-xl border border-[#e5e5e5] bg-white p-4 hover:border-blue-600/40 hover:bg-blue-50 transition-all"
+            >
+              <p className="font-semibold text-[#0a0a0a]">Déclarer un sinistre</p>
+              <p className="mt-1 text-sm text-[#171717]">Délais, documents et réflexes utiles en cas de dommage.</p>
+            </Link>
+            <Link
+              href="/guides/resiliation-decennale"
+              className="rounded-xl border border-[#e5e5e5] bg-white p-4 hover:border-blue-600/40 hover:bg-blue-50 transition-all"
+            >
+              <p className="font-semibold text-[#0a0a0a]">Résilier sa décennale</p>
+              <p className="mt-1 text-sm text-[#171717]">Préavis, échéance et changement d&apos;assureur.</p>
+            </Link>
           </div>
         </div>
 

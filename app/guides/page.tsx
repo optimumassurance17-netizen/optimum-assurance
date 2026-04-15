@@ -3,6 +3,7 @@ import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { GUIDES_SEO } from "@/lib/guides-seo"
+import { truncateForDescription } from "@/lib/seo-metadata-utils"
 import { seoBaseUrl, seoBreadcrumbListNode, seoJsonLdGraph } from "@/lib/seo-jsonld-helpers"
 
 const guidesIndexJsonLd = seoJsonLdGraph([
@@ -25,8 +26,10 @@ const guidesIndexJsonLd = seoJsonLdGraph([
 
 export const metadata = {
   title: "Guides assurance décennale & dommage ouvrage — obligation, DO, sinistre",
-  description:
+  description: truncateForDescription(
     "Guides gratuits : assurance décennale obligatoire, résiliation, déclaration de sinistre, dommage ouvrage, auto-construction, garantie clos et couvert. Conseils pour pros du BTP et particuliers.",
+    158
+  ),
   alternates: { canonical: `${seoBaseUrl}/guides` },
   openGraph: {
     url: `${seoBaseUrl}/guides`,
@@ -61,6 +64,23 @@ export default function GuidesPage() {
         <p className="text-lg text-[#171717] mb-12">
           Tout ce qu&apos;il faut savoir sur l&apos;assurance décennale BTP et l&apos;assurance dommage ouvrage pour maîtres d&apos;ouvrage.
         </p>
+
+        <div className="grid gap-4 sm:grid-cols-2 mb-12">
+          <Link
+            href="/devis"
+            className="rounded-2xl border border-[#e5e5e5] bg-white p-5 hover:border-[#2563eb]/40 hover:bg-[#eff6ff] transition-all"
+          >
+            <p className="font-semibold text-[#0a0a0a]">Devis décennale en ligne</p>
+            <p className="mt-1 text-sm text-[#171717]">Passez du guide à la simulation tarifaire en quelques minutes.</p>
+          </Link>
+          <Link
+            href="/devis-dommage-ouvrage"
+            className="rounded-2xl border border-[#e5e5e5] bg-white p-5 hover:border-[#2563eb]/40 hover:bg-[#eff6ff] transition-all"
+          >
+            <p className="font-semibold text-[#0a0a0a]">Devis dommage ouvrage</p>
+            <p className="mt-1 text-sm text-[#171717]">Pour particuliers, constructeurs et promoteurs avec étude personnalisée.</p>
+          </Link>
+        </div>
 
         <section className="mb-12">
           <h2 className="text-lg font-bold text-[#0a0a0a] mb-4 flex items-center gap-2">

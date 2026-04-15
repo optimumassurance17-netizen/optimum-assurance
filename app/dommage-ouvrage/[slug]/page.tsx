@@ -8,6 +8,7 @@ import {
   seoJsonLdGraph,
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
+import { truncateForDescription } from "@/lib/seo-metadata-utils"
 import { SITE_URL } from "@/lib/site-url"
 import { notFound } from "next/navigation"
 
@@ -26,10 +27,11 @@ export async function generateMetadata({
   const { slug } = await params
   const data = DO_SEO.find((m) => m.slug === slug)
   if (!data) return {}
+  const description = truncateForDescription(data.description, 158)
 
   return {
     title: `Dommage Ouvrage ${data.nom} | Devis en ligne | Optimum`,
-    description: data.description,
+    description,
     keywords: [
       `dommage ouvrage ${data.nom.toLowerCase()}`,
       `assurance dommage ouvrage ${data.nom.toLowerCase()}`,
@@ -42,13 +44,13 @@ export async function generateMetadata({
       siteName: "Optimum Assurance",
       url: `${baseUrl}/dommage-ouvrage/${data.slug}`,
       title: `Dommage Ouvrage ${data.nom} | Optimum Assurance`,
-      description: data.description,
+      description,
       images: [defaultOgImage],
     },
     twitter: {
       card: "summary_large_image",
       title: `Dommage Ouvrage ${data.nom} | Optimum Assurance`,
-      description: data.description,
+      description,
       images: [`${baseUrl}/opengraph-image`],
     },
   }
@@ -124,6 +126,33 @@ export default async function DommageOuvragePage({
                 <p className="text-[#171717] text-sm leading-relaxed">{f.r}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="bg-[#fafafa] rounded-2xl border border-[#e5e5e5] p-6 mb-10">
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Guides utiles pour votre projet</h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Link
+              href="/guides/obligation-dommage-ouvrage"
+              className="rounded-xl border border-[#e5e5e5] bg-white p-4 hover:border-[#2563eb]/40 hover:bg-[#eff6ff] transition-all"
+            >
+              <p className="font-semibold text-[#0a0a0a]">Obligation dommage ouvrage</p>
+              <p className="mt-1 text-sm text-[#171717]">Qui doit souscrire et à quel moment sur le chantier.</p>
+            </Link>
+            <Link
+              href="/guides/dommage-ouvrage-auto-construction"
+              className="rounded-xl border border-[#e5e5e5] bg-white p-4 hover:border-[#2563eb]/40 hover:bg-[#eff6ff] transition-all"
+            >
+              <p className="font-semibold text-[#0a0a0a]">DO auto-construction</p>
+              <p className="mt-1 text-sm text-[#171717]">Documents, étapes et points d&apos;attention pour un particulier.</p>
+            </Link>
+            <Link
+              href="/guides/garantie-clos-couvert"
+              className="rounded-xl border border-[#e5e5e5] bg-white p-4 hover:border-[#2563eb]/40 hover:bg-[#eff6ff] transition-all"
+            >
+              <p className="font-semibold text-[#0a0a0a]">Garantie clos et couvert</p>
+              <p className="mt-1 text-sm text-[#171717]">Comprendre les lots couverts pour ajuster la prime.</p>
+            </Link>
           </div>
         </div>
 
