@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "path";
 import bundleAnalyzer from "@next/bundle-analyzer";
 
 const withBundleAnalyzer = bundleAnalyzer({
@@ -9,7 +8,6 @@ const withBundleAnalyzer = bundleAnalyzer({
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["@react-pdf/renderer", "pdf-lib", "@prisma/client"],
-  outputFileTracingRoot: path.join(process.cwd()),
   experimental: {
     inlineCss: true,
     optimizePackageImports: ["qrcode.react", "next-auth/react"],
