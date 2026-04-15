@@ -34,6 +34,22 @@ export const GUIDES_SEO = [
         type: "p",
         text: "Tous les corps de métier du BTP : plombiers, électriciens, peintres, maçons, couvreurs, charpentiers, carreleurs, menuisiers, BET, architectes… Dès lors que vous intervenez sur un ouvrage avec un contrat direct au maître d'ouvrage.",
       },
+      {
+        type: "h2",
+        text: "Sous-traitant : faut-il une assurance décennale ?",
+      },
+      {
+        type: "p",
+        text: "Le sous-traitant n'est pas légalement soumis à la même obligation que l'entreprise titulaire du marché, car il n'a pas de contrat direct avec le maître d'ouvrage. En pratique, beaucoup de donneurs d'ordre exigent malgré tout une assurance adaptée et une attestation, notamment pour sécuriser le chantier et limiter les litiges entre intervenants.",
+      },
+      {
+        type: "h2",
+        text: "Quelle différence entre décennale et RC Pro ?",
+      },
+      {
+        type: "p",
+        text: "La décennale couvre les dommages graves qui compromettent la solidité de l'ouvrage ou le rendent impropre à sa destination après réception des travaux. La RC Pro couvre d'autres dommages causés à des tiers dans le cadre de l'activité professionnelle. Les deux garanties répondent donc à des risques différents et complémentaires.",
+      },
     ],
   },
   {
@@ -70,6 +86,22 @@ export const GUIDES_SEO = [
       {
         type: "p",
         text: "Pour changer d'assureur à l'échéance : souscrivez chez le nouvel assureur, puis envoyez votre lettre de résiliation à l'ancien. Assurez-vous de ne pas avoir de période sans couverture.",
+      },
+      {
+        type: "h2",
+        text: "Que se passe-t-il en cas de résiliation pour non-paiement ?",
+      },
+      {
+        type: "p",
+        text: "En cas d'impayé, l'assureur peut suspendre puis résilier votre contrat. Cette situation complique la recherche d'une nouvelle couverture et peut entraîner une surprime. Tant qu'une nouvelle attestation valide n'est pas obtenue, il est risqué de poursuivre ou d'ouvrir de nouveaux chantiers.",
+      },
+      {
+        type: "h2",
+        text: "Comment éviter une rupture de couverture ?",
+      },
+      {
+        type: "p",
+        text: "Anticipez votre changement d'assureur avant l'échéance, vérifiez la date de prise d'effet du nouveau contrat et conservez une preuve de la résiliation. L'objectif est d'éviter tout intervalle sans assurance décennale, qui pourrait bloquer votre activité et fragiliser vos relations avec vos clients.",
       },
     ],
   },
@@ -108,6 +140,22 @@ export const GUIDES_SEO = [
         type: "p",
         text: "L'avis de sinistre du maître d'ouvrage, votre contrat de souscription, les éléments prouvant votre intervention (devis, factures), et tout document relatif au dommage. Notre équipe vous guide étape par étape.",
       },
+      {
+        type: "h2",
+        text: "Que faire dès le premier signalement ?",
+      },
+      {
+        type: "p",
+        text: "Dès qu'un client, un maître d'ouvrage ou un assureur DO vous signale un désordre, conservez toutes les preuves disponibles : emails, courriers, photos, dates d'intervention, devis, factures et échanges avec les autres entreprises. Plus votre dossier est documenté, plus l'instruction du sinistre est fluide.",
+      },
+      {
+        type: "h2",
+        text: "Faut-il répondre au maître d'ouvrage avant l'assureur ?",
+      },
+      {
+        type: "p",
+        text: "Oui, il est préférable d'accuser réception du signalement et d'indiquer que le dossier est transmis à votre assureur. En revanche, évitez de reconnaître formellement votre responsabilité ou de promettre des travaux correctifs sans coordination avec l'assureur, afin de ne pas compliquer la gestion du sinistre.",
+      },
     ],
   },
   {
@@ -124,6 +172,10 @@ export const GUIDES_SEO = [
       { type: "p", text: "Avant le début des travaux. Le permis de construire et le DROC (date de réception des ouvrages) sont requis. Sans attestation DO, les entreprises ne peuvent pas commencer les travaux." },
       { type: "h2", text: "Quelles sanctions ?" },
       { type: "p", text: "Sans assurance dommage ouvrage, vous ne pouvez pas faire réaliser les travaux. Les entreprises BTP exigent l'attestation avant de signer. En cas de sinistre non couvert, vous assumez seul les dommages." },
+      { type: "h2", text: "Pourquoi la DO accélère-t-elle l'indemnisation ?" },
+      { type: "p", text: "La dommage ouvrage a pour objectif de préfinancer rapidement les réparations relevant de la garantie décennale, sans attendre qu'un tribunal détermine les responsabilités de chaque intervenant. C'est ce qui la rend précieuse pour un maître d'ouvrage qui veut sécuriser son chantier et son budget." },
+      { type: "h2", text: "Est-ce utile pour un particulier qui garde le bien ?" },
+      { type: "p", text: "Oui. Même si vous n'envisagez pas de vendre immédiatement, la DO protège votre patrimoine en cas de désordre lourd pendant les 10 années suivant la réception. Elle reste aussi un argument fort si vous revendez le bien avant la fin de la période décennale." },
     ],
   },
   {
@@ -138,6 +190,10 @@ export const GUIDES_SEO = [
       { type: "p", text: "Pour réduire la prime, vous pouvez souscrire une garantie clos et couvert uniquement : terrassement, VRD, gros œuvre, charpente, couverture, menuiserie extérieure. Les lots second œuvre (plomberie, électricité) sont couverts par les attestations décennale des artisans." },
       { type: "h2", text: "Documents requis" },
       { type: "p", text: "Permis de construire, DROC, plans, conventions maîtrise d'œuvre et contrôle technique, rapport d'étude de sol. Ces documents sont déposés dans votre espace client après création de compte." },
+      { type: "h2", text: "Garantie complète ou clos et couvert ?" },
+      { type: "p", text: "Selon votre budget et la structure de votre projet, vous pouvez viser une couverture complète ou une formule clos et couvert. Cette dernière se concentre sur les lots structurels (terrassement, VRD, gros œuvre, charpente, couverture, menuiserie extérieure) et peut réduire le coût de la prime." },
+      { type: "h2", text: "Quand demander votre devis DO ?" },
+      { type: "p", text: "Le plus tôt possible, dès que le permis, les intervenants principaux et le budget de construction sont suffisamment stabilisés. Une demande anticipée laisse le temps de rassembler les pièces techniques, de répondre aux questions du porteur de risque et d'éviter de retarder le démarrage du chantier." },
     ],
   },
   {
@@ -152,6 +208,10 @@ export const GUIDES_SEO = [
       { type: "p", text: "Terrassement, VRD, fondations, gros œuvre, charpente, couverture, étanchéité toiture, menuiserie extérieure (portes, fenêtres). Tout ce qui constitue l'enveloppe structurelle du bâtiment." },
       { type: "h2", text: "Avantages" },
       { type: "p", text: "Prime réduite par rapport à une garantie complète. Idéal pour les particuliers en auto-construction ou les petits chantiers. Les artisans assurent leurs lots via leur décennale." },
+      { type: "h2", text: "Quels lots restent hors garantie ?" },
+      { type: "p", text: "La formule clos et couvert n'inclut pas les lots de second œuvre comme la plomberie, l'électricité, le chauffage, le carrelage ou la peinture. Ces interventions restent couvertes par les assurances décennales propres à chaque artisan ou entreprise intervenante." },
+      { type: "h2", text: "Dans quels cas cette formule est-elle pertinente ?" },
+      { type: "p", text: "Elle est souvent retenue pour les petits budgets, l'auto-construction ou les projets où le maître d'ouvrage souhaite concentrer la couverture sur la structure du bâtiment. Avant de choisir cette formule, il faut bien vérifier quels intervenants couvrent les autres lots et si ce niveau de protection répond à votre objectif patrimonial." },
     ],
   },
 ] as const

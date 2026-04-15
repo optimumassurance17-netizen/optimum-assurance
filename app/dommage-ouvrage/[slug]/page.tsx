@@ -64,6 +64,7 @@ export default async function DommageOuvragePage({
   const { slug } = await params
   const data = DO_SEO.find((m) => m.slug === slug)
   if (!data) notFound()
+  const otherDoPages = DO_SEO.filter((m) => m.slug !== data.slug)
 
   const path = `/dommage-ouvrage/${data.slug}`
   const jsonLd = seoJsonLdGraph([
@@ -115,6 +116,21 @@ export default async function DommageOuvragePage({
               </li>
             ))}
           </ul>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-[#e5e5e5] p-6 mb-10">
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Bien préparer votre dossier dommage ouvrage</h2>
+          <p className="text-[#171717] text-sm leading-relaxed mb-4">
+            Une demande DO est plus fluide si vous préparez dès le départ les informations clés :
+            <strong> permis de construire</strong>, coût de l&apos;opération, nature exacte des travaux, acteurs du chantier
+            et pièces techniques disponibles. Cela facilite l&apos;étude du risque et évite les retours inutiles avant
+            l&apos;émission du devis.
+          </p>
+          <p className="text-[#171717] text-sm leading-relaxed">
+            Selon votre profil, le bon niveau de garantie n&apos;est pas le même : particulier, auto-construction,
+            promoteur ou formule clos et couvert. Le choix dépend du budget, des lots réalisés et des intervenants
+            déjà assurés en décennale.
+          </p>
         </div>
 
         <div className="bg-white rounded-2xl border border-[#e5e5e5] p-6 mb-10">
@@ -171,6 +187,22 @@ export default async function DommageOuvragePage({
               Comprendre l&apos;obligation dommage ouvrage
             </Link>
           </p>
+        </div>
+
+        <div className="mt-10 rounded-2xl border border-[#e5e5e5] bg-white p-6">
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Autres profils dommage ouvrage</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {otherDoPages.map((doPage) => (
+              <Link
+                key={doPage.slug}
+                href={`/dommage-ouvrage/${doPage.slug}`}
+                className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-4 hover:border-[#2563eb]/30 hover:bg-[#eff6ff] transition-all"
+              >
+                <p className="font-semibold text-[#0a0a0a]">{doPage.nom}</p>
+                <p className="mt-1 text-sm text-[#171717]">{doPage.description}</p>
+              </Link>
+            ))}
+          </div>
         </div>
 
         <p className="text-center mt-10">

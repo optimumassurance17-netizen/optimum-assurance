@@ -69,6 +69,7 @@ export default async function MetierPage({
     q: "En quoi Optimum se distingue des grandes plateformes d’assurance en ligne ?",
     r: "Optimum est centré sur l’assurance construction : décennale et dommage ouvrage, avec des parcours pensés pour les chantiers et les métiers du bâtiment. Les plateformes généralistes proposent souvent un catalogue plus large (RC pro, mutuelle, multirisque…) et une acquisition à très grande échelle ; nous privilégions la lisibilité du devis, le suivi du dossier et une spécialisation sur votre risque.",
   }
+  const otherMetiers = METIERS_SEO.filter((m) => m.slug !== data.slug).slice(0, 4)
 
   const path = `/assurance-decennale/${data.slug}`
   const metierJsonLd = seoJsonLdGraph([
@@ -176,6 +177,21 @@ export default async function MetierPage({
         </div>
 
         <div className="bg-white rounded-2xl border border-[#e5e5e5] p-6 mb-10">
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Bien préparer votre demande</h2>
+          <p className="text-[#171717] text-sm leading-relaxed mb-4">
+            Pour obtenir un devis décennale cohérent avec votre activité {data.activite.toLowerCase()}, préparez votre
+            <strong> SIRET</strong>, la liste exacte des travaux réalisés, votre <strong>chiffre d&apos;affaires</strong>{" "}
+            et, si besoin, vos informations de sinistralité. Une déclaration précise réduit les risques d&apos;écart entre
+            le devis, l&apos;attestation remise au client et le contrat final.
+          </p>
+          <p className="text-[#171717] text-sm leading-relaxed">
+            En pratique, le maître d&apos;ouvrage attend souvent une attestation à jour avant signature du chantier. Si vous
+            intervenez sur plusieurs activités proches, mieux vaut les déclarer correctement dès le départ plutôt que de
+            devoir modifier votre contrat après coup.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-[#e5e5e5] p-6 mb-10">
           <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Questions fréquentes {data.nom}</h2>
           <div className="space-y-4">
             {data.faq.map((f, i) => (
@@ -234,6 +250,22 @@ export default async function MetierPage({
               Maître d&apos;ouvrage ? Dommage ouvrage
             </Link>
           </p>
+        </div>
+
+        <div className="mt-10 rounded-2xl border border-[#e5e5e5] bg-white p-6">
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Autres métiers couverts</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {otherMetiers.map((metierLink) => (
+              <Link
+                key={metierLink.slug}
+                href={`/assurance-decennale/${metierLink.slug}`}
+                className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-4 hover:border-blue-600/30 hover:bg-blue-50 transition-all"
+              >
+                <p className="font-semibold text-[#0a0a0a]">Assurance décennale {metierLink.nom}</p>
+                <p className="mt-1 text-sm text-[#171717]">{metierLink.description}</p>
+              </Link>
+            ))}
+          </div>
         </div>
 
         <p className="text-center mt-10">
