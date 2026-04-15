@@ -30,7 +30,7 @@ export async function generateMetadata({
   const description = truncateForDescription(data.description, 158)
 
   return {
-    title: `Assurance Décennale ${data.nom} | Devis dès ${data.prixMin} €/mois (équivalent) | Optimum`,
+    title: `Assurance décennale ${data.nom} | Devis en ligne | Optimum Assurance`,
     description,
     keywords: [
       `assurance décennale ${data.nom.toLowerCase()}`,
@@ -43,13 +43,13 @@ export async function generateMetadata({
       locale: "fr_FR",
       siteName: "Optimum Assurance",
       url: `${baseUrl}/assurance-decennale/${data.slug}`,
-      title: `Assurance Décennale ${data.nom} | Optimum Assurance`,
+      title: `Assurance décennale ${data.nom} | Optimum Assurance`,
       description,
       images: [defaultOgImage],
     },
     twitter: {
       card: "summary_large_image",
-      title: `Assurance Décennale ${data.nom} | Optimum Assurance`,
+      title: `Assurance décennale ${data.nom} | Optimum Assurance`,
       description,
       images: [`${baseUrl}/opengraph-image`],
     },

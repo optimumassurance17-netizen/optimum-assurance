@@ -69,14 +69,14 @@ import {
 
 const reviewsUrl = process.env.NEXT_PUBLIC_REVIEWS_URL || "/avis"
 const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
-const HOME_SEO_TITLE = "Assurance décennale BTP en ligne | Devis 3 min & attestation | Optimum Assurance"
+const HOME_SEO_TITLE = "Assurance décennale BTP en ligne | Devis 3 min et attestation | Optimum Assurance"
 
 export const metadata: Metadata = {
   title: {
     absolute: HOME_SEO_TITLE,
   },
   description: truncateForDescription(
-    `Assurance décennale obligatoire (loi Spinetta) : devis en ligne en quelques minutes, attestation pour artisans et entreprises du BTP. Plomberie, électricité, maçonnerie… Dès ${EQ_MENSUEL_MIN} €/mois équivalent, prélèvement trimestriel. Sans engagement.`,
+    `Assurance décennale BTP obligatoire : devis en ligne en 3 minutes, attestation rapide et paiement trimestriel. Pour artisans, entreprises du bâtiment et bureaux d’études. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
     158
   ),
   alternates: { canonical: SITE_URL },
@@ -84,7 +84,7 @@ export const metadata: Metadata = {
     type: "website",
     url: SITE_URL,
     title: HOME_SEO_TITLE,
-    description: `Devis décennale immédiat, documents conformes, 100 % en ligne. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
+    description: `Devis décennale BTP en 3 minutes, attestation rapide, documents conformes et paiement trimestriel. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
     locale: "fr_FR",
     siteName: "Optimum Assurance",
     images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance — assurance décennale BTP" }],
@@ -92,7 +92,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: HOME_SEO_TITLE,
-    description: `Devis en quelques minutes, attestation rapide. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
+    description: `Devis décennale BTP en 3 minutes, attestation rapide et paiement trimestriel. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
     images: [`${SITE_URL}/opengraph-image`],
   },
 }

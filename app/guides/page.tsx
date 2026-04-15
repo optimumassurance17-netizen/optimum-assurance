@@ -25,17 +25,17 @@ const guidesIndexJsonLd = seoJsonLdGraph([
 ])
 
 export const metadata = {
-  title: "Guides assurance décennale & dommage ouvrage — obligation, DO, sinistre",
+  title: "Guides assurance décennale & dommage ouvrage | Obligation, sinistre, DO",
   description: truncateForDescription(
-    "Guides gratuits : assurance décennale obligatoire, résiliation, déclaration de sinistre, dommage ouvrage, auto-construction, garantie clos et couvert. Conseils pour pros du BTP et particuliers.",
+    "Guides pratiques sur l'assurance décennale et la dommage ouvrage : obligation, sinistre, résiliation, auto-construction, clos et couvert. Pour pros BTP et maîtres d'ouvrage.",
     158
   ),
   alternates: { canonical: `${seoBaseUrl}/guides` },
   openGraph: {
     url: `${seoBaseUrl}/guides`,
-    title: "Guides décennale BTP & dommage ouvrage | Optimum Assurance",
+    title: "Guides décennale & dommage ouvrage | Optimum Assurance",
     description:
-      "Articles pédagogiques : loi Spinetta, DO, sinistre, auto-construction, clos et couvert — pour sécuriser vos chantiers et vos droits.",
+      "Obligation, déclaration de sinistre, dommage ouvrage, auto-construction : des guides pratiques pour préparer vos décisions et vos dossiers.",
     locale: "fr_FR",
     siteName: "Optimum Assurance",
     type: "website",
@@ -43,9 +43,9 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Guides décennale BTP & dommage ouvrage | Optimum Assurance",
+    title: "Guides décennale & dommage ouvrage | Optimum Assurance",
     description:
-      "Obligation décennale, DO, sinistre, auto-construction : guides pratiques pour pros et particuliers.",
+      "Guides pratiques pour pros du BTP et maîtres d'ouvrage : obligation, sinistre, DO, auto-construction.",
     images: [`${seoBaseUrl}/opengraph-image`],
   },
 }

@@ -30,7 +30,7 @@ export async function generateMetadata({
   const description = truncateForDescription(data.description, 158)
 
   return {
-    title: `Dommage Ouvrage ${data.nom} | Devis en ligne | Optimum`,
+    title: `Assurance dommage ouvrage ${data.nom} | Devis & guide | Optimum`,
     description,
     keywords: [
       `dommage ouvrage ${data.nom.toLowerCase()}`,
@@ -43,13 +43,13 @@ export async function generateMetadata({
       locale: "fr_FR",
       siteName: "Optimum Assurance",
       url: `${baseUrl}/dommage-ouvrage/${data.slug}`,
-      title: `Dommage Ouvrage ${data.nom} | Optimum Assurance`,
+      title: `Assurance dommage ouvrage ${data.nom} | Optimum Assurance`,
       description,
       images: [defaultOgImage],
     },
     twitter: {
       card: "summary_large_image",
-      title: `Dommage Ouvrage ${data.nom} | Optimum Assurance`,
+      title: `Assurance dommage ouvrage ${data.nom} | Optimum Assurance`,
       description,
       images: [`${baseUrl}/opengraph-image`],
     },

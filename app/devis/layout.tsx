@@ -6,16 +6,16 @@ import { truncateForDescription } from "@/lib/seo-metadata-utils"
 const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
-  title: "Devis assurance décennale BTP gratuit — tarif immédiat en ligne",
+  title: "Devis assurance décennale BTP | Tarif immédiat en ligne",
   description: truncateForDescription(
-    `Simulateur assurance décennale : tarif selon votre chiffre d’affaires et vos activités BTP (plombier, électricien, maçon…). Dès ${EQ_MENSUEL_MIN} €/mois équivalent, prélèvement trimestriel. Sans engagement, 100 % en ligne.`,
+    `Obtenez votre devis assurance décennale BTP selon votre chiffre d’affaires et vos activités (plombier, électricien, maçon…). Tarif immédiat, dès ${EQ_MENSUEL_MIN} €/mois équivalent, sans engagement.`,
     158
   ),
   alternates: { canonical: `${baseUrl}/devis` },
   openGraph: {
     url: `${baseUrl}/devis`,
-    title: "Devis assurance décennale BTP | Optimum Assurance",
-    description: `Tarif en quelques minutes. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
+    title: "Devis assurance décennale BTP | Tarif immédiat | Optimum Assurance",
+    description: `Tarif immédiat selon votre activité BTP. Dès ${EQ_MENSUEL_MIN} €/mois équivalent, sans engagement.`,
     locale: "fr_FR",
     siteName: "Optimum Assurance",
     type: "website",
@@ -23,7 +23,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Devis assurance décennale BTP | Optimum Assurance",
+    title: "Devis assurance décennale BTP | Tarif immédiat",
+    description: `Simulez votre tarif décennale BTP en ligne en quelques minutes.`,
     images: [`${baseUrl}/opengraph-image`],
   },
 }
