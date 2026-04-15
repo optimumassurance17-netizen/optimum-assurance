@@ -2,6 +2,12 @@ import Link from "next/link"
 import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
 import { DO_SEO } from "@/lib/dommage-ouvrage-seo"
+import {
+  seoBreadcrumbListNode,
+  seoFaqPageNode,
+  seoJsonLdGraph,
+  seoWebPageNode,
+} from "@/lib/seo-jsonld-helpers"
 import { SITE_URL } from "@/lib/site-url"
 import { notFound } from "next/navigation"
 
@@ -57,30 +63,24 @@ export default async function DommageOuvragePage({
   const data = DO_SEO.find((m) => m.slug === slug)
   if (!data) notFound()
 
-  const breadcrumbJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Accueil", item: `${baseUrl}/` },
-      { "@type": "ListItem", position: 2, name: "Dommage ouvrage", item: `${baseUrl}/devis-dommage-ouvrage` },
-      { "@type": "ListItem", position: 3, name: data.nom, item: `${baseUrl}/dommage-ouvrage/${data.slug}` },
-    ],
-  }
-
-  const faqJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: data.faq.map((f) => ({
-      "@type": "Question",
-      name: f.q,
-      acceptedAnswer: { "@type": "Answer", text: f.r },
-    })),
-  }
+  const path = `/dommage-ouvrage/${data.slug}`
+  const jsonLd = seoJsonLdGraph([
+    seoBreadcrumbListNode([
+      { name: "Accueil", path: "/" },
+      { name: "Dommage ouvrage", path: "/devis-dommage-ouvrage" },
+      { name: data.nom, path },
+    ]),
+    seoWebPageNode({
+      path,
+      name: `Assurance dommage ouvrage ${data.nom}`,
+      description: data.description,
+    }),
+    seoFaqPageNode(data.faq),
+  ])
 
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      <JsonLd id={`jsonld-do-breadcrumb-${data.slug}`} data={breadcrumbJsonLd} />
-      <JsonLd id={`jsonld-do-faq-${data.slug}`} data={faqJsonLd} />
+      <JsonLd id={`jsonld-do-${data.slug}`} data={jsonLd} />
       <Header />
 
       <div className="max-w-3xl mx-auto px-6 py-14">
@@ -136,6 +136,11 @@ export default async function DommageOuvragePage({
           </Link>
           <p className="text-sm text-[#171717]">
             Devis sous 24h • Auto-construction acceptée • Clos et couvert possible
+          </p>
+          <p className="text-sm">
+            <Link href="/guides/obligation-dommage-ouvrage" className="text-[#2563eb] font-medium hover:underline">
+              Comprendre l&apos;obligation dommage ouvrage
+            </Link>
           </p>
         </div>
 

@@ -59,9 +59,6 @@ export const metadata: Metadata = {
     "assurance construction",
   ],
   authors: [{ name: "Optimum Assurance", url: baseUrl }],
-  alternates: {
-    canonical: baseUrl,
-  },
   openGraph: {
     type: "website",
     locale: "fr_FR",

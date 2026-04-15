@@ -165,7 +165,11 @@ export default async function DoVillePage({
           <p>
             L’assurance dommage ouvrage est obligatoire pour les maîtres d’ouvrage concernés avant le début des
             travaux. Elle garantit les dommages affectant la solidité de l’ouvrage ou le rendant impropre à sa
-            destination.
+            destination. Pour comprendre le cadre légal en détail, consultez aussi notre{" "}
+            <Link href="/guides/obligation-dommage-ouvrage" className="text-blue-600 font-medium hover:underline">
+              guide sur l&apos;obligation dommage ouvrage
+            </Link>
+            .
           </p>
         </SeoTextBlock>
 
