@@ -230,6 +230,10 @@ model DevisRcFabriquantLead {
   /// Dernière prime annuelle indiquée dans l’e-mail de proposition (à titre indicatif)
   primeProposee         Float?
   propositionEnvoyeeAt  DateTime?
+  /// Dernière interaction WhatsApp tracée (clic CTA)
+  lastWhatsappClickAt   DateTime?
+  lastWhatsappSource    String?
+  lastWhatsappRef       String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 }
@@ -309,6 +313,22 @@ model AdminActivityLog {
   targetType String?  // user | document | payment | ...
   targetId   String?
   details    String?  // JSON
+  createdAt  DateTime @default(now())
+}
+
+/// Historique des clics sortants vers WhatsApp (source, message et contexte CRM éventuel).
+model WhatsappClickLog {
+  id         String   @id @default(cuid())
+  target     String
+  source     String
+  text       String?
+  reference  String?
+  leadType   String?
+  leadId     String?
+  userId     String?
+  userEmail  String?
+  ip         String?
+  userAgent  String?
   createdAt  DateTime @default(now())
 }
 

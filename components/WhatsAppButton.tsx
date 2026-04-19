@@ -1,22 +1,26 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import { buildWhatsAppInternalUrl } from "@/lib/whatsapp"
 
 const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP || "33781596707").replace(/\D/g, "")
 const WHATSAPP_MESSAGE =
   process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE ||
   "Bonjour, je souhaite une assistance pour mon dossier."
-const WHATSAPP_TEXT = encodeURIComponent(WHATSAPP_MESSAGE)
-const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_TEXT}`
 const HIDDEN_PREFIXES = ["/gestion", "/admin", "/api"]
 
 export function WhatsAppButton() {
   const pathname = usePathname() || ""
   if (HIDDEN_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return null
+  const trackingUrl = buildWhatsAppInternalUrl({
+    number: WHATSAPP_NUMBER,
+    source: "floating_button",
+    text: WHATSAPP_MESSAGE,
+  })
 
   return (
     <a
-      href={WHATSAPP_URL}
+      href={trackingUrl}
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-6 left-6 z-[105] flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-white shadow-lg transition-all hover:scale-105 hover:bg-[#20BD5A]"

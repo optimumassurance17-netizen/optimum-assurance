@@ -1,14 +1,12 @@
 import Link from "next/link"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
+import { buildWhatsAppRedirectPath } from "@/lib/whatsapp"
 
 const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
-const whatsappRaw = process.env.NEXT_PUBLIC_WHATSAPP || "+33781596707"
-const whatsappNumber = whatsappRaw.replace(/\D/g, "")
-const whatsappText = encodeURIComponent(
-  process.env.NEXT_PUBLIC_WHATSAPP_DEFAULT_TEXT ||
-    "Bonjour, je souhaite être accompagné pour mon assurance."
-)
-const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappText}`
+const whatsappUrl = buildWhatsAppRedirectPath({
+  source: "footer",
+  context: "navigation-footer",
+})
 
 export function Footer() {
   return (

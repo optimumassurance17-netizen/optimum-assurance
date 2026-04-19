@@ -97,6 +97,25 @@ function parseRcFabLeadData(raw: string): RcFabLeadStructuredData {
   }
 }
 
+function getSlaBadge(hours: number): { label: string; className: string } {
+  if (hours >= 72) {
+    return {
+      label: "SLA dépassé",
+      className: "bg-red-900/40 text-red-200 border border-red-700/60",
+    }
+  }
+  if (hours >= 24) {
+    return {
+      label: "À traiter",
+      className: "bg-amber-900/40 text-amber-200 border border-amber-700/60",
+    }
+  }
+  return {
+    label: "Dans SLA",
+    className: "bg-emerald-900/40 text-emerald-200 border border-emerald-700/60",
+  }
+}
+
 function editFormFromDocData(parsed: Record<string, unknown>): EditContratForm {
   return {
     raisonSociale: String(parsed.raisonSociale ?? ""),
@@ -148,10 +167,15 @@ interface DashboardData {
     createdAt: string
     updatedAt: string
     userId: string | null
+    lastWhatsappClickAt?: string | null
+    lastWhatsappSource?: string | null
+    lastWhatsappRef?: string | null
     copyTrace?: {
       proposition: { copySent: boolean; sentAt: string } | null
       signature: { copySent: boolean; sentAt: string } | null
     } | null
+    slaHours?: number
+    slaLevel?: "ok" | "warning" | "critical"
   }[]
   devisEtudeLeads?: { id: string; email: string; raisonSociale: string | null; siret: string | null; data: string; statut: string; createdAt: string }[]
   documents: {
@@ -225,6 +249,8 @@ interface DashboardData {
     primeAnnuelle: number | null
     rappelSentAt: string | null
     createdAt: string
+    slaHours?: number
+    slaLevel?: "ok" | "warning" | "critical"
   }[]
   devisDrafts?: {
     id: string
@@ -243,6 +269,8 @@ interface DashboardData {
     user: { id: string; email: string; raisonSociale: string | null } | null
     signatureFlow: "custom_pdf" | "decennale"
     signatureFlowLabel?: string
+    ageHours?: number
+    repairEligible?: boolean
   }[]
   insuranceContractsCount?: number
   insuranceContracts?: {
@@ -352,6 +380,7 @@ export default function GestionPage() {
   } | null>(null)
   const [etudeMiseSubmitting, setEtudeMiseSubmitting] = useState(false)
   const [cancellingSignatureId, setCancellingSignatureId] = useState<string | null>(null)
+  const [repairingSignatureId, setRepairingSignatureId] = useState<string | null>(null)
   const [dismissingActionId, setDismissingActionId] = useState<string | null>(null)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
   const customDevisPdfInputRef = useRef<HTMLInputElement>(null)
@@ -364,6 +393,14 @@ export default function GestionPage() {
   const [customDevisLabel, setCustomDevisLabel] = useState("RC Fabriquant — proposition")
   const [customDevisNextPath, setCustomDevisNextPath] = useState("/espace-client")
   const [customDevisSending, setCustomDevisSending] = useState(false)
+  const leadSlaBadge = (ageHours: number) => {
+    const badge = getSlaBadge(ageHours)
+    return (
+      <span className={`inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${badge.className}`}>
+        {badge.label} ({ageHours}h)
+      </span>
+    )
+  }
 
   const customDevisUserOptions = useMemo(() => {
     if (!data?.users) return []
@@ -1557,7 +1594,7 @@ export default function GestionPage() {
                     <th className="text-left p-3 sm:p-4 font-medium">Email</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden md:table-cell">Raison sociale</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden lg:table-cell">SIRET</th>
-                    <th className="text-right p-3 sm:p-4 font-medium">Prime ind.</th>
+                      <th className="text-right p-3 sm:p-4 font-medium">Prime / SLA</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1568,7 +1605,10 @@ export default function GestionPage() {
                       <td className="p-3 sm:p-4 hidden md:table-cell">{l.raisonSociale || "—"}</td>
                       <td className="p-3 sm:p-4 font-mono text-gray-200 hidden lg:table-cell">{l.siret || "—"}</td>
                       <td className="p-3 sm:p-4 text-right">
-                        {l.primeAnnuelle != null ? `${l.primeAnnuelle.toLocaleString("fr-FR")} €` : "—"}
+                        <div className="flex flex-col items-end gap-1">
+                          <span>{l.primeAnnuelle != null ? `${l.primeAnnuelle.toLocaleString("fr-FR")} €` : "—"}</span>
+                          {typeof l.slaHours === "number" ? leadSlaBadge(l.slaHours) : null}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1694,41 +1734,81 @@ export default function GestionPage() {
                             )}
                           </td>
                           <td className="p-3 sm:p-4 align-top">
-                            <button
-                              type="button"
-                              disabled={cancellingSignatureId === s.signatureRequestId}
-                              onClick={async () => {
-                                if (
-                                  !window.confirm(
-                                    "Annuler cette demande de signature ? Le lien envoyé au client ne fonctionnera plus ; vous pourrez en envoyer une nouvelle."
-                                  )
-                                ) {
-                                  return
-                                }
-                                setCancellingSignatureId(s.signatureRequestId)
-                                try {
-                                  const res = await fetch(
-                                    `/api/gestion/pending-signatures/${encodeURIComponent(s.signatureRequestId)}`,
-                                    { method: "DELETE" }
-                                  )
-                                  const j = (await readResponseJson(res)) as { error?: string; message?: string }
-                                  if (!res.ok) throw new Error(j.error || res.statusText)
-                                  setToast({ message: j.message || "Demande annulée.", type: "success" })
-                                  const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
-                                  if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
-                                } catch (e) {
-                                  setToast({
-                                    message: e instanceof Error ? e.message : "Annulation impossible.",
-                                    type: "error",
-                                  })
-                                } finally {
-                                  setCancellingSignatureId(null)
-                                }
-                              }}
-                              className="text-red-400 hover:text-red-300 text-sm disabled:opacity-40 whitespace-nowrap"
-                            >
-                              {cancellingSignatureId === s.signatureRequestId ? "…" : "Annuler"}
-                            </button>
+                            <div className="flex flex-col gap-2">
+                              <button
+                                type="button"
+                                disabled={cancellingSignatureId === s.signatureRequestId}
+                                onClick={async () => {
+                                  if (
+                                    !window.confirm(
+                                      "Annuler cette demande de signature ? Le lien envoyé au client ne fonctionnera plus ; vous pourrez en envoyer une nouvelle."
+                                    )
+                                  ) {
+                                    return
+                                  }
+                                  setCancellingSignatureId(s.signatureRequestId)
+                                  try {
+                                    const res = await fetch(
+                                      `/api/gestion/pending-signatures/${encodeURIComponent(s.signatureRequestId)}`,
+                                      { method: "DELETE" }
+                                    )
+                                    const j = (await readResponseJson(res)) as { error?: string; message?: string }
+                                    if (!res.ok) throw new Error(j.error || res.statusText)
+                                    setToast({ message: j.message || "Demande annulée.", type: "success" })
+                                    const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+                                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                  } catch (e) {
+                                    setToast({
+                                      message: e instanceof Error ? e.message : "Annulation impossible.",
+                                      type: "error",
+                                    })
+                                  } finally {
+                                    setCancellingSignatureId(null)
+                                  }
+                                }}
+                                className="text-red-400 hover:text-red-300 text-sm disabled:opacity-40 whitespace-nowrap text-left"
+                              >
+                                {cancellingSignatureId === s.signatureRequestId ? "…" : "Annuler"}
+                              </button>
+                              {s.repairEligible ? (
+                                <button
+                                  type="button"
+                                  disabled={repairingSignatureId === s.signatureRequestId}
+                                  onClick={async () => {
+                                    if (
+                                      !window.confirm(
+                                        "Relancer la finalisation de cette signature bloquée ?"
+                                      )
+                                    ) {
+                                      return
+                                    }
+                                    setRepairingSignatureId(s.signatureRequestId)
+                                    try {
+                                      const res = await fetch("/api/gestion/signatures/repair", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ signatureRequestId: s.signatureRequestId }),
+                                      })
+                                      const j = (await readResponseJson(res)) as { error?: string; message?: string }
+                                      if (!res.ok) throw new Error(j.error || res.statusText)
+                                      setToast({ message: j.message || "Finalisation relancée.", type: "success" })
+                                      const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+                                      if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                    } catch (e) {
+                                      setToast({
+                                        message: e instanceof Error ? e.message : "Relance impossible.",
+                                        type: "error",
+                                      })
+                                    } finally {
+                                      setRepairingSignatureId(null)
+                                    }
+                                  }}
+                                  className="text-amber-300 hover:text-amber-200 text-sm disabled:opacity-40 whitespace-nowrap text-left"
+                                >
+                                  {repairingSignatureId === s.signatureRequestId ? "…" : "Réparer"}
+                                </button>
+                              ) : null}
+                            </div>
                           </td>
                         </tr>
                       )
@@ -2571,6 +2651,8 @@ export default function GestionPage() {
                         : data.users.find((u) => u.email.toLowerCase() === d.email.toLowerCase()) ?? null
                     const propositionCopy = d.copyTrace?.proposition
                     const signatureCopy = d.copyTrace?.signature
+                    const leadAgeHours = typeof d.slaHours === "number" ? d.slaHours : null
+                    const leadSla = leadAgeHours != null ? getSlaBadge(leadAgeHours) : null
                     return (
                       <tr key={d.id} className="border-b border-gray-700/50 align-top">
                         <td className="p-3 sm:p-4">{d.email}</td>
@@ -2615,7 +2697,16 @@ export default function GestionPage() {
                           />
                         </td>
                         <td className="p-3 sm:p-4 hidden sm:table-cell whitespace-nowrap text-gray-200">
-                          {new Date(d.createdAt).toLocaleDateString("fr-FR")}
+                          <div className="flex flex-col gap-1">
+                            <span>{new Date(d.createdAt).toLocaleDateString("fr-FR")}</span>
+                            {leadSla ? (
+                              <span
+                                className={`inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded w-fit ${leadSla.className}`}
+                              >
+                                {leadSla.label} ({leadAgeHours}h)
+                              </span>
+                            ) : null}
+                          </div>
                         </td>
                         <td className="p-3 sm:p-4">
                           <div className="flex flex-col gap-2 max-w-[11rem]">
