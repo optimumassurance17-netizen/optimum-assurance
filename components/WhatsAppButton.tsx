@@ -3,7 +3,10 @@
 import { usePathname } from "next/navigation"
 
 const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP || "33781596707").replace(/\D/g, "")
-const WHATSAPP_TEXT = encodeURIComponent("Bonjour, j'ai besoin d'une assistance pour mon dossier.")
+const WHATSAPP_MESSAGE =
+  process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE ||
+  "Bonjour, je souhaite une assistance pour mon dossier."
+const WHATSAPP_TEXT = encodeURIComponent(WHATSAPP_MESSAGE)
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_TEXT}`
 const HIDDEN_PREFIXES = ["/gestion", "/admin", "/api"]
 

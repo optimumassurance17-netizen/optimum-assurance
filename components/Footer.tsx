@@ -4,7 +4,11 @@ import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
 const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
 const whatsappRaw = process.env.NEXT_PUBLIC_WHATSAPP || "+33781596707"
 const whatsappNumber = whatsappRaw.replace(/\D/g, "")
-const whatsappUrl = `https://wa.me/${whatsappNumber}`
+const whatsappText = encodeURIComponent(
+  process.env.NEXT_PUBLIC_WHATSAPP_DEFAULT_TEXT ||
+    "Bonjour, je souhaite être accompagné pour mon assurance."
+)
+const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappText}`
 
 export function Footer() {
   return (
