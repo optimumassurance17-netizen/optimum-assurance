@@ -1,4 +1,4 @@
-import { getDecennaleSeoActivity, type DecennaleSeoSlug } from "@/lib/decennale-seo-catalog"
+import { getDecennaleSeoCatalogItem, type DecennaleSeoSlug } from "@/lib/decennale-seo-catalog"
 
 /**
  * Activités (libellés exacts ACTIVITES_BTP) préremplies quand on arrive depuis /assurance-decennale/[metier].
@@ -12,6 +12,6 @@ export function getMetierPrefillActivites(slug: string | null | undefined): stri
   const row = METIER_DEVIS_ACTIVITES_PREFILL[s]
   if (row?.length) return [...row]
 
-  const catalogItem = getDecennaleSeoActivity(s)
+  const catalogItem = getDecennaleSeoCatalogItem(s)
   return catalogItem ? [catalogItem.activiteSource] : []
 }
