@@ -7,7 +7,7 @@ const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP || "33781596707").repl
 const WHATSAPP_MESSAGE =
   process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE ||
   "Bonjour, je souhaite une assistance pour mon dossier."
-const HIDDEN_PREFIXES = ["/gestion", "/admin", "/api", "/v/"]
+const HIDDEN_PREFIXES = ["/api", "/v/"]
 const STICKY_BAR_HIDDEN_PREFIXES = ["/gestion", "/admin", "/v/"]
 
 export function WhatsAppButton() {
