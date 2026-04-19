@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { hash } from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
 
 function optionalTrimmed(value: unknown): string | null {
   if (typeof value !== "string") return null
@@ -63,6 +64,22 @@ export async function POST(request: NextRequest) {
       subject: template.subject,
       text: template.text,
       html: (template as { html?: string }).html,
+    })
+
+    void sendAccountCreationSummaryAlert({
+      source: "register_public",
+      user: {
+        id: user.id,
+        email: user.email,
+        raisonSociale: user.raisonSociale,
+        siret: user.siret,
+        telephone: user.telephone,
+      },
+      extraSummaryLines: [
+        `Adresse : ${user.adresse || "—"}`,
+        `Code postal : ${user.codePostal || "—"}`,
+        `Ville : ${user.ville || "—"}`,
+      ],
     })
 
     return NextResponse.json({

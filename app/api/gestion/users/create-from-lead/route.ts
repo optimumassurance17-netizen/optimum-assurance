@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { SITE_URL } from "@/lib/site-url"
+import { sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
 
 function generateTempPassword(): string {
   const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
@@ -115,12 +116,31 @@ export async function POST(request: NextRequest) {
       html: template.html,
     })
 
+    const accountCreationAlertSent = await sendAccountCreationSummaryAlert({
+      source: "admin_create_from_lead",
+      createdBy: session.user.email || "admin",
+      leadType,
+      leadId,
+      user: {
+        id: user.id,
+        email: user.email,
+        raisonSociale: user.raisonSociale,
+        siret: siret ?? undefined,
+        telephone: telephone ?? undefined,
+      },
+    })
+
     await logAdminActivity({
       adminEmail: session.user.email || "admin",
       action: "user_create_from_lead",
       targetType: "user",
       targetId: user.id,
-      details: { email: user.email, leadId, leadType },
+      details: {
+        email: user.email,
+        leadId,
+        leadType,
+        accountCreationAlertSent,
+      },
     })
 
     return NextResponse.json({
