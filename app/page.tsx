@@ -406,7 +406,7 @@ export default function Home() {
             Plus de 100 métiers couverts
           </h2>
           <p className="text-[#171717] text-center mb-10 max-w-xl mx-auto text-sm">
-            Plomberie, électricité, peinture, maçonnerie… Un devis adapté à votre activité.
+            Plomberie, électricité, peinture, maçonnerie… Plus de 100 activités décennale couvertes avec devis adapté.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             {metiersBtp.map((m) => (
@@ -420,6 +420,11 @@ export default function Home() {
               </Link>
             ))}
           </div>
+          <p className="text-center mt-6">
+            <Link href="/assurance-decennale" className="text-blue-600 font-semibold hover:underline">
+              Voir toutes les activités décennale →
+            </Link>
+          </p>
         </div>
       </section>
 

@@ -23,8 +23,14 @@ export function Footer() {
             <Link href="/devis" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
               Devis décennale
             </Link>
+            <Link href="/assurance-decennale" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
+              Activités décennale
+            </Link>
             <Link href="/devis-dommage-ouvrage" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
               Dommage ouvrage
+            </Link>
+            <Link href="/dommage-ouvrage" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
+              Profils DO
             </Link>
             <Link href="/contact" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
               Contact

@@ -70,7 +70,9 @@ export function buildHomePageJsonLdGraph() {
 
   const serviceRoutes: { name: string; path: string }[] = [
     { name: "Devis assurance décennale BTP", path: "/devis" },
+    { name: "Activités assurance décennale", path: "/assurance-decennale" },
     { name: "Devis assurance dommage ouvrage", path: "/devis-dommage-ouvrage" },
+    { name: "Profils dommage ouvrage", path: "/dommage-ouvrage" },
     { name: "Souscription dommage ouvrage en ligne", path: "/souscription-dommage-ouvrage" },
     { name: "FAQ assurance décennale et dommage ouvrage", path: "/faq" },
     { name: "Guides assurance construction", path: "/guides" },

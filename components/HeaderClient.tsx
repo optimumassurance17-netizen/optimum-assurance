@@ -72,6 +72,9 @@ export function HeaderClient() {
 
         {/* Desktop nav — uniquement sur grands écrans (lg+) pour éviter le dropdown buggé sur mobile/tablette */}
         <nav className="hidden lg:flex items-center gap-2 sm:gap-4 shrink-0" aria-label="Navigation principale">
+          <Link href="/assurance-decennale" className="-my-2 flex min-h-[44px] items-center justify-center px-2 py-2 text-sm font-medium text-slate-700 transition-colors hover:text-slate-900 sm:px-0 sm:py-0">
+            Assurance décennale
+          </Link>
           <Link href="/devis-dommage-ouvrage" className="-my-2 flex min-h-[44px] items-center justify-center px-2 py-2 text-sm font-medium text-slate-700 transition-colors hover:text-slate-900 sm:px-0 sm:py-0">
             Dommage ouvrage
           </Link>
@@ -172,6 +175,13 @@ export function HeaderClient() {
           aria-hidden={!mobileOpen}
         >
           <div className="flex flex-col gap-1 pt-1">
+            <Link
+              href="/assurance-decennale"
+              className="rounded-xl px-4 py-3.5 text-base font-medium text-slate-800 active:bg-slate-50"
+              onClick={() => setMobileOpen(false)}
+            >
+              Assurance décennale
+            </Link>
             <Link
               href="/devis"
               className="rounded-xl bg-blue-600 px-4 py-3.5 text-center text-base font-semibold text-white active:bg-blue-700"

@@ -1,22 +1,17 @@
-import type { MetierSlug } from "@/lib/metiers-seo"
+import { getDecennaleSeoActivity, type DecennaleSeoSlug } from "@/lib/decennale-seo-catalog"
 
 /**
  * Activités (libellés exacts ACTIVITES_BTP) préremplies quand on arrive depuis /assurance-decennale/[metier].
+ * Pour les pages SEO dérivées du catalogue, on réinjecte directement l'activité source.
  */
-export const METIER_DEVIS_ACTIVITES_PREFILL: Record<MetierSlug, readonly string[]> = {
-  plombier: ["Plomberie sanitaire"],
-  electricien: ["Électricité générale"],
-  peintre: ["Peinture intérieure"],
-  carreleur: ["Carrelage"],
-  macon: ["Maçonnerie générale"],
-  couvreur: ["Couverture tuiles"],
-  menuisier: ["Menuiserie extérieure"],
-  charpentier: ["Charpente bois"],
-}
+export const METIER_DEVIS_ACTIVITES_PREFILL: Partial<Record<DecennaleSeoSlug, readonly string[]>> = {}
 
 export function getMetierPrefillActivites(slug: string | null | undefined): string[] {
   if (!slug?.trim()) return []
-  const s = slug.trim() as MetierSlug
+  const s = slug.trim() as DecennaleSeoSlug
   const row = METIER_DEVIS_ACTIVITES_PREFILL[s]
-  return row ? [...row] : []
+  if (row?.length) return [...row]
+
+  const catalogItem = getDecennaleSeoActivity(s)
+  return catalogItem ? [catalogItem.activiteSource] : []
 }
