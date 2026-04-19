@@ -58,6 +58,14 @@ export const metadata = {
 export default function AssuranceDecennaleIndexPage() {
   const featured = METIERS_SEO.slice(0, 12)
   const secondary = METIERS_SEO.slice(12)
+  const categories = Array.from(
+    METIERS_SEO.reduce((map, metier) => {
+      const bucket = map.get(metier.categorie) ?? []
+      bucket.push(metier)
+      map.set(metier.categorie, bucket)
+      return map
+    }, new Map<string, typeof METIERS_SEO>())
+  )
 
   return (
     <main className="min-h-screen bg-[var(--background)]">
@@ -94,6 +102,28 @@ export default function AssuranceDecennaleIndexPage() {
                 <p className="font-semibold text-[#0a0a0a]">Assurance decennale {metier.nom}</p>
                 <p className="mt-2 text-sm text-[#171717]">{metier.description}</p>
               </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Activites classees par categorie</h2>
+          <div className="space-y-6">
+            {categories.map(([categorie, items]) => (
+              <div key={categorie} className="rounded-2xl border border-[#e5e5e5] bg-white p-6">
+                <h3 className="text-lg font-bold text-[#0a0a0a] mb-3">{categorie}</h3>
+                <div className="flex flex-wrap gap-3">
+                  {items.slice(0, 18).map((metier) => (
+                    <Link
+                      key={metier.slug}
+                      href={`/assurance-decennale/${metier.slug}`}
+                      className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] px-4 py-3 text-sm font-medium text-[#0a0a0a] hover:border-blue-600/30 hover:bg-blue-50 transition-all"
+                    >
+                      {metier.nom}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </section>

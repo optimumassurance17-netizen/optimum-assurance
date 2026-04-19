@@ -134,6 +134,47 @@ function categoryGenericName(activite: string): string {
   return activite
 }
 
+function categoryRiskFocus(categorie: string): string {
+  switch (categorie) {
+    case "Gros œuvre":
+      return "solidité de l'ouvrage, fondations, structure porteuse et stabilité générale"
+    case "Structure":
+      return "structure bois, métal ou modulaire, assemblages et tenue de l'ouvrage"
+    case "Toiture":
+      return "étanchéité, infiltrations, couverture et protection de l'enveloppe"
+    case "Technique":
+      return "réseaux, équipements techniques, fluides, raccordements et fonctionnement d'ensemble"
+    case "Finition":
+      return "pose, intégration dans l'ouvrage et conformité des éléments de second œuvre"
+    case "Extérieur":
+      return "terrassement, VRD, assainissement, ouvrages extérieurs et adaptation au terrain"
+    case "PIB":
+      return "conception, coordination, mission intellectuelle et responsabilité sur l'ouvrage"
+    case "Spécialisé":
+      return "technicité d'intervention, procédés particuliers et exposition chantier spécifique"
+    case "Divers":
+      return "pilotage multi-lots, périmètre exact d'intervention et coordination contractuelle"
+    default:
+      return "conformité du chantier, périmètre d'intervention et responsabilité sur l'ouvrage"
+  }
+}
+
+function categoryPreparationHint(categorie: string): string {
+  switch (categorie) {
+    case "PIB":
+      return "précisez bien la nature de vos missions, votre position contractuelle et votre volume d'affaires"
+    case "Technique":
+      return "décrivez les lots exacts réalisés, les équipements concernés et les activités complémentaires"
+    case "Toiture":
+      return "indiquez précisément les techniques utilisées, les supports et les travaux d'étanchéité associés"
+    case "Gros œuvre":
+    case "Structure":
+      return "préparez votre SIRET, votre chiffre d'affaires et le détail des ouvrages structurels réellement exécutés"
+    default:
+      return "préparez votre SIRET, votre chiffre d'affaires et la liste exacte des activités exercées"
+  }
+}
+
 export type DecennaleSeoEntry = {
   slug: string
   nom: string
@@ -147,6 +188,8 @@ export type DecennaleSeoEntry = {
   prixMinAnnuel: number
   prixMinMensuelEquivalent: number
   tauxBase: number
+  riskFocus: string
+  preparationHint: string
 }
 
 export type DecennaleSeoSlug = DecennaleSeoEntry["slug"]
@@ -167,6 +210,8 @@ export const METIERS_SEO: DecennaleSeoEntry[] = TARIFICATION_110_ACTIVITES.map((
     prixMinAnnuel: activity.prime_min,
     prixMinMensuelEquivalent,
     tauxBase: activity.taux_base,
+    riskFocus: categoryRiskFocus(activity.categorie),
+    preparationHint: categoryPreparationHint(activity.categorie),
   }
 })
 

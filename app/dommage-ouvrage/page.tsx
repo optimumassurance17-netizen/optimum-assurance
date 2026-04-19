@@ -87,6 +87,29 @@ export default function DommageOuvrageHubPage() {
           ))}
         </div>
 
+        <div className="mt-10 rounded-2xl border border-[#e5e5e5] bg-white p-6">
+          <h2 className="mb-4 text-xl font-bold text-[#0a0a0a]">Comment choisir le bon profil ?</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-4">
+              <p className="font-semibold text-[#0a0a0a]">Auto-construction / particulier</p>
+              <p className="mt-2 text-sm leading-relaxed text-[#171717]">
+                Si vous faites construire pour vous-meme ou pour un projet patrimonial, commencez par les
+                profils <strong>auto-construction</strong> ou <strong>particulier faisant construire</strong>.
+                Vous verrez plus clairement les pieces a reunir, le calendrier de souscription et le
+                niveau de garantie utile.
+              </p>
+            </div>
+            <div className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-4">
+              <p className="font-semibold text-[#0a0a0a]">Constructeur / promoteur / clos et couvert</p>
+              <p className="mt-2 text-sm leading-relaxed text-[#171717]">
+                Si vous portez une operation plus structuree ou si vous cherchez a reduire le perimetre
+                de garantie, comparez les pages <strong>constructeur-promoteur</strong> et{" "}
+                <strong>clos et couvert</strong> avant de lancer la demande de devis.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-10 rounded-2xl border border-[#e5e5e5] bg-[#fafafa] p-6">
           <h2 className="mb-3 text-xl font-bold text-[#0a0a0a]">Démarrer une demande</h2>
           <p className="mb-5 text-sm leading-relaxed text-[#171717]">
