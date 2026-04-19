@@ -6,7 +6,7 @@ import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
 import { ChatbotLazy } from "@/components/ChatbotLazy";
 import { Footer } from "@/components/Footer";
-import { CookieBanner, StickyMobileCta } from "@/components/LayoutDeferredUi";
+import { CookieBanner, StickyMobileCta, WhatsAppButton } from "@/components/LayoutDeferredUi";
 import { ForceLightTheme } from "@/components/ForceLightTheme";
 import { SITE_URL } from "@/lib/site-url";
 import { truncateForDescription } from "@/lib/seo-metadata-utils";
@@ -117,6 +117,7 @@ export default function RootLayout({
           </div>
           <Footer />
           <ChatbotLazy />
+          <WhatsAppButton />
           <CookieBanner />
           <StickyMobileCta />
         </SessionProvider>
