@@ -11,3 +11,8 @@ export const StickyMobileCta = dynamic(
   () => import("@/components/StickyMobileCta").then((m) => ({ default: m.StickyMobileCta })),
   { ssr: false },
 );
+
+export const WhatsAppButton = dynamic(
+  () => import("@/components/WhatsAppButton").then((m) => ({ default: m.WhatsAppButton })),
+  { ssr: false },
+);

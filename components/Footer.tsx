@@ -1,7 +1,12 @@
 import Link from "next/link"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
+import { buildWhatsAppRedirectPath } from "@/lib/whatsapp"
 
 const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
+const whatsappUrl = buildWhatsAppRedirectPath({
+  source: "footer",
+  context: "navigation-footer",
+})
 
 export function Footer() {
   return (
@@ -15,6 +20,14 @@ export function Footer() {
           <div className="flex flex-wrap justify-center gap-6 text-sm">
             <a href={`mailto:${contactEmail}`} className="text-slate-700 transition-colors hover:text-blue-600">
               {contactEmail}
+            </a>
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-700 transition-colors hover:text-[#25D366]"
+            >
+              WhatsApp : +33 7 81 59 67 07
             </a>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
+import { hash } from "bcryptjs"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
@@ -7,9 +8,35 @@ import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
+import { sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
 
 const MESSAGE_MIN = 20
 const MESSAGE_MAX = 12000
+
+function generateTempPassword(): string {
+  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
+  let pwd = ""
+  for (let i = 0; i < 12; i++) {
+    pwd += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return pwd
+}
+
+function parseLeadData(raw: string): { raisonSociale: string; siret: string | null; telephone: string | null } {
+  try {
+    const j = JSON.parse(raw || "{}") as {
+      raisonSociale?: string
+      siret?: string
+      telephone?: string
+    }
+    const raisonSociale = (j.raisonSociale ?? "").trim()
+    const siret = j.siret ? String(j.siret).replace(/\s/g, "").trim() : null
+    const telephone = j.telephone ? String(j.telephone).trim() : null
+    return { raisonSociale, siret, telephone }
+  } catch {
+    return { raisonSociale: "", siret: null, telephone: null }
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,19 +96,67 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let raisonSociale = ""
-    try {
-      const j = JSON.parse(lead.data || "{}") as { raisonSociale?: string }
-      raisonSociale = (j.raisonSociale ?? "").trim() || lead.email
-    } catch {
-      raisonSociale = lead.email
+    const leadData = parseLeadData(lead.data || "{}")
+    const raisonSociale = leadData.raisonSociale || lead.email
+    const email = lead.email.trim().toLowerCase()
+    let createdClientSpace = false
+    let tempPassword: string | undefined
+    let user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, raisonSociale: true },
+    })
+
+    if (!user) {
+      tempPassword = generateTempPassword()
+      const passwordHash = await hash(tempPassword, 12)
+      user = await prisma.user.create({
+        data: {
+          email,
+          passwordHash,
+          raisonSociale: raisonSociale || email,
+          ...(leadData.siret ? { siret: leadData.siret } : {}),
+          ...(leadData.telephone ? { telephone: leadData.telephone } : {}),
+        },
+        select: { id: true, email: true, raisonSociale: true },
+      })
+      createdClientSpace = true
+      void sendAccountCreationSummaryAlert({
+        source: "admin_create_from_lead",
+        createdBy: session.user.email || "admin",
+        leadType: "rc_fabriquant",
+        leadId: lead.id,
+        user: {
+          id: user.id,
+          email: user.email,
+          raisonSociale: user.raisonSociale,
+          siret: leadData.siret ?? undefined,
+          telephone: leadData.telephone ?? undefined,
+        },
+        extraSummaryLines: ["Origine: envoi proposition RC Fabriquant (ouverture auto espace client)"],
+      })
     }
 
-    const template = EMAIL_TEMPLATES.propositionRcFabriquant(raisonSociale, messagePersonnalise, primeAnnuelle)
+    const template = EMAIL_TEMPLATES.propositionRcFabriquant(
+      raisonSociale,
+      messagePersonnalise,
+      primeAnnuelle,
+      {
+        espaceClient: createdClientSpace
+          ? {
+              mode: "created",
+              email: user.email,
+              tempPassword,
+            }
+          : {
+              mode: "existing",
+              email: user.email,
+            },
+      }
+    )
     const replyTo = session.user.email?.trim()
 
     const sent = await sendEmail({
-      to: lead.email,
+      to: email,
       subject: template.subject,
       text: template.text,
       html: template.html,
@@ -95,7 +170,7 @@ export async function POST(request: NextRequest) {
       )
     }
     const copySent = await sendRcFabriquantEmailCopy({
-      originalTo: lead.email,
+      originalTo: email,
       subject: template.subject,
       text: template.text,
       html: template.html,
@@ -117,7 +192,9 @@ export async function POST(request: NextRequest) {
       targetType: "DevisRcFabriquantLead",
       targetId: leadId,
       details: {
-        to: lead.email,
+        to: email,
+        userId: user.id,
+        clientSpaceOpened: createdClientSpace,
         copySent,
         ...(primeAnnuelle != null ? { primeAnnuelle } : {}),
       },

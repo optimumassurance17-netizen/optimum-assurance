@@ -122,6 +122,20 @@ export async function GET() {
         take: 50,
       }),
       prisma.devisRcFabriquantLead.findMany({
+        select: {
+          id: true,
+          email: true,
+          data: true,
+          statut: true,
+          notesInternes: true,
+          primeProposee: true,
+          propositionEnvoyeeAt: true,
+          createdAt: true,
+          updatedAt: true,
+          lastWhatsappClickAt: true,
+          lastWhatsappSource: true,
+          lastWhatsappRef: true,
+        },
         orderBy: { createdAt: "desc" },
         take: 50,
       }),
@@ -276,6 +290,7 @@ export async function GET() {
     const pendingSignatures = pendingSignaturesRaw.map((p) => {
       let signatureFlow: "custom_pdf" | "decennale" = "decennale"
       let signatureFlowLabel: string | undefined
+      const ageHours = Math.max(0, Math.floor((Date.now() - p.createdAt.getTime()) / (60 * 60 * 1000)))
       try {
         const j = JSON.parse(p.contractData || "{}") as Record<string, unknown>
         if (j.customUploadedDevisFlow === true) {
@@ -295,6 +310,8 @@ export async function GET() {
         user: pendingUserById[p.userId] ?? null,
         signatureFlow,
         signatureFlowLabel,
+        ageHours,
+        repairEligible: ageHours >= 24,
       }
     })
 
@@ -352,8 +369,11 @@ export async function GET() {
     }
     const devisRcFabriquantLeadsWithUser = devisRcFabriquantLeads.map((lead) => {
       const trace = rcFabTraceByLeadId.get(lead.id)
+      const ageHours = Math.max(0, Math.floor((Date.now() - lead.createdAt.getTime()) / (60 * 60 * 1000)))
       return {
         ...lead,
+        slaHours: ageHours,
+        slaLevel: ageHours >= 72 ? "critical" : ageHours >= 24 ? "warning" : "ok",
         matchedUser: rcLeadUserByEmail.get(lead.email.trim().toLowerCase()) ?? null,
         copyTrace: trace
           ? {
@@ -496,6 +516,15 @@ export async function GET() {
       dismissedToday: dismissedActionIds.size,
     }
 
+    const devisLeadsWithSla = devisLeads.map((lead) => {
+      const slaHours = Math.max(0, Math.floor((Date.now() - lead.createdAt.getTime()) / (60 * 60 * 1000)))
+      return {
+        ...lead,
+        slaHours,
+        slaLevel: slaHours >= 72 ? "critical" : slaHours >= 24 ? "warning" : "ok",
+      }
+    })
+
     return NextResponse.json({
       users: usersWithDoFlags,
       documents,
@@ -508,7 +537,7 @@ export async function GET() {
       resiliationRequests,
       adminActivityLogs,
       doStats,
-      devisLeads,
+      devisLeads: devisLeadsWithSla,
       devisDrafts,
       pendingSignatures,
       insuranceContractsCount,

@@ -62,12 +62,6 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
     { url: `${baseUrl}/devis`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.95 },
     { url: `${baseUrl}/devis-dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/devis-rc-fabriquant`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.85 },
-    {
-      url: `${baseUrl}/souscription-dommage-ouvrage`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.72,
-    },
     { url: `${baseUrl}/faq`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.85 },
     { url: `${baseUrl}/guides`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.82 },
     ...guides,
@@ -86,13 +80,9 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
     { url: `${baseUrl}/conditions-attestations`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.35 },
     { url: `${baseUrl}/mentions-legales`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
     { url: `${baseUrl}/confidentialite`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
-    { url: `${baseUrl}/connexion`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
     { url: `${baseUrl}/etude`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
     { url: `${baseUrl}/etude/domaine`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.45 },
-    { url: `${baseUrl}/creer-compte`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.35 },
     { url: `${baseUrl}/droits-personnes`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.25 },
-    { url: `${baseUrl}/mandat-sepa`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.25 },
-    { url: `${baseUrl}/mot-de-passe-oublie`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
   ]
 }
 
