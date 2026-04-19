@@ -71,16 +71,16 @@ test.describe("Parcours devis → paiement → attestation", () => {
     await expect(page.getByRole("heading", { name: /RGPD/ })).toBeVisible()
   })
 
-  test("Devis avec préremplissage métier (?metier=plombier)", async ({ page }) => {
-    await page.goto("/devis?metier=plombier")
+ test("Devis avec préremplissage métier (?metier=plomberie-sanitaire)", async ({ page }) => {
+   await page.goto("/devis?metier=plomberie-sanitaire")
     await expect(page.locator("h1")).toContainText("Demande de devis décennale")
     await expect(page.locator("span.text-black.font-medium").filter({ hasText: "Plomberie sanitaire" })).toBeVisible()
   })
 
   test("Page assurance décennale métier — lien devis avec query metier", async ({ page }) => {
-    await page.goto("/assurance-decennale/plombier")
-    const link = page.getByRole("link", { name: /Devis Plombier personnalisé/i })
-    await expect(link).toHaveAttribute("href", /metier=plombier/)
+   await page.goto("/assurance-decennale/plomberie-sanitaire")
+   const link = page.getByRole("link", { name: /Devis Plomberie sanitaire personnalisé/i })
+   await expect(link).toHaveAttribute("href", /metier=plomberie-sanitaire/)
   })
 
   test("API verify JSON minimal sans detail", async ({ request }) => {

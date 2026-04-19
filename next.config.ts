@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import bundleAnalyzer from "@next/bundle-analyzer";
+import { LEGACY_DECENNALE_REDIRECTS } from "@/lib/legacy-decennale-redirects";
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
@@ -27,6 +28,11 @@ const nextConfig: NextConfig = {
         destination: "/sitemap.xml",
         permanent: true,
       },
+      ...LEGACY_DECENNALE_REDIRECTS.map((entry) => ({
+        source: `/assurance-decennale/${entry.from}`,
+        destination: `/assurance-decennale/${entry.to}`,
+        permanent: true,
+      })),
     ];
   },
   async headers() {

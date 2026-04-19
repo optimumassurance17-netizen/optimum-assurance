@@ -76,7 +76,7 @@ export function buildHomePageJsonLdGraph() {
     { name: "Souscription dommage ouvrage en ligne", path: "/souscription-dommage-ouvrage" },
     { name: "FAQ assurance décennale et dommage ouvrage", path: "/faq" },
     { name: "Guides assurance construction", path: "/guides" },
-    { name: "Assurance décennale plombier", path: "/assurance-decennale/plombier" },
+    { name: "Assurance décennale plomberie sanitaire", path: "/assurance-decennale/plomberie-sanitaire" },
     { name: "Dommage ouvrage auto-construction", path: "/dommage-ouvrage/auto-construction" },
     { name: "Avis clients Optimum Assurance", path: "/avis" },
   ]

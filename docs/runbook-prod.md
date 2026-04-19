@@ -90,9 +90,9 @@ Objectif: mesurer de facon stable, prioriser les pages critiques, et valider cha
 - Devis: `/devis`
 - RC Pro: `/devis/rcpro`
 - Pages SEO metier:
-  - `/assurance-decennale/plombier`
-  - `/assurance-decennale/electricien`
-  - `/assurance-decennale/macon`
+  - `/assurance-decennale/plomberie-sanitaire`
+  - `/assurance-decennale/electricite-generale`
+  - `/assurance-decennale/maconnerie-generale`
 - Pages SEO dommage-ouvrage:
   - `/dommage-ouvrage/auto-construction`
   - `/dommage-ouvrage/clos-et-couvert`
