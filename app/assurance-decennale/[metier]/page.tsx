@@ -8,6 +8,7 @@ import {
   seoJsonLdGraph,
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
+import { truncateForDescription } from "@/lib/seo-metadata-utils"
 import { SITE_URL } from "@/lib/site-url"
 import { notFound } from "next/navigation"
 
@@ -26,10 +27,11 @@ export async function generateMetadata({
   const { metier } = await params
   const data = METIERS_SEO.find((m) => m.slug === metier)
   if (!data) return {}
+  const description = truncateForDescription(data.description, 158)
 
   return {
-    title: `Assurance Décennale ${data.nom} | Devis dès ${data.prixMin} €/mois (équivalent) | Optimum`,
-    description: data.description,
+    title: `Assurance décennale ${data.nom} | Devis en ligne | Optimum Assurance`,
+    description,
     keywords: [
       `assurance décennale ${data.nom.toLowerCase()}`,
       `décennale ${data.nom.toLowerCase()}`,
@@ -41,14 +43,14 @@ export async function generateMetadata({
       locale: "fr_FR",
       siteName: "Optimum Assurance",
       url: `${baseUrl}/assurance-decennale/${data.slug}`,
-      title: `Assurance Décennale ${data.nom} | Optimum Assurance`,
-      description: data.description,
+      title: `Assurance décennale ${data.nom} | Optimum Assurance`,
+      description,
       images: [defaultOgImage],
     },
     twitter: {
       card: "summary_large_image",
-      title: `Assurance Décennale ${data.nom} | Optimum Assurance`,
-      description: data.description,
+      title: `Assurance décennale ${data.nom} | Optimum Assurance`,
+      description,
       images: [`${baseUrl}/opengraph-image`],
     },
   }
@@ -67,6 +69,14 @@ export default async function MetierPage({
     q: "En quoi Optimum se distingue des grandes plateformes d’assurance en ligne ?",
     r: "Optimum est centré sur l’assurance construction : décennale et dommage ouvrage, avec des parcours pensés pour les chantiers et les métiers du bâtiment. Les plateformes généralistes proposent souvent un catalogue plus large (RC pro, mutuelle, multirisque…) et une acquisition à très grande échelle ; nous privilégions la lisibilité du devis, le suivi du dossier et une spécialisation sur votre risque.",
   }
+  const otherMetiers = METIERS_SEO.filter((m) => m.slug !== data.slug).slice(0, 4)
+  const relatedActivities = data.relatedActivitySlugs
+    .map((slug) => METIERS_SEO.find((entry) => entry.slug === slug))
+    .filter(
+      (entry): entry is NonNullable<(typeof METIERS_SEO)[number]> =>
+        entry != null && entry.slug !== data.slug
+    )
+  const isHeadtermPage = data.kind === "headterm"
 
   const path = `/assurance-decennale/${data.slug}`
   const metierJsonLd = seoJsonLdGraph([
@@ -101,11 +111,36 @@ export default async function MetierPage({
           Assurance décennale {data.nom}
         </h1>
         <p className="text-base md:text-lg text-blue-600 font-semibold mb-4">
-          Spécialiste construction — pas une plateforme « tout-en-un »
+          {isHeadtermPage
+            ? "Page métier — trouver l'activité exacte à déclarer et demander un devis"
+            : "Spécialiste construction — pas une plateforme « tout-en-un »"}
         </p>
         <p className="text-lg text-[#171717] mb-8 leading-relaxed">
           {data.description}
         </p>
+
+        {isHeadtermPage && relatedActivities.length > 0 && (
+          <div className="bg-white rounded-2xl border border-[#e5e5e5] p-6 mb-10 shadow-sm">
+            <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Choisir la bonne activité à déclarer</h2>
+            <p className="text-[#171717] text-sm leading-relaxed mb-5">
+              Cette page métier sert de point d&apos;entrée SEO pour les recherches génériques comme{" "}
+              <strong>{data.nom.toLowerCase()}</strong>. Pour obtenir un devis fidèle à votre activité réelle,
+              sélectionnez ensuite l&apos;activité la plus proche de vos travaux effectivement réalisés.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {relatedActivities.map((activity) => (
+                <Link
+                  key={activity.slug}
+                  href={`/assurance-decennale/${activity.slug}`}
+                  className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-4 hover:border-blue-600/30 hover:bg-blue-50 transition-all"
+                >
+                  <p className="font-semibold text-[#0a0a0a]">{activity.nom}</p>
+                  <p className="mt-1 text-sm text-[#171717]">{activity.description}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl border border-[#e5e5e5] border-l-4 border-l-blue-600 p-6 mb-10 shadow-sm">
           <h2 className="text-lg font-bold text-[#0a0a0a] mb-3">Optimum ou une plateforme généraliste ?</h2>
@@ -174,6 +209,22 @@ export default async function MetierPage({
         </div>
 
         <div className="bg-white rounded-2xl border border-[#e5e5e5] p-6 mb-10">
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Bien préparer votre demande</h2>
+          <p className="text-[#171717] text-sm leading-relaxed mb-4">
+            Pour obtenir un devis décennale cohérent avec votre activité {data.activite.toLowerCase()}, préparez votre
+            <strong> SIRET</strong>, la liste exacte des travaux réalisés, votre <strong>chiffre d&apos;affaires</strong>{" "}
+            et, si besoin, vos informations de sinistralité. Une déclaration précise réduit les risques d&apos;écart entre
+            le devis, l&apos;attestation remise au client et le contrat final.
+          </p>
+          <p className="text-[#171717] text-sm leading-relaxed">
+            En pratique, le maître d&apos;ouvrage attend souvent une attestation à jour avant signature du chantier.{" "}
+            {isHeadtermPage
+              ? "Sur une page métier générique, l'étape importante consiste à choisir la ou les activités exactes réellement exécutées avant de passer au devis."
+              : "Si vous intervenez sur plusieurs activités proches, mieux vaut les déclarer correctement dès le départ plutôt que de devoir modifier votre contrat après coup."}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-[#e5e5e5] p-6 mb-10">
           <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Questions fréquentes {data.nom}</h2>
           <div className="space-y-4">
             {data.faq.map((f, i) => (
@@ -189,6 +240,33 @@ export default async function MetierPage({
           </div>
         </div>
 
+        <div className="bg-[#fafafa] rounded-2xl border border-[#e5e5e5] p-6 mb-10">
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Guides utiles pour votre activité</h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Link
+              href="/guides/obligation-decennale"
+              className="rounded-xl border border-[#e5e5e5] bg-white p-4 hover:border-blue-600/40 hover:bg-blue-50 transition-all"
+            >
+              <p className="font-semibold text-[#0a0a0a]">Obligation décennale</p>
+              <p className="mt-1 text-sm text-[#171717]">Rappel des règles, sanctions et attestation à remettre.</p>
+            </Link>
+            <Link
+              href="/guides/declaration-sinistre"
+              className="rounded-xl border border-[#e5e5e5] bg-white p-4 hover:border-blue-600/40 hover:bg-blue-50 transition-all"
+            >
+              <p className="font-semibold text-[#0a0a0a]">Déclarer un sinistre</p>
+              <p className="mt-1 text-sm text-[#171717]">Délais, documents et réflexes utiles en cas de dommage.</p>
+            </Link>
+            <Link
+              href="/guides/resiliation-decennale"
+              className="rounded-xl border border-[#e5e5e5] bg-white p-4 hover:border-blue-600/40 hover:bg-blue-50 transition-all"
+            >
+              <p className="font-semibold text-[#0a0a0a]">Résilier sa décennale</p>
+              <p className="mt-1 text-sm text-[#171717]">Préavis, échéance et changement d&apos;assureur.</p>
+            </Link>
+          </div>
+        </div>
+
         <div className="text-center space-y-4">
           <Link
             href={`/devis?metier=${encodeURIComponent(data.slug)}`}
@@ -200,11 +278,33 @@ export default async function MetierPage({
             Tarif selon votre CA et vos activités — devis en ligne, sans engagement. Dès {data.prixMin} €/mois
             (équivalent) • Paiement trimestriel • Attestation après validation du dossier
           </p>
+          {isHeadtermPage && relatedActivities.length > 0 && (
+            <p className="text-sm text-[#171717] max-w-lg mx-auto">
+              Depuis cette page métier, vous pourrez ensuite affiner votre déclaration avec l&apos;activité exacte la plus
+              proche de vos travaux.
+            </p>
+          )}
           <p className="text-sm">
             <Link href="/devis-dommage-ouvrage" className="text-blue-600 font-medium hover:underline">
               Maître d&apos;ouvrage ? Dommage ouvrage
             </Link>
           </p>
+        </div>
+
+        <div className="mt-10 rounded-2xl border border-[#e5e5e5] bg-white p-6">
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Autres métiers couverts</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {otherMetiers.map((metierLink) => (
+              <Link
+                key={metierLink.slug}
+                href={`/assurance-decennale/${metierLink.slug}`}
+                className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-4 hover:border-blue-600/30 hover:bg-blue-50 transition-all"
+              >
+                <p className="font-semibold text-[#0a0a0a]">Assurance décennale {metierLink.nom}</p>
+                <p className="mt-1 text-sm text-[#171717]">{metierLink.description}</p>
+              </Link>
+            ))}
+          </div>
         </div>
 
         <p className="text-center mt-10">

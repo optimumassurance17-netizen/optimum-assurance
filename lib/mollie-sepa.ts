@@ -9,11 +9,6 @@ import { MandateMethod, MandateStatus, PaymentMethod, SequenceType } from "@moll
 import { prisma } from "@/lib/prisma"
 import { isValidIban, normalizeIban } from "@/lib/iban"
 
-/** Prime par trimestre (aligné sur app/paiement/page.tsx) */
-export function primeTrimestrielle(primeAnnuelle: number): number {
-  return Math.round((primeAnnuelle / 4) * 100) / 100
-}
-
 export { normalizeIban } from "@/lib/iban"
 
 function addMonths(d: Date, months: number): Date {

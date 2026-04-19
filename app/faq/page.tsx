@@ -30,6 +30,22 @@ export default function FAQPage() {
           <a href="#parcours-decennale" className="text-[#2563eb] font-medium hover:underline">parcours décennale</a>
           .
         </p>
+        <div className="grid gap-3 sm:grid-cols-2 mb-8">
+          <Link
+            href="/guides/obligation-decennale"
+            className="rounded-xl border border-slate-200 bg-white p-4 hover:border-[#2563eb]/40 hover:bg-slate-50 transition-all"
+          >
+            <p className="font-semibold text-[#0a0a0a]">Guide obligation décennale</p>
+            <p className="mt-1 text-sm text-[#171717]">Sanctions, attestation et professionnels concernés.</p>
+          </Link>
+          <Link
+            href="/guides/obligation-dommage-ouvrage"
+            className="rounded-xl border border-slate-200 bg-white p-4 hover:border-[#2563eb]/40 hover:bg-slate-50 transition-all"
+          >
+            <p className="font-semibold text-[#0a0a0a]">Guide obligation dommage ouvrage</p>
+            <p className="mt-1 text-sm text-[#171717]">Quand souscrire et pour quels maîtres d&apos;ouvrage.</p>
+          </Link>
+        </div>
         <div className="space-y-3">
           {faqs.map((faq, i) => {
             const faqId = (faq as { id?: string }).id || `faq-${i}`
@@ -47,11 +63,19 @@ export default function FAQPage() {
                   {faq.q}
                   <span className="text-[#2563eb] text-xl" aria-hidden="true">{isOpen ? "−" : "+"}</span>
                 </button>
-                {isOpen && (
-                  <div id={`faq-answer-${faqId}`} className="px-6 pb-4 text-[#171717] text-sm leading-relaxed" role="region" aria-labelledby={`faq-question-${faqId}`}>
+                <div
+                  id={`faq-answer-${faqId}`}
+                  className={`grid px-6 text-sm text-[#171717] leading-relaxed transition-[grid-template-rows,padding-bottom] duration-200 ${
+                    isOpen ? "grid-rows-[1fr] pb-4" : "grid-rows-[0fr] pb-0"
+                  }`}
+                  role="region"
+                  aria-labelledby={`faq-question-${faqId}`}
+                  aria-hidden={!isOpen}
+                >
+                  <div className="overflow-hidden">
                     {faq.r}
                   </div>
-                )}
+                </div>
               </div>
             )
           })}

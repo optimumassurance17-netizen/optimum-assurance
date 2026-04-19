@@ -1,19 +1,14 @@
-import type { Metadata } from "next"
-import { SITE_URL } from "@/lib/site-url"
+import { buildNoindexMetadata } from "@/lib/seo-noindex"
 
-const baseUrl = SITE_URL
+export const metadata = buildNoindexMetadata(
+  "Créer un compte",
+  "Création de compte liée à un dossier ou à un parcours en cours."
+)
 
-export const metadata: Metadata = {
-  title: "Créer un compte",
-  alternates: {
-    canonical: `${baseUrl}/creer-compte`,
-  },
-  robots: {
-    index: false,
-    follow: false,
-  },
-}
-
-export default function CreerCompteLayout({ children }: { children: React.ReactNode }) {
+export default function CreerCompteLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return children
 }

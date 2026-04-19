@@ -1,18 +1,9 @@
-import type { Metadata } from "next"
-import { SITE_URL } from "@/lib/site-url"
+import { buildNoindexMetadata } from "@/lib/seo-noindex"
 
-const baseUrl = SITE_URL
-
-export const metadata: Metadata = {
-  title: "Mandat SEPA",
-  alternates: {
-    canonical: `${baseUrl}/mandat-sepa`,
-  },
-  robots: {
-    index: false,
-    follow: false,
-  },
-}
+export const metadata = buildNoindexMetadata(
+  "Mandat SEPA",
+  "Mandat de prélèvement SEPA lié à votre dossier Optimum Assurance."
+)
 
 export default function MandatSepaLayout({ children }: { children: React.ReactNode }) {
   return children

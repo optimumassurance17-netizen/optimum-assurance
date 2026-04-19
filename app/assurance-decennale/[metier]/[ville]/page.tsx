@@ -179,6 +179,10 @@ export default async function MetierVillePage({
             <Link href={parentPath} className="text-blue-600 font-medium hover:underline">
               assurance décennale {data.metierNom}
             </Link>
+            {" "}et notre{" "}
+            <Link href="/guides/obligation-decennale" className="text-blue-600 font-medium hover:underline">
+              guide sur l’obligation décennale
+            </Link>
             .
           </p>
         </SeoTextBlock>

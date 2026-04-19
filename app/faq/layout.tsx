@@ -8,9 +8,9 @@ import { truncateForDescription } from "@/lib/seo-metadata-utils"
 const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
-  title: "FAQ assurance décennale BTP & dommage ouvrage — tarif, attestation, sinistre",
+  title: "FAQ assurance décennale & dommage ouvrage | Tarifs, attestation, sinistre",
   description: truncateForDescription(
-    "Obligation décennale, prix et cotisation, attestation, résiliation, sinistre, parcours de souscription et dommage ouvrage : réponses pour artisans et maîtres d’ouvrage. Optimum Assurance.",
+    "Tarifs, attestation, obligation décennale, sinistre, résiliation et dommage ouvrage : réponses claires pour artisans, entreprises du BTP et maîtres d'ouvrage.",
     158
   ),
   alternates: { canonical: `${baseUrl}/faq` },
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     url: `${baseUrl}/faq`,
     title: "FAQ assurance décennale & dommage ouvrage | Optimum Assurance",
     description:
-      "Tarif, attestation, Spinetta, DO, souscription en ligne : questions fréquentes et liens vers devis et guides.",
+      "Tarif, attestation, loi Spinetta, DO, sinistre et souscription : questions fréquentes et liens utiles.",
     locale: "fr_FR",
     siteName: "Optimum Assurance",
     type: "website",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "FAQ assurance décennale & dommage ouvrage | Optimum Assurance",
     description:
-      "Tarif, attestation, résiliation, sinistre, DO : réponses pour pros BTP et particuliers.",
+      "Tarif, attestation, résiliation, sinistre, dommage ouvrage : réponses pour pros BTP et particuliers.",
     images: [`${baseUrl}/opengraph-image`],
   },
 }

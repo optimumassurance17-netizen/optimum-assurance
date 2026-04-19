@@ -11,9 +11,9 @@ import { GedUpload } from "@/components/GedUpload"
 import { InstallPrompt } from "@/components/InstallPrompt"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import type { InsuranceContractListItem } from "@/lib/insurance-contract-types"
+import { primeTrimestrielle } from "@/lib/insurance-premium"
 import { PayInsuranceContractButton } from "@/components/insurance/PayInsuranceContractButton"
 import { InsuranceContractPdfLinks } from "@/components/insurance/InsuranceContractPdfLinks"
-import { primeTrimestrielle } from "@/lib/mollie-sepa"
 
 interface DocumentItem {
   id: string

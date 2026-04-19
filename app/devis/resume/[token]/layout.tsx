@@ -3,6 +3,6 @@ import { noindexMetadata } from "@/lib/seo-noindex"
 
 export const metadata: Metadata = noindexMetadata
 
-export default function SouscriptionLayout({ children }: { children: React.ReactNode }) {
+export default function DevisResumeLayout({ children }: { children: React.ReactNode }) {
   return children
 }

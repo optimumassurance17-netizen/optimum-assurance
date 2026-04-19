@@ -2,10 +2,10 @@ import type { InsuranceContract } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import { primeTrimestrielle } from "@/lib/insurance-premium"
 import { calculateRiskScore, requiresManualReview } from "@/lib/risk-scoring"
 import { renderContractPdf } from "@/lib/insurance-contract-pdf"
 import { SITE_URL } from "@/lib/site-url"
-import { primeTrimestrielle } from "@/lib/mollie-sepa"
 
 export type CreateContractInput = {
   productType: "decennale" | "do"

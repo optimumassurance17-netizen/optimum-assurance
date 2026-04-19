@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createMollieClient } from "@mollie/api-client"
 import { assertCronAuthorized } from "@/lib/cron-auth"
+import { primeTrimestrielle } from "@/lib/insurance-premium"
 import {
   createSepaTrimestrePayment,
-  primeTrimestrielle,
   refreshMandateStatus,
 } from "@/lib/mollie-sepa"
 import { prisma } from "@/lib/prisma"

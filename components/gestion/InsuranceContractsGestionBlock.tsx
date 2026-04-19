@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useMemo, useState } from "react"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
-import { primeTrimestrielle } from "@/lib/mollie-sepa"
+import { primeTrimestrielle } from "@/lib/insurance-premium"
 import { readResponseJson } from "@/lib/read-response-json"
 
 export type InsuranceContractGestionRow = {

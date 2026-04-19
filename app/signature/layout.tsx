@@ -1,19 +1,15 @@
 import type { Metadata } from "next"
-import { SITE_URL } from "@/lib/site-url"
+import { buildNoindexMetadata } from "@/lib/seo-noindex"
 
-const baseUrl = SITE_URL
+export const metadata: Metadata = buildNoindexMetadata(
+  "Signature électronique",
+  "Signature du contrat et finalisation du parcours Optimum Assurance."
+)
 
-export const metadata: Metadata = {
-  title: "Signature",
-  alternates: {
-    canonical: `${baseUrl}/signature`,
-  },
-  robots: {
-    index: false,
-    follow: false,
-  },
-}
-
-export default function SignatureLayout({ children }: { children: React.ReactNode }) {
+export default function SignatureLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return children
 }

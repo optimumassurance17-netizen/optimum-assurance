@@ -1,18 +1,21 @@
 import type { Metadata } from "next"
 import { SITE_URL } from "@/lib/site-url"
+import { truncateForDescription } from "@/lib/seo-metadata-utils"
 
 const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
-  title: "Contact Assurance Décennale | Optimum Assurance",
-  description:
-    "Contactez Optimum Assurance : questions sur l'assurance décennale BTP, dommage ouvrage, sinistre. Réponse sous 24h. Formulaire et assistant en ligne.",
+  title: "Contact assurance décennale, dommage ouvrage et sinistre | Optimum Assurance",
+  description: truncateForDescription(
+    "Contact Optimum Assurance : question sur devis décennale, dommage ouvrage, attestation, sinistre ou dossier en cours. Réponse sous 24 h via formulaire et assistant.",
+    158
+  ),
   alternates: { canonical: `${baseUrl}/contact` },
   openGraph: {
     url: `${baseUrl}/contact`,
-    title: "Contact | Optimum Assurance",
+    title: "Contact décennale, dommage ouvrage et sinistre | Optimum Assurance",
     description:
-      "Questions décennale BTP, dommage ouvrage, sinistre. Réponse sous 24h.",
+      "Besoin d'aide sur un devis, une attestation, un sinistre ou un dossier en cours ? Réponse sous 24 h.",
     locale: "fr_FR",
     siteName: "Optimum Assurance",
     type: "website",
@@ -20,7 +23,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Contact | Optimum Assurance",
+    title: "Contact décennale, dommage ouvrage et sinistre | Optimum Assurance",
+    description:
+      "Question sur devis, attestation, sinistre ou dossier en cours : réponse sous 24 h.",
     images: [`${baseUrl}/opengraph-image`],
   },
 }
