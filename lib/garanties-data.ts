@@ -34,7 +34,7 @@ export const metiersBtp = [
   { label: "Couvreur", icon: "🏠", href: "/assurance-decennale/couvreur" },
   { label: "Menuisier", icon: "🪚", href: "/assurance-decennale/menuisier" },
   { label: "Charpentier", icon: "🪵", href: "/assurance-decennale/charpentier" },
-  { label: "Étanchéité", icon: "💧", href: "/assurance-decennale/etancheite-toiture" },
+  { label: "Étanchéité", icon: "💧", href: "/assurance-decennale/etancheite" },
   { label: "Terrassement", icon: "🚜", href: "/assurance-decennale/terrassement" },
   { label: "Architecte", icon: "📐", href: "/assurance-decennale/architecte" },
   { label: "Maître d'œuvre", icon: "📝", href: "/assurance-decennale/maitre-d-oeuvre" },
