@@ -7,11 +7,17 @@ const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP || "33781596707").repl
 const WHATSAPP_MESSAGE =
   process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE ||
   "Bonjour, je souhaite une assistance pour mon dossier."
-const HIDDEN_PREFIXES = ["/gestion", "/admin", "/api"]
+const HIDDEN_PREFIXES = ["/gestion", "/admin", "/api", "/v/"]
+const STICKY_BAR_HIDDEN_PREFIXES = ["/gestion", "/admin", "/v/"]
 
 export function WhatsAppButton() {
   const pathname = usePathname() || ""
   if (HIDDEN_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return null
+
+  const stickyBarVisible =
+    !STICKY_BAR_HIDDEN_PREFIXES.some((prefix) => pathname.startsWith(prefix)) &&
+    !pathname.startsWith("/api")
+
   const trackingUrl = buildWhatsAppInternalUrl({
     number: WHATSAPP_NUMBER,
     source: "floating_button",
@@ -23,7 +29,11 @@ export function WhatsAppButton() {
       href={trackingUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-6 left-6 z-[105] flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-white shadow-lg transition-all hover:scale-105 hover:bg-[#20BD5A]"
+      className={
+        stickyBarVisible
+          ? "fixed left-[max(1rem,env(safe-area-inset-left))] z-[120] flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-white shadow-lg transition-all hover:scale-105 hover:bg-[#20BD5A] bottom-[max(9.25rem,calc(env(safe-area-inset-bottom)+7.75rem))] md:bottom-[max(1.5rem,env(safe-area-inset-bottom))]"
+          : "fixed left-[max(1rem,env(safe-area-inset-left))] z-[120] flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-white shadow-lg transition-all hover:scale-105 hover:bg-[#20BD5A] bottom-[max(1.5rem,env(safe-area-inset-bottom))]"
+      }
       aria-label="Nous contacter sur WhatsApp"
     >
       <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
