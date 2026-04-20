@@ -6,7 +6,7 @@ import { truncateForDescription } from "@/lib/seo-metadata-utils"
 const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
-  title: "Devis assurance décennale BTP | Tarif immédiat en ligne",
+  title: "Devis assurance décennale BTP gratuit — tarif immédiat en ligne",
   description: truncateForDescription(
     `Obtenez votre devis assurance décennale BTP selon votre chiffre d’affaires et vos activités (plombier, électricien, maçon…). Tarif immédiat, dès ${EQ_MENSUEL_MIN} €/mois équivalent, sans engagement.`,
     158

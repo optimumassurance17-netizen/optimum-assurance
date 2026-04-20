@@ -30,7 +30,7 @@ export async function generateMetadata({
   const description = truncateForDescription(data.description, 158)
 
   return {
-    title: `Assurance décennale ${data.nom} | Devis en ligne | Optimum Assurance`,
+    title: `Assurance décennale ${data.nom} | Devis en ligne | Optimum`,
     description,
     keywords: [
       `assurance décennale ${data.nom.toLowerCase()}`,
