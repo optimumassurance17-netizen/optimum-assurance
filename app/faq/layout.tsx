@@ -8,7 +8,7 @@ import { truncateForDescription } from "@/lib/seo-metadata-utils"
 const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
-  title: "FAQ assurance décennale BTP & dommage ouvrage — tarif, attestation, sinistre",
+  title: "FAQ assurance décennale & dommage ouvrage",
   description: truncateForDescription(
     "Obligation décennale, prix et cotisation, attestation, résiliation, sinistre, parcours de souscription et dommage ouvrage : réponses pour artisans et maîtres d’ouvrage. Optimum Assurance.",
     158

@@ -28,7 +28,7 @@ export async function generateMetadata({
   if (!data) return {}
 
   return {
-    title: `Assurance Décennale ${data.nom} | Devis dès ${data.prixMin} €/mois (équivalent) | Optimum`,
+    title: `Assurance décennale ${data.nom} | Devis en ligne | Optimum`,
     description: data.description,
     keywords: [
       `assurance décennale ${data.nom.toLowerCase()}`,

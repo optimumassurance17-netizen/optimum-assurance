@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   /** Indication thématique pour certains agrégateurs / aperçus (Next 14+). */
   category: "insurance",
   title: {
-    default: "Assurance Décennale BTP en Ligne | Devis 3 min | Optimum Assurance",
+    default: "Assurance décennale BTP en ligne | Devis 3 min | Optimum Assurance",
     template: "%s | Optimum Assurance",
   },
   description: truncateForDescription(
@@ -95,6 +95,11 @@ export const metadata: Metadata = {
     other: {
       "msvalidate.01": "598C36744C75A2CCE965C0F02D9BD0D4",
     },
+  },
+  other: {
+    "geo.region": "FR",
+    "geo.placename": "France",
+    "ICBM": "46.603354, 1.888334",
   },
 };
 

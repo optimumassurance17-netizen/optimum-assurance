@@ -27,6 +27,7 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Devis Dommage Ouvrage | Optimum Assurance",
+    description: "Devis dommage ouvrage en ligne pour maîtres d'ouvrage, auto-construction et clos et couvert.",
     images: [`${baseUrl}/opengraph-image`],
   },
 }
