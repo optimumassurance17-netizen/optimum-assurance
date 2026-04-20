@@ -1,10 +1,9 @@
 import { readFile } from "fs/promises"
-import path from "path"
 import type { PDFDocument, PDFImage, PDFPage } from "pdf-lib"
 import { ACCELERANT_LOGO_WIDTH_PT } from "./accelerantLogoDataUri"
 import { PDF_PAGE } from "./pdfLayout"
 
-const LOGO_PATH_SEGMENTS = ["public", "branding", "accelerant-logo.png"] as const
+const LOGO_FILE_URL = new URL("../../../public/branding/accelerant-logo.png", import.meta.url)
 
 /**
  * Charge le PNG Accelerant depuis `public/branding/accelerant-logo.png`.
@@ -12,8 +11,7 @@ const LOGO_PATH_SEGMENTS = ["public", "branding", "accelerant-logo.png"] as cons
  */
 export async function loadAccelerantLogoImage(pdf: PDFDocument): Promise<PDFImage | null> {
   try {
-    const fp = path.join(process.cwd(), ...LOGO_PATH_SEGMENTS)
-    const buf = await readFile(fp)
+    const buf = await readFile(LOGO_FILE_URL)
     return await pdf.embedPng(buf)
   } catch {
     return null

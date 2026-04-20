@@ -101,8 +101,9 @@ DATABASE_URL="postgresql://votre-url-prod" npx prisma db push
 3. Suivre les instructions pour configurer les DNS
 
 Mettre à jour dans Vercel :
-- `NEXT_PUBLIC_APP_URL` = `https://optimum-assurance.fr`
-- `NEXTAUTH_URL` = `https://optimum-assurance.fr`
+- `NEXT_PUBLIC_SITE_CANONICAL` = `https://www.optimum-assurance.fr`
+- `NEXT_PUBLIC_APP_URL` = `https://www.optimum-assurance.fr`
+- `NEXTAUTH_URL` = `https://www.optimum-assurance.fr`
 
 ---
 

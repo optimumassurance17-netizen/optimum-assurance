@@ -10,11 +10,11 @@ import {
 } from "@/lib/legal-branding"
 
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
+const CG_DO_FULL_PATH = path.resolve("lib/cg-dommage-ouvrage-full.txt")
 
 function loadCgFullText(): string | null {
   try {
-    const p = path.join(process.cwd(), "lib", "cg-dommage-ouvrage-full.txt")
-    return fs.readFileSync(p, "utf8")
+    return fs.readFileSync(CG_DO_FULL_PATH, "utf8")
   } catch {
     return null
   }
