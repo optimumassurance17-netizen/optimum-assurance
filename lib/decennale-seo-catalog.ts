@@ -430,6 +430,33 @@ const HEADTERM_SEEDS: HeadtermSeed[] = [
     ],
   },
   {
+    slug: "etancheite",
+    nom: "Étanchéité",
+    activite: "Étanchéité toiture / terrasse",
+    categorie: "Métier",
+    descriptionLead:
+      "Assurance décennale pour les travaux d'étanchéité : toiture, terrasse et interventions liées à la protection durable de l'ouvrage.",
+    avantages: [
+      "Regroupe les activités d'étanchéité les plus proches du métier",
+      "Clarifie la distinction entre étanchéité toiture et terrasse",
+      "Parcours devis orienté technique et risque d'infiltration",
+    ],
+    faq: [
+      {
+        q: "Les travaux d'étanchéité nécessitent-ils une assurance décennale ?",
+        r: "Oui, car ils touchent directement à la protection durable de l'ouvrage et aux risques d'infiltration. L'attestation est généralement attendue avant intervention sur chantier.",
+      },
+      {
+        q: "Quelle activité choisir entre étanchéité toiture et étanchéité terrasse ?",
+        r: "Il faut sélectionner l'activité qui correspond réellement aux travaux exécutés. Si vous intervenez sur les deux, vous pouvez préciser votre périmètre exact au moment du devis.",
+      },
+    ],
+    riskFocus: "infiltrations, continuité d'étanchéité et protection durable de l'enveloppe",
+    preparationHint:
+      "précisez si vous intervenez surtout sur l'étanchéité de toiture, de terrasse ou les deux selon vos chantiers",
+    relatedActivitySlugs: ["etancheite-toiture", "etancheite-terrasse"],
+  },
+  {
     slug: "menuisier",
     nom: "Menuisier",
     activite: "Menuiserie intérieure / extérieure",
