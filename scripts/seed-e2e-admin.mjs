@@ -15,7 +15,7 @@ import { config } from "dotenv"
 import { resolve } from "node:path"
 import { writeFileSync } from "node:fs"
 import bcrypt from "bcryptjs"
-import { PrismaClient } from "../lib/generated/prisma/index.js"
+import { PrismaClient } from "@prisma/client"
 
 const { hash } = bcrypt
 
