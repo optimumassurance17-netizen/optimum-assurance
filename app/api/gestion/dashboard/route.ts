@@ -66,6 +66,43 @@ function parseAdminLogDetails(raw: string | null | undefined): Record<string, un
   }
 }
 
+function buildSchemaDriftFallbackDashboard() {
+  return {
+    users: [],
+    documents: [],
+    payments: [],
+    avenantFees: [],
+    devisDoLeads: [],
+    devisRcFabriquantLeads: [],
+    devisEtudeLeads: [],
+    resiliationLogs: [],
+    resiliationRequests: [],
+    adminActivityLogs: [],
+    doStats: {
+      attestationsCount: 0,
+      facturesCount: 0,
+      primesTotal: 0,
+      closCouvertCount: 0,
+      doCompletCount: 0,
+    },
+    devisLeads: [],
+    devisDrafts: [],
+    pendingSignatures: [],
+    insuranceContractsCount: 0,
+    insuranceContracts: [],
+    dashboardActions: [],
+    dashboardActionsSummary: {
+      total: 0,
+      high: 0,
+      medium: 0,
+      overdue72h: 0,
+      dismissedToday: 0,
+    },
+    warning:
+      "Mode dégradé activé : certaines colonnes/tables Prisma manquent en base. Appliquez les migrations pour restaurer toutes les données du dashboard.",
+  }
+}
+
 async function fetchDevisRcFabriquantLeadsSafe() {
   // Sélection minimale compatible avec les schémas plus anciens (sans colonnes WhatsApp).
   const rows = await prisma.devisRcFabriquantLead.findMany({
@@ -570,6 +607,12 @@ export async function GET() {
     })
   } catch (error) {
     console.error("Erreur dashboard gestion:", error)
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === "P2021" || error.code === "P2022")
+    ) {
+      return NextResponse.json(buildSchemaDriftFallbackDashboard(), { status: 200 })
+    }
     const body = errorPayloadForDashboard(error)
     return NextResponse.json(body, { status: 500 })
   }
