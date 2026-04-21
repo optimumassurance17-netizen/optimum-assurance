@@ -66,6 +66,56 @@ function parseAdminLogDetails(raw: string | null | undefined): Record<string, un
   }
 }
 
+async function fetchDevisRcFabriquantLeadsSafe() {
+  // Sélection minimale compatible avec les schémas plus anciens (sans colonnes WhatsApp).
+  const rows = await prisma.devisRcFabriquantLead.findMany({
+    select: {
+      id: true,
+      email: true,
+      data: true,
+      statut: true,
+      notesInternes: true,
+      primeProposee: true,
+      propositionEnvoyeeAt: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  })
+  return rows.map((row) => ({
+    ...row,
+    lastWhatsappClickAt: null,
+    lastWhatsappSource: null,
+    lastWhatsappRef: null,
+  }))
+}
+
+async function fetchUsersDoQuestionnaireRowsSafe() {
+  try {
+    return await prisma.user.findMany({
+      where: {
+        OR: [{ doInitialQuestionnaireJson: { not: null } }, { doEtudeQuestionnaireJson: { not: null } }],
+      },
+      select: {
+        id: true,
+        doInitialQuestionnaireJson: true,
+        doEtudeQuestionnaireJson: true,
+      },
+      take: DASH_LIST_LIMIT,
+    })
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === "P2022" || error.code === "P2021")
+    ) {
+      // Compatibilité temporaire si ces colonnes ne sont pas encore présentes en prod.
+      return []
+    }
+    throw error
+  }
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -121,24 +171,7 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         take: 50,
       }),
-      prisma.devisRcFabriquantLead.findMany({
-        select: {
-          id: true,
-          email: true,
-          data: true,
-          statut: true,
-          notesInternes: true,
-          primeProposee: true,
-          propositionEnvoyeeAt: true,
-          createdAt: true,
-          updatedAt: true,
-          lastWhatsappClickAt: true,
-          lastWhatsappSource: true,
-          lastWhatsappRef: true,
-        },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      }),
+      fetchDevisRcFabriquantLeadsSafe(),
       prisma.devisEtudeLead.findMany({
         where: { statut: "pending" },
         orderBy: { createdAt: "desc" },
@@ -246,17 +279,7 @@ export async function GET() {
           },
         },
       }),
-      prisma.user.findMany({
-        where: {
-          OR: [{ doInitialQuestionnaireJson: { not: null } }, { doEtudeQuestionnaireJson: { not: null } }],
-        },
-        select: {
-          id: true,
-          doInitialQuestionnaireJson: true,
-          doEtudeQuestionnaireJson: true,
-        },
-        take: DASH_LIST_LIMIT,
-      }),
+      fetchUsersDoQuestionnaireRowsSafe(),
     ])
 
     const doQuestionnaireByUserId = new Map<
