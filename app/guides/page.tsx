@@ -134,6 +134,12 @@ export default function GuidesPage() {
 
         <div className="mt-12 flex flex-wrap justify-center gap-4">
           <Link
+            href="/devis-assurance-decennale-en-ligne"
+            className="inline-block border-2 border-[#0f172a] text-[#0f172a] px-8 py-4 rounded-2xl hover:bg-slate-100 font-semibold transition-all"
+          >
+            Devis assurance décennale en ligne
+          </Link>
+          <Link
             href="/devis"
             className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-2xl hover:bg-[#1d4ed8] font-semibold transition-all"
           >

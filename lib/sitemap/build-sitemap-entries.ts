@@ -61,6 +61,12 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
     },
     { url: `${baseUrl}/assurance-decennale`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.92 },
     { url: `${baseUrl}/dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.88 },
+    {
+      url: `${baseUrl}/devis-assurance-decennale-en-ligne`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.95,
+    },
     { url: `${baseUrl}/devis`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.95 },
     { url: `${baseUrl}/devis-dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/devis-rc-fabriquant`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.85 },
