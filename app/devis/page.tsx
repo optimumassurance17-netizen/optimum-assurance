@@ -221,6 +221,31 @@ function DevisPageContent() {
         <p className="text-[#171717] mb-10 text-lg">
           Renseignez vos informations pour obtenir une tarification automatique.
         </p>
+        <section className="mb-8 space-y-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-sm font-semibold text-emerald-900">Réponse rapide</p>
+              <p className="text-xs text-emerald-800 mt-1">Tarification immédiate pour les dossiers éligibles.</p>
+            </div>
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+              <p className="text-sm font-semibold text-blue-900">Parcours 100 % en ligne</p>
+              <p className="text-xs text-blue-800 mt-1">SIRET, souscription, signature électronique et paiement sécurisé.</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <p className="text-sm font-semibold text-slate-900">Sans engagement</p>
+              <p className="text-xs text-slate-700 mt-1">Vous visualisez votre tarif avant toute validation contractuelle.</p>
+            </div>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <p className="text-sm text-slate-900 font-semibold mb-2">Cas fréquents traités</p>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">Jamais assuré</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">Résilié non-paiement</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">Sinistres récents</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">Reprise du passé</span>
+            </div>
+          </div>
+        </section>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm">
@@ -644,6 +669,23 @@ function DevisPageContent() {
                 : "Continuer vers la souscription"}
           </button>
         </form>
+        <section className="mt-10 rounded-2xl border border-slate-200 bg-white p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-2">Avant de finaliser : guides utiles</h2>
+          <p className="text-sm text-slate-700 mb-4">
+            Ces pages répondent aux questions les plus fréquentes avant signature (obligations, résiliation, sinistre).
+          </p>
+          <div className="grid gap-2 sm:grid-cols-3 text-sm">
+            <Link href="/guides/obligation-decennale" className="text-blue-600 hover:underline">
+              Obligation décennale
+            </Link>
+            <Link href="/guides/resiliation-decennale" className="text-blue-600 hover:underline">
+              Résilier sa décennale
+            </Link>
+            <Link href="/guides/declaration-sinistre" className="text-blue-600 hover:underline">
+              Déclarer un sinistre
+            </Link>
+          </div>
+        </section>
 
         <DevisFaq />
 
