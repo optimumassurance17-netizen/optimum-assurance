@@ -221,6 +221,13 @@ function DevisPageContent() {
         <p className="text-[#171717] mb-10 text-lg">
           Renseignez vos informations pour obtenir une tarification automatique.
         </p>
+        <p className="text-sm text-slate-700 -mt-6 mb-8">
+          Vous cherchez une version express ?{" "}
+          <Link href="/devis-assurance-decennale-en-ligne" className="text-blue-600 font-semibold hover:underline">
+            Accéder à la page devis assurance décennale en ligne
+          </Link>
+          .
+        </p>
         <section className="mb-8 space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
