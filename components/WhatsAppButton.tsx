@@ -31,8 +31,8 @@ export function WhatsAppButton() {
       rel="noopener noreferrer"
       className={
         stickyBarVisible
-          ? "fixed left-[max(1rem,env(safe-area-inset-left))] z-[120] flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-white shadow-lg transition-all hover:scale-105 hover:bg-[#20BD5A] bottom-[max(9.25rem,calc(env(safe-area-inset-bottom)+7.75rem))] md:bottom-[max(1.5rem,env(safe-area-inset-bottom))]"
-          : "fixed left-[max(1rem,env(safe-area-inset-left))] z-[120] flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-white shadow-lg transition-all hover:scale-105 hover:bg-[#20BD5A] bottom-[max(1.5rem,env(safe-area-inset-bottom))]"
+          ? "fixed left-[max(1rem,env(safe-area-inset-left))] z-[120] flex items-center gap-2 rounded-full bg-[#128C7E] px-4 py-3 text-white shadow-lg transition-all hover:scale-105 hover:bg-[#0F7A6D] bottom-[max(9.25rem,calc(env(safe-area-inset-bottom)+7.75rem))] md:bottom-[max(1.5rem,env(safe-area-inset-bottom))]"
+          : "fixed left-[max(1rem,env(safe-area-inset-left))] z-[120] flex items-center gap-2 rounded-full bg-[#128C7E] px-4 py-3 text-white shadow-lg transition-all hover:scale-105 hover:bg-[#0F7A6D] bottom-[max(1.5rem,env(safe-area-inset-bottom))]"
       }
       aria-label="Nous contacter sur WhatsApp"
     >
