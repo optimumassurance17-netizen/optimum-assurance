@@ -98,6 +98,8 @@ export function SimulateurPrime() {
                 <option key={t.activite} value={t.activite}>
                   {t.activite} — {t.activite === "Nettoyage toiture et peinture résine (I3 à I5)"
                     ? "1.7% / 2% au-dessus de 250k€"
+                    : t.activite === "Forage micropieux"
+                      ? "2.4% à 3.5% selon risque"
                     : t.taux_base > 0
                       ? `${t.taux_base} % (min ${t.prime_min} €/an)`
                       : `forfait ${t.prime_min} €/an`}
