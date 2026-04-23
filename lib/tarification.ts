@@ -49,6 +49,22 @@ function isOffreNettoyageToiturePeintureResine(activites: string[]): boolean {
   return normalized.includes("nettoyage toiture et peinture résine (i3 à i5)")
 }
 
+const TAUX_MICROPIEUX_FAIBLE_RISQUE = 2.4
+const TAUX_MICROPIEUX_RISQUE_STANDARD = 2.9
+const TAUX_MICROPIEUX_FORT_RISQUE = 3.5
+const SEUIL_MICROPIEUX_FORT_RISQUE = 250_000
+
+function isActiviteForageMicropieux(activites: string[]): boolean {
+  const normalized = activites.map((a) => a.toLowerCase().trim())
+  return normalized.includes("forage micropieux")
+}
+
+function tauxForageMicropieux(chiffreAffaires: number, sinistres: number, jamaisAssure: boolean): number {
+  if (sinistres > 0 || chiffreAffaires > SEUIL_MICROPIEUX_FORT_RISQUE) return TAUX_MICROPIEUX_FORT_RISQUE
+  if (jamaisAssure || chiffreAffaires > 120_000) return TAUX_MICROPIEUX_RISQUE_STANDARD
+  return TAUX_MICROPIEUX_FAIBLE_RISQUE
+}
+
 const MAJORATION_RESILIE_NON_PAIEMENT = 0.1 // 10 %
 const MAJORATION_REPRISE_PASSE = 0.4 // 40 % sur les 3 mois rétroactifs
 const MOIS_REPRISE_PASSE = 3
@@ -59,6 +75,40 @@ const REDUCTION_MAX = 0.3 // 30 % max
 
 export function calculerTarif(input: DevisInput): DevisResult {
   const { chiffreAffaires, sinistres, jamaisAssure, resilieNonPaiement, activites, reprisePasse } = input
+
+  if (isActiviteForageMicropieux(activites)) {
+    const taux = tauxForageMicropieux(chiffreAffaires, sinistres, jamaisAssure)
+    const base = (chiffreAffaires * taux) / 100
+    let primeAnnuelle = base
+    const majorationResilie = resilieNonPaiement
+      ? Math.round(primeAnnuelle * MAJORATION_RESILIE_NON_PAIEMENT)
+      : 0
+    if (resilieNonPaiement) primeAnnuelle = primeAnnuelle * (1 + MAJORATION_RESILIE_NON_PAIEMENT)
+    const primeMensuelle = Math.round((primeAnnuelle / 12) * 100) / 100
+    let supplementReprisePasse: number | undefined
+    if (reprisePasse && sinistres === 0) {
+      supplementReprisePasse = Math.round(primeMensuelle * (1 + MAJORATION_REPRISE_PASSE) * MOIS_REPRISE_PASSE * 100) / 100
+      primeAnnuelle += supplementReprisePasse
+    }
+    const primeAnnuelleRounded = Math.round(primeAnnuelle)
+    const primeTrimestrielle = Math.round((primeAnnuelleRounded / 4) * 100) / 100
+    return {
+      primeAnnuelle: primeAnnuelleRounded,
+      primeMensuelle: Math.round((primeAnnuelleRounded / 12) * 100) / 100,
+      primeTrimestrielle,
+      franchise: FRANCHISE_DECENNALE_EUR,
+      plafond: Math.max(chiffreAffaires * 2, 100000),
+      reprisePasse: reprisePasse && sinistres === 0,
+      supplementReprisePasse,
+      details: {
+        base: Math.round(base),
+        majorationSinistres: 0,
+        majorationNouveau: 0,
+        majorationActivites: 0,
+        majorationResilie,
+      },
+    }
+  }
 
   // Offre spécifique : Nettoyage toiture + peinture résine I3 à I5 — 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)
   if (isOffreNettoyageToiturePeintureResine(activites)) {
