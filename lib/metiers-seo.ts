@@ -120,6 +120,54 @@ export const METIERS_SEO = [
     ],
   },
   {
+    slug: "fondation-speciale",
+    nom: "Fondation spéciale",
+    activite: "Fondations spéciales",
+    prixMin: "80",
+    description:
+      "Assurance décennale fondation spéciale : activité technique à risque structurel (ancrages, soutènements, reprises en sous-œuvre). Devis en ligne et étude adaptée au profil chantier.",
+    avantages: [
+      "Activité fondations spéciales reconnue dans le parcours de devis",
+      "Tarification ajustée selon CA, sinistralité et profil entreprise",
+      "Attestation décennale après validation du dossier",
+      "Parcours 100 % en ligne",
+    ],
+    faq: [
+      {
+        q: "Pourquoi la fondation spéciale a une prime différente ?",
+        r: "Les travaux de fondation spéciale exposent fortement la solidité de l'ouvrage. Le tarif tient compte du niveau de risque structurel, du chiffre d'affaires et de l'historique sinistre.",
+      },
+      {
+        q: "Peut-on obtenir un devis rapide pour fondation spéciale ?",
+        r: "Oui, un devis est disponible en ligne. Selon le profil (CA, sinistres, activité précise), le dossier peut être orienté vers une étude complémentaire.",
+      },
+    ],
+  },
+  {
+    slug: "forage-micropieux",
+    nom: "Forage micropieux",
+    activite: "Micropieux",
+    prixMin: "80",
+    description:
+      "Assurance décennale forage micropieux : activité de fondation technique avec tarification spécifique de 2,4 % à 3,5 % selon le risque. Devis en ligne et accompagnement dédié.",
+    avantages: [
+      "Tarification dédiée micropieux (2,4 % à 3,5 % selon risque)",
+      "Calcul cohérent avec CA, sinistralité et ancienneté assurantielle",
+      "Parcours décennale complet en ligne",
+      "Traitement adapté des dossiers techniques",
+    ],
+    faq: [
+      {
+        q: "Quel taux est appliqué pour le forage micropieux ?",
+        r: "Le taux varie entre 2,4 % et 3,5 % selon le risque (sinistralité, niveau de CA, profil de l'entreprise).",
+      },
+      {
+        q: "Le taux micropieux augmente-t-il automatiquement chaque année ?",
+        r: "Non. Le taux est recalculé selon les données déclarées et le profil de risque réel au moment du devis ou de la mise à jour.",
+      },
+    ],
+  },
+  {
     slug: "charpentier",
     nom: "Charpentier",
     activite: "Charpente",

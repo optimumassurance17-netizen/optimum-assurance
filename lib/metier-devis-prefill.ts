@@ -12,6 +12,8 @@ export const METIER_DEVIS_ACTIVITES_PREFILL: Record<MetierSlug, readonly string[
   couvreur: ["Couverture tuiles"],
   menuisier: ["Menuiserie extérieure"],
   charpentier: ["Charpente bois"],
+  "fondation-speciale": ["Fondation spéciale"],
+  "forage-micropieux": ["Forage micropieux"],
 }
 
 export function getMetierPrefillActivites(slug: string | null | undefined): string[] {
