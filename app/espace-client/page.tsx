@@ -23,6 +23,15 @@ interface DocumentItem {
   createdAt: string
 }
 
+type CaRegularisationDraft = {
+  contractId: string
+  contractNumber: string
+  plannedCa: number
+  declaredCa: number
+  regularisation: number
+  newAnnualPremium: number
+}
+
 const typeLabels: Record<string, string> = {
   devis: "Devis décennale",
   devis_do: "Devis dommage ouvrage",
@@ -68,6 +77,10 @@ export default function EspaceClientPage() {
   const [exportingPdf, setExportingPdf] = useState(false)
   const [insuranceContracts, setInsuranceContracts] = useState<InsuranceContractListItem[]>([])
   const [doEtudeBanner, setDoEtudeBanner] = useState<{ show: boolean; hasSaved: boolean } | null>(null)
+  const [caDeclarationByContractId, setCaDeclarationByContractId] = useState<Record<string, string>>({})
+  const [caCalcByContractId, setCaCalcByContractId] = useState<Record<string, CaRegularisationDraft | null>>({})
+  const [caLoadingContractId, setCaLoadingContractId] = useState<string | null>(null)
+  const [caErrorByContractId, setCaErrorByContractId] = useState<Record<string, string | null>>({})
 
   useEffect(() => {
     if (status !== "authenticated") return
@@ -276,6 +289,130 @@ export default function EspaceClientPage() {
                 </li>
               ))}
             </ul>
+            <div className="mt-6 rounded-2xl border border-[#d4d4d4] bg-white p-5">
+              <h3 className="text-base font-semibold text-[#0a0a0a] mb-2">Déclaration de chiffre d’affaires annuel</h3>
+              <p className="text-sm text-[#171717] mb-4">
+                Déclarez votre CA réel en fin d’exercice. La régularisation s’applique uniquement si le CA déclaré est
+                supérieur au CA prévu au contrat. En dessous, votre cotisation ne change pas.
+              </p>
+              <div className="space-y-4">
+                {insuranceContracts
+                  .filter((c) => c.productType === "decennale")
+                  .map((contract) => {
+                    const currentInput = caDeclarationByContractId[contract.id] ?? ""
+                    const calcResult = caCalcByContractId[contract.id]
+                    const isLoading = caLoadingContractId === contract.id
+                    const lineError = caErrorByContractId[contract.id]
+                    return (
+                      <div key={`ca-${contract.id}`} className="rounded-xl border border-[#e5e5e5] p-4">
+                        <p className="font-mono text-xs text-[#171717] mb-1">{contract.contractNumber}</p>
+                        <p className="text-sm text-[#171717] mb-3">
+                          Cotisation annuelle actuelle : {contract.premium.toLocaleString("fr-FR")} €
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            type="number"
+                            min={0}
+                            step={1000}
+                            value={currentInput}
+                            onChange={(e) =>
+                              setCaDeclarationByContractId((prev) => ({
+                                ...prev,
+                                [contract.id]: e.target.value,
+                              }))
+                            }
+                            placeholder="CA annuel réel (ex: 125000)"
+                            className="flex-1 rounded-xl border border-[#d4d4d4] bg-[#e4e4e4] px-4 py-2.5 text-[#0a0a0a]"
+                          />
+                          <button
+                            type="button"
+                            disabled={isLoading || !currentInput.trim()}
+                            onClick={async () => {
+                              const declaredCa = Number(currentInput)
+                              if (!Number.isFinite(declaredCa) || declaredCa < 0) {
+                                setCaErrorByContractId((prev) => ({
+                                  ...prev,
+                                  [contract.id]: "Veuillez saisir un CA valide.",
+                                }))
+                                return
+                              }
+                              setCaLoadingContractId(contract.id)
+                              setCaErrorByContractId((prev) => ({ ...prev, [contract.id]: null }))
+                              try {
+                                const res = await fetch("/api/client/ca-regularisation", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    contractId: contract.id,
+                                    declaredChiffreAffaires: declaredCa,
+                                  }),
+                                })
+                                const json = (await res.json().catch(() => ({}))) as {
+                                  error?: string
+                                  contractId?: string
+                                  contractNumber?: string
+                                  plannedChiffreAffaires?: number
+                                  declaredChiffreAffaires?: number
+                                  regularisationAmount?: number
+                                  newAnnualPremium?: number
+                                }
+                                if (!res.ok) {
+                                  throw new Error(json.error || "Erreur de calcul de régularisation.")
+                                }
+                                setCaCalcByContractId((prev) => ({
+                                  ...prev,
+                                  [contract.id]: {
+                                    contractId: json.contractId || contract.id,
+                                    contractNumber: json.contractNumber || contract.contractNumber,
+                                    plannedCa: Number(json.plannedChiffreAffaires || 0),
+                                    declaredCa: Number(json.declaredChiffreAffaires || declaredCa),
+                                    regularisation: Number(json.regularisationAmount || 0),
+                                    newAnnualPremium: Number(json.newAnnualPremium || contract.premium),
+                                  },
+                                }))
+                              } catch (error) {
+                                setCaErrorByContractId((prev) => ({
+                                  ...prev,
+                                  [contract.id]:
+                                    error instanceof Error
+                                      ? error.message
+                                      : "Erreur de calcul de régularisation.",
+                                }))
+                              } finally {
+                                setCaLoadingContractId(null)
+                              }
+                            }}
+                            className="rounded-xl bg-[#2563eb] px-4 py-2.5 text-white font-medium hover:bg-[#1d4ed8] disabled:opacity-50"
+                          >
+                            {isLoading ? "Calcul..." : "Calculer"}
+                          </button>
+                        </div>
+                        {lineError && (
+                          <p className="mt-2 text-sm text-red-700">{lineError}</p>
+                        )}
+                        {calcResult && (
+                          <div className="mt-3 rounded-xl bg-[#f8fafc] border border-[#dbe3ee] p-3 text-sm text-[#0a0a0a]">
+                            <p>CA prévu : {calcResult.plannedCa.toLocaleString("fr-FR")} €</p>
+                            <p>CA déclaré : {calcResult.declaredCa.toLocaleString("fr-FR")} €</p>
+                            {calcResult.regularisation > 0 ? (
+                              <>
+                                <p className="font-semibold text-amber-700">
+                                  Régularisation due : +{calcResult.regularisation.toLocaleString("fr-FR")} €
+                                </p>
+                                <p>Nouvelle cotisation annuelle : {calcResult.newAnnualPremium.toLocaleString("fr-FR")} €</p>
+                              </>
+                            ) : (
+                              <p className="font-semibold text-emerald-700">
+                                Aucune régularisation : cotisation inchangée.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
           </div>
         )}
 
