@@ -4,7 +4,10 @@ import { getDecennaleSeoCatalogItem, type DecennaleSeoSlug } from "@/lib/decenna
  * Activités (libellés exacts ACTIVITES_BTP) préremplies quand on arrive depuis /assurance-decennale/[metier].
  * Pour les pages SEO dérivées du catalogue, on réinjecte directement l'activité source.
  */
-export const METIER_DEVIS_ACTIVITES_PREFILL: Partial<Record<DecennaleSeoSlug, readonly string[]>> = {}
+export const METIER_DEVIS_ACTIVITES_PREFILL: Partial<Record<DecennaleSeoSlug, readonly string[]>> = {
+  "fondation-speciale": ["Fondation spéciale"],
+  "forage-micropieux": ["Forage micropieux"],
+}
 
 export function getMetierPrefillActivites(slug: string | null | undefined): string[] {
   if (!slug?.trim()) return []
