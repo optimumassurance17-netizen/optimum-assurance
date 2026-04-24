@@ -1,6 +1,5 @@
 import { existsSync } from "fs"
 import { unlink } from "fs/promises"
-import { join } from "path"
 import { NextRequest, NextResponse } from "next/server"
 import { createMollieClient } from "@mollie/api-client"
 import { getServerSession } from "next-auth"
@@ -9,7 +8,9 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { syncContratAvenantDocumentsFromUser } from "@/lib/sync-user-document-identity"
-import { UPLOAD_DIR } from "@/lib/user-documents"
+import { getLocalGedPathCandidates, isGedSupabasePath } from "@/lib/user-documents"
+import { createSupabaseServiceClient } from "@/lib/supabase"
+import { GED_SUPABASE_BUCKET } from "@/lib/user-documents"
 import { asJsonObject } from "@/lib/json-object"
 import { fetchUserDocumentReviews } from "@/lib/user-document-review"
 
@@ -286,10 +287,27 @@ export async function DELETE(
       }
     }
 
+    const supabaseGedPaths = gedFiles
+      .map((row) => row.filepath)
+      .filter((path): path is string => isGedSupabasePath(path))
+    if (supabaseGedPaths.length > 0) {
+      const supabase = createSupabaseServiceClient()
+      if (supabase) {
+        try {
+          await supabase.storage.from(GED_SUPABASE_BUCKET).remove(supabaseGedPaths)
+        } catch (e) {
+          console.warn("[gestion] suppression GED Supabase après delete user:", e)
+        }
+      }
+    }
+
     for (const row of gedFiles) {
-      const fullPath = join(UPLOAD_DIR, row.filepath)
+      if (isGedSupabasePath(row.filepath)) continue
+      const candidates = getLocalGedPathCandidates(row.filepath)
       try {
-        if (existsSync(fullPath)) await unlink(fullPath)
+        for (const fullPath of candidates) {
+          if (existsSync(fullPath)) await unlink(fullPath)
+        }
       } catch (e) {
         console.warn("[gestion] suppression fichier GED après delete user:", row.filepath, e)
       }

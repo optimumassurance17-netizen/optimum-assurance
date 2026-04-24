@@ -11,6 +11,7 @@ import {
   ALLOWED_TYPES,
   MAX_FILE_SIZE,
   GED_SUPABASE_BUCKET,
+  normalizeGedSupabaseObjectPath,
   buildGedStoragePath,
   detectUploadMimeAndExt,
   ensureUploadDir,
@@ -103,10 +104,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (existing) {
-      if (existing.filepath.startsWith("ged/")) {
+      const existingSupabasePath = normalizeGedSupabaseObjectPath(existing.filepath)
+      if (existingSupabasePath) {
         if (supabase) {
           try {
-            await supabase.storage.from(GED_SUPABASE_BUCKET).remove([existing.filepath])
+            await supabase.storage.from(GED_SUPABASE_BUCKET).remove([existingSupabasePath])
           } catch {
             // Suppression best-effort
           }

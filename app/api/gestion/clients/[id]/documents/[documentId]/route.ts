@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { readFile } from "fs/promises"
 import { existsSync } from "fs"
-import { join } from "path"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
-import { GED_SUPABASE_BUCKET, UPLOAD_DIR } from "@/lib/user-documents"
+import { GED_SUPABASE_BUCKET, resolveGedFileReadTarget } from "@/lib/user-documents"
 
 /**
  * Télécharge/ouvre un document GED client depuis la fiche gestion (admin uniquement).
@@ -36,23 +35,24 @@ export async function GET(
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
+    const resolved = resolveGedFileReadTarget(doc.filepath)
+
     let fileBytes: Uint8Array
-    if (doc.filepath.startsWith("ged/")) {
+    if (resolved.kind === "supabase") {
       const supabase = createSupabaseServiceClient()
       if (!supabase) {
         return NextResponse.json({ error: "Stockage GED indisponible" }, { status: 503 })
       }
-      const { data, error } = await supabase.storage.from(GED_SUPABASE_BUCKET).download(doc.filepath)
+      const { data, error } = await supabase.storage.from(GED_SUPABASE_BUCKET).download(resolved.path)
       if (error || !data) {
         return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
       }
       fileBytes = new Uint8Array(await data.arrayBuffer())
     } else {
-      const fullPath = join(UPLOAD_DIR, doc.filepath)
-      if (!existsSync(fullPath)) {
+      if (!existsSync(resolved.path)) {
         return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
       }
-      const buffer = await readFile(fullPath)
+      const buffer = await readFile(resolved.path)
       fileBytes = new Uint8Array(buffer)
     }
 
