@@ -21,6 +21,7 @@ type LegacyLookupContext = {
   filepath: string
   filename: string
   createdAt: string
+  docId?: string
 }
 
 function normalizeToken(value: string): string {
@@ -43,7 +44,7 @@ function dedupeCandidates(list: DownloadCandidate[]): DownloadCandidate[] {
 }
 
 async function listFolderFilePaths(
-  supabase: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
+  supabase: NonNullable<ReturnType<typeof createSupabaseServiceClient> | ReturnType<typeof createSupabaseBrowserClient>>,
   bucket: string,
   folder: string
 ): Promise<{ path: string; updatedAt: number }[]> {
@@ -64,8 +65,26 @@ async function listFolderFilePaths(
     })
 }
 
+async function listCandidateBuckets(
+  supabase: NonNullable<ReturnType<typeof createSupabaseServiceClient> | ReturnType<typeof createSupabaseBrowserClient>>,
+  seeds: string[]
+): Promise<string[]> {
+  const out = new Set<string>(seeds.filter(Boolean))
+  try {
+    const { data, error } = await supabase.storage.listBuckets()
+    if (!error && data) {
+      for (const bucket of data) {
+        if (bucket?.name) out.add(bucket.name)
+      }
+    }
+  } catch {
+    // best effort
+  }
+  return [...out]
+}
+
 async function discoverLegacyGedCandidates(
-  supabase: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
+  supabase: NonNullable<ReturnType<typeof createSupabaseServiceClient> | ReturnType<typeof createSupabaseBrowserClient>>,
   bucket: string,
   context: LegacyLookupContext
 ): Promise<DownloadCandidate[]> {
@@ -86,11 +105,31 @@ async function discoverLegacyGedCandidates(
   const safeBaseToken = normalizeToken(safeBase)
   const filenameToken = normalizeToken(context.filename)
   const filepathLeafToken = normalizeToken(filepathLeaf)
+  const docIdToken = context.docId ? normalizeToken(context.docId) : ""
   const ext = (context.filename.split(".").pop() || "").toLowerCase()
   const createdAtMs = Date.parse(context.createdAt) || 0
 
   const scored: Array<{ candidate: DownloadCandidate; score: number; updatedAt: number }> = []
   const seen = new Set<string>()
+  const scoreForPath = (filePath: string, updatedAt: number): number => {
+    const name = filePath.split("/").pop()?.toLowerCase() ?? ""
+    const nameToken = normalizeToken(name)
+    let score = 0
+    if (legacyTimestamp && name.startsWith(`${legacyTimestamp}_`)) score += 100
+    if (safeBase && name.includes(`_${safeBase}.`)) score += 60
+    if (ext && name.endsWith(`.${ext}`)) score += 20
+    if (name === context.filename.toLowerCase()) score += 40
+    if (safeBaseToken && nameToken.includes(safeBaseToken)) score += 55
+    if (filenameToken && nameToken.includes(filenameToken)) score += 45
+    if (filepathLeafToken && nameToken.includes(filepathLeafToken)) score += 35
+    if (docIdToken && nameToken.includes(docIdToken)) score += 90
+    if (createdAtMs > 0 && updatedAt > 0 && Math.abs(updatedAt - createdAtMs) < 1000 * 60 * 60 * 24 * 3) {
+      score += 25
+    }
+    if (filePath.includes(context.userId)) score += 15
+    if (filePath.includes(`/${context.type}/`)) score += 10
+    return score
+  }
 
   for (const folder of folders) {
     const files = await listFolderFilePaths(supabase, bucket, folder)
@@ -98,19 +137,7 @@ async function discoverLegacyGedCandidates(
       const key = `${bucket}:${file.path}`
       if (seen.has(key)) continue
       seen.add(key)
-      const name = file.path.split("/").pop()?.toLowerCase() ?? ""
-      const nameToken = normalizeToken(name)
-      let score = 0
-      if (legacyTimestamp && name.startsWith(`${legacyTimestamp}_`)) score += 100
-      if (safeBase && name.includes(`_${safeBase}.`)) score += 60
-      if (ext && name.endsWith(`.${ext}`)) score += 20
-      if (name === context.filename.toLowerCase()) score += 40
-      if (safeBaseToken && nameToken.includes(safeBaseToken)) score += 55
-      if (filenameToken && nameToken.includes(filenameToken)) score += 45
-      if (filepathLeafToken && nameToken.includes(filepathLeafToken)) score += 35
-      if (createdAtMs > 0 && file.updatedAt > 0 && Math.abs(file.updatedAt - createdAtMs) < 1000 * 60 * 60 * 24 * 3) {
-        score += 25
-      }
+      const score = scoreForPath(file.path, file.updatedAt)
       const finalScore = score > 0 ? score : 1
       scored.push({
         candidate: { bucket, path: file.path },
@@ -121,7 +148,49 @@ async function discoverLegacyGedCandidates(
   }
 
   scored.sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt)
-  return scored.slice(0, 30).map((entry) => entry.candidate)
+  const ranked = scored.slice(0, 30).map((entry) => entry.candidate)
+  if (ranked.length > 0) return ranked
+
+  // Scan récursif de buckets legacy quand la structure du dossier est atypique.
+  type QueueItem = { folder: string; depth: number }
+  const queue: QueueItem[] = [{ folder: "", depth: 0 }]
+  const visitedFolders = new Set<string>([""])
+  const deepMatches: Array<{ candidate: DownloadCandidate; score: number; updatedAt: number }> = []
+  let scannedFiles = 0
+  const MAX_DEPTH = 3
+  const MAX_FOLDERS = 180
+  const MAX_FILES = 2500
+
+  while (queue.length > 0 && visitedFolders.size <= MAX_FOLDERS && scannedFiles < MAX_FILES) {
+    const current = queue.shift()!
+    const { data, error } = await supabase.storage.from(bucket).list(current.folder, {
+      limit: 200,
+      sortBy: { column: "name", order: "desc" },
+    })
+    if (error || !data) continue
+    for (const entry of data) {
+      const name = (entry as { name?: string }).name ?? ""
+      if (!name) continue
+      const fullPath = current.folder ? `${current.folder}/${name}` : name
+      if (Boolean((entry as { id?: string | null }).id)) {
+        scannedFiles++
+        const updatedAtRaw = (entry as { updated_at?: string | null }).updated_at
+        const updatedAt = updatedAtRaw ? Date.parse(updatedAtRaw) || 0 : 0
+        const score = scoreForPath(fullPath, updatedAt)
+        if (score > 0) {
+          deepMatches.push({ candidate: { bucket, path: fullPath }, score, updatedAt })
+        }
+      } else if (current.depth < MAX_DEPTH) {
+        if (!visitedFolders.has(fullPath)) {
+          visitedFolders.add(fullPath)
+          queue.push({ folder: fullPath, depth: current.depth + 1 })
+        }
+      }
+    }
+  }
+
+  deepMatches.sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt)
+  return deepMatches.slice(0, 40).map((x) => x.candidate)
 }
 
 async function downloadFromSupabaseWithFallback(
@@ -131,28 +200,43 @@ async function downloadFromSupabaseWithFallback(
   const supabase = createSupabaseServiceClient() ?? createSupabaseBrowserClient()
   if (!supabase) return null
 
-  const byBucket = new Set<string>([
+  const initialBucketSeeds = [
     GED_SUPABASE_BUCKET,
     "client_documents",
     "client-documents",
+    "ged",
+    "user_documents",
+    "user-documents",
     "documents",
+    "uploads",
     ...candidates.map((c) => c.bucket),
-  ])
+  ]
 
   const attempt = async (candidate: DownloadCandidate) => {
     const { data, error } = await supabase.storage.from(candidate.bucket).download(candidate.path)
-    if (!error && data) return new Uint8Array(await data.arrayBuffer())
-    return null
+    if (!error && data) {
+      return new Uint8Array(await data.arrayBuffer())
+    }
+    const { data: signed, error: signError } = await supabase.storage
+      .from(candidate.bucket)
+      .createSignedUrl(candidate.path, 60)
+    if (signError || !signed?.signedUrl) return null
+    const fetched = await fetch(signed.signedUrl, { cache: "no-store" }).catch(() => null)
+    if (!fetched || !fetched.ok) return null
+    return new Uint8Array(await fetched.arrayBuffer())
   }
 
-  const initialCandidates = dedupeCandidates([
-    ...candidates,
-    ...[...byBucket].map((bucket) => ({
-      bucket,
-      path: context.filepath.replace(/^\/+/, ""),
-    })),
-  ])
+  const byBucket = await listCandidateBuckets(supabase, initialBucketSeeds)
 
+  const filepathPath = context.filepath.replace(/^\/+/, "")
+  const defaultPathCandidates = filepathPath
+    ? byBucket.map((bucket) => ({
+        bucket,
+        path: filepathPath,
+      }))
+    : []
+
+  const initialCandidates = dedupeCandidates([...candidates, ...defaultPathCandidates])
   for (const candidate of initialCandidates) {
     const downloaded = await attempt(candidate)
     if (downloaded) return downloaded
@@ -160,11 +244,12 @@ async function downloadFromSupabaseWithFallback(
 
   for (const bucket of byBucket) {
     const discovered = await discoverLegacyGedCandidates(supabase, bucket, context)
-    for (const candidate of discovered) {
+    for (const candidate of dedupeCandidates(discovered)) {
       const downloaded = await attempt(candidate)
       if (downloaded) return downloaded
     }
   }
+
   return null
 }
 
@@ -205,6 +290,7 @@ export async function GET(
         filepath: doc.filepath,
         filename: doc.filename,
         createdAt: doc.createdAt.toISOString(),
+        docId: doc.id,
       })
       if (!fromSupabase) {
         // Dernier fallback: anciens fichiers en stockage local.
