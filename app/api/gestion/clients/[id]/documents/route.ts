@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { fetchUserDocumentReviews } from "@/lib/user-document-review"
 
 /**
  * Liste les documents uploadés (UserDocument) d'un client - pour admin
@@ -25,7 +26,11 @@ export async function GET(
       orderBy: { type: "asc" },
     })
 
-    return NextResponse.json(docs)
+    const reviews = await fetchUserDocumentReviews(docs.map((d) => d.id))
+    return NextResponse.json({
+      docs,
+      reviews,
+    })
   } catch (error) {
     console.error("Erreur liste documents client:", error)
     return NextResponse.json(

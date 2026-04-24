@@ -36,6 +36,10 @@ interface ClientData {
   notes?: { id: string; content: string; adminEmail: string; createdAt: string }[]
   sinistres?: { id: string; dateSinistre: string; montantIndemnisation: number | null; description: string | null; userDocument: { id: string; filename: string; type: string } | null }[]
   userDocuments?: { id: string; type: string; filename: string; size?: number; createdAt?: string }[]
+  userDocumentReviews?: Record<
+    string,
+    { status: "valid" | "invalid"; reason: string | null; updatedAt: string }
+  >
 }
 
 const typeLabels: Record<string, string> = {
@@ -90,6 +94,11 @@ export default function ClientDetailPage() {
     userDocument: { id: string; filename: string; type: string } | null
   }[]>([])
   const [userDocuments, setUserDocuments] = useState<{ id: string; type: string; filename: string; size?: number; createdAt?: string }[]>([])
+  const [userDocumentReviews, setUserDocumentReviews] = useState<
+    Record<string, { status: "valid" | "invalid"; reason: string | null; updatedAt: string }>
+  >({})
+  const [reviewReasonByDocumentId, setReviewReasonByDocumentId] = useState<Record<string, string>>({})
+  const [reviewLoadingByDocumentId, setReviewLoadingByDocumentId] = useState<Record<string, boolean>>({})
   const [sinistreForm, setSinistreForm] = useState({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -144,6 +153,7 @@ export default function ClientDetailPage() {
         setNotes(json.notes ?? [])
         setSinistres(json.sinistres ?? [])
         setUserDocuments(json.userDocuments ?? [])
+        setUserDocumentReviews(json.userDocumentReviews ?? {})
       } catch {
         setError("Client introuvable")
       } finally {
@@ -485,14 +495,134 @@ export default function ClientDetailPage() {
                           : "—"}
                       </td>
                       <td className="p-4">
-                        <a
-                          href={`/api/gestion/clients/${clientId}/documents/${doc.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#2563eb] hover:text-[#1d4ed8] text-sm"
-                        >
-                          Ouvrir
-                        </a>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <a
+                            href={`/api/gestion/clients/${clientId}/documents/${doc.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#2563eb] hover:text-[#1d4ed8] text-sm"
+                          >
+                            Ouvrir
+                          </a>
+                          <button
+                            type="button"
+                            disabled={!!reviewLoadingByDocumentId[doc.id]}
+                            onClick={async () => {
+                              setReviewLoadingByDocumentId((prev) => ({ ...prev, [doc.id]: true }))
+                              try {
+                                const res = await fetch(
+                                  `/api/gestion/clients/${clientId}/documents/${doc.id}/review`,
+                                  {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ status: "valid" }),
+                                  }
+                                )
+                                const json = await readResponseJson<{
+                                  error?: string
+                                  review?: { status: "valid" | "invalid"; reason: string | null; updatedAt: string }
+                                }>(res)
+                                if (!res.ok || !json.review) {
+                                  throw new Error(json.error || "Impossible de valider le document.")
+                                }
+                                setUserDocumentReviews((prev) => ({ ...prev, [doc.id]: json.review! }))
+                                setReviewReasonByDocumentId((prev) => ({ ...prev, [doc.id]: "" }))
+                                setToast({ message: "Document GED validé", type: "success" })
+                              } catch (error) {
+                                setToast({
+                                  message:
+                                    error instanceof Error
+                                      ? error.message
+                                      : "Impossible de valider le document.",
+                                  type: "error",
+                                })
+                              } finally {
+                                setReviewLoadingByDocumentId((prev) => ({ ...prev, [doc.id]: false }))
+                              }
+                            }}
+                            className="px-2 py-1 rounded bg-emerald-900/40 text-emerald-200 text-xs hover:bg-emerald-900/60 disabled:opacity-50"
+                          >
+                            Valide
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={reviewReasonByDocumentId[doc.id] ?? userDocumentReviews[doc.id]?.reason ?? ""}
+                              onChange={(e) =>
+                                setReviewReasonByDocumentId((prev) => ({
+                                  ...prev,
+                                  [doc.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="Motif refus"
+                              className="bg-[#1a1a1a] border border-gray-600 rounded px-2 py-1 text-xs text-white w-40"
+                            />
+                            <button
+                              type="button"
+                              disabled={!!reviewLoadingByDocumentId[doc.id]}
+                              onClick={async () => {
+                                const reason = (reviewReasonByDocumentId[doc.id] ?? "").trim()
+                                if (!reason) {
+                                  setToast({
+                                    message: "Le motif est obligatoire pour marquer un document invalide.",
+                                    type: "error",
+                                  })
+                                  return
+                                }
+                                setReviewLoadingByDocumentId((prev) => ({ ...prev, [doc.id]: true }))
+                                try {
+                                  const res = await fetch(
+                                    `/api/gestion/clients/${clientId}/documents/${doc.id}/review`,
+                                    {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ status: "invalid", reason }),
+                                    }
+                                  )
+                                  const json = await readResponseJson<{
+                                    error?: string
+                                    review?: { status: "valid" | "invalid"; reason: string | null; updatedAt: string }
+                                  }>(res)
+                                  if (!res.ok || !json.review) {
+                                    throw new Error(json.error || "Impossible de marquer le document en invalide.")
+                                  }
+                                  setUserDocumentReviews((prev) => ({ ...prev, [doc.id]: json.review! }))
+                                  setToast({ message: "Document GED marqué invalide", type: "success" })
+                                } catch (error) {
+                                  setToast({
+                                    message:
+                                      error instanceof Error
+                                        ? error.message
+                                        : "Impossible de marquer le document en invalide.",
+                                    type: "error",
+                                  })
+                                } finally {
+                                  setReviewLoadingByDocumentId((prev) => ({ ...prev, [doc.id]: false }))
+                                }
+                              }}
+                              className="px-2 py-1 rounded bg-red-900/40 text-red-200 text-xs hover:bg-red-900/60 disabled:opacity-50"
+                            >
+                              Invalide
+                            </button>
+                          </div>
+                          {userDocumentReviews[doc.id] && (
+                            <span
+                              className={`text-xs ${
+                                userDocumentReviews[doc.id].status === "valid"
+                                  ? "text-emerald-300"
+                                  : "text-red-300"
+                              }`}
+                            >
+                              {userDocumentReviews[doc.id].status === "valid"
+                                ? "Validé"
+                                : `Invalide${
+                                    userDocumentReviews[doc.id].reason
+                                      ? `: ${userDocumentReviews[doc.id].reason}`
+                                      : ""
+                                  }`}
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
