@@ -10,7 +10,7 @@ import { Breadcrumb } from "@/components/Breadcrumb"
 import { calculerTarif, type DevisResult } from "@/lib/tarification"
 import type { DevisData } from "@/lib/types"
 import { STORAGE_KEYS } from "@/lib/types"
-import { ACTIVITES_BTP } from "@/lib/activites-btp"
+import { ACTIVITES_AVEC_TARIFS } from "@/lib/activites-btp"
 import { CA_MINIMUM } from "@/lib/tarification"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { getMetierPrefillActivites } from "@/lib/metier-devis-prefill"
@@ -26,11 +26,46 @@ const DevisFaq = dynamic(
   { ssr: false },
 )
 
+const ACTIVITES_LISTING = ACTIVITES_AVEC_TARIFS.map((item) => item.activite)
+const CATEGORIES_DEVIS = (() => {
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const item of ACTIVITES_AVEC_TARIFS) {
+    if (!seen.has(item.categorie)) {
+      seen.add(item.categorie)
+      out.push(item.categorie)
+    }
+  }
+  return out
+})()
+
+function activitesDansCategorieDevis(categorie: string) {
+  return ACTIVITES_AVEC_TARIFS.filter((item) => item.categorie === categorie)
+}
+
+function formatActiviteTarifLabel(item: {
+  activite: string
+  taux_base: number
+  prime_min: number
+}) {
+  if (item.activite === "Nettoyage toiture et peinture résine (I3 à I5)") {
+    return `${item.activite} — 1.7% / 2% au-dessus de 250k€`
+  }
+  if (item.activite === "Forage micropieux") {
+    return `${item.activite} — 2.4% à 3.5% selon risque`
+  }
+  if (item.taux_base > 0) {
+    return `${item.activite} — ${item.taux_base} % (min ${item.prime_min} €/an)`
+  }
+  return `${item.activite} — forfait ${item.prime_min} €/an`
+}
+
 function DevisPageContent() {
   const router = useRouter()
   const [metierParam, setMetierParam] = useState<string | null>(null)
   const [resumeParam, setResumeParam] = useState<string | null>(null)
   const [activites, setActivites] = useState<string[]>([])
+  const [categorieSelectionnee, setCategorieSelectionnee] = useState<string>(CATEGORIES_DEVIS[0] ?? "")
   const [activiteSelectionnee, setActiviteSelectionnee] = useState("")
   const [siret, setSiret] = useState("")
   const [chiffreAffaires, setChiffreAffaires] = useState<string>("")
@@ -109,7 +144,11 @@ function DevisPageContent() {
     if (prefill.length === 0) return
     setActivites((prev) => {
       if (prev.length > 0) return prev
-      const merged = prefill.filter((a) => ACTIVITES_BTP.includes(a as (typeof ACTIVITES_BTP)[number]))
+      const merged = prefill.filter((a) => ACTIVITES_LISTING.includes(a))
+      const firstCategory = ACTIVITES_AVEC_TARIFS.find((item) => item.activite === merged[0])?.categorie
+      if (firstCategory) {
+        setCategorieSelectionnee(firstCategory)
+      }
       return merged.slice(0, 8)
     })
   }, [metierParam])
@@ -156,6 +195,8 @@ function DevisPageContent() {
   const supprimerActivite = (index: number) => {
     setActivites(activites.filter((_, i) => i !== index))
   }
+
+  const activitesCategorieSelectionnee = activitesDansCategorieDevis(categorieSelectionnee)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -516,6 +557,26 @@ function DevisPageContent() {
             <label htmlFor="activite-selection" className="block mb-4 font-semibold text-slate-900">
               Activités à assurer (max 8)
             </label>
+            <div className="mb-4">
+              <label htmlFor="categorie-selection" className="block mb-2 text-sm font-medium text-slate-900">
+                Catégorie
+              </label>
+              <select
+                id="categorie-selection"
+                value={categorieSelectionnee}
+                onChange={(e) => {
+                  setCategorieSelectionnee(e.target.value)
+                  setActiviteSelectionnee("")
+                }}
+                className={`w-full rounded-xl px-4 py-3.5 transition-all ${inputFieldBg} ${inputTextDark}`}
+              >
+                {CATEGORIES_DEVIS.map((categorie) => (
+                  <option key={categorie} value={categorie}>
+                    {categorie}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <select
                 id="activite-selection"
@@ -524,9 +585,9 @@ function DevisPageContent() {
                 className={`flex-1 rounded-xl px-4 py-3.5 transition-all ${inputFieldBg} ${inputTextDark}`}
               >
                 <option value="">Sélectionnez une activité</option>
-                {ACTIVITES_BTP.map((act) => (
-                  <option key={act} value={act} disabled={activites.includes(act)}>
-                    {act}
+                {activitesCategorieSelectionnee.map((item) => (
+                  <option key={item.activite} value={item.activite} disabled={activites.includes(item.activite)}>
+                    {formatActiviteTarifLabel(item)}
                   </option>
                 ))}
               </select>
