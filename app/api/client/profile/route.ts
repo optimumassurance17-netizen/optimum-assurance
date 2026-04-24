@@ -88,12 +88,18 @@ export async function PATCH(request: NextRequest) {
         const raisonSociale = (data.raisonSociale as string) || user.raisonSociale || user.email
         const documentUrl = `${SITE_URL}/espace-client/documents/${att.id}`
         const template = EMAIL_TEMPLATES.attestationMiseAJour(raisonSociale, att.numero, documentUrl)
-        await sendEmail({
+        const sent = await sendEmail({
           to: user.email,
           subject: template.subject,
           text: template.text,
           html: (template as { html?: string }).html,
         })
+        if (!sent) {
+          console.warn("[client/profile] email attestation mise à jour non envoyé", {
+            userId: user.id,
+            documentId: att.id,
+          })
+        }
       }
     }
 

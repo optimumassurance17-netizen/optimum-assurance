@@ -75,7 +75,7 @@ export async function sendNewDevisRequestAlert(params: {
 ${htmlLines}
 <p style="margin-top:18px;font-size:12px;color:#64748b;">Répondre à ce message pour écrire directement au prospect (Reply-To).</p>`.trim()
 
-  await Promise.all(
+  const results = await Promise.all(
     recipients.map((to) =>
       sendEmail({
         to,
@@ -86,6 +86,9 @@ ${htmlLines}
       })
     )
   )
+  if (!results.some(Boolean)) {
+    console.warn("[devis-alert] Envoi interne KO pour tous les destinataires.")
+  }
 }
 
 /**
@@ -138,7 +141,7 @@ export async function sendDoEtudeSavedAlert(params: {
 ${htmlLines}
 <p style="margin-top:18px;font-size:12px;color:#64748b;">Répondre à ce message pour écrire directement au client (Reply-To).</p>`.trim()
 
-  await Promise.all(
+  const results = await Promise.all(
     recipients.map((to) =>
       sendEmail({
         to,
@@ -149,4 +152,7 @@ ${htmlLines}
       })
     )
   )
+  if (!results.some(Boolean)) {
+    console.warn("[devis-alert] DO étude: envoi interne KO pour tous les destinataires.")
+  }
 }

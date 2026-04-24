@@ -93,12 +93,18 @@ export async function PATCH(
         resiliationRequest.document.numero,
         typeDoc
       )
-      await sendEmail({
+      const sent = await sendEmail({
         to: resiliationRequest.document.user.email,
         subject: template.subject,
         text: template.text,
         html: (template as { html?: string }).html,
       })
+      if (!sent) {
+        return NextResponse.json(
+          { error: "Envoi email client impossible (RESEND_API_KEY / domaine expéditeur)." },
+          { status: 503 }
+        )
+      }
     }
 
     return NextResponse.json({ ok: true, status: action === "approve" ? "approved" : "rejected" })

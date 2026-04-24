@@ -71,12 +71,18 @@ export async function PATCH(
     if (status === "suspendu") {
       const data = parseDocumentData(document.data)
       const template = EMAIL_TEMPLATES.alerteImpaye(data.raisonSociale || document.user.raisonSociale || document.user.email)
-      await sendEmail({
+      const sent = await sendEmail({
         to: document.user.email,
         subject: template.subject,
         text: template.text,
         html: (template as { html?: string }).html,
       })
+      if (!sent) {
+        return NextResponse.json(
+          { error: "Envoi email impayé impossible (RESEND_API_KEY / domaine expéditeur)." },
+          { status: 503 }
+        )
+      }
     }
 
     if (status === "resilie") {
@@ -94,12 +100,18 @@ export async function PATCH(
         document.numero,
         typeDoc
       )
-      await sendEmail({
+      const sent = await sendEmail({
         to: document.user.email,
         subject: template.subject,
         text: template.text,
         html: (template as { html?: string }).html,
       })
+      if (!sent) {
+        return NextResponse.json(
+          { error: "Envoi email résiliation impossible (RESEND_API_KEY / domaine expéditeur)." },
+          { status: 503 }
+        )
+      }
     }
 
     return NextResponse.json({ ok: true, status })

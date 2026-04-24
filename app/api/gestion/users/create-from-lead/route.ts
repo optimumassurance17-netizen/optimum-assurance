@@ -109,12 +109,18 @@ export async function POST(request: NextRequest) {
       html: `<p>Bonjour,</p><p>Votre compte a été créé pour accéder à votre espace client.</p><p><strong>Email :</strong> ${user.email}<br><strong>Mot de passe temporaire :</strong> ${tempPassword}</p><p><a href="${SITE_URL}/connexion" style="color:#2563eb;font-weight:bold">Se connecter à mon espace client</a></p><p>Pensez à changer votre mot de passe dès la première connexion.</p><p>Cordialement,<br>Optimum Assurance</p>`,
     }
 
-    await sendEmail({
+    const sent = await sendEmail({
       to: user.email,
       subject: template.subject,
       text: template.text,
       html: template.html,
     })
+    if (!sent) {
+      return NextResponse.json(
+        { error: "Envoi de l'email client impossible (RESEND_API_KEY / domaine expéditeur)" },
+        { status: 503 }
+      )
+    }
 
     const accountCreationAlertSent = await sendAccountCreationSummaryAlert({
       source: "admin_create_from_lead",

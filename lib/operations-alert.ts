@@ -53,5 +53,5 @@ export async function sendOperationsAlert(params: OperationsAlertParams): Promis
     )
   )
 
-  return results.some(Boolean)
+  return results.every(Boolean)
 }

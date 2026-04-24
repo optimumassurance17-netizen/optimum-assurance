@@ -101,12 +101,18 @@ export async function POST(request: NextRequest) {
         numero,
         primeAnnuelle
       )
-      await sendEmail({
+      const sent = await sendEmail({
         to: user.email,
         subject: template.subject,
         text: template.text,
         html: (template as { html?: string }).html,
       })
+      if (!sent) {
+        return NextResponse.json(
+          { error: "Email client non envoyé (RESEND_API_KEY / domaine expéditeur)." },
+          { status: 503 }
+        )
+      }
     }
 
     return NextResponse.json({
