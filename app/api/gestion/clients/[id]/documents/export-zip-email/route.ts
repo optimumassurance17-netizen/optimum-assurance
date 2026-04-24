@@ -30,6 +30,7 @@ type LegacyLookupContext = {
   filepath: string
   filename: string
   createdAt: string
+  docId?: string
 }
 
 function normalizeToken(raw: string): string {
@@ -112,6 +113,7 @@ async function discoverLegacyGedCandidates(
   const safeBaseToken = normalizeToken(safeBase)
   const filenameToken = normalizeToken(context.filename)
   const filepathLeafToken = normalizeToken(filepathLeaf)
+  const docIdToken = context.docId ? normalizeToken(context.docId) : ""
   const ext = extFromName(context.filename)
   const createdAtMs = Date.parse(context.createdAt) || 0
 
@@ -128,6 +130,7 @@ async function discoverLegacyGedCandidates(
     if (safeBaseToken && nameToken.includes(safeBaseToken)) score += 55
     if (filenameToken && nameToken.includes(filenameToken)) score += 45
     if (filepathLeafToken && nameToken.includes(filepathLeafToken)) score += 35
+    if (docIdToken && nameToken.includes(docIdToken)) score += 90
     if (createdAtMs > 0 && updatedAt > 0 && Math.abs(updatedAt - createdAtMs) < 1000 * 60 * 60 * 24 * 3) {
       score += 25
     }
@@ -251,6 +254,8 @@ async function downloadDocBytes(
     "ged",
     "user_documents",
     "user-documents",
+    "documents",
+    "uploads",
     ...resolved.candidates.map((c) => c.bucket),
   ])
   for (const bucket of byBucket) {
