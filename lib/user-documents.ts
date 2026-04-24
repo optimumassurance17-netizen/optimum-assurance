@@ -8,6 +8,7 @@ export const ALLOWED_TYPES = UPLOAD_DOC_TYPES
 export const TYPE_LABELS = UPLOAD_DOC_LABELS
 export const GED_SUPABASE_BUCKET = process.env.SUPABASE_GED_BUCKET?.trim() || "client_documents"
 export const GED_SUPABASE_PATH_PREFIX = "ged"
+export type GedSupabaseObjectCandidate = { bucket: string; path: string }
 
 export const ALLOWED_MIMES = [
   "application/pdf",
@@ -120,6 +121,68 @@ export function normalizeGedSupabaseObjectPath(filepath: string): string | null 
   return null
 }
 
+export function resolveGedSupabaseObjectCandidates(filepath: string): GedSupabaseObjectCandidate[] {
+  const raw = filepath.trim()
+  if (!raw) return []
+
+  const maybeDecode = (value: string) => {
+    try {
+      return decodeURIComponent(value)
+    } catch {
+      return value
+    }
+  }
+
+  const pushCandidate = (
+    out: GedSupabaseObjectCandidate[],
+    seen: Set<string>,
+    bucket: string,
+    objectPath: string
+  ) => {
+    const cleanBucket = bucket.trim()
+    const cleanPath = objectPath
+      .trim()
+      .replace(/^\/+/, "")
+      .replace(/[?#].*$/, "")
+    if (!cleanBucket || !cleanPath.startsWith(`${GED_SUPABASE_PATH_PREFIX}/`)) return
+    const key = `${cleanBucket}::${cleanPath}`
+    if (seen.has(key)) return
+    seen.add(key)
+    out.push({ bucket: cleanBucket, path: cleanPath })
+  }
+
+  const out: GedSupabaseObjectCandidate[] = []
+  const seen = new Set<string>()
+
+  const normalizedPath = normalizeGedSupabaseObjectPath(raw)
+  if (normalizedPath) {
+    pushCandidate(out, seen, GED_SUPABASE_BUCKET, normalizedPath)
+  }
+
+  const normalizedRaw = maybeDecode(raw).replace(/\\/g, "/").replace(/^\/+/, "")
+  const bucketPrefixed = normalizedRaw.match(/^([^/]+)\/(ged\/.+)$/)
+  if (bucketPrefixed) {
+    pushCandidate(out, seen, bucketPrefixed[1], bucketPrefixed[2])
+  }
+
+  if (/^https?:\/\//i.test(raw.trim())) {
+    try {
+      const parsed = new URL(raw.trim())
+      const pathname = maybeDecode(parsed.pathname).replace(/\\/g, "/")
+      const storageMatch = pathname.match(
+        /\/storage\/v1\/object\/(?:public|sign|authenticated)\/([^/]+)\/(ged\/.+)$/
+      )
+      if (storageMatch) {
+        pushCandidate(out, seen, storageMatch[1], storageMatch[2])
+      }
+    } catch {
+      // ignore malformed legacy URL
+    }
+  }
+
+  return out
+}
+
 /**
  * Génère les chemins locaux candidats pour compatibilité avec anciens formats.
  */
@@ -142,7 +205,7 @@ export function getLocalGedPathCandidates(filepath: string): string[] {
 
 export function isGedSupabasePath(filepath: string | null | undefined): boolean {
   if (!filepath) return false
-  return normalizeGedSupabaseObjectPath(filepath) != null
+  return resolveGedSupabaseObjectCandidates(filepath).length > 0
 }
 
 export function isSupabaseGedPath(filepath: string | null | undefined): boolean {
@@ -153,10 +216,12 @@ export function isLikelySupabaseGedPath(filepath: string | null | undefined): bo
   return isGedSupabasePath(filepath)
 }
 
-export function resolveGedFileReadTarget(filepath: string): { kind: "supabase"; path: string } | { kind: "local"; path: string } {
-  const supabasePath = normalizeGedSupabaseObjectPath(filepath)
-  if (supabasePath) {
-    return { kind: "supabase", path: supabasePath }
+export function resolveGedFileReadTarget(
+  filepath: string
+): { kind: "supabase"; candidates: GedSupabaseObjectCandidate[] } | { kind: "local"; path: string } {
+  const supabaseCandidates = resolveGedSupabaseObjectCandidates(filepath)
+  if (supabaseCandidates.length > 0) {
+    return { kind: "supabase", candidates: supabaseCandidates }
   }
 
   const localCandidates = getLocalGedPathCandidates(filepath)
@@ -173,10 +238,10 @@ export function resolveGedFileReadTarget(filepath: string): { kind: "supabase"; 
 
 export function resolveGedFileStorageTarget(
   filepath: string
-): { kind: "supabase"; path: string } | { kind: "local"; paths: string[] } {
-  const supabasePath = normalizeGedSupabaseObjectPath(filepath)
-  if (supabasePath) {
-    return { kind: "supabase", path: supabasePath }
+): { kind: "supabase"; candidates: GedSupabaseObjectCandidate[] } | { kind: "local"; paths: string[] } {
+  const supabaseCandidates = resolveGedSupabaseObjectCandidates(filepath)
+  if (supabaseCandidates.length > 0) {
+    return { kind: "supabase", candidates: supabaseCandidates }
   }
 
   const localCandidates = getLocalGedPathCandidates(filepath)

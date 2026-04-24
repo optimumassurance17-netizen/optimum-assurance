@@ -6,7 +6,18 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
-import { GED_SUPABASE_BUCKET, resolveGedFileReadTarget } from "@/lib/user-documents"
+import { resolveGedFileReadTarget } from "@/lib/user-documents"
+
+async function downloadFromSupabaseWithFallback(candidates: { bucket: string; path: string }[]): Promise<Uint8Array | null> {
+  const supabase = createSupabaseServiceClient()
+  if (!supabase) return null
+
+  for (const candidate of candidates) {
+    const { data, error } = await supabase.storage.from(candidate.bucket).download(candidate.path)
+    if (!error && data) return new Uint8Array(await data.arrayBuffer())
+  }
+  return null
+}
 
 /**
  * Télécharge/ouvre un document GED client depuis la fiche gestion (admin uniquement).
@@ -39,15 +50,11 @@ export async function GET(
 
     let fileBytes: Uint8Array
     if (resolved.kind === "supabase") {
-      const supabase = createSupabaseServiceClient()
-      if (!supabase) {
-        return NextResponse.json({ error: "Stockage GED indisponible" }, { status: 503 })
-      }
-      const { data, error } = await supabase.storage.from(GED_SUPABASE_BUCKET).download(resolved.path)
-      if (error || !data) {
+      const fromSupabase = await downloadFromSupabaseWithFallback(resolved.candidates)
+      if (!fromSupabase) {
         return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
       }
-      fileBytes = new Uint8Array(await data.arrayBuffer())
+      fileBytes = fromSupabase
     } else {
       if (!existsSync(resolved.path)) {
         return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })

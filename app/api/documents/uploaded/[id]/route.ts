@@ -5,7 +5,7 @@ import { existsSync } from "fs"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
-import { GED_SUPABASE_BUCKET, resolveGedFileReadTarget, resolveGedFileStorageTarget } from "@/lib/user-documents"
+import { resolveGedFileReadTarget, resolveGedFileStorageTarget } from "@/lib/user-documents"
 
 function isSchemaDriftError(error: unknown): boolean {
   return (
@@ -43,11 +43,18 @@ export async function GET(
       if (!supabase) {
         return NextResponse.json({ error: "Stockage GED indisponible" }, { status: 503 })
       }
-      const { data, error } = await supabase.storage.from(GED_SUPABASE_BUCKET).download(readTarget.path)
-      if (error || !data) {
+      let downloaded: Blob | null = null
+      for (const candidate of readTarget.candidates) {
+        const { data, error } = await supabase.storage.from(candidate.bucket).download(candidate.path)
+        if (!error && data) {
+          downloaded = data
+          break
+        }
+      }
+      if (!downloaded) {
         return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
       }
-      buffer = Buffer.from(await data.arrayBuffer())
+      buffer = Buffer.from(await downloaded.arrayBuffer())
     } else {
       if (!existsSync(readTarget.path)) {
         return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
@@ -103,7 +110,15 @@ export async function DELETE(
       const supabase = createSupabaseServiceClient()
       if (supabase) {
         try {
-          await supabase.storage.from(GED_SUPABASE_BUCKET).remove([storageTarget.path])
+          const byBucket = new Map<string, string[]>()
+          for (const candidate of storageTarget.candidates) {
+            const list = byBucket.get(candidate.bucket) ?? []
+            list.push(candidate.path)
+            byBucket.set(candidate.bucket, list)
+          }
+          for (const [bucket, paths] of byBucket.entries()) {
+            await supabase.storage.from(bucket).remove(paths)
+          }
         } catch {
           // Suppression best-effort
         }
