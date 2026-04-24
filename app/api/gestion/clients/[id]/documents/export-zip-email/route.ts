@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma"
 import { sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { createSupabaseBrowserClient, createSupabaseServiceClient } from "@/lib/supabase"
+import { SITE_URL } from "@/lib/site-url"
 import {
   GED_SUPABASE_BUCKET,
   getLocalGedPathCandidates,
@@ -19,6 +20,7 @@ import {
 const DEFAULT_TO = "contact@optimum-assurance.fr"
 const MAX_ZIP_SIZE_BYTES = 18 * 1024 * 1024
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+export const maxDuration = 60
 
 type DownloadCandidate = { bucket: string; path: string }
 
@@ -291,14 +293,16 @@ export async function POST(
       includedCount++
     }
 
-    if (includedCount === 0) {
-      return NextResponse.json({ error: "Impossible de récupérer les documents GED" }, { status: 404 })
-    }
-
+    const appUrl = SITE_URL.replace(/\/+$/, "")
     if (missing.length > 0) {
+      const openLinks = docs.map((doc) => `${appUrl}/api/gestion/clients/${userId}/documents/${doc.id}`)
       zip.file(
         "_FICHIERS_MANQUANTS.txt",
         `Documents non récupérés (${missing.length}) :\n${missing.map((m) => `- ${m}`).join("\n")}\n`
+      )
+      zip.file(
+        "_LIENS_OUVERTURE_GED.txt",
+        `Liens d'ouverture (admin connecté requis) :\n${openLinks.map((l) => `- ${l}`).join("\n")}\n`
       )
     }
 
@@ -321,7 +325,7 @@ export async function POST(
     const dateTag = new Date().toISOString().slice(0, 10)
     const clientLabel = sanitizeFilenameBase(user.raisonSociale || user.email || user.id)
     const zipName = `ged-${clientLabel}-${dateTag}.zip`
-    const subject = `URGENT - ZIP GED ${user.raisonSociale || user.email}`
+    const subject = `${includedCount > 0 ? "URGENT" : "URGENT (secours)"} - ZIP GED ${user.raisonSociale || user.email}`
     const text = [
       `Bonjour,`,
       ``,
@@ -332,7 +336,9 @@ export async function POST(
       `Documents inclus : ${includedCount}`,
       `Documents manquants : ${missing.length}`,
       ``,
-      `Envoyé automatiquement depuis l'espace gestion Optimum Assurance.`,
+      includedCount === 0
+        ? `Aucun binaire n'a pu être joint automatiquement : voir les liens d'ouverture dans le ZIP (_LIENS_OUVERTURE_GED.txt).`
+        : `Envoyé automatiquement depuis l'espace gestion Optimum Assurance.`,
     ].join("\n")
 
     const sent = await sendEmail({

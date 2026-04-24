@@ -485,12 +485,19 @@ export default function ClientDetailPage() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ to: "contact@optimum-assurance.fr" }),
                   })
-                  const json = await readResponseJson<{ error?: string; ok?: boolean; sentTo?: string; documentsCount?: number }>(res)
+                  const json = await readResponseJson<{
+                    error?: string
+                    ok?: boolean
+                    sentTo?: string
+                    includedCount?: number
+                    missingCount?: number
+                    zipName?: string
+                  }>(res)
                   if (!res.ok || !json.ok) {
                     throw new Error(json.error || "Impossible d'envoyer l'archive GED.")
                   }
                   setToast({
-                    message: `Archive GED envoyée à ${json.sentTo} (${json.documentsCount ?? 0} document(s)).`,
+                    message: `Archive GED envoyée à ${json.sentTo} (${json.includedCount ?? 0} fichier(s), ${json.missingCount ?? 0} manquant(s)).`,
                     type: "success",
                   })
                 } catch (error) {
