@@ -37,6 +37,7 @@ const typeLabels: Record<string, string> = {
   devis_do: "Devis dommage ouvrage",
   contrat: "Contrat",
   attestation: "Attestation décennale",
+  attestation_nominative: "Attestation décennale nominative",
   attestation_do: "Attestation dommage ouvrage",
   attestation_non_sinistralite: "Attestation non sinistralité",
   avenant: "Avenant",
@@ -49,6 +50,7 @@ const typeIcons: Record<string, string> = {
   devis_do: "🏗️",
   contrat: "📄",
   attestation: "✅",
+  attestation_nominative: "🪪",
   attestation_do: "🏠",
   attestation_non_sinistralite: "📜",
   avenant: "📝",
@@ -81,6 +83,14 @@ export default function EspaceClientPage() {
   const [caCalcByContractId, setCaCalcByContractId] = useState<Record<string, CaRegularisationDraft | null>>({})
   const [caLoadingContractId, setCaLoadingContractId] = useState<string | null>(null)
   const [caErrorByContractId, setCaErrorByContractId] = useState<Record<string, string | null>>({})
+  const [nominativeForm, setNominativeForm] = useState({
+    beneficiaireNom: "",
+    chantierAdresse: "",
+    objetMission: "",
+  })
+  const [nominativeLoading, setNominativeLoading] = useState(false)
+  const [nominativeError, setNominativeError] = useState<string | null>(null)
+  const [nominativeSuccess, setNominativeSuccess] = useState<string | null>(null)
 
   useEffect(() => {
     if (status !== "authenticated") return
@@ -508,6 +518,117 @@ export default function EspaceClientPage() {
             >
               Régulariser le paiement par CB
             </Link>
+          </div>
+        )}
+
+        {activeTab === "documents" && !loading && (
+          <div className="mb-8 rounded-2xl border border-[#2563eb]/30 bg-[#eff6ff] p-6">
+            <h2 className="text-lg font-bold text-[#0a0a0a] mb-2">Attestation décennale nominative</h2>
+            <p className="text-sm text-[#171717] mb-4">
+              Générez une attestation nominative pour un maître d&apos;ouvrage/client final, sans intervention manuelle.
+              Le document est ajouté automatiquement dans vos documents.
+            </p>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                setNominativeError(null)
+                setNominativeSuccess(null)
+                if (!nominativeForm.beneficiaireNom.trim()) {
+                  setNominativeError("Le nom du bénéficiaire est requis.")
+                  return
+                }
+                setNominativeLoading(true)
+                try {
+                  const res = await fetch("/api/client/attestation-nominative", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(nominativeForm),
+                  })
+                  const json = (await res.json().catch(() => ({}))) as {
+                    error?: string
+                    id?: string
+                    numero?: string
+                  }
+                  if (!res.ok || !json.id || !json.numero) {
+                    throw new Error(json.error || "Impossible de créer l'attestation nominative.")
+                  }
+                  const createdAt = new Date().toISOString()
+                  setDocuments((prev) => [
+                    {
+                      id: json.id!,
+                      type: "attestation_nominative",
+                      numero: json.numero!,
+                      status: "valide",
+                      createdAt,
+                    },
+                    ...prev,
+                  ])
+                  setSummary((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          documentsCount: prev.documentsCount + 1,
+                          attestationsCount: prev.attestationsCount + 1,
+                        }
+                      : prev
+                  )
+                  setNominativeSuccess(`Attestation nominative créée (${json.numero}).`)
+                  setNominativeForm({
+                    beneficiaireNom: "",
+                    chantierAdresse: "",
+                    objetMission: "",
+                  })
+                } catch (error) {
+                  setNominativeError(
+                    error instanceof Error
+                      ? error.message
+                      : "Impossible de créer l'attestation nominative."
+                  )
+                } finally {
+                  setNominativeLoading(false)
+                }
+              }}
+              className="space-y-3"
+            >
+              <input
+                type="text"
+                value={nominativeForm.beneficiaireNom}
+                onChange={(e) =>
+                  setNominativeForm((prev) => ({ ...prev, beneficiaireNom: e.target.value }))
+                }
+                placeholder="Nom du bénéficiaire (ex: Mairie de Lyon)"
+                className="w-full rounded-xl border border-[#d4d4d4] bg-white px-4 py-2.5 text-[#0a0a0a]"
+              />
+              <input
+                type="text"
+                value={nominativeForm.chantierAdresse}
+                onChange={(e) =>
+                  setNominativeForm((prev) => ({ ...prev, chantierAdresse: e.target.value }))
+                }
+                placeholder="Adresse du chantier (optionnel)"
+                className="w-full rounded-xl border border-[#d4d4d4] bg-white px-4 py-2.5 text-[#0a0a0a]"
+              />
+              <input
+                type="text"
+                value={nominativeForm.objetMission}
+                onChange={(e) =>
+                  setNominativeForm((prev) => ({ ...prev, objetMission: e.target.value }))
+                }
+                placeholder="Objet / lot concerné (optionnel)"
+                className="w-full rounded-xl border border-[#d4d4d4] bg-white px-4 py-2.5 text-[#0a0a0a]"
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={nominativeLoading}
+                  className="rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
+                >
+                  {nominativeLoading ? "Création..." : "Créer l’attestation nominative"}
+                </button>
+                {nominativeSuccess && <p className="text-sm text-emerald-700">{nominativeSuccess}</p>}
+                {nominativeError && <p className="text-sm text-red-700">{nominativeError}</p>}
+              </div>
+            </form>
           </div>
         )}
 

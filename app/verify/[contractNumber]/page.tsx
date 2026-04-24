@@ -163,7 +163,7 @@ export default async function VerifyByContractNumberPage({
   const fallbackDocuments = await prisma.document.findMany({
     where: {
       numero: contractNumber,
-      type: { in: ["attestation", "attestation_do"] },
+      type: { in: ["attestation", "attestation_do", "attestation_nominative"] },
       verificationToken: { not: null },
     },
     orderBy: { createdAt: "desc" },

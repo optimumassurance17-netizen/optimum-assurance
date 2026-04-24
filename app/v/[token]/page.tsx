@@ -30,7 +30,7 @@ export default async function VerificationPage({
   const document = await prisma.document.findFirst({
     where: {
       verificationToken: token,
-      type: { in: ["attestation", "attestation_do"] },
+      type: { in: ["attestation", "attestation_nominative", "attestation_do"] },
     },
   })
 
@@ -39,12 +39,16 @@ export default async function VerificationPage({
   }
 
   const isDo = document.type === "attestation_do"
+  const isNominative = document.type === "attestation_nominative"
   const data = JSON.parse(document.data) as {
     raisonSociale?: string
     dateEcheance?: string
     activites?: string[]
     closCouvert?: boolean
     dateSignature?: string
+    beneficiaireNom?: string
+    chantierAdresse?: string
+    objetMission?: string
   }
 
   const dateEcheance = parseDate(data.dateEcheance || "")
@@ -58,13 +62,15 @@ export default async function VerificationPage({
     statut = "suspendu"
     message = isDo
       ? "Attestation DO suspendue — hors impayé (le DO est payé avant délivrance). Contactez Optimum Assurance."
+        : isNominative
+          ? "Attestation décennale nominative suspendue"
       : "Attestation décennale suspendue pour défaut de paiement"
   } else if (dateEcheance && dateEcheance < today) {
     statut = "perimee"
-    message = isDo ? "Attestation DO périmée" : "Attestation périmée"
+    message = isDo ? "Attestation DO périmée" : isNominative ? "Attestation nominative périmée" : "Attestation périmée"
   } else {
     statut = "valide"
-    message = isDo ? "Attestation DO valide" : "Attestation valide"
+    message = isDo ? "Attestation DO valide" : isNominative ? "Attestation nominative valide" : "Attestation valide"
   }
 
   const colors = {
@@ -121,6 +127,23 @@ export default async function VerificationPage({
             <p style={{ color: "#2D2A26", fontSize: "0.9rem" }}>
               {data.raisonSociale}
             </p>
+            {isNominative && (
+              <p style={{ color: "#404040", fontSize: "0.8rem", marginTop: "12px" }}>
+                <strong>Bénéficiaire :</strong> {data.beneficiaireNom || "—"}
+                {data.chantierAdresse ? (
+                  <>
+                    <br />
+                    <strong>Chantier :</strong> {data.chantierAdresse}
+                  </>
+                ) : null}
+                {data.objetMission ? (
+                  <>
+                    <br />
+                    <strong>Objet :</strong> {data.objetMission}
+                  </>
+                ) : null}
+              </p>
+            )}
             {isDo && (
               <p style={{ color: "#404040", fontSize: "0.8rem", marginTop: "12px" }}>
                 <strong>Type de garantie :</strong> {typeGarantieDo}<br />
@@ -137,7 +160,12 @@ export default async function VerificationPage({
               </p>
             )}
             <p style={{ color: "#404040", fontSize: "0.75rem", marginTop: "24px" }}>
-              Optimum Assurance - Vérification {isDo ? "attestation dommage ouvrage" : "attestation décennale"}
+              Optimum Assurance - Vérification{" "}
+              {isDo
+                ? "attestation dommage ouvrage"
+                : isNominative
+                  ? "attestation décennale nominative"
+                  : "attestation décennale"}
             </p>
           </div>
         </div>

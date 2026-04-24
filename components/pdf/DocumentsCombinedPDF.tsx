@@ -23,6 +23,7 @@ const pageMap: Record<
 > = {
   contrat: (p) => React.createElement(ContratPDFPage, p),
   attestation: (p) => React.createElement(AttestationPDFPage, p),
+  attestation_nominative: (p) => React.createElement(AttestationPDFPage, p),
   attestation_do: (p) => React.createElement(AttestationDoPDFPage, p),
   facture_do: (p) => React.createElement(FactureDoPDFPage, p),
   facture_decennale: (p) => React.createElement(FactureDecennalePDFPage, p),

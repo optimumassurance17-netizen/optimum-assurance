@@ -174,7 +174,7 @@ export default function GestionDocumentPage() {
           {document.type === "contrat" && (
             <ContratTemplate numero={document.numero} data={document.data as never} />
           )}
-          {document.type === "attestation" && (
+          {(document.type === "attestation" || document.type === "attestation_nominative") && (
             <AttestationTemplate
               numero={document.numero}
               verificationUrl={

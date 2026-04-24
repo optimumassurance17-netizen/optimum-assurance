@@ -33,7 +33,12 @@ export async function GET() {
       }),
     ])
 
-    const attestations = documents.filter((d) => d.type === "attestation" || d.type === "attestation_do")
+    const attestations = documents.filter(
+      (d) =>
+        d.type === "attestation" ||
+        d.type === "attestation_do" ||
+        d.type === "attestation_nominative"
+    )
     /** Impayé / régularisation : uniquement attestations décennale (le DO est payé avant délivrance). */
     const suspendedCount = documents.filter(
       (d) => isDecennaleAttestationType(d.type) && d.status === "suspendu"
