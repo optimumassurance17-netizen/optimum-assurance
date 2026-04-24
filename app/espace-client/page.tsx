@@ -23,6 +23,17 @@ interface DocumentItem {
   createdAt: string
 }
 
+type SavedDevisDraftItem = {
+  id: string
+  token: string
+  produit: string
+  createdAt: string
+  expiresAt: string
+  raisonSociale?: string | null
+  siret?: string | null
+  primeAnnuelle?: number | null
+}
+
 type CaRegularisationDraft = {
   contractId: string
   contractNumber: string
@@ -63,6 +74,7 @@ export default function EspaceClientPage() {
   const router = useRouter()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [payments, setPayments] = useState<{ id: string; amount: number; status: string; paidAt: string | null; createdAt: string }[]>([])
+  const [savedDevisDrafts, setSavedDevisDrafts] = useState<SavedDevisDraftItem[]>([])
   const [profile, setProfile] = useState<{ adresse?: string; codePostal?: string; ville?: string; telephone?: string; siret?: string } | null>(null)
   const [profileEditing, setProfileEditing] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
@@ -97,12 +109,13 @@ export default function EspaceClientPage() {
 
     const fetchData = async () => {
       try {
-        const [docsRes, summaryRes, paymentsRes, insRes, doqRes] = await Promise.all([
+        const [docsRes, summaryRes, paymentsRes, insRes, doqRes, draftsRes] = await Promise.all([
           fetch("/api/documents/list"),
           fetch("/api/client/summary"),
           fetch("/api/client/payments"),
           fetch("/api/client/insurance-contracts"),
           fetch("/api/client/do-questionnaire"),
+          fetch("/api/client/devis-drafts"),
         ])
         if (docsRes.ok) setDocuments(await docsRes.json())
         if (summaryRes.ok) setSummary(await summaryRes.json())
@@ -116,6 +129,16 @@ export default function EspaceClientPage() {
           setDoEtudeBanner({ show: !!dq.hasInitial, hasSaved: !!dq.hasEtudeSaved })
         } else {
           setDoEtudeBanner(null)
+        }
+        if (draftsRes.ok) {
+          const draftsPayload = (await draftsRes.json()) as { drafts?: SavedDevisDraftItem[] } | SavedDevisDraftItem[]
+          if (Array.isArray(draftsPayload)) {
+            setSavedDevisDrafts(draftsPayload)
+          } else {
+            setSavedDevisDrafts(Array.isArray(draftsPayload.drafts) ? draftsPayload.drafts : [])
+          }
+        } else {
+          setSavedDevisDrafts([])
         }
         const profileRes = await fetch("/api/client/profile")
         if (profileRes.ok) setProfile(await profileRes.json())
@@ -639,6 +662,51 @@ export default function EspaceClientPage() {
             Décennale : KBIS, pièce d&apos;identité, justificatif d&apos;activité, qualification, RIB. Dommage ouvrage : permis de construire, DOC/DROC, plans, conventions, rapport étude de sol.
           </p>
         </div>
+        )}
+
+        {activeTab === "documents" && !loading && (
+          <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-10 shadow-sm">
+            <h2 className="font-bold text-[#0a0a0a] text-lg mb-3">Reprise de devis enregistrés</h2>
+            {savedDevisDrafts.length === 0 ? (
+              <p className="text-sm text-[#171717]">
+                Aucun devis sauvegardé en attente de reprise.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {savedDevisDrafts.map((draft) => (
+                  <div
+                    key={draft.id}
+                    className="rounded-xl border border-[#d4d4d4] bg-white p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-[#0a0a0a]">
+                        {draft.produit === "decennale" ? "Devis décennale" : "Devis dommage ouvrage"}
+                      </p>
+                      <p className="text-xs text-[#171717]">
+                        Créé le {new Date(draft.createdAt).toLocaleDateString("fr-FR")} · expire le{" "}
+                        {new Date(draft.expiresAt).toLocaleDateString("fr-FR")}
+                      </p>
+                      {(draft.raisonSociale || draft.siret || draft.primeAnnuelle != null) && (
+                        <p className="text-xs text-[#171717] mt-1">
+                          {draft.raisonSociale ? `${draft.raisonSociale}` : "Dossier sans raison sociale"}
+                          {draft.siret ? ` · SIRET ${draft.siret}` : ""}
+                          {draft.primeAnnuelle != null
+                            ? ` · Prime ${Number(draft.primeAnnuelle).toLocaleString("fr-FR")} €/an`
+                            : ""}
+                        </p>
+                      )}
+                    </div>
+                    <Link
+                      href={`/devis/resume/${draft.token}`}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+                    >
+                      Reprendre
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Onglet Paiements */}
