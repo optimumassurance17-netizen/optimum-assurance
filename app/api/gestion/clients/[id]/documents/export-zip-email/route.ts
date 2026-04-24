@@ -196,6 +196,57 @@ async function downloadDocBytes(
   return null
 }
 
+async function buildDocAccessLink(
+  doc: { id: string; filepath: string; filename: string; type: string; createdAt: Date },
+  userId: string
+): Promise<string> {
+  const raw = doc.filepath.trim()
+  if (/^https?:\/\//i.test(raw)) {
+    return raw
+  }
+
+  const supabase = createSupabaseServiceClient() ?? createSupabaseBrowserClient()
+  if (supabase) {
+    const resolved = resolveGedFileReadTarget(doc.filepath)
+    if (resolved.kind === "supabase") {
+      const trySign = async (candidate: DownloadCandidate) => {
+        const { data, error } = await supabase.storage
+          .from(candidate.bucket)
+          .createSignedUrl(candidate.path, 60 * 60 * 24 * 3)
+        if (error || !data?.signedUrl) return null
+        return data.signedUrl
+      }
+
+      for (const candidate of resolved.candidates) {
+        const signed = await trySign(candidate)
+        if (signed) return signed
+      }
+
+      const byBucket = new Set<string>([
+        GED_SUPABASE_BUCKET,
+        "client_documents",
+        ...resolved.candidates.map((c) => c.bucket),
+      ])
+      for (const bucket of byBucket) {
+        const discovered = await discoverLegacyGedCandidates(supabase, bucket, {
+          userId,
+          type: doc.type,
+          filepath: doc.filepath,
+          filename: doc.filename,
+          createdAt: doc.createdAt.toISOString(),
+        })
+        for (const candidate of discovered) {
+          const signed = await trySign(candidate)
+          if (signed) return signed
+        }
+      }
+    }
+  }
+
+  const appUrl = SITE_URL.replace(/\/+$/, "")
+  return `${appUrl}/api/gestion/clients/${userId}/documents/${doc.id}`
+}
+
 function buildZipEntryPath(
   used: Set<string>,
   doc: { type: string; filename: string; id: string },
@@ -271,13 +322,18 @@ export async function POST(
 
     const zip = new JSZip()
     const usedPaths = new Set<string>()
-    const missing: string[] = []
+    const missingDocs: Array<{ id: string; type: string; filename: string; createdAt: Date }> = []
     let includedCount = 0
 
     for (const doc of docs) {
       const bytes = await downloadDocBytes(doc, userId)
       if (!bytes) {
-        missing.push(`${doc.type} - ${doc.filename}`)
+        missingDocs.push({
+          id: doc.id,
+          type: doc.type,
+          filename: doc.filename,
+          createdAt: doc.createdAt,
+        })
         continue
       }
       const fallbackExt =
@@ -293,16 +349,33 @@ export async function POST(
       includedCount++
     }
 
-    const appUrl = SITE_URL.replace(/\/+$/, "")
-    if (missing.length > 0) {
-      const openLinks = docs.map((doc) => `${appUrl}/api/gestion/clients/${userId}/documents/${doc.id}`)
+    if (missingDocs.length > 0) {
+      const openLinks = await Promise.all(
+        missingDocs.map(async (doc) => ({
+          ...doc,
+          url: await buildDocAccessLink(
+            {
+              id: doc.id,
+              filepath: docs.find((d) => d.id === doc.id)?.filepath || "",
+              filename: doc.filename,
+              type: doc.type,
+              createdAt: doc.createdAt,
+            },
+            userId
+          ),
+        }))
+      )
       zip.file(
         "_FICHIERS_MANQUANTS.txt",
-        `Documents non récupérés (${missing.length}) :\n${missing.map((m) => `- ${m}`).join("\n")}\n`
+        `Documents non récupérés (${missingDocs.length}) :\n${missingDocs
+          .map((m) => `- ${m.type} - ${m.filename}`)
+          .join("\n")}\n`
       )
       zip.file(
         "_LIENS_OUVERTURE_GED.txt",
-        `Liens d'ouverture (admin connecté requis) :\n${openLinks.map((l) => `- ${l}`).join("\n")}\n`
+        `Liens d'ouverture de secours :\n${openLinks
+          .map((doc) => `- ${doc.type} - ${doc.filename}\n  ${doc.url}`)
+          .join("\n")}\n`
       )
     }
 
@@ -334,10 +407,10 @@ export async function POST(
       }.`,
       ``,
       `Documents inclus : ${includedCount}`,
-      `Documents manquants : ${missing.length}`,
+      `Documents manquants : ${missingDocs.length}`,
       ``,
       includedCount === 0
-        ? `Aucun binaire n'a pu être joint automatiquement : voir les liens d'ouverture dans le ZIP (_LIENS_OUVERTURE_GED.txt).`
+        ? `Aucun binaire n'a pu être joint automatiquement : utilisez les liens de secours dans le ZIP (_LIENS_OUVERTURE_GED.txt).`
         : `Envoyé automatiquement depuis l'espace gestion Optimum Assurance.`,
     ].join("\n")
 
@@ -364,7 +437,7 @@ export async function POST(
       details: {
         to,
         includedCount,
-        missingCount: missing.length,
+        missingCount: missingDocs.length,
         zipName,
       },
     })
@@ -373,7 +446,7 @@ export async function POST(
       ok: true,
       sentTo: to,
       includedCount,
-      missingCount: missing.length,
+      missingCount: missingDocs.length,
       zipName,
     })
   } catch (error) {
