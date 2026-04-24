@@ -261,6 +261,10 @@ export async function generateQuarterlyScheduleInsurancePdf(c: InsuranceContract
     if (y < 100) {
       page = pdf.addPage([595.28, 841.89])
       y = 800
+      if (accelLogo) {
+        const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
+        y = imgBottom - 20
+      }
     }
     y = drawLines(page, [para], margin, y, 10, font, 8, maxW)
   }
@@ -268,6 +272,10 @@ export async function generateQuarterlyScheduleInsurancePdf(c: InsuranceContract
   if (y < 72) {
     page = pdf.addPage([595.28, 841.89])
     y = 800
+    if (accelLogo) {
+      const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
+      y = imgBottom - 20
+    }
   }
   y = Math.min(y, 120)
   page.drawText(sanitizeForPdfLib(LEGAL_ORIAS_LINE), { x: margin, y: 62, size: 8, font: bold, maxWidth: maxW })
