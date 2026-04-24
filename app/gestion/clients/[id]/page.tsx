@@ -35,7 +35,7 @@ interface ClientData {
   avenantFees: { id: string; amount: number; status: string; createdAt: string }[]
   notes?: { id: string; content: string; adminEmail: string; createdAt: string }[]
   sinistres?: { id: string; dateSinistre: string; montantIndemnisation: number | null; description: string | null; userDocument: { id: string; filename: string; type: string } | null }[]
-  userDocuments?: { id: string; type: string; filename: string }[]
+  userDocuments?: { id: string; type: string; filename: string; size?: number; createdAt?: string }[]
 }
 
 const typeLabels: Record<string, string> = {
@@ -49,6 +49,21 @@ const typeLabels: Record<string, string> = {
   avenant: "Avenant",
   facture_do: "Facture acquittée DO",
   facture_decennale: "Facture acquittée décennale",
+}
+
+const gedTypeLabels: Record<string, string> = {
+  kbis: "KBIS",
+  piece_identite: "Pièce d'identité",
+  justificatif_activite: "Justificatif d'activité",
+  qualification: "Qualification",
+  rib: "RIB",
+  releve_sinistralite: "Relevé de sinistralité",
+  permis_construire: "Permis de construire",
+  doc_droc: "DOC / DROC",
+  plans_construction: "Plans construction",
+  convention_maitrise_oeuvre: "Convention maîtrise d'œuvre",
+  convention_controle_technique: "Convention contrôle technique",
+  rapport_etude_sol: "Rapport étude de sol",
 }
 
 export default function ClientDetailPage() {
@@ -74,7 +89,7 @@ export default function ClientDetailPage() {
     description: string | null
     userDocument: { id: string; filename: string; type: string } | null
   }[]>([])
-  const [userDocuments, setUserDocuments] = useState<{ id: string; type: string; filename: string }[]>([])
+  const [userDocuments, setUserDocuments] = useState<{ id: string; type: string; filename: string; size?: number; createdAt?: string }[]>([])
   const [sinistreForm, setSinistreForm] = useState({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -435,6 +450,49 @@ export default function ClientDetailPage() {
                         >
                           Voir
                         </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-white mb-4">Documents GED déposés par le client</h2>
+          <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
+            {userDocuments.length === 0 ? (
+              <p className="p-4 text-gray-200">Aucun document GED déposé</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-4 font-medium">Type GED</th>
+                    <th className="text-left p-4 font-medium">Fichier</th>
+                    <th className="text-left p-4 font-medium">Date dépôt</th>
+                    <th className="text-left p-4 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userDocuments.map((doc) => (
+                    <tr key={doc.id} className="border-b border-gray-700/50">
+                      <td className="p-4">{gedTypeLabels[doc.type] || doc.type}</td>
+                      <td className="p-4">{doc.filename}</td>
+                      <td className="p-4">
+                        {doc.createdAt
+                          ? new Date(doc.createdAt).toLocaleDateString("fr-FR")
+                          : "—"}
+                      </td>
+                      <td className="p-4">
+                        <a
+                          href={`/api/gestion/clients/${clientId}/documents/${doc.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#2563eb] hover:text-[#1d4ed8] text-sm"
+                        >
+                          Ouvrir
+                        </a>
                       </td>
                     </tr>
                   ))}
