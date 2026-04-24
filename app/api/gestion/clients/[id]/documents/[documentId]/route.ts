@@ -8,6 +8,11 @@ import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
 import { resolveGedFileReadTarget } from "@/lib/user-documents"
 
+function buildReadableGedFilename(raw: string): string {
+  const safe = raw.replace(/"/g, "")
+  return encodeURIComponent(safe).replace(/%20/g, " ")
+}
+
 async function downloadFromSupabaseWithFallback(candidates: { bucket: string; path: string }[]): Promise<Uint8Array | null> {
   const supabase = createSupabaseServiceClient()
   if (!supabase) return null
@@ -66,7 +71,7 @@ export async function GET(
     return new NextResponse(Buffer.from(fileBytes), {
       headers: {
         "Content-Type": doc.mimeType || "application/octet-stream",
-        "Content-Disposition": `inline; filename="${encodeURIComponent(doc.filename)}"`,
+        "Content-Disposition": `inline; filename="${buildReadableGedFilename(doc.filename)}"; filename*=UTF-8''${encodeURIComponent(doc.filename)}`,
       },
     })
   } catch (error) {
