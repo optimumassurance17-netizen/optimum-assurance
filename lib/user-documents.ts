@@ -143,8 +143,9 @@ export function resolveGedSupabaseObjectCandidates(filepath: string): GedSupabas
     const cleanPath = objectPath
       .trim()
       .replace(/^\/+/, "")
+      .replace(/^\.\/+/, "")
       .replace(/[?#].*$/, "")
-    if (!cleanBucket || !cleanPath.startsWith(`${GED_SUPABASE_PATH_PREFIX}/`)) return
+    if (!cleanBucket || !cleanPath || cleanPath.includes("..")) return
     const key = `${cleanBucket}::${cleanPath}`
     if (seen.has(key)) return
     seen.add(key)
@@ -160,9 +161,14 @@ export function resolveGedSupabaseObjectCandidates(filepath: string): GedSupabas
   }
 
   const normalizedRaw = maybeDecode(raw).replace(/\\/g, "/").replace(/^\/+/, "")
-  const bucketPrefixed = normalizedRaw.match(/^([^/]+)\/(ged\/.+)$/)
+  const bucketPrefixed = normalizedRaw.match(/^([^/]+)\/(.+)$/)
   if (bucketPrefixed) {
     pushCandidate(out, seen, bucketPrefixed[1], bucketPrefixed[2])
+  }
+
+  // Fallback legacy: clé objet brute en base (sans préfixe bucket/ged).
+  if (normalizedRaw && !/^https?:\/\//i.test(raw.trim()) && !isAbsolute(normalizedRaw)) {
+    pushCandidate(out, seen, GED_SUPABASE_BUCKET, normalizedRaw)
   }
 
   if (/^https?:\/\//i.test(raw.trim())) {
@@ -170,7 +176,7 @@ export function resolveGedSupabaseObjectCandidates(filepath: string): GedSupabas
       const parsed = new URL(raw.trim())
       const pathname = maybeDecode(parsed.pathname).replace(/\\/g, "/")
       const storageMatch = pathname.match(
-        /\/storage\/v1\/object\/(?:public|sign|authenticated)\/([^/]+)\/(ged\/.+)$/
+        /\/storage\/v1\/object\/(?:public|sign|authenticated)\/([^/]+)\/(.+)$/
       )
       if (storageMatch) {
         pushCandidate(out, seen, storageMatch[1], storageMatch[2])
