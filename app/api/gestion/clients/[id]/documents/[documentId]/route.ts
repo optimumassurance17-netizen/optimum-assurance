@@ -6,15 +6,115 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
-import { resolveGedFileReadTarget } from "@/lib/user-documents"
+import { getLocalGedPathCandidates, resolveGedFileReadTarget, sanitizeFilenameBase } from "@/lib/user-documents"
 
-async function downloadFromSupabaseWithFallback(candidates: { bucket: string; path: string }[]): Promise<Uint8Array | null> {
+type DownloadCandidate = { bucket: string; path: string }
+
+type LegacyLookupContext = {
+  userId: string
+  type: string
+  filepath: string
+  filename: string
+}
+
+async function listFolderFilePaths(
+  supabase: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
+  bucket: string,
+  folder: string
+): Promise<{ path: string; updatedAt: number }[]> {
+  const { data, error } = await supabase.storage.from(bucket).list(folder, {
+    limit: 200,
+    sortBy: { column: "name", order: "desc" },
+  })
+  if (error || !data) return []
+  return data
+    .filter((entry) => Boolean((entry as { id?: string | null }).id))
+    .map((entry) => {
+      const name = (entry as { name?: string }).name ?? ""
+      const updatedAtRaw = (entry as { updated_at?: string | null }).updated_at
+      return {
+        path: `${folder}/${name}`.replace(/\/+/g, "/").replace(/^\/+/, ""),
+        updatedAt: updatedAtRaw ? Date.parse(updatedAtRaw) || 0 : 0,
+      }
+    })
+}
+
+async function discoverLegacyGedCandidates(
+  supabase: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
+  bucket: string,
+  context: LegacyLookupContext
+): Promise<DownloadCandidate[]> {
+  const folders = [`ged/${context.userId}/${context.type}`]
+  const { data: userSubfolders } = await supabase.storage.from(bucket).list(`ged/${context.userId}`, { limit: 200 })
+  if (userSubfolders) {
+    for (const entry of userSubfolders) {
+      if (!entry.name || entry.name === context.type) continue
+      if (Boolean((entry as { id?: string | null }).id)) continue
+      folders.push(`ged/${context.userId}/${entry.name}`)
+    }
+  }
+
+  const filepathLeaf = context.filepath.split("/").pop() || context.filepath
+  const legacyMatch = filepathLeaf.match(/_(\d{10,})\.[a-z0-9]+$/i)
+  const legacyTimestamp = legacyMatch?.[1] ?? null
+  const safeBase = sanitizeFilenameBase(context.filename).toLowerCase()
+  const ext = (context.filename.split(".").pop() || "").toLowerCase()
+
+  const scored: Array<{ candidate: DownloadCandidate; score: number; updatedAt: number }> = []
+  const seen = new Set<string>()
+
+  for (const folder of folders) {
+    const files = await listFolderFilePaths(supabase, bucket, folder)
+    for (const file of files) {
+      const key = `${bucket}:${file.path}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      const name = file.path.split("/").pop()?.toLowerCase() ?? ""
+      let score = 0
+      if (legacyTimestamp && name.startsWith(`${legacyTimestamp}_`)) score += 100
+      if (safeBase && name.includes(`_${safeBase}.`)) score += 60
+      if (ext && name.endsWith(`.${ext}`)) score += 20
+      if (name === context.filename.toLowerCase()) score += 40
+      if (score > 0) {
+        scored.push({
+          candidate: { bucket, path: file.path },
+          score,
+          updatedAt: file.updatedAt,
+        })
+      }
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt)
+  return scored.slice(0, 30).map((entry) => entry.candidate)
+}
+
+async function downloadFromSupabaseWithFallback(
+  candidates: DownloadCandidate[],
+  context: LegacyLookupContext
+): Promise<Uint8Array | null> {
   const supabase = createSupabaseServiceClient()
   if (!supabase) return null
 
-  for (const candidate of candidates) {
+  const byBucket = new Set(candidates.map((c) => c.bucket))
+
+  const attempt = async (candidate: DownloadCandidate) => {
     const { data, error } = await supabase.storage.from(candidate.bucket).download(candidate.path)
     if (!error && data) return new Uint8Array(await data.arrayBuffer())
+    return null
+  }
+
+  for (const candidate of candidates) {
+    const downloaded = await attempt(candidate)
+    if (downloaded) return downloaded
+  }
+
+  for (const bucket of byBucket) {
+    const discovered = await discoverLegacyGedCandidates(supabase, bucket, context)
+    for (const candidate of discovered) {
+      const downloaded = await attempt(candidate)
+      if (downloaded) return downloaded
+    }
   }
   return null
 }
@@ -39,7 +139,7 @@ export async function GET(
 
     const doc = await prisma.userDocument.findFirst({
       where: { id: documentId, userId },
-      select: { id: true, filename: true, filepath: true, mimeType: true },
+      select: { id: true, type: true, filename: true, filepath: true, mimeType: true },
     })
 
     if (!doc) {
@@ -50,11 +150,24 @@ export async function GET(
 
     let fileBytes: Uint8Array
     if (resolved.kind === "supabase") {
-      const fromSupabase = await downloadFromSupabaseWithFallback(resolved.candidates)
+      const fromSupabase = await downloadFromSupabaseWithFallback(resolved.candidates, {
+        userId,
+        type: doc.type,
+        filepath: doc.filepath,
+        filename: doc.filename,
+      })
       if (!fromSupabase) {
-        return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
+        // Dernier fallback: anciens fichiers en stockage local.
+        const localCandidates = getLocalGedPathCandidates(doc.filepath)
+        const localPath = localCandidates.find((candidate) => existsSync(candidate))
+        if (!localPath) {
+          return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
+        }
+        const buffer = await readFile(localPath)
+        fileBytes = new Uint8Array(buffer)
+      } else {
+        fileBytes = fromSupabase
       }
-      fileBytes = fromSupabase
     } else {
       if (!existsSync(resolved.path)) {
         return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
