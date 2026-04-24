@@ -11,7 +11,13 @@ function ConnexionForm() {
   const searchParams = useSearchParams()
   const safeSearchParams = searchParams ?? new URLSearchParams()
   const from = safeSearchParams.get("from")
-  const callbackUrl = safeSearchParams.get("callbackUrl") || (from === "signature" ? "/signature" : "/espace-client")
+  const rawCallbackUrl = safeSearchParams.get("callbackUrl")
+  const callbackUrl =
+    rawCallbackUrl && rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//")
+      ? rawCallbackUrl
+      : from === "signature"
+        ? "/signature"
+        : "/espace-client"
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
