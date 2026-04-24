@@ -5,8 +5,13 @@ import { existsSync } from "fs"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { createSupabaseServiceClient } from "@/lib/supabase"
-import { getLocalGedPathCandidates, resolveGedFileReadTarget, sanitizeFilenameBase } from "@/lib/user-documents"
+import { createSupabaseBrowserClient, createSupabaseServiceClient } from "@/lib/supabase"
+import {
+  GED_SUPABASE_BUCKET,
+  getLocalGedPathCandidates,
+  resolveGedFileReadTarget,
+  sanitizeFilenameBase,
+} from "@/lib/user-documents"
 
 type DownloadCandidate = { bucket: string; path: string }
 
@@ -15,6 +20,26 @@ type LegacyLookupContext = {
   type: string
   filepath: string
   filename: string
+  createdAt: string
+}
+
+function normalizeToken(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[^\w]+/g, "")
+    .toLowerCase()
+}
+
+function dedupeCandidates(list: DownloadCandidate[]): DownloadCandidate[] {
+  const seen = new Set<string>()
+  const out: DownloadCandidate[] = []
+  for (const item of list) {
+    const key = `${item.bucket}:${item.path}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(item)
+  }
+  return out
 }
 
 async function listFolderFilePaths(
@@ -44,7 +69,7 @@ async function discoverLegacyGedCandidates(
   bucket: string,
   context: LegacyLookupContext
 ): Promise<DownloadCandidate[]> {
-  const folders = [`ged/${context.userId}/${context.type}`]
+  const folders = [`ged/${context.userId}/${context.type}`, `ged/${context.userId}`]
   const { data: userSubfolders } = await supabase.storage.from(bucket).list(`ged/${context.userId}`, { limit: 200 })
   if (userSubfolders) {
     for (const entry of userSubfolders) {
@@ -58,7 +83,11 @@ async function discoverLegacyGedCandidates(
   const legacyMatch = filepathLeaf.match(/_(\d{10,})\.[a-z0-9]+$/i)
   const legacyTimestamp = legacyMatch?.[1] ?? null
   const safeBase = sanitizeFilenameBase(context.filename).toLowerCase()
+  const safeBaseToken = normalizeToken(safeBase)
+  const filenameToken = normalizeToken(context.filename)
+  const filepathLeafToken = normalizeToken(filepathLeaf)
   const ext = (context.filename.split(".").pop() || "").toLowerCase()
+  const createdAtMs = Date.parse(context.createdAt) || 0
 
   const scored: Array<{ candidate: DownloadCandidate; score: number; updatedAt: number }> = []
   const seen = new Set<string>()
@@ -70,11 +99,18 @@ async function discoverLegacyGedCandidates(
       if (seen.has(key)) continue
       seen.add(key)
       const name = file.path.split("/").pop()?.toLowerCase() ?? ""
+      const nameToken = normalizeToken(name)
       let score = 0
       if (legacyTimestamp && name.startsWith(`${legacyTimestamp}_`)) score += 100
       if (safeBase && name.includes(`_${safeBase}.`)) score += 60
       if (ext && name.endsWith(`.${ext}`)) score += 20
       if (name === context.filename.toLowerCase()) score += 40
+      if (safeBaseToken && nameToken.includes(safeBaseToken)) score += 55
+      if (filenameToken && nameToken.includes(filenameToken)) score += 45
+      if (filepathLeafToken && nameToken.includes(filepathLeafToken)) score += 35
+      if (createdAtMs > 0 && file.updatedAt > 0 && Math.abs(file.updatedAt - createdAtMs) < 1000 * 60 * 60 * 24 * 3) {
+        score += 25
+      }
       if (score > 0) {
         scored.push({
           candidate: { bucket, path: file.path },
@@ -93,10 +129,16 @@ async function downloadFromSupabaseWithFallback(
   candidates: DownloadCandidate[],
   context: LegacyLookupContext
 ): Promise<Uint8Array | null> {
-  const supabase = createSupabaseServiceClient()
+  const supabase = createSupabaseServiceClient() ?? createSupabaseBrowserClient()
   if (!supabase) return null
 
-  const byBucket = new Set(candidates.map((c) => c.bucket))
+  const byBucket = new Set<string>([
+    GED_SUPABASE_BUCKET,
+    "client_documents",
+    "client-documents",
+    "documents",
+    ...candidates.map((c) => c.bucket),
+  ])
 
   const attempt = async (candidate: DownloadCandidate) => {
     const { data, error } = await supabase.storage.from(candidate.bucket).download(candidate.path)
@@ -104,7 +146,15 @@ async function downloadFromSupabaseWithFallback(
     return null
   }
 
-  for (const candidate of candidates) {
+  const initialCandidates = dedupeCandidates([
+    ...candidates,
+    ...[...byBucket].map((bucket) => ({
+      bucket,
+      path: context.filepath.replace(/^\/+/, ""),
+    })),
+  ])
+
+  for (const candidate of initialCandidates) {
     const downloaded = await attempt(candidate)
     if (downloaded) return downloaded
   }
@@ -139,7 +189,7 @@ export async function GET(
 
     const doc = await prisma.userDocument.findFirst({
       where: { id: documentId, userId },
-      select: { id: true, type: true, filename: true, filepath: true, mimeType: true },
+      select: { id: true, type: true, filename: true, filepath: true, mimeType: true, createdAt: true },
     })
 
     if (!doc) {
@@ -155,6 +205,7 @@ export async function GET(
         type: doc.type,
         filepath: doc.filepath,
         filename: doc.filename,
+        createdAt: doc.createdAt.toISOString(),
       })
       if (!fromSupabase) {
         // Dernier fallback: anciens fichiers en stockage local.
