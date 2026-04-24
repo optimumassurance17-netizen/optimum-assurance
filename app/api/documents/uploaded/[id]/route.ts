@@ -5,7 +5,17 @@ import { existsSync } from "fs"
 import { join } from "path"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { UPLOAD_DIR } from "@/lib/user-documents"
+import { createSupabaseServiceClient } from "@/lib/supabase"
+import { GED_SUPABASE_BUCKET, UPLOAD_DIR } from "@/lib/user-documents"
+
+function isSchemaDriftError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (((error as { code?: string }).code === "P2021") || ((error as { code?: string }).code === "P2022"))
+  )
+}
 
 export async function GET(
   _request: NextRequest,
@@ -27,20 +37,40 @@ export async function GET(
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
-    const fullPath = join(UPLOAD_DIR, doc.filepath)
-    if (!existsSync(fullPath)) {
-      return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
+    let buffer: Buffer
+    if (doc.filepath.startsWith("ged/")) {
+      const supabase = createSupabaseServiceClient()
+      if (!supabase) {
+        return NextResponse.json({ error: "Stockage GED indisponible" }, { status: 503 })
+      }
+      const { data, error } = await supabase.storage.from(GED_SUPABASE_BUCKET).download(doc.filepath)
+      if (error || !data) {
+        return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
+      }
+      buffer = Buffer.from(await data.arrayBuffer())
+    } else {
+      const fullPath = join(UPLOAD_DIR, doc.filepath)
+      if (!existsSync(fullPath)) {
+        return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
+      }
+      buffer = await readFile(fullPath)
     }
 
-    const buffer = await readFile(fullPath)
-
-    return new NextResponse(buffer, {
+    const fileBytes = new Uint8Array(buffer)
+    return new NextResponse(fileBytes, {
       headers: {
         "Content-Type": doc.mimeType,
         "Content-Disposition": `inline; filename="${encodeURIComponent(doc.filename)}"`,
       },
     })
   } catch (error) {
+    if (isSchemaDriftError(error)) {
+      console.error("GED download indisponible (schéma non aligné):", error)
+      return NextResponse.json(
+        { error: "GED temporairement indisponible: migration base requise" },
+        { status: 503 }
+      )
+    }
     console.error("Erreur téléchargement document:", error)
     return NextResponse.json(
       { error: "Erreur lors du téléchargement" },
@@ -69,10 +99,21 @@ export async function DELETE(
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
-    const { unlink } = await import("fs/promises")
-    const fullPath = join(UPLOAD_DIR, doc.filepath)
-    if (existsSync(fullPath)) {
-      await unlink(fullPath).catch(() => {})
+    if (doc.filepath.startsWith("ged/")) {
+      const supabase = createSupabaseServiceClient()
+      if (supabase) {
+        try {
+          await supabase.storage.from(GED_SUPABASE_BUCKET).remove([doc.filepath])
+        } catch {
+          // Suppression best-effort
+        }
+      }
+    } else {
+      const { unlink } = await import("fs/promises")
+      const fullPath = join(UPLOAD_DIR, doc.filepath)
+      if (existsSync(fullPath)) {
+        await unlink(fullPath).catch(() => {})
+      }
     }
 
     await prisma.userDocument.delete({
@@ -81,6 +122,13 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    if (isSchemaDriftError(error)) {
+      console.error("GED delete indisponible (schéma non aligné):", error)
+      return NextResponse.json(
+        { error: "GED temporairement indisponible: migration base requise" },
+        { status: 503 }
+      )
+    }
     console.error("Erreur suppression document:", error)
     return NextResponse.json(
       { error: "Erreur lors de la suppression" },
