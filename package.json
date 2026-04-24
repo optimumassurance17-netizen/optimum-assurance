@@ -76,6 +76,7 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "bcryptjs": "^2.4.3",
+    "jszip": "^3.10.1",
     "next": "^16.2.1",
     "next-auth": "^4.24.0",
     "openai": "^6.27.0",
