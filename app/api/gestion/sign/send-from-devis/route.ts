@@ -160,12 +160,19 @@ export async function POST(request: NextRequest) {
 
     const raison = String(baseContract.raisonSociale || doc.user.raisonSociale || doc.user.email)
     const tpl = EMAIL_TEMPLATES.invitationSignatureDecennale(raison, signatureLink, doc.numero)
-    await sendEmail({
+    const sent = await sendEmail({
       to: doc.user.email,
       subject: tpl.subject,
       text: tpl.text,
       html: tpl.html,
     })
+    if (!sent) {
+      await prisma.pendingSignature.deleteMany({ where: { signatureRequestId: signRequestId } })
+      return NextResponse.json(
+        { error: "Envoi e-mail impossible (RESEND_API_KEY / domaine expéditeur)" },
+        { status: 503 }
+      )
+    }
 
     await logAdminActivity({
       adminEmail: session.user.email || "admin",
