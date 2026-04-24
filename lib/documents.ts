@@ -5,6 +5,7 @@ const PREFIXES = {
   devis_do: "DO",
   contrat: "CTR",
   attestation: "ATT",
+  attestation_nominative: "ATT-NOM",
   attestation_do: "ATT-DO",
   attestation_non_sinistralite: "ANS",
   avenant: "AVN",

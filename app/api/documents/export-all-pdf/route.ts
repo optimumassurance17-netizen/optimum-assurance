@@ -14,6 +14,7 @@ const DOC_TYPES_BY_ASSURANCE: Record<AssuranceFilter, Set<string>> = {
     "devis",
     "contrat",
     "attestation",
+    "attestation_nominative",
     "attestation_non_sinistralite",
     "facture_decennale",
     "avenant",
@@ -70,7 +71,9 @@ export async function GET(request: NextRequest) {
           data.email = doc.user.email ?? data.email
         }
         if (
-          (doc.type === "attestation" || doc.type === "attestation_do") &&
+          (doc.type === "attestation" ||
+            doc.type === "attestation_nominative" ||
+            doc.type === "attestation_do") &&
           doc.verificationToken
         ) {
           const verificationUrl = `${baseUrl}/v/${doc.verificationToken}`

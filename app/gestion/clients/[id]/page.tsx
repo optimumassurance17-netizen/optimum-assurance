@@ -43,6 +43,7 @@ const typeLabels: Record<string, string> = {
   devis_do: "Devis DO",
   contrat: "Contrat",
   attestation: "Attestation",
+  attestation_nominative: "Attestation nominative",
   attestation_do: "Attestation DO",
   attestation_non_sinistralite: "Attestation non sinistralité",
   avenant: "Avenant",

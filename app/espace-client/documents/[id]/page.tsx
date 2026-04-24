@@ -278,6 +278,17 @@ export default function DocumentPage() {
               data={document.data as never}
             />
           )}
+          {document.type === "attestation_nominative" && (
+            <AttestationTemplate
+              numero={document.numero}
+              verificationUrl={
+                document.verificationToken
+                  ? `${process.env.NEXT_PUBLIC_APP_URL || (typeof window !== "undefined" ? window.location.origin : "")}/v/${document.verificationToken}`
+                  : undefined
+              }
+              data={document.data as never}
+            />
+          )}
           {document.type === "attestation_do" && (
             <AttestationDoTemplate
               numero={document.numero}

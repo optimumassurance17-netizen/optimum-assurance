@@ -890,9 +890,15 @@ export default function GestionPage() {
   if (!data) return null
 
   const attestations = data.documents.filter((d) => {
-    if (docTypeFilter === "attestation") return d.type === "attestation"
+    if (docTypeFilter === "attestation") {
+      return d.type === "attestation" || d.type === "attestation_nominative"
+    }
     if (docTypeFilter === "attestation_do") return d.type === "attestation_do"
-    return d.type === "attestation" || d.type === "attestation_do"
+    return (
+      d.type === "attestation" ||
+      d.type === "attestation_nominative" ||
+      d.type === "attestation_do"
+    )
   })
   const contrats = data.documents.filter((d) => d.type === "contrat")
 
@@ -1978,7 +1984,13 @@ export default function GestionPage() {
                   filterBySearch(attestations, searchQuery).map((d) => (
                     <tr key={d.id} className="border-b border-gray-700/50">
                       <td className="p-3 sm:p-4">
-                        <span className="text-xs text-gray-200">{d.type === "attestation_do" ? "DO" : "Décennale"}</span>
+                        <span className="text-xs text-gray-200">
+                          {d.type === "attestation_do"
+                            ? "DO"
+                            : d.type === "attestation_nominative"
+                              ? "Décennale nominative"
+                              : "Décennale"}
+                        </span>
                       </td>
                       <td className="p-3 sm:p-4 font-mono">{d.numero}</td>
                       <td className="p-3 sm:p-4">{d.user.raisonSociale || d.user.email}</td>
