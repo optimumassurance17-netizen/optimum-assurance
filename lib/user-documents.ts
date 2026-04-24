@@ -1,4 +1,5 @@
-import { join } from "path"
+import { existsSync } from "fs"
+import { basename, isAbsolute, join } from "path"
 import { mkdir } from "fs/promises"
 import { UPLOAD_DOC_TYPES, UPLOAD_DOC_LABELS } from "./user-document-types"
 
@@ -76,4 +77,108 @@ export function buildGedStoragePath(
   extension: string
 ): string {
   return `${GED_SUPABASE_PATH_PREFIX}/${userId}/${type}/${timestamp}_${safeBaseName}.${extension}`
+}
+
+/**
+ * Normalise les anciens formats de chemin stockés en base vers la clé objet Supabase.
+ * Exemples gérés: "ged/..", "/ged/..", "client_documents/ged/..", URL publique Supabase.
+ */
+export function normalizeGedSupabaseObjectPath(filepath: string): string | null {
+  const raw = filepath.trim()
+  if (!raw) return null
+
+  const maybeDecode = (value: string) => {
+    try {
+      return decodeURIComponent(value)
+    } catch {
+      return value
+    }
+  }
+  const decoded = maybeDecode(raw)
+  const normalized = decoded.replace(/\\/g, "/").replace(/^\/+/, "")
+
+  if (normalized.startsWith(`${GED_SUPABASE_PATH_PREFIX}/`)) return normalized
+
+  const bucketPrefixed = `${GED_SUPABASE_BUCKET}/${GED_SUPABASE_PATH_PREFIX}/`
+  if (normalized.startsWith(bucketPrefixed)) {
+    return normalized.slice(GED_SUPABASE_BUCKET.length + 1)
+  }
+
+  const bucketMarker = `/${GED_SUPABASE_BUCKET}/`
+  const bucketIdx = normalized.indexOf(bucketMarker)
+  if (bucketIdx >= 0) {
+    const afterBucket = normalized.slice(bucketIdx + bucketMarker.length)
+    if (afterBucket.startsWith(`${GED_SUPABASE_PATH_PREFIX}/`)) return afterBucket
+  }
+
+  // Fallback legacy: URL/chemin contenant ".../ged/..."
+  const gedIdx = normalized.lastIndexOf(`${GED_SUPABASE_PATH_PREFIX}/`)
+  if (gedIdx >= 0) {
+    return normalized.slice(gedIdx)
+  }
+
+  return null
+}
+
+/**
+ * Génère les chemins locaux candidats pour compatibilité avec anciens formats.
+ */
+export function getLocalGedPathCandidates(filepath: string): string[] {
+  const raw = filepath.trim()
+  if (!raw) return []
+
+  const normalized = raw.replace(/\\/g, "/")
+  const candidates = new Set<string>()
+
+  if (isAbsolute(normalized)) {
+    candidates.add(normalized)
+  }
+
+  candidates.add(join(UPLOAD_DIR, normalized.replace(/^\/+/, "")))
+  candidates.add(join(UPLOAD_DIR, basename(normalized)))
+
+  return [...candidates]
+}
+
+export function isGedSupabasePath(filepath: string | null | undefined): boolean {
+  if (!filepath) return false
+  return normalizeGedSupabaseObjectPath(filepath) != null
+}
+
+export function isSupabaseGedPath(filepath: string | null | undefined): boolean {
+  return isGedSupabasePath(filepath)
+}
+
+export function isLikelySupabaseGedPath(filepath: string | null | undefined): boolean {
+  return isGedSupabasePath(filepath)
+}
+
+export function resolveGedFileReadTarget(filepath: string): { kind: "supabase"; path: string } | { kind: "local"; path: string } {
+  const supabasePath = normalizeGedSupabaseObjectPath(filepath)
+  if (supabasePath) {
+    return { kind: "supabase", path: supabasePath }
+  }
+
+  const localCandidates = getLocalGedPathCandidates(filepath)
+  const existingLocalPath = localCandidates.find((candidate) => existsSync(candidate))
+  if (existingLocalPath) {
+    return { kind: "local", path: existingLocalPath }
+  }
+
+  return {
+    kind: "local",
+    path: localCandidates[0] ?? join(UPLOAD_DIR, filepath.replace(/^\/+/, "")),
+  }
+}
+
+export function resolveGedFileStorageTarget(
+  filepath: string
+): { kind: "supabase"; path: string } | { kind: "local"; paths: string[] } {
+  const supabasePath = normalizeGedSupabaseObjectPath(filepath)
+  if (supabasePath) {
+    return { kind: "supabase", path: supabasePath }
+  }
+
+  const localCandidates = getLocalGedPathCandidates(filepath)
+  return { kind: "local", paths: localCandidates }
 }

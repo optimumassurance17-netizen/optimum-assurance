@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { readFile } from "fs/promises"
 import { existsSync } from "fs"
-import { join } from "path"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
-import { GED_SUPABASE_BUCKET, UPLOAD_DIR } from "@/lib/user-documents"
+import { GED_SUPABASE_BUCKET, resolveGedFileReadTarget, resolveGedFileStorageTarget } from "@/lib/user-documents"
 
 function isSchemaDriftError(error: unknown): boolean {
   return (
@@ -37,23 +36,23 @@ export async function GET(
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
+    const readTarget = resolveGedFileReadTarget(doc.filepath)
     let buffer: Buffer
-    if (doc.filepath.startsWith("ged/")) {
+    if (readTarget.kind === "supabase") {
       const supabase = createSupabaseServiceClient()
       if (!supabase) {
         return NextResponse.json({ error: "Stockage GED indisponible" }, { status: 503 })
       }
-      const { data, error } = await supabase.storage.from(GED_SUPABASE_BUCKET).download(doc.filepath)
+      const { data, error } = await supabase.storage.from(GED_SUPABASE_BUCKET).download(readTarget.path)
       if (error || !data) {
         return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
       }
       buffer = Buffer.from(await data.arrayBuffer())
     } else {
-      const fullPath = join(UPLOAD_DIR, doc.filepath)
-      if (!existsSync(fullPath)) {
+      if (!existsSync(readTarget.path)) {
         return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
       }
-      buffer = await readFile(fullPath)
+      buffer = await readFile(readTarget.path)
     }
 
     const fileBytes = new Uint8Array(buffer)
@@ -99,20 +98,22 @@ export async function DELETE(
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
-    if (doc.filepath.startsWith("ged/")) {
+    const storageTarget = resolveGedFileStorageTarget(doc.filepath)
+    if (storageTarget.kind === "supabase") {
       const supabase = createSupabaseServiceClient()
       if (supabase) {
         try {
-          await supabase.storage.from(GED_SUPABASE_BUCKET).remove([doc.filepath])
+          await supabase.storage.from(GED_SUPABASE_BUCKET).remove([storageTarget.path])
         } catch {
           // Suppression best-effort
         }
       }
     } else {
       const { unlink } = await import("fs/promises")
-      const fullPath = join(UPLOAD_DIR, doc.filepath)
-      if (existsSync(fullPath)) {
-        await unlink(fullPath).catch(() => {})
+      for (const fullPath of storageTarget.paths) {
+        if (existsSync(fullPath)) {
+          await unlink(fullPath).catch(() => {})
+        }
       }
     }
 
