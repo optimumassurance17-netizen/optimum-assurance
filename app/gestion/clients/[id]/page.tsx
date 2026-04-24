@@ -88,6 +88,7 @@ export default function ClientDetailPage() {
     telephone: "",
   })
   const [profileSaving, setProfileSaving] = useState(false)
+  const [clientAccessLoading, setClientAccessLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
   const [deleteModal, setDeleteModal] = useState(false)
   const [deleteConfirmEmail, setDeleteConfirmEmail] = useState("")
@@ -174,6 +175,40 @@ export default function ClientDetailPage() {
           <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
             <h1 className="text-xl font-semibold text-white">Fiche client</h1>
             <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  setClientAccessLoading(true)
+                  try {
+                    const res = await fetch(`/api/gestion/clients/${clientId}/send-client-access`, {
+                      method: "POST",
+                    })
+                    const json = await readResponseJson<{
+                      error?: string
+                      ok?: boolean
+                      sentTo?: string
+                    }>(res)
+                    if (!res.ok || !json.ok) {
+                      throw new Error(json.error || "Impossible de créer l'accès client.")
+                    }
+                    setToast({
+                      message: `Accès espace client envoyé à ${json.sentTo || user.email}`,
+                      type: "success",
+                    })
+                  } catch (err) {
+                    setToast({
+                      message: err instanceof Error ? err.message : "Erreur création accès client",
+                      type: "error",
+                    })
+                  } finally {
+                    setClientAccessLoading(false)
+                  }
+                }}
+                disabled={clientAccessLoading}
+                className="text-sm text-emerald-300 hover:text-emerald-200 font-medium disabled:opacity-50"
+              >
+                {clientAccessLoading ? "Création accès..." : "Créer / renvoyer accès client"}
+              </button>
               <button
                 type="button"
                 onClick={() => {
