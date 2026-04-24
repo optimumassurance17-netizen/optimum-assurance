@@ -20,7 +20,7 @@ import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/sha
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
-import { primeTrimestrielle } from "@/lib/mollie-sepa"
+import { primeTrimestrielle } from "@/lib/premium"
 import {
   generateRcFabBatteriesCertificatePdf,
   generateRcFabBatteriesFicPdf,

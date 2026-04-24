@@ -13,7 +13,7 @@ import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import type { InsuranceContractListItem } from "@/lib/insurance-contract-types"
 import { PayInsuranceContractButton } from "@/components/insurance/PayInsuranceContractButton"
 import { InsuranceContractPdfLinks } from "@/components/insurance/InsuranceContractPdfLinks"
-import { primeTrimestrielle } from "@/lib/mollie-sepa"
+import { primeTrimestrielle } from "@/lib/premium"
 
 interface DocumentItem {
   id: string

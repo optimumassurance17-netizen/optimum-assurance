@@ -5,7 +5,7 @@ import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { calculateRiskScore, requiresManualReview } from "@/lib/risk-scoring"
 import { renderContractPdf } from "@/lib/insurance-contract-pdf"
 import { SITE_URL } from "@/lib/site-url"
-import { primeTrimestrielle } from "@/lib/mollie-sepa"
+import { primeTrimestrielle } from "@/lib/premium"
 
 export type CreateContractInput = {
   productType: "decennale" | "do"

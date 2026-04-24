@@ -28,6 +28,7 @@
     "print:post-launch": "node scripts/print-post-launch.mjs",
     "start": "next start",
     "lint": "eslint",
+    "check:boundaries": "node scripts/check-client-server-boundaries.mjs",
     "typecheck": "tsc --noEmit",
     "test:pdf-contractual": "tsx scripts/verify-pdf-contractual-mentions.ts",
     "test:e2e": "playwright test",

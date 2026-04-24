@@ -11,7 +11,7 @@ import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/sha
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { PdfValidationError } from "@/lib/pdf/errors"
-import { primeTrimestrielle } from "@/lib/mollie-sepa"
+import { primeTrimestrielle } from "@/lib/premium"
 import {
   getRcFabPeriodicityMeta,
   normalizeRcFabPeriodicity,

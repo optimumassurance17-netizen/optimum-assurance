@@ -4,15 +4,11 @@
  * @see https://docs.mollie.com/docs/recurring-payments
  */
 
+import "server-only"
 import type { MollieClient } from "@mollie/api-client"
 import { MandateMethod, MandateStatus, PaymentMethod, SequenceType } from "@mollie/api-client"
 import { prisma } from "@/lib/prisma"
 import { isValidIban, normalizeIban } from "@/lib/iban"
-
-/** Prime par trimestre (aligné sur app/paiement/page.tsx) */
-export function primeTrimestrielle(primeAnnuelle: number): number {
-  return Math.round((primeAnnuelle / 4) * 100) / 100
-}
 
 export { normalizeIban } from "@/lib/iban"
 
