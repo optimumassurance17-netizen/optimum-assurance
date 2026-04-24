@@ -13,12 +13,14 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Mot de passe", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+        const email = credentials?.email?.trim().toLowerCase()
+        const password = credentials?.password
+        if (!email || !password) return null
+        const user = await prisma.user.findFirst({
+          where: { email: { equals: email, mode: "insensitive" } },
         })
         if (!user) return null
-        const valid = await compare(credentials.password, user.passwordHash)
+        const valid = await compare(password, user.passwordHash)
         if (!valid) return null
         return {
           id: user.id,
