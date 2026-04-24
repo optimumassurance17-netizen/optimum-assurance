@@ -111,13 +111,12 @@ async function discoverLegacyGedCandidates(
       if (createdAtMs > 0 && file.updatedAt > 0 && Math.abs(file.updatedAt - createdAtMs) < 1000 * 60 * 60 * 24 * 3) {
         score += 25
       }
-      if (score > 0) {
-        scored.push({
-          candidate: { bucket, path: file.path },
-          score,
-          updatedAt: file.updatedAt,
-        })
-      }
+      const finalScore = score > 0 ? score : 1
+      scored.push({
+        candidate: { bucket, path: file.path },
+        score: finalScore,
+        updatedAt: file.updatedAt,
+      })
     }
   }
 
