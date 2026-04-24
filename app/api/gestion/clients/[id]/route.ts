@@ -11,6 +11,7 @@ import { logAdminActivity } from "@/lib/admin-activity"
 import { syncContratAvenantDocumentsFromUser } from "@/lib/sync-user-document-identity"
 import { UPLOAD_DIR } from "@/lib/user-documents"
 import { asJsonObject } from "@/lib/json-object"
+import { fetchUserDocumentReviews } from "@/lib/user-document-review"
 
 export async function GET(
   _request: Request,
@@ -77,6 +78,10 @@ export async function GET(
       }),
     ])
 
+    const userDocumentReviews = await fetchUserDocumentReviews(
+      userDocuments.map((d) => d.id)
+    )
+
     return NextResponse.json({
       user,
       documents,
@@ -85,6 +90,7 @@ export async function GET(
       notes,
       sinistres,
       userDocuments,
+      userDocumentReviews,
     })
   } catch (error) {
     console.error("Erreur détail client:", error)

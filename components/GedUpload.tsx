@@ -14,6 +14,11 @@ interface UploadedDoc {
   filename: string
   size: number
   createdAt: string
+  review?: {
+    status: "valid" | "invalid"
+    reason: string | null
+    updatedAt: string
+  } | null
 }
 
 const typeIcons: Record<string, string> = {
@@ -171,6 +176,15 @@ function docRow(
             </p>
           ) : (
             <p className="text-sm text-[#171717]">Non déposé</p>
+          )}
+          {doc?.review?.status === "valid" && (
+            <p className="text-xs text-emerald-700 mt-1">Statut : validé par la gestion</p>
+          )}
+          {doc?.review?.status === "invalid" && (
+            <p className="text-xs text-red-700 mt-1">
+              Statut : refusé par la gestion
+              {doc.review.reason ? ` — ${doc.review.reason}` : ""}
+            </p>
           )}
         </div>
       </div>

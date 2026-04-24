@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { fetchUserDocumentReviews } from "@/lib/user-document-review"
 
 function isSchemaDriftError(error: unknown): boolean {
   return (
@@ -24,6 +25,7 @@ export async function GET() {
       orderBy: { type: "asc" },
     })
 
+    const reviews = await fetchUserDocumentReviews(docs.map((d) => d.id))
     return NextResponse.json(
       docs.map((d) => ({
         id: d.id,
@@ -31,6 +33,7 @@ export async function GET() {
         filename: d.filename,
         size: d.size,
         createdAt: d.createdAt,
+        review: reviews[d.id] ?? null,
       }))
     )
   } catch (error) {
