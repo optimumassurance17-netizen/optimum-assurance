@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { DOC_TYPES_DECENNALE } from "@/lib/user-document-types"
 
 /**
  * Liste les sinistres d'un client
@@ -114,7 +115,7 @@ export async function POST(
 
     if (userDocumentId) {
       const doc = await prisma.userDocument.findFirst({
-        where: { id: userDocumentId, userId },
+        where: { id: userDocumentId, userId, type: DOC_TYPES_DECENNALE[5] },
       })
       if (!doc) {
         return NextResponse.json(

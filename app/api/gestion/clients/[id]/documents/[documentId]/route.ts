@@ -12,6 +12,7 @@ import {
   resolveGedFileReadTarget,
   sanitizeFilenameBase,
 } from "@/lib/user-documents"
+import { UPLOAD_DOC_TYPES } from "@/lib/user-document-types"
 
 type DownloadCandidate = { bucket: string; path: string }
 
@@ -272,7 +273,11 @@ export async function GET(
     }
 
     const doc = await prisma.userDocument.findFirst({
-      where: { id: documentId, userId },
+      where: {
+        id: documentId,
+        userId,
+        type: { in: [...UPLOAD_DOC_TYPES] },
+      },
       select: { id: true, type: true, filename: true, filepath: true, mimeType: true, createdAt: true },
     })
 

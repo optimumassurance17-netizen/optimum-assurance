@@ -13,6 +13,7 @@ import { createSupabaseServiceClient } from "@/lib/supabase"
 import { GED_SUPABASE_BUCKET } from "@/lib/user-documents"
 import { asJsonObject } from "@/lib/json-object"
 import { fetchUserDocumentReviews } from "@/lib/user-document-review"
+import { UPLOAD_DOC_TYPES } from "@/lib/user-document-types"
 
 export async function GET(
   _request: Request,
@@ -73,7 +74,10 @@ export async function GET(
         orderBy: { dateSinistre: "desc" },
       }),
       prisma.userDocument.findMany({
-        where: { userId: id },
+        where: {
+          userId: id,
+          type: { in: [...UPLOAD_DOC_TYPES] },
+        },
         select: { id: true, type: true, filename: true, size: true, createdAt: true },
         orderBy: { type: "asc" },
       }),

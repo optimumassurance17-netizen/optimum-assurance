@@ -16,6 +16,7 @@ import {
   resolveGedFileReadTarget,
   sanitizeFilenameBase,
 } from "@/lib/user-documents"
+import { UPLOAD_DOC_TYPES } from "@/lib/user-document-types"
 
 const DEFAULT_TO = "contact@optimum-assurance.fr"
 const MAX_ZIP_SIZE_BYTES = 18 * 1024 * 1024
@@ -122,15 +123,31 @@ async function discoverLegacyGedCandidates(
   const scoreForPath = (filePath: string, updatedAt: number): number => {
     const name = filePath.split("/").pop()?.toLowerCase() ?? ""
     const nameToken = normalizeToken(name)
+    const exactLegacyTimestamp = Boolean(legacyTimestamp && name.startsWith(`${legacyTimestamp}_`))
+    const exactSafeBase = Boolean(safeBase && name.includes(`_${safeBase}.`))
+    const exactFilename = name === context.filename.toLowerCase()
+    const includesSafeBaseToken = Boolean(safeBaseToken && nameToken.includes(safeBaseToken))
+    const includesFilenameToken = Boolean(filenameToken && nameToken.includes(filenameToken))
+    const includesFilepathToken = Boolean(filepathLeafToken && nameToken.includes(filepathLeafToken))
+    const includesDocIdToken = Boolean(docIdToken && nameToken.includes(docIdToken))
+    const hasStrongIdentityHit =
+      exactLegacyTimestamp ||
+      exactSafeBase ||
+      exactFilename ||
+      includesSafeBaseToken ||
+      includesFilenameToken ||
+      includesFilepathToken ||
+      includesDocIdToken
+    if (!hasStrongIdentityHit) return 0
     let score = 0
-    if (legacyTimestamp && name.startsWith(`${legacyTimestamp}_`)) score += 100
-    if (safeBase && name.includes(`_${safeBase}.`)) score += 60
+    if (exactLegacyTimestamp) score += 100
+    if (exactSafeBase) score += 60
     if (ext && name.endsWith(`.${ext}`)) score += 20
-    if (name === context.filename.toLowerCase()) score += 40
-    if (safeBaseToken && nameToken.includes(safeBaseToken)) score += 55
-    if (filenameToken && nameToken.includes(filenameToken)) score += 45
-    if (filepathLeafToken && nameToken.includes(filepathLeafToken)) score += 35
-    if (docIdToken && nameToken.includes(docIdToken)) score += 90
+    if (exactFilename) score += 40
+    if (includesSafeBaseToken) score += 55
+    if (includesFilenameToken) score += 45
+    if (includesFilepathToken) score += 35
+    if (includesDocIdToken) score += 90
     if (createdAtMs > 0 && updatedAt > 0 && Math.abs(updatedAt - createdAtMs) < 1000 * 60 * 60 * 24 * 3) {
       score += 25
     }
@@ -159,17 +176,6 @@ async function discoverLegacyGedCandidates(
   scored.sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt)
   const ranked = scored.slice(0, 30).map((entry) => entry.candidate)
   if (ranked.length > 0) return ranked
-
-  const fallback: Array<{ candidate: DownloadCandidate; updatedAt: number }> = []
-  for (const folder of folders) {
-    const files = await listFolderFilePaths(supabase, bucket, folder)
-    const sorted = [...files].sort((a, b) => b.updatedAt - a.updatedAt)
-    const latest = sorted[0]
-    if (latest) fallback.push({ candidate: { bucket, path: latest.path }, updatedAt: latest.updatedAt })
-  }
-  if (fallback.length > 0) {
-    return fallback.sort((a, b) => b.updatedAt - a.updatedAt).map((x) => x.candidate)
-  }
 
   // Scan large legacy buckets recursively (depth limité) si structure de dossier atypique.
   type QueueItem = { folder: string; depth: number }
@@ -390,7 +396,10 @@ export async function POST(
     }
 
     const docs = await prisma.userDocument.findMany({
-      where: { userId },
+      where: {
+        userId,
+        type: { in: [...UPLOAD_DOC_TYPES] },
+      },
       select: {
         id: true,
         type: true,
