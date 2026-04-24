@@ -81,13 +81,16 @@ export async function POST(request: NextRequest) {
         })
         const raison = (parsed.raisonSociale || "").trim() || "Madame, Monsieur"
         const template = EMAIL_TEMPLATES.devisDoEstimationJointe(raison, contractNumber)
-        await sendEmail({
+        const sent = await sendEmail({
           to: String(email).trim(),
           subject: template.subject,
           text: template.text,
           html: template.html,
           attachments: [{ filename: `devis-do-${contractNumber}.pdf`, content: Buffer.from(bytes) }],
         })
+        if (!sent) {
+          console.warn("[devis-dommage-ouvrage] email PDF non envoyé (Resend indisponible ou refusé)")
+        }
       }
     } catch (e) {
       console.error("[devis-dommage-ouvrage] email PDF:", e)

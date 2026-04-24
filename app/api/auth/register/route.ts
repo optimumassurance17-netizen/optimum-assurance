@@ -59,12 +59,15 @@ export async function POST(request: NextRequest) {
     })
 
     const template = EMAIL_TEMPLATES.bienvenue(raisonSociale ?? user.email)
-    await sendEmail({
+    const welcomeEmailSent = await sendEmail({
       to: user.email,
       subject: template.subject,
       text: template.text,
       html: (template as { html?: string }).html,
     })
+    if (!welcomeEmailSent) {
+      console.warn("[auth/register] Email bienvenue non envoyé", { userId: user.id, email: user.email })
+    }
 
     void sendAccountCreationSummaryAlert({
       source: "register_public",

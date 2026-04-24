@@ -356,36 +356,57 @@ export async function POST(request: NextRequest) {
             metadata.documentNumero || "",
             amount
           )
-          await sendEmail({
+          const sent = await sendEmail({
             to: user.email,
             subject: template.subject,
             text: template.text,
             html: (template as { html?: string }).html,
             attachments: facturePdfAttachment ? [facturePdfAttachment] : undefined,
           })
+          if (!sent) {
+            console.warn("[webhook] email confirmation DO non envoyé", {
+              userId: user.id,
+              paymentId,
+              type: metadata.type,
+            })
+          }
         } else if (metadata.type === "decennale_premier_trimestre" && decennaleFactureNumero) {
           const template = EMAIL_TEMPLATES.confirmationPaiementDecennalePremierTrimestre(
             metadata.raisonSociale || user.raisonSociale || user.email,
             decennaleFactureNumero,
             amount
           )
-          await sendEmail({
+          const sent = await sendEmail({
             to: user.email,
             subject: template.subject,
             text: template.text,
             html: (template as { html?: string }).html,
             attachments: factureDecennalePdfAttachment ? [factureDecennalePdfAttachment] : undefined,
           })
+          if (!sent) {
+            console.warn("[webhook] email confirmation décennale T1 non envoyé", {
+              userId: user.id,
+              paymentId,
+              type: metadata.type,
+            })
+          }
         } else if (metadata.type !== "sepa_trimestre" && metadata.type !== "decennale_premier_trimestre") {
           const template = EMAIL_TEMPLATES.confirmationSouscription(
             metadata.raisonSociale || user.raisonSociale || user.email
           )
-          await sendEmail({
+          const sent = await sendEmail({
             to: user.email,
             subject: template.subject,
             text: template.text,
             html: (template as { html?: string }).html,
           })
+          if (!sent) {
+            console.warn("[webhook] email confirmation souscription non envoyé", {
+              userId: user.id,
+              paymentId,
+              type: metadata.type,
+            })
+          }
         }
       }
     } else if (payment.status === "failed") {

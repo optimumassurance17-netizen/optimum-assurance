@@ -44,12 +44,18 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     const template = EMAIL_TEMPLATES.alerteImpaye(
       data.raisonSociale || document.user.raisonSociale || document.user.email
     )
-    await sendEmail({
+    const sent = await sendEmail({
       to: document.user.email,
       subject: template.subject,
       text: template.text,
       html: (template as { html?: string }).html,
     })
+    if (!sent) {
+      return NextResponse.json(
+        { error: "Envoi impossible (RESEND_API_KEY / domaine expéditeur)." },
+        { status: 503 }
+      )
+    }
 
     await logAdminActivity({
       adminEmail: session.user.email || "admin",

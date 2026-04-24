@@ -86,7 +86,7 @@ export async function sendAccountCreationSummaryAlert(
       )
     )
 
-    return results.some(Boolean)
+    return results.every(Boolean)
   } catch (error) {
     console.error("[account-creation-alert]", error)
     return false
