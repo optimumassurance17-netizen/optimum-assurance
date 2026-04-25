@@ -116,6 +116,11 @@ function getSlaBadge(hours: number): { label: string; className: string } {
   }
 }
 
+function toPercent(part: number, total: number): number {
+  if (!Number.isFinite(part) || !Number.isFinite(total) || total <= 0) return 0
+  return Math.max(0, Math.min(100, Math.round((part / total) * 100)))
+}
+
 function editFormFromDocData(parsed: Record<string, unknown>): EditContratForm {
   return {
     raisonSociale: String(parsed.raisonSociale ?? ""),
@@ -647,6 +652,90 @@ export default function GestionPage() {
       return true
     })
   }, [data, searchQuery, rcFabFilter])
+
+  const pilotageV2 = useMemo(() => {
+    if (!data) return null
+
+    const decennaleLeads = data.devisLeads ?? []
+    const rcFabriquantLeads = data.devisRcFabriquantLeads ?? []
+    const doEtudeLeads = data.devisEtudeLeads ?? []
+    const pendingSignatures = data.pendingSignatures ?? []
+    const contracts = data.insuranceContracts ?? []
+
+    const totalLeads = decennaleLeads.length + rcFabriquantLeads.length + doEtudeLeads.length
+    const hotLeads =
+      decennaleLeads.filter((lead) => !lead.rappelSentAt && (lead.slaHours ?? 0) >= 24).length +
+      rcFabriquantLeads.filter((lead) => normalizeRcFabriquantLeadStatut(lead.statut) === "a_traiter").length +
+      doEtudeLeads.filter((lead) => lead.statut === "pending").length
+
+    const devisEmis = data.documents.filter((d) => d.type === "devis" || d.type === "devis_do").length
+    const signedContracts = contracts.filter((c) => c.status === "approved" || c.status === "active")
+    const paidContracts = signedContracts.filter((c) => Boolean(c.paidAt))
+    const paidRevenue = data.payments
+      .filter((payment) => payment.status === "paid")
+      .reduce((acc, payment) => acc + payment.amount, 0)
+
+    const funnel = [
+      { id: "lead-to-quote", label: "Leads -> Devis émis", from: totalLeads, to: devisEmis },
+      { id: "quote-to-signed", label: "Devis -> Contrats signés", from: devisEmis, to: signedContracts.length },
+      {
+        id: "signed-to-paid",
+        label: "Contrats signés -> Contrats payés",
+        from: signedContracts.length,
+        to: paidContracts.length,
+      },
+    ].map((stage) => ({
+      ...stage,
+      rate: toPercent(stage.to, stage.from),
+    }))
+
+    const topCommercialActions = (data.dashboardActions ?? [])
+      .filter((action) =>
+        [
+          "decennale_lead_followup",
+          "rc_fabriquant_pending",
+          "do_etude_pending",
+          "approved_unpaid_contract",
+        ].includes(action.kind)
+      )
+      .sort((a, b) => b.ageHours - a.ageHours)
+      .slice(0, 5)
+
+    return {
+      totalLeads,
+      hotLeads,
+      devisEmis,
+      pendingSignatures: pendingSignatures.length,
+      signedContracts: signedContracts.length,
+      paidContracts: paidContracts.length,
+      unpaidSignedContracts: signedContracts.length - paidContracts.length,
+      paidRevenue,
+      funnel,
+      topCommercialActions,
+      lineBreakdown: [
+        {
+          key: "decennale",
+          label: "Décennale",
+          leads: decennaleLeads.length,
+          toHandle: decennaleLeads.filter((lead) => !lead.rappelSentAt && (lead.slaHours ?? 0) >= 24).length,
+        },
+        {
+          key: "rc-fabriquant",
+          label: "RC Fabriquant",
+          leads: rcFabriquantLeads.length,
+          toHandle: rcFabriquantLeads.filter(
+            (lead) => normalizeRcFabriquantLeadStatut(lead.statut) === "a_traiter"
+          ).length,
+        },
+        {
+          key: "do-etude",
+          label: "DO (étude)",
+          leads: doEtudeLeads.length,
+          toHandle: doEtudeLeads.filter((lead) => lead.statut === "pending").length,
+        },
+      ],
+    }
+  }, [data])
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -1195,6 +1284,12 @@ export default function GestionPage() {
               >
                 Indicateurs
               </a>
+              <a
+                href="#pilotage-commercial-v2"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#0b3b2f] text-emerald-100 border border-emerald-800/80 hover:bg-[#104536]"
+              >
+                Pilotage commercial V2
+              </a>
               {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
                 <a
                   href="#actions-du-jour"
@@ -1525,6 +1620,134 @@ export default function GestionPage() {
                 <p className="text-xs text-gray-200 mt-1">Tableau manuel + lien admin</p>
               </div>
             </section>
+
+            {pilotageV2 && (
+              <section
+                id="pilotage-commercial-v2"
+                className="scroll-mt-24 bg-[#1f2421] rounded-xl p-5 border border-emerald-900/60"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Pilotage commercial V2</h2>
+                    <p className="text-xs text-emerald-200/90">
+                      Vue funnel + priorités business pour piloter les relances et la conversion.
+                    </p>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded border border-emerald-700/70 bg-emerald-950/40 text-emerald-200">
+                    Mise à jour temps réel
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+                  <div className="rounded-lg border border-gray-700 bg-[#242a27] px-3 py-2">
+                    <p className="text-[11px] text-gray-300">Leads entrants</p>
+                    <p className="text-xl font-semibold text-white">{pilotageV2.totalLeads}</p>
+                  </div>
+                  <div className="rounded-lg border border-amber-700/50 bg-amber-950/20 px-3 py-2">
+                    <p className="text-[11px] text-amber-200">Leads chauds (24h+)</p>
+                    <p className="text-xl font-semibold text-amber-100">{pilotageV2.hotLeads}</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-700 bg-[#242a27] px-3 py-2">
+                    <p className="text-[11px] text-gray-300">Devis émis</p>
+                    <p className="text-xl font-semibold text-white">{pilotageV2.devisEmis}</p>
+                  </div>
+                  <div className="rounded-lg border border-violet-700/50 bg-violet-950/20 px-3 py-2">
+                    <p className="text-[11px] text-violet-200">Signatures en attente</p>
+                    <p className="text-xl font-semibold text-violet-100">{pilotageV2.pendingSignatures}</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-700 bg-[#242a27] px-3 py-2">
+                    <p className="text-[11px] text-gray-300">Contrats signés</p>
+                    <p className="text-xl font-semibold text-white">{pilotageV2.signedContracts}</p>
+                  </div>
+                  <div className="rounded-lg border border-emerald-700/60 bg-emerald-950/20 px-3 py-2">
+                    <p className="text-[11px] text-emerald-200">Contrats payés</p>
+                    <p className="text-xl font-semibold text-emerald-100">{pilotageV2.paidContracts}</p>
+                  </div>
+                  <div className="rounded-lg border border-red-700/50 bg-red-950/20 px-3 py-2">
+                    <p className="text-[11px] text-red-200">Signés non payés</p>
+                    <p className="text-xl font-semibold text-red-100">{pilotageV2.unpaidSignedContracts}</p>
+                  </div>
+                  <div className="rounded-lg border border-sky-700/60 bg-sky-950/20 px-3 py-2">
+                    <p className="text-[11px] text-sky-200">CA encaissé</p>
+                    <p className="text-xl font-semibold text-sky-100">
+                      {pilotageV2.paidRevenue.toLocaleString("fr-FR")} €
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid lg:grid-cols-2 gap-4">
+                  <div className="rounded-lg border border-gray-700 bg-[#242a27] p-3">
+                    <h3 className="text-sm font-semibold text-white mb-2">Entonnoir conversion</h3>
+                    <div className="space-y-3">
+                      {pilotageV2.funnel.map((stage) => (
+                        <div key={stage.id}>
+                          <div className="flex justify-between items-center text-xs text-gray-200 mb-1">
+                            <span>{stage.label}</span>
+                            <span>
+                              {stage.to}/{stage.from} ({stage.rate}%)
+                            </span>
+                          </div>
+                          <div className="h-2 rounded bg-[#161a18] overflow-hidden border border-gray-700">
+                            <div
+                              className={`h-full ${
+                                stage.rate >= 70
+                                  ? "bg-emerald-500"
+                                  : stage.rate >= 40
+                                    ? "bg-amber-400"
+                                    : "bg-red-500"
+                              }`}
+                              style={{ width: `${stage.rate}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-gray-700 bg-[#242a27] p-3">
+                    <h3 className="text-sm font-semibold text-white mb-2">Pilotage par ligne business</h3>
+                    <div className="space-y-2">
+                      {pilotageV2.lineBreakdown.map((line) => (
+                        <div
+                          key={line.key}
+                          className="flex items-center justify-between rounded border border-gray-700 bg-[#1a201d] px-3 py-2"
+                        >
+                          <span className="text-sm text-gray-100">{line.label}</span>
+                          <div className="text-right">
+                            <p className="text-sm text-white">{line.leads} lead(s)</p>
+                            <p className="text-xs text-amber-200">{line.toHandle} à traiter</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-3">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-300 mb-2">
+                        Priorités commerciales immédiates
+                      </h4>
+                      {pilotageV2.topCommercialActions.length === 0 ? (
+                        <p className="text-xs text-gray-400">Aucune priorité commerciale critique détectée.</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {pilotageV2.topCommercialActions.map((action) => (
+                            <a
+                              key={action.id}
+                              href={action.href}
+                              className="block rounded border border-gray-700 bg-[#1a201d] px-2.5 py-2 hover:border-emerald-500/80"
+                            >
+                              <p className="text-xs text-white">
+                                {action.title} <span className="text-gray-400">({action.ageHours}h)</span>
+                              </p>
+                              <p className="text-[11px] text-gray-300 mt-0.5">{action.description}</p>
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
 
             {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
               <section id="actions-du-jour" className="scroll-mt-24 bg-[#252525] rounded-xl p-5 border border-amber-700/60">
