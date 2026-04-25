@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { createInsuranceContract } from "@/lib/insurance-contract-service"
+import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 
 function asTrimmedString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined
@@ -84,13 +85,48 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "companyAgeMonths invalide" }, { status: 400 })
     }
 
+    const hierarchy =
+      productType === "decennale" && activities?.length
+        ? await resolveUserActivitiesHierarchy(activities, { userId: session.user.id })
+        : null
+    const matchedActivities = hierarchy?.guaranteedActivitiesFlat ?? activities ?? []
+    const nomenclatureAlerts =
+      hierarchy?.unmatched.map(
+        (item) =>
+          `Activité hors nomenclature: ${item.input}${
+            item.suggestedActivity
+              ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+              : ""
+          }`
+      ) ?? []
+
+    if (productType === "decennale" && matchedActivities.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Aucune activité ne correspond à la nomenclature officielle. Merci de préciser vos activités.",
+          unmatchedActivities: hierarchy?.unmatched ?? [],
+          nomenclatureAlerts,
+        },
+        { status: 400 }
+      )
+    }
+
+    const mergedExclusions =
+      nomenclatureAlerts.length > 0
+        ? [...(exclusions ?? []), ...nomenclatureAlerts]
+        : exclusions
+
     const { contract, risk } = await createInsuranceContract({
       productType,
       clientName,
       siret,
       address,
-      activities,
-      exclusions,
+      activities:
+        productType === "decennale"
+          ? hierarchy?.guaranteedHierarchyLines ?? matchedActivities
+          : matchedActivities,
+      exclusions: mergedExclusions,
       projectName,
       projectAddress,
       constructionNature,
@@ -108,6 +144,11 @@ export async function POST(request: NextRequest) {
         riskScore: risk.score,
         riskReasons: risk.reasons,
         rejectedReason: contract.rejectedReason,
+        matchedActivities,
+        matchedHierarchy: hierarchy?.guaranteedHierarchyLines ?? [],
+        unmatchedActivities: hierarchy?.unmatched ?? [],
+        nomenclatureAlerts,
+        confidence: hierarchy?.confidence ?? null,
       },
     })
   } catch (e) {

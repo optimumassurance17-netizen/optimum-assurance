@@ -9,6 +9,7 @@ import {
   OUVRAGES_EXCLUS_DECENNALE,
   TRAVAUX_ACCESSOIRES_NOTE,
 } from "@/lib/nomenclature-activites"
+import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { SITE_URL } from "@/lib/site-url"
 import { DEVOIR_CONSEIL_TEXT } from "@/lib/devoir-conseil"
 import { DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSES } from "@/lib/decennale-legal-clauses"
@@ -53,6 +54,7 @@ const COURTIER = {
 }
 
 export function DevisTemplate({ numero, data }: DevisTemplateProps) {
+  const activities = extractStructuredActivities(data)
   const primeTrimestrielle =
     data.primeTrimestrielle ?? Math.round((data.primeAnnuelle / 4) * 100) / 100
   const primeMensuelle =
@@ -143,7 +145,7 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
       {/* Activités professionnelles */}
       <div className="mb-6">
         <h3 className="font-bold text-black mb-2 uppercase text-xs">Activités professionnelles exercées</h3>
-        <p>{data.activites.join(", ")}</p>
+        <p className="whitespace-pre-line">{activities.join("\n")}</p>
       </div>
 
       {/* Garanties proposées */}

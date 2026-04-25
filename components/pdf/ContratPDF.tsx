@@ -4,6 +4,7 @@ import { pdfTheme, PdfBrandHeader } from "@/lib/pdf/react-pdf-brand"
 import { pdfLegalLinksLine } from "@/lib/pdf-legal-links"
 import { DEVOIR_CONSEIL_TEXT_BY_PRODUCT } from "@/lib/devoir-conseil"
 import { DECENNALE_CUSTOM_LEGAL_CLAUSES } from "@/lib/decennale-legal-clauses"
+import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 
 interface ContratPDFProps {
   numero: string
@@ -32,6 +33,7 @@ interface ContratPDFProps {
 
 export function ContratPDF({ numero, data }: ContratPDFProps) {
   const devoirConseil = DEVOIR_CONSEIL_TEXT_BY_PRODUCT.decennale
+  const activities = extractStructuredActivities(data)
   return (
     <Document>
       <Page size="A4" style={pdfTheme.page}>
@@ -57,7 +59,7 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
           <Text style={pdfTheme.h3}>Article 2 - Objet</Text>
           <Text style={pdfTheme.p}>
             Le présent contrat garantit la responsabilité civile décennale de l&apos;assuré pour les activités :{" "}
-            {data.activites?.join(", ") || "—"}.
+            {activities.length ? activities.join("\n") : "—"}.
           </Text>
         </View>
 

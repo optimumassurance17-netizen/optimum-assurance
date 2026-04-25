@@ -17,6 +17,10 @@ import { DECENNALE_LEGAL_CLAUSES } from "@/lib/decennale-legal-clauses"
 export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint8Array> {
   validateDecennaleQuote(data)
   const devoirConseil = getDevoirConseilText("decennale")
+  const activities =
+    data.activitiesHierarchy && data.activitiesHierarchy.length > 0
+      ? data.activitiesHierarchy
+      : (data.activities ?? [])
 
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
@@ -56,7 +60,7 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
     `Assuré : ${data.clientName}${data.siret ? ` — SIRET ${data.siret}` : ""}.`,
     `Adresse : ${data.address}.`,
     `Période : du ${data.startDate} au ${data.endDate}.`,
-    `Activités garanties : ${data.activities!.join(", ")}.`,
+    `Activités garanties : ${activities.join("\n")}.`,
     data.activityExclusions?.length
       ? `Activités / travaux exclus : ${data.activityExclusions.join(", ")}.`
       : "Activités / travaux exclus : aucun libellé d’exclusion spécifique déclaré à l’émission.",

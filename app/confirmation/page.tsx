@@ -6,6 +6,7 @@ import { Header } from "@/components/Header"
 import { STORAGE_KEYS } from "@/lib/types"
 import { readResponseJson } from "@/lib/read-response-json"
 import { getSignedContractData, getSignedContractNumero } from "@/lib/signature-session-fields"
+import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 
 async function sendConfirmationEmail(raisonSociale: string, email: string) {
   try {
@@ -145,6 +146,14 @@ export default function ConfirmationPage() {
                 const trimestrielCarte = paiementOpts?.premierPaiementCarte === true && periodicite === "trimestriel"
                 if (trimestrielCarte) setDecennalePremierTrimestreCarte(true)
                 const signedPayload = getSignedContractData(souscription)
+                const rawActivities = Array.isArray(souscription.activites)
+                  ? (souscription.activites as unknown[])
+                      .filter((item): item is string => typeof item === "string")
+                      .map((item) => item.trim())
+                      .filter(Boolean)
+                  : []
+                const mappedHierarchy = extractStructuredActivities(tarif)
+                const mappedActivities = mappedHierarchy.length ? mappedHierarchy : rawActivities
                 const docData = signedPayload
                   ? {
                       ...signedPayload,
@@ -156,7 +165,8 @@ export default function ConfirmationPage() {
                       email: souscription.email,
                       representantLegal: souscription.representantLegal,
                       civilite: souscription.civilite,
-                      activites: souscription.activites,
+                      activites: mappedActivities,
+                      activitesNormalisees: rawActivities,
                       primeMensuelle: undefined,
                       primeTrimestrielle,
                       modePaiement: paiementOpts ? "prelevement" : "unique",
@@ -178,7 +188,8 @@ export default function ConfirmationPage() {
                       email: souscription.email,
                       representantLegal: souscription.representantLegal,
                       civilite: souscription.civilite,
-                      activites: souscription.activites,
+                      activites: mappedActivities,
+                      activitesNormalisees: rawActivities,
                       chiffreAffaires: souscription.chiffreAffaires,
                       primeAnnuelle: tarif?.primeAnnuelle,
                       primeMensuelle: tarif?.primeMensuelle ?? primeMensuelleCalc,

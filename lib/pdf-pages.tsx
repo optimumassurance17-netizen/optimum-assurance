@@ -6,6 +6,7 @@ import React from "react"
 import { Page, Text, View, Image } from "@react-pdf/renderer"
 import { pdfLegalLinksLine } from "@/lib/pdf-legal-links"
 import { pdfTheme, PdfBrandHeader } from "@/lib/pdf/react-pdf-brand"
+import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 
 export function ContratPDFPage({
   numero,
@@ -31,6 +32,7 @@ export function ContratPDFPage({
     dateEffet?: string
     dateEcheance?: string
   }
+  const activities = extractStructuredActivities(d)
   return (
     <Page size="A4" style={pdfTheme.page}>
       <PdfBrandHeader tagline="Assurance décennale professionnelle — extrait contrat" />
@@ -49,6 +51,10 @@ export function ContratPDFPage({
         <Text style={pdfTheme.p}>
           Du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}
         </Text>
+      </View>
+      <View style={pdfTheme.section}>
+        <Text style={pdfTheme.h3}>Article 2 - Activités garanties</Text>
+        <Text style={pdfTheme.p}>{activities.length ? activities.join("\n") : "—"}</Text>
       </View>
       <View style={pdfTheme.section}>
         <Text style={pdfTheme.h3}>Article 4 - Conditions</Text>
@@ -94,6 +100,7 @@ export function AttestationPDFPage({
     verificationUrl?: string
     verificationQrDataUri?: string
   }
+  const activities = extractStructuredActivities(d)
   return (
     <Page size="A4" style={pdfTheme.page}>
       <PdfBrandHeader tagline="Assurance décennale professionnelle" />
@@ -108,7 +115,7 @@ export function AttestationPDFPage({
         )}
         <Text style={pdfTheme.p}>
           est garantie au titre de l&apos;assurance responsabilité civile décennale pour les activités :{" "}
-          {d.activites?.join(", ") ?? "—"}
+          {activities.length ? activities.join("\n") : "—"}
         </Text>
         <Text style={pdfTheme.p}>
           Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}

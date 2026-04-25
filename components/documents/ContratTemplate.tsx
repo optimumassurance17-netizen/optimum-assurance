@@ -3,6 +3,7 @@
 import { SITE_URL } from "@/lib/site-url"
 import { getDevoirConseilContent } from "@/lib/devoir-conseil"
 import { DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSE_TEXT } from "@/lib/decennale-legal-clauses"
+import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 
 interface ContratTemplateProps {
   numero: string
@@ -32,6 +33,7 @@ interface ContratTemplateProps {
 
 export function ContratTemplate({ numero, data }: ContratTemplateProps) {
   const devoirConseil = getDevoirConseilContent("decennale")
+  const activities = extractStructuredActivities(data)
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0">
       <div className="border-b-2 border-[#2563eb] pb-4 mb-6">
@@ -55,7 +57,10 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
 
         <section>
           <h3 className="font-semibold mb-2">Article 2 - Objet</h3>
-          <p>Le présent contrat garantit la responsabilité civile décennale de l&apos;assuré pour les activités suivantes : {data.activites.join(", ")}.</p>
+          <p className="whitespace-pre-line">
+            Le présent contrat garantit la responsabilité civile décennale de l&apos;assuré pour les activités suivantes :{" "}
+            {activities.join("\n")}.
+          </p>
         </section>
 
         <section>

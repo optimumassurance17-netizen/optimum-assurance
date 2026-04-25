@@ -9,6 +9,7 @@ import { getNextNumero } from "@/lib/documents"
 import { prisma } from "@/lib/prisma"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
+import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 
 export const runtime = "nodejs"
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -94,6 +95,28 @@ export async function POST(request: NextRequest) {
           .filter((activity) => activity.length > 0)
           .slice(0, 50)
       : []
+    const hierarchy = await resolveUserActivitiesHierarchy(activites, {
+      userId: session.user.id,
+    })
+    if (!hierarchy.guaranteedActivitiesFlat.length) {
+      return NextResponse.json(
+        {
+          error:
+            "Aucune activité ne correspond à la nomenclature officielle. Merci de préciser vos activités.",
+          unmatchedActivities: hierarchy.unmatched,
+          nomenclatureAlerts: hierarchy.unmatched.map(
+            (item) =>
+              `Activité hors nomenclature: ${item.input}${
+                item.suggestedActivity
+                  ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+                  : ""
+              }`
+          ),
+        },
+        { status: 400 }
+      )
+    }
+    const matchedActivities = hierarchy.guaranteedActivitiesFlat
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
     const now = new Date()
@@ -110,7 +133,18 @@ export async function POST(request: NextRequest) {
       ville: asOptionalTrimmedString(rawSouscription.ville),
       representantLegal,
       civilite: asOptionalTrimmedString(rawSouscription.civilite),
-      activites,
+      activites: hierarchy.guaranteedHierarchyLines,
+      activitesNormalisees: matchedActivities,
+      activitesHorsNomenclature: hierarchy.unmatched.map((item) => item.input),
+      alertsNomenclature: hierarchy.unmatched.map(
+        (item) =>
+          `Activité hors nomenclature: ${item.input}${
+            item.suggestedActivity
+              ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+              : ""
+          }`
+      ),
+      confidenceNomenclature: hierarchy.confidence,
       chiffreAffaires: asNonNegativeNumber(rawSouscription.chiffreAffaires, 0),
       primeAnnuelle,
       primeMensuelle: primeMensuelle > 0 ? primeMensuelle : undefined,

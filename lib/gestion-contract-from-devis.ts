@@ -22,12 +22,19 @@ export function buildContractDataFromDevisForSignature(
   const dateEcheance = new Date(now.getFullYear(), 11, 31).toLocaleDateString("fr-FR")
 
   let activites: string[] = []
+  let activitesNormalisees: string[] = []
   if (Array.isArray(devisData.activites)) {
     activites = devisData.activites as string[]
   } else if (typeof devisData.activites === "string") {
     activites = devisData.activites
       .split(",")
       .map((s) => s.trim())
+      .filter(Boolean)
+  }
+  if (Array.isArray(devisData.activitesNormalisees)) {
+    activitesNormalisees = (devisData.activitesNormalisees as unknown[])
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim())
       .filter(Boolean)
   }
 
@@ -52,6 +59,7 @@ export function buildContractDataFromDevisForSignature(
     representantLegal: String(devisData.representantLegal || "").trim(),
     civilite: String(devisData.civilite || "M").trim(),
     activites,
+    activitesNormalisees,
     chiffreAffaires: Number(devisData.chiffreAffaires) || 0,
     primeAnnuelle: pa,
     primeMensuelle,

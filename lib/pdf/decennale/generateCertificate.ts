@@ -19,6 +19,10 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     throw new Error("generateDecennaleCertificate : productType doit être decennale")
   }
   validateCertificateData(data)
+  const activities =
+    data.activitiesHierarchy && data.activitiesHierarchy.length > 0
+      ? data.activitiesHierarchy
+      : (data.activities ?? [])
 
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
@@ -87,7 +91,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
   y -= 14
   y = drawWrappedText(
     page,
-    `Activité(s) assurée(s) : ${data.activities!.join(", ")}.`,
+    `Activité(s) assurée(s) : ${activities.join("\n")}.`,
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,

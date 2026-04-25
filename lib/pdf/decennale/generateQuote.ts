@@ -18,6 +18,9 @@ const QUOTE_VALIDITY_DAYS = 30
  */
 export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8Array> {
   validateDecennaleQuote(data)
+  const activities = (data.activitiesHierarchy && data.activitiesHierarchy.length > 0)
+    ? data.activitiesHierarchy
+    : (data.activities ?? [])
 
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
@@ -84,7 +87,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
   y -= 14
   y = drawWrappedText(
     page,
-    data.activities!.join(", "),
+    activities.join("\n"),
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,

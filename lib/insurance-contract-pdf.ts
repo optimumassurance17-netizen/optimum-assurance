@@ -21,6 +21,7 @@ import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
 import { primeTrimestrielle } from "@/lib/premium"
+import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import {
   generateRcFabBatteriesCertificatePdf,
   generateRcFabBatteriesFicPdf,
@@ -48,6 +49,10 @@ function contractToInsuranceData(c: InsuranceContract): InsuranceData {
     siret: c.siret ?? undefined,
     address: c.address,
     activities: activities.length ? activities : undefined,
+    activitiesHierarchy: extractStructuredActivities({
+      activities: activities,
+      activitiesHierarchy: activities,
+    }),
     activityExclusions: exclusions.length ? exclusions : undefined,
     projectName: c.projectName ?? undefined,
     projectAddress: c.projectAddress ?? undefined,

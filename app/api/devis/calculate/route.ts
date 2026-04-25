@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { calculerTarif, CA_MINIMUM } from "@/lib/tarification"
+import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,16 +33,57 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const activitesInput = Array.isArray(activites)
+      ? activites
+          .filter((value): value is string => typeof value === "string")
+          .map((value) => value.trim())
+          .filter((value) => value.length > 0)
+      : []
+
+    const hierarchy = await resolveUserActivitiesHierarchy(activitesInput)
+    if (!hierarchy.guaranteedActivitiesFlat.length) {
+      return NextResponse.json(
+        {
+          error:
+            "Aucune activité n'a pu être rattachée à la nomenclature officielle. Merci de préciser vos activités.",
+          unmatchedActivities: hierarchy.unmatched,
+          nomenclatureAlerts: hierarchy.unmatched.map(
+            (item) =>
+              `Activité hors nomenclature: ${item.input}${
+                item.suggestedActivity
+                  ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+                  : ""
+              }`
+          ),
+        },
+        { status: 400 }
+      )
+    }
+
     const result = calculerTarif({
       chiffreAffaires: Number(chiffreAffaires),
       sinistres: Number(sinistres),
       jamaisAssure: Boolean(jamaisAssure),
       resilieNonPaiement: Boolean(resilieNonPaiement),
-      activites: Array.isArray(activites) ? activites : [],
+      activites: activitesInput,
       reprisePasse: Boolean(reprisePasse),
     })
 
-    return NextResponse.json(result)
+    return NextResponse.json({
+      ...result,
+      matchedActivities: hierarchy.guaranteedActivitiesFlat,
+      matchedHierarchy: hierarchy.guaranteedHierarchyLines,
+      unmatchedActivities: hierarchy.unmatched,
+      nomenclatureAlerts: hierarchy.unmatched.map(
+        (item) =>
+          `Activité hors nomenclature: ${item.input}${
+            item.suggestedActivity
+              ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+              : ""
+          }`
+      ),
+      confidence: hierarchy.confidence,
+    })
   } catch (error) {
     console.error("Erreur calcul devis:", error)
     return NextResponse.json(

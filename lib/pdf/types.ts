@@ -12,6 +12,8 @@ export type InsuranceData = {
   address: string
   /** Décennale : activités couvertes */
   activities?: string[]
+  /** Décennale : affichage hiérarchique normalisé (Groupe/Activité/Sous-activité) */
+  activitiesHierarchy?: string[]
   /** Activités / travaux exclus du périmètre (mention contractuelle) */
   activityExclusions?: string[]
   /** DO : désignation du chantier / opération */
