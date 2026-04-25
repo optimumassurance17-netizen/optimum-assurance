@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { assertCronAuthorized } from "@/lib/cron-auth"
+import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 
 /**
  * À appeler par un cron (ex: Vercel Cron, GitHub Actions)
@@ -19,10 +20,17 @@ export async function GET(request: NextRequest) {
     })
 
     let sent = 0
+    let unsubscribedSkipped = 0
     for (const doc of attestations) {
       const data = JSON.parse(doc.data) as { dateEcheance?: string; raisonSociale?: string }
       const echeance = data.dateEcheance
       if (!echeance) continue
+      const email = doc.user.email.trim().toLowerCase()
+      if (!email) continue
+      if (await isReminderUnsubscribed(email, "renewal_reminder")) {
+        unsubscribedSkipped++
+        continue
+      }
 
       const parts = echeance.split("/")
       if (parts.length !== 3) continue
@@ -31,12 +39,13 @@ export async function GET(request: NextRequest) {
       const diff = Math.floor((dateEcheance.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
       if (diff < 0 || diff > 35) continue
 
-      const template = EMAIL_TEMPLATES.rappelRenouvellement(
+      const template = EMAIL_TEMPLATES.rappelRenouvellementAvecDesabonnement(
         data.raisonSociale || doc.user.email,
-        echeance
+        echeance,
+        email
       )
       const ok = await sendEmail({
-        to: doc.user.email,
+        to: email,
         subject: template.subject,
         text: template.text,
         html: (template as { html?: string }).html,
@@ -44,7 +53,7 @@ export async function GET(request: NextRequest) {
       if (ok) sent++
     }
 
-    return NextResponse.json({ sent, total: attestations.length })
+    return NextResponse.json({ sent, total: attestations.length, unsubscribedSkipped })
   } catch (error) {
     console.error("Erreur rappels renouvellement:", error)
     return NextResponse.json({ error: "Erreur" }, { status: 500 })

@@ -2,11 +2,20 @@ import { createHmac, timingSafeEqual } from "node:crypto"
 import { SITE_URL } from "@/lib/site-url"
 import { prisma } from "@/lib/prisma"
 
-export type ReminderUnsubscribeType = "devis" | "signature" | "all"
+export type ReminderUnsubscribeType =
+  | "devis"
+  | "signature"
+  | "paiement"
+  | "dossier"
+  | "renouvellement"
+  | "all"
 
 export type ReminderUnsubscribeKind =
   | "devis_reminder"
   | "signature_reminder"
+  | "payment_reminder"
+  | "dossier_incomplete_reminder"
+  | "renewal_reminder"
   | "all_reminders"
 
 type ReminderUnsubscribePayload = {
@@ -20,12 +29,18 @@ const UNSUB_TARGET_TYPE = "reminder_unsubscribe"
 const VALID_KINDS: ReminderUnsubscribeKind[] = [
   "devis_reminder",
   "signature_reminder",
+  "payment_reminder",
+  "dossier_incomplete_reminder",
+  "renewal_reminder",
   "all_reminders",
 ]
 
 function toKind(type: ReminderUnsubscribeType): ReminderUnsubscribeKind {
   if (type === "devis") return "devis_reminder"
   if (type === "signature") return "signature_reminder"
+  if (type === "paiement") return "payment_reminder"
+  if (type === "dossier") return "dossier_incomplete_reminder"
+  if (type === "renouvellement") return "renewal_reminder"
   return "all_reminders"
 }
 

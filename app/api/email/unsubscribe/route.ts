@@ -8,6 +8,9 @@ import {
 const LABELS: Record<ReminderUnsubscribeKind, string> = {
   devis_reminder: "relances devis",
   signature_reminder: "relances signature",
+  payment_reminder: "relances paiement",
+  dossier_incomplete_reminder: "relances dossier incomplet",
+  renewal_reminder: "relances renouvellement",
   all_reminders: "toutes les relances",
 }
 
