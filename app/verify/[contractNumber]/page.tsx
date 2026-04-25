@@ -5,6 +5,7 @@ import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contra
 import { getVerifyPaymentRow } from "@/lib/insurance-contract-verify-labels"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
+import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 
 export const dynamic = "force-dynamic"
 export const metadata = {
@@ -33,6 +34,9 @@ export default async function VerifyByContractNumberPage({
 
     const activities = parseActivitiesJson(ic.activitiesJson)
     const exclusions = parseExclusionsJson(ic.exclusionsJson)
+    const optimizedExclusions = extractOptimizedExclusionLines({
+      activityExclusions: exclusions,
+    })
     const paymentRow = getVerifyPaymentRow(ic, isActive)
 
     return (
@@ -113,8 +117,20 @@ export default async function VerifyByContractNumberPage({
                   <div className="border-t border-slate-100 pt-3">
                     <dt className="font-semibold text-slate-900">Exclusion(s) d&apos;activité</dt>
                     <dd className="mt-1 text-slate-800">
-                      {exclusions.length > 0
-                        ? exclusions.join(", ")
+                      {optimizedExclusions.length > 0
+                        ? optimizedExclusions.join(", ")
+                        : exclusions.length > 0
+                          ? exclusions.join(", ")
+                          : "Aucune exclusion d’activité déclarée au contrat."}
+                    </dd>
+                  </div>
+                )}
+                {ic.productType === "decennale" && (
+                  <div className="border-t border-slate-100 pt-3">
+                    <dt className="font-semibold text-slate-900">Exclusions de garantie</dt>
+                    <dd className="mt-1 text-slate-800">
+                      {optimizedExclusions.length > 0
+                        ? `Ne sont pas couverts : ${optimizedExclusions.join("; ")}`
                         : "Aucune exclusion d’activité déclarée au contrat."}
                     </dd>
                   </div>
@@ -129,9 +145,11 @@ export default async function VerifyByContractNumberPage({
                   <div className="border-t border-slate-100 pt-3">
                     <dt className="font-semibold text-slate-900">Exclusion(s) d&apos;activité</dt>
                     <dd className="mt-1 text-slate-800">
-                      {exclusions.length > 0
-                        ? exclusions.join(", ")
-                        : "Aucune exclusion d’activité déclarée au contrat."}
+                      {optimizedExclusions.length > 0
+                        ? optimizedExclusions.join(", ")
+                        : exclusions.length > 0
+                          ? exclusions.join(", ")
+                          : "Aucune exclusion d’activité déclarée au contrat."}
                     </dd>
                   </div>
                 )}

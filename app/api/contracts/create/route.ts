@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { createInsuranceContract } from "@/lib/insurance-contract-service"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
 function asTrimmedString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined
@@ -112,10 +113,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const mergedExclusions =
-      nomenclatureAlerts.length > 0
-        ? [...(exclusions ?? []), ...nomenclatureAlerts]
-        : exclusions
+    const optimizedExclusions =
+      productType === "decennale"
+        ? generateOptimizedExclusions(
+            hierarchy?.guaranteedHierarchyLines.length
+              ? hierarchy.guaranteedHierarchyLines
+              : matchedActivities,
+            { selections: hierarchy?.selections }
+          )
+        : null
+    const mergedExclusionsRaw = [
+      ...(exclusions ?? []),
+      ...(optimizedExclusions?.lines ?? []),
+      ...nomenclatureAlerts,
+    ]
+    const mergedExclusions = [...new Set(mergedExclusionsRaw)]
 
     const { contract, risk } = await createInsuranceContract({
       productType,
@@ -149,6 +161,8 @@ export async function POST(request: NextRequest) {
         unmatchedActivities: hierarchy?.unmatched ?? [],
         nomenclatureAlerts,
         confidence: hierarchy?.confidence ?? null,
+        optimizedExclusions: optimizedExclusions?.lines ?? [],
+        exclusionScore: optimizedExclusions?.score ?? null,
       },
     })
   } catch (e) {

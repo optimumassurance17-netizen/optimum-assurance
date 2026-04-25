@@ -7,6 +7,7 @@ import { STORAGE_KEYS } from "@/lib/types"
 import { readResponseJson } from "@/lib/read-response-json"
 import { getSignedContractData, getSignedContractNumero } from "@/lib/signature-session-fields"
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
+import { buildOptimizedExclusionSummary } from "@/lib/optimized-exclusions"
 
 async function sendConfirmationEmail(raisonSociale: string, email: string) {
   try {
@@ -154,6 +155,9 @@ export default function ConfirmationPage() {
                   : []
                 const mappedHierarchy = extractStructuredActivities(tarif)
                 const mappedActivities = mappedHierarchy.length ? mappedHierarchy : rawActivities
+                const optimizedExclusions = buildOptimizedExclusionSummary(
+                  mappedActivities.length ? mappedActivities : rawActivities
+                )
                 const docData = signedPayload
                   ? {
                       ...signedPayload,
@@ -167,6 +171,9 @@ export default function ConfirmationPage() {
                       civilite: souscription.civilite,
                       activites: mappedActivities,
                       activitesNormalisees: rawActivities,
+                      exclusionsOptimisees: optimizedExclusions.lines,
+                      exclusionScore: optimizedExclusions.score,
+                      activityExclusions: optimizedExclusions.lines,
                       primeMensuelle: undefined,
                       primeTrimestrielle,
                       modePaiement: paiementOpts ? "prelevement" : "unique",
@@ -190,6 +197,9 @@ export default function ConfirmationPage() {
                       civilite: souscription.civilite,
                       activites: mappedActivities,
                       activitesNormalisees: rawActivities,
+                      exclusionsOptimisees: optimizedExclusions.lines,
+                      exclusionScore: optimizedExclusions.score,
+                      activityExclusions: optimizedExclusions.lines,
                       chiffreAffaires: souscription.chiffreAffaires,
                       primeAnnuelle: tarif?.primeAnnuelle,
                       primeMensuelle: tarif?.primeMensuelle ?? primeMensuelleCalc,

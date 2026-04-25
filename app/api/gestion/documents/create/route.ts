@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { getNextNumero } from "@/lib/documents"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -71,12 +72,31 @@ export async function POST(request: NextRequest) {
         ? customNumero
         : await getNextNumero(type)
 
+    let normalizedData: unknown = data
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      const dataRecord = { ...(data as Record<string, unknown>) }
+      const activitesInput = Array.isArray(dataRecord.activites)
+        ? dataRecord.activites
+            .filter((value): value is string => typeof value === "string")
+            .map((value) => value.trim())
+            .filter((value) => value.length > 0)
+        : []
+      if (activitesInput.length > 0) {
+        const optimizedExclusions = generateOptimizedExclusions(activitesInput)
+        dataRecord.exclusionsOptimisees = optimizedExclusions.lines
+        dataRecord.exclusionScore = optimizedExclusions.score
+        dataRecord.activityExclusions = optimizedExclusions.lines
+        dataRecord.exclusions = optimizedExclusions.lines
+      }
+      normalizedData = dataRecord
+    }
+
     const document = await prisma.document.create({
       data: {
         userId,
         type,
         numero,
-        data: JSON.stringify(data || {}),
+        data: JSON.stringify(normalizedData || {}),
         ...(type === "attestation" && {
           verificationToken: generateVerificationToken(),
           status: "valide",

@@ -7,6 +7,7 @@ import { Page, Text, View, Image } from "@react-pdf/renderer"
 import { pdfLegalLinksLine } from "@/lib/pdf-legal-links"
 import { pdfTheme, PdfBrandHeader } from "@/lib/pdf/react-pdf-brand"
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
+import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 
 export function ContratPDFPage({
   numero,
@@ -101,6 +102,7 @@ export function AttestationPDFPage({
     verificationQrDataUri?: string
   }
   const activities = extractStructuredActivities(d)
+  const optimizedExclusions = extractOptimizedExclusionLines(d)
   return (
     <Page size="A4" style={pdfTheme.page}>
       <PdfBrandHeader tagline="Assurance décennale professionnelle" />
@@ -117,6 +119,11 @@ export function AttestationPDFPage({
           est garantie au titre de l&apos;assurance responsabilité civile décennale pour les activités :{" "}
           {activities.length ? activities.join("\n") : "—"}
         </Text>
+        {optimizedExclusions.length > 0 && (
+          <Text style={pdfTheme.p}>
+            Ne sont pas couverts : {optimizedExclusions.join(" ; ")}
+          </Text>
+        )}
         <Text style={pdfTheme.p}>
           Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}
         </Text>

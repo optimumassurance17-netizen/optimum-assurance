@@ -22,6 +22,7 @@ import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
 import { primeTrimestrielle } from "@/lib/premium"
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
+import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import {
   generateRcFabBatteriesCertificatePdf,
   generateRcFabBatteriesFicPdf,
@@ -43,6 +44,9 @@ function contractToInsuranceData(c: InsuranceContract): InsuranceData {
   const exclusions = parseExclusionsJson(c.exclusionsJson)
   const vf = c.validFrom ?? c.paidAt ?? c.createdAt
   const vu = c.validUntil ?? c.createdAt
+  const optimizedExclusions = extractOptimizedExclusionLines({
+    activityExclusions: exclusions,
+  })
   return {
     productType: c.productType,
     clientName: c.clientName,
@@ -53,7 +57,12 @@ function contractToInsuranceData(c: InsuranceContract): InsuranceData {
       activities: activities,
       activitiesHierarchy: activities,
     }),
-    activityExclusions: exclusions.length ? exclusions : undefined,
+    activityExclusions:
+      optimizedExclusions.length > 0
+        ? optimizedExclusions
+        : exclusions.length
+          ? exclusions
+          : undefined,
     projectName: c.projectName ?? undefined,
     projectAddress: c.projectAddress ?? undefined,
     constructionNature: c.constructionNature ?? undefined,

@@ -15,6 +15,7 @@ import { CA_MINIMUM } from "@/lib/tarification"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { getMetierPrefillActivites } from "@/lib/metier-devis-prefill"
 import { readResponseJson } from "@/lib/read-response-json"
+import { buildOptimizedExclusionSummary } from "@/lib/optimized-exclusions"
 
 const AdresseAutocomplete = dynamic(
   () => import("@/components/AdresseAutocomplete").then((m) => m.AdresseAutocomplete),
@@ -224,6 +225,7 @@ function DevisPageContent() {
     }
     setLoading(true)
 
+    const optimizedExclusions = buildOptimizedExclusionSummary(activites)
     const data: DevisData & Record<string, unknown> = {
       siret,
       chiffreAffaires: Number(chiffreAffaires),
@@ -231,6 +233,8 @@ function DevisPageContent() {
       jamaisAssure,
       resilieNonPaiement,
       activites,
+      exclusionsOptimisees: optimizedExclusions.lines,
+      exclusionScore: optimizedExclusions.score,
       tarif,
       reprisePasse: reprisePasse && nbSinistres === 0,
       montantIndemnisations: Number(montantIndemnisations) || 0,

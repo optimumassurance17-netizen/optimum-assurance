@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { asJsonObject } from "@/lib/json-object"
 import { getNextNumero } from "@/lib/documents"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -95,6 +96,10 @@ export async function POST(request: NextRequest) {
             userId: session.user.id,
           })
           if (hierarchy.guaranteedHierarchyLines.length > 0) {
+            const optimizedExclusions = generateOptimizedExclusions(
+              hierarchy.guaranteedHierarchyLines,
+              { selections: hierarchy.selections }
+            )
             dataRecord.activites = hierarchy.guaranteedHierarchyLines
             dataRecord.activitesStructurees = hierarchy.guaranteedHierarchyLines
             dataRecord.activitesNormalisees = hierarchy.guaranteedActivitiesFlat
@@ -108,6 +113,10 @@ export async function POST(request: NextRequest) {
                     : ""
                 }`
             )
+            dataRecord.exclusionsOptimisees = optimizedExclusions.lines
+            dataRecord.exclusionScore = optimizedExclusions.score
+            dataRecord.activityExclusions = optimizedExclusions.lines
+            dataRecord.exclusions = optimizedExclusions.lines
           }
         }
         normalizedData = dataRecord

@@ -39,6 +39,11 @@ export interface DocumentData {
   representantLegal?: string
   civilite?: string
   activites: string[]
+  exclusionsOptimisees?: string[]
+  exclusionScore?: {
+    restrictiveness: number
+    competitiveness: number
+  }
   chiffreAffaires: number
   primeAnnuelle?: number
   primeMensuelle?: number

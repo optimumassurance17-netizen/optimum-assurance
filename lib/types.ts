@@ -12,6 +12,13 @@ export interface DevisData {
   activites: string[]
   /** Exclusions d'activité déclarées au contrat (hors périmètre couvert) */
   exclusionsActivites?: string[]
+  /** Exclusions optimisées générées automatiquement */
+  exclusionsOptimisees?: string[]
+  /** Score de compétitivité des exclusions (0-100) */
+  exclusionScore?: {
+    restrictiveness: number
+    competitiveness: number
+  }
   tarif?: DevisResult
   montantIndemnisations?: number
   releveSinistraliteNom?: string

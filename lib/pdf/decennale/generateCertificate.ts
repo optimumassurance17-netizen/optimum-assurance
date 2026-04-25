@@ -10,6 +10,7 @@ import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../s
 import { drawAttestationStampBottomRight, loadAttestationStampImage } from "../shared/attestationStamp"
 import { embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 
 /**
  * Attestation décennale — RC décennale, articles 1792, QR vérification.
@@ -23,6 +24,9 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     data.activitiesHierarchy && data.activitiesHierarchy.length > 0
       ? data.activitiesHierarchy
       : (data.activities ?? [])
+  const optimizedExclusions = extractOptimizedExclusionLines({
+    activityExclusions: data.activityExclusions,
+  })
 
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
@@ -100,10 +104,10 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     13
   )
   y -= 14
-  if (data.activityExclusions?.length) {
+  if (optimizedExclusions.length > 0) {
     y = drawWrappedText(
       page,
-      `Exclusion(s) d'activité : ${data.activityExclusions.join(", ")}.`,
+      `Ne sont pas couverts : ${optimizedExclusions.join(" ; ")}.`,
       PDF_PAGE.marginX,
       y,
       PDF_PAGE.contentWidth,

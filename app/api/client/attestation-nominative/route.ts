@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth"
 import { getNextNumero } from "@/lib/documents"
 import { parseActivitiesJson } from "@/lib/insurance-contract-activities"
 import { prisma } from "@/lib/prisma"
+import { buildOptimizedExclusionSummary, extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 
 type CreateNominativeBody = {
   beneficiaireNom?: string
@@ -101,6 +102,18 @@ export async function POST(request: NextRequest) {
     const activites = activitesFromAttestation.length
       ? activitesFromAttestation
       : parseActivitiesJson(fallbackContract?.activitiesJson)
+    const exclusionsOptimisees = extractOptimizedExclusionLines(sourceAttestationData)
+    const optimizedExclusionSummary =
+      exclusionsOptimisees.length > 0
+        ? {
+            exclusions: exclusionsOptimisees,
+            lines: exclusionsOptimisees,
+            score:
+              (sourceAttestationData?.exclusionScore as
+                | { restrictiveness?: number; competitiveness?: number }
+                | undefined) ?? { restrictiveness: 0, competitiveness: 100 },
+          }
+        : buildOptimizedExclusionSummary(activites)
 
     const numero = await getNextNumero("attestation_nominative")
     const dateEffet = toFrDate(
@@ -127,6 +140,9 @@ export async function POST(request: NextRequest) {
       codePostal: cleanText(sourceAttestationData?.codePostal, 10),
       ville: cleanText(sourceAttestationData?.ville, 120),
       activites: activites.length ? activites : ["Activité déclarée au contrat"],
+      exclusionsOptimisees: optimizedExclusionSummary.lines,
+      exclusionScore: optimizedExclusionSummary.score,
+      activityExclusions: optimizedExclusionSummary.lines,
       primeAnnuelle:
         typeof sourceAttestationData?.primeAnnuelle === "number"
           ? sourceAttestationData.primeAnnuelle

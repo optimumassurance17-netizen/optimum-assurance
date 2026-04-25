@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { calculerTarif, CA_MINIMUM } from "@/lib/tarification"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,6 +61,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const optimizedExclusions = generateOptimizedExclusions(
+      hierarchy.guaranteedHierarchyLines.length ? hierarchy.guaranteedHierarchyLines : activitesInput,
+      { selections: hierarchy.selections }
+    )
+
     const result = calculerTarif({
       chiffreAffaires: Number(chiffreAffaires),
       sinistres: Number(sinistres),
@@ -83,6 +89,8 @@ export async function POST(request: NextRequest) {
           }`
       ),
       confidence: hierarchy.confidence,
+      optimizedExclusions: optimizedExclusions.lines,
+      exclusionScore: optimizedExclusions.score,
     })
   } catch (error) {
     console.error("Erreur calcul devis:", error)

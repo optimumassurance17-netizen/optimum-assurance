@@ -18,6 +18,7 @@ import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { validateSignatureQualityGate } from "@/lib/signature-quality-gates"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
 export const runtime = "nodejs"
 
@@ -114,6 +115,14 @@ export async function POST(request: NextRequest) {
     }
     baseContract.activites = hierarchy.guaranteedHierarchyLines
     baseContract.activitesNormalisees = hierarchy.guaranteedActivitiesFlat
+    const optimizedExclusions = generateOptimizedExclusions(
+      hierarchy.guaranteedHierarchyLines.length
+        ? hierarchy.guaranteedHierarchyLines
+        : hierarchy.guaranteedActivitiesFlat,
+      { selections: hierarchy.selections }
+    )
+    baseContract.exclusionsOptimisees = optimizedExclusions.lines
+    baseContract.exclusionScore = optimizedExclusions.score
     baseContract.activitesHorsNomenclature = hierarchy.unmatched.map((item) => item.input)
     baseContract.alertsNomenclature = hierarchy.unmatched.map(
       (item) =>

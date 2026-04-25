@@ -4,6 +4,7 @@ import { SITE_URL } from "@/lib/site-url"
 import { getDevoirConseilContent } from "@/lib/devoir-conseil"
 import { DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSE_TEXT } from "@/lib/decennale-legal-clauses"
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
+import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 
 interface ContratTemplateProps {
   numero: string
@@ -34,6 +35,7 @@ interface ContratTemplateProps {
 export function ContratTemplate({ numero, data }: ContratTemplateProps) {
   const devoirConseil = getDevoirConseilContent("decennale")
   const activities = extractStructuredActivities(data)
+  const optimizedExclusions = extractOptimizedExclusionLines(data)
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0">
       <div className="border-b-2 border-[#2563eb] pb-4 mb-6">
@@ -144,6 +146,16 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
           <p className="text-xs text-[#171717] whitespace-pre-line">
             {DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSE_TEXT}
           </p>
+          {optimizedExclusions.length > 0 && (
+            <div className="mt-3">
+              <p className="font-semibold text-xs text-[#171717]">Ne sont pas couverts :</p>
+              <ul className="list-disc list-inside text-xs text-[#171717] mt-1 space-y-1">
+                {optimizedExclusions.map((line, index) => (
+                  <li key={`optimized-exclusion-${index}`}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
 
         <section>

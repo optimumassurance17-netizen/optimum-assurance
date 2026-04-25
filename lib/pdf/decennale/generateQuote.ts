@@ -10,6 +10,7 @@ import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { DEVOIR_CONSEIL_TEXT, DEVOIR_CONSEIL_USEFUL_LINKS_LINE } from "@/lib/devoir-conseil"
 import { DECENNALE_CLAUSE_BLOCS } from "@/lib/decennale-legal-clauses"
+import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 
 const QUOTE_VALIDITY_DAYS = 30
 
@@ -21,6 +22,9 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
   const activities = (data.activitiesHierarchy && data.activitiesHierarchy.length > 0)
     ? data.activitiesHierarchy
     : (data.activities ?? [])
+  const optimizedExclusions = extractOptimizedExclusionLines({
+    activityExclusions: data.activityExclusions,
+  })
 
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
@@ -231,6 +235,19 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
     8,
     11
   )
+  if (optimizedExclusions.length > 0) {
+    y2 -= 8
+    y2 = drawWrappedText(
+      page2,
+      `Ne sont pas couverts : ${optimizedExclusions.join(" ; ")}`,
+      PDF_PAGE.marginX,
+      y2,
+      PDF_PAGE.contentWidth,
+      font,
+      8,
+      11
+    )
+  }
   y2 -= 8
   y2 = drawWrappedText(
     page2,

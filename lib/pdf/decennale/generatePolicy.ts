@@ -10,6 +10,7 @@ import { PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { getDevoirConseilText, getDevoirConseilLinksLine } from "@/lib/devoir-conseil"
 import { DECENNALE_LEGAL_CLAUSES } from "@/lib/decennale-legal-clauses"
+import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 
 /**
  * Conditions particulières — contrat décennale (pdf-lib).
@@ -21,6 +22,9 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
     data.activitiesHierarchy && data.activitiesHierarchy.length > 0
       ? data.activitiesHierarchy
       : (data.activities ?? [])
+  const optimizedExclusions = extractOptimizedExclusionLines({
+    activityExclusions: data.activityExclusions,
+  })
 
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
@@ -81,6 +85,9 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
   const exclusionsUpper = DECENNALE_LEGAL_CLAUSES.EXCLUSIONS_RC_DECENNALE.toUpperCase()
   const decheanceUpper = DECENNALE_LEGAL_CLAUSES.DECHEANCE_GARANTIE.toUpperCase()
   clauses.push(exclusionsUpper, decheanceUpper)
+  if (optimizedExclusions.length > 0) {
+    clauses.push(`Ne sont pas couverts : ${optimizedExclusions.join(" ; ")}`)
+  }
 
   for (const c of clauses) {
     y = drawWrappedText(page, c, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 9, 12)

@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
 export const runtime = "nodejs"
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -117,6 +118,10 @@ export async function POST(request: NextRequest) {
       )
     }
     const matchedActivities = hierarchy.guaranteedActivitiesFlat
+    const optimizedExclusions = generateOptimizedExclusions(
+      hierarchy.guaranteedHierarchyLines.length ? hierarchy.guaranteedHierarchyLines : matchedActivities,
+      { selections: hierarchy.selections }
+    )
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
     const now = new Date()
@@ -145,6 +150,8 @@ export async function POST(request: NextRequest) {
           }`
       ),
       confidenceNomenclature: hierarchy.confidence,
+      exclusionsOptimisees: optimizedExclusions.lines,
+      exclusionScore: optimizedExclusions.score,
       chiffreAffaires: asNonNegativeNumber(rawSouscription.chiffreAffaires, 0),
       primeAnnuelle,
       primeMensuelle: primeMensuelle > 0 ? primeMensuelle : undefined,
