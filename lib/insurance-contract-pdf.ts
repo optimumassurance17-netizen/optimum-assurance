@@ -21,6 +21,7 @@ import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
 import { primeTrimestrielle } from "@/lib/insurance-premium"
+import { summarizeGuaranteedActivitiesFromContract } from "@/lib/activity-nomenclature"
 import {
   generateRcFabBatteriesCertificatePdf,
   generateRcFabBatteriesFicPdf,
@@ -34,12 +35,21 @@ function platformQuotePolicyBundleMode(c: InsuranceContract): "proposition" | "c
   return c.status === CONTRACT_STATUS.active ? "contrat" : "proposition"
 }
 
-function contractToInsuranceData(c: InsuranceContract): InsuranceData {
+async function contractToInsuranceData(
+  c: InsuranceContract,
+  opts?: { summarizedActivities?: string[] }
+): Promise<InsuranceData> {
   if (c.productType !== "decennale" && c.productType !== "do") {
     throw new Error("INSURANCE_DATA_UNSUPPORTED_PRODUCT")
   }
   const activities = parseActivitiesJson(c.activitiesJson)
   const exclusions = parseExclusionsJson(c.exclusionsJson)
+  const summarizedActivities =
+    opts?.summarizedActivities ?? (await summarizeGuaranteedActivitiesFromContract(c.activitiesJson))
+  const summarizedForPdf =
+    c.productType === "decennale"
+      ? summarizedActivities.map((line) => line.replace(/^- /, ""))
+      : []
   const vf = c.validFrom ?? c.paidAt ?? c.createdAt
   const vu = c.validUntil ?? c.createdAt
   return {
@@ -47,7 +57,14 @@ function contractToInsuranceData(c: InsuranceContract): InsuranceData {
     clientName: c.clientName,
     siret: c.siret ?? undefined,
     address: c.address,
-    activities: activities.length ? activities : undefined,
+    activities:
+      c.productType === "decennale"
+        ? summarizedForPdf.length
+          ? summarizedForPdf
+          : activities.length
+            ? activities
+            : undefined
+        : undefined,
     activityExclusions: exclusions.length ? exclusions : undefined,
     projectName: c.projectName ?? undefined,
     projectAddress: c.projectAddress ?? undefined,
@@ -60,8 +77,11 @@ function contractToInsuranceData(c: InsuranceContract): InsuranceData {
   }
 }
 
-function toCertificateData(c: InsuranceContract): InsuranceCertificateData {
-  const base = contractToInsuranceData(c)
+async function toCertificateData(
+  c: InsuranceContract,
+  opts?: { summarizedActivities?: string[] }
+): Promise<InsuranceCertificateData> {
+  const base = await contractToInsuranceData(c, opts)
   return {
     ...base,
     paymentConfirmed: !!c.paidAt,
@@ -174,6 +194,13 @@ function toRcFabDossierData(c: InsuranceContract) {
 }
 
 export async function renderContractPdf(c: InsuranceContract, docType: DocPdfType): Promise<Uint8Array> {
+  const needsDecennaleNomenclature =
+    c.productType === "decennale" && (docType === "quote" || docType === "policy" || docType === "certificate")
+  const summarizedActivities = needsDecennaleNomenclature
+    ? await summarizeGuaranteedActivitiesFromContract(c.activitiesJson)
+    : []
+  const summarizedActivityPayload =
+    summarizedActivities.length > 0 ? { summarizedActivities } : undefined
   if (docType === "schedule") {
     if (c.productType !== "decennale" && c.productType !== "rc_fabriquant") {
       throw new Error("DOC_NOT_AVAILABLE_FOR_PRODUCT")
@@ -197,11 +224,11 @@ export async function renderContractPdf(c: InsuranceContract, docType: DocPdfTyp
       return generateRcFabBatteriesQuotePdf(toRcFabDossierData(c))
     }
     if (c.productType === "do") {
-      const data = contractToInsuranceData(c)
+      const data = await contractToInsuranceData(c)
       return generateDOQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
     }
     if (c.productType === "decennale") {
-      const data = contractToInsuranceData(c)
+      const data = await contractToInsuranceData(c, summarizedActivityPayload)
       return generateDecennaleQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
     }
     throw new Error("UNKNOWN_PRODUCT_TYPE")
@@ -211,11 +238,11 @@ export async function renderContractPdf(c: InsuranceContract, docType: DocPdfTyp
       return generateRcFabBatteriesPolicyPdf(toRcFabDossierData(c))
     }
     if (c.productType === "do") {
-      const data = contractToInsuranceData(c)
+      const data = await contractToInsuranceData(c)
       return generateDOQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
     }
     if (c.productType === "decennale") {
-      const data = contractToInsuranceData(c)
+      const data = await contractToInsuranceData(c, summarizedActivityPayload)
       return generateDecennaleQuotePolicyBundle(data, platformQuotePolicyBundleMode(c))
     }
     throw new Error("UNKNOWN_PRODUCT_TYPE")
@@ -224,10 +251,13 @@ export async function renderContractPdf(c: InsuranceContract, docType: DocPdfTyp
     if (!c.paidAt || !c.insurerValidatedAt) {
       throw new Error("CERTIFICATE_NOT_ALLOWED")
     }
+    if (c.productType === "decennale" && summarizedActivities.length === 0) {
+      throw new Error("CERTIFICATE_NOT_ALLOWED")
+    }
     if (c.productType === "rc_fabriquant") {
       return generateRcFabBatteriesCertificatePdf(toRcFabDossierData(c))
     }
-    const cert = toCertificateData(c)
+    const cert = await toCertificateData(c, summarizedActivityPayload)
     if (c.productType === "decennale") {
       return generateDecennaleCertificate(cert)
     }

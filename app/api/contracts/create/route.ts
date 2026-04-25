@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { createInsuranceContract } from "@/lib/insurance-contract-service"
+import { resolveUserActivities } from "@/lib/activity-nomenclature"
 
 function asTrimmedString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined
@@ -49,13 +50,13 @@ export async function POST(request: NextRequest) {
     const clientName = asTrimmedString(raw.clientName)
     const address = asTrimmedString(raw.address)
     const premium = asPositiveNumber(raw.premium)
-    const activities = Array.isArray(raw.activities)
+    const activitiesInput = Array.isArray(raw.activities)
       ? raw.activities
           .filter((value): value is string => typeof value === "string")
           .map((value) => value.trim())
           .filter((value) => value.length > 0)
       : undefined
-    const exclusions = Array.isArray(raw.exclusions)
+    const exclusionsInput = Array.isArray(raw.exclusions)
       ? raw.exclusions
           .filter((value): value is string => typeof value === "string")
           .map((value) => value.trim())
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
     if (premium == null) {
       return NextResponse.json({ error: "premium invalide" }, { status: 400 })
     }
-    if (productType === "decennale" && (!activities || activities.length === 0)) {
+    if (productType === "decennale" && (!activitiesInput || activitiesInput.length === 0)) {
       return NextResponse.json({ error: "activities requis (décennale)" }, { status: 400 })
     }
     if (productType === "do" && (!projectName || !projectAddress)) {
@@ -84,12 +85,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "companyAgeMonths invalide" }, { status: 400 })
     }
 
+    let normalizedActivities = activitiesInput
+    let exclusions = exclusionsInput
+    let nomenclatureAlerts: string[] = []
+    let unmatchedActivities: string[] = []
+    if (productType === "decennale") {
+      const resolved = await resolveUserActivities(activitiesInput || [], {
+        userId: session.user.id,
+      })
+      normalizedActivities = resolved.matched.map((m) => `${m.code} ${m.name}`)
+      unmatchedActivities = resolved.unmatched.map((u) => u.userInput)
+      if (unmatchedActivities.length > 0) {
+        nomenclatureAlerts = unmatchedActivities.map(
+          (activity) =>
+            `Cette activité n’est pas couverte faute de correspondance nomenclature : "${activity}".`
+        )
+        exclusions = [...(exclusionsInput || []), ...nomenclatureAlerts]
+      }
+      if (normalizedActivities.length === 0) {
+        return NextResponse.json(
+          {
+            error:
+              "Aucune activité ne correspond à la nomenclature officielle France Assureurs 2019. Merci de reformuler vos activités.",
+            unmatchedActivities,
+          },
+          { status: 400 }
+        )
+      }
+    }
+
     const { contract, risk } = await createInsuranceContract({
       productType,
       clientName,
       siret,
       address,
-      activities,
+      activities: normalizedActivities,
       exclusions,
       projectName,
       projectAddress,
@@ -108,6 +138,8 @@ export async function POST(request: NextRequest) {
         riskScore: risk.score,
         riskReasons: risk.reasons,
         rejectedReason: contract.rejectedReason,
+        unmatchedActivities,
+        nomenclatureAlerts,
       },
     })
   } catch (e) {

@@ -9,6 +9,11 @@ import { getNextNumero } from "@/lib/documents"
 import { prisma } from "@/lib/prisma"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
+import {
+  resolveUserActivities,
+  buildOutOfNomenclatureAlerts,
+  summarizeGuaranteedActivities,
+} from "@/lib/activity-nomenclature"
 
 export const runtime = "nodejs"
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -87,13 +92,26 @@ export async function POST(request: NextRequest) {
         : primeAnnuelle > 0
           ? Math.round((primeAnnuelle / 4) * 100) / 100
           : undefined
-    const activites = Array.isArray(rawSouscription.activites)
+    const activitesInput = Array.isArray(rawSouscription.activites)
       ? rawSouscription.activites
           .filter((value): value is string => typeof value === "string")
           .map((activity) => activity.trim())
           .filter((activity) => activity.length > 0)
           .slice(0, 50)
       : []
+    const activityResolution = await resolveUserActivities(activitesInput, { userId: session.user.id })
+    const activites = summarizeGuaranteedActivities(activityResolution.matched)
+    const nomenclatureAlerts = buildOutOfNomenclatureAlerts(activityResolution.unmatched)
+    if (activites.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Aucune activité ne correspond à la nomenclature officielle France Assureurs 2019. Merci de reformuler vos activités.",
+          unmatchedActivities: activityResolution.unmatched.map((item) => item.userInput),
+        },
+        { status: 400 }
+      )
+    }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
     const now = new Date()
@@ -124,6 +142,8 @@ export async function POST(request: NextRequest) {
       dateEffet,
       dateEffetIso,
       dateEcheance,
+      activitesHorsNomenclature: activityResolution.unmatched.map((item) => item.userInput),
+      alertsNomenclature: nomenclatureAlerts,
       jamaisAssure: asOptionalBoolean(rawSouscription.jamaisAssure),
       reprisePasse: asOptionalBoolean(rawSouscription.reprisePasse),
       dateCreationSociete: asOptionalTrimmedString(rawSouscription.dateCreationSociete),
