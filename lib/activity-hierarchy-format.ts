@@ -129,6 +129,7 @@ function toStringArray(value: unknown): string[] {
 }
 
 type StructuredDataCandidate = {
+  [key: string]: unknown
   activitesStructurees?: unknown
   activitesHierarchie?: unknown
   activitiesStructured?: unknown

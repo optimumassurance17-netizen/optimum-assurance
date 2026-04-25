@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma"
 import {
   ACTIVITE_EXCLUSIONS,
   ACTIVITE_TO_NOMENCLATURE,
-  CATEGORIE_LABELS,
 } from "@/lib/nomenclature-activites"
 import {
   buildFlatActivityLabels,
@@ -99,15 +98,6 @@ const GROUPS: GroupDefinition[] = [
     definition: "Professions intellectuelles du batiment",
   },
 ]
-
-const GROUP_ALIAS: Record<string, string[]> = {
-  "1": ["preparation", "amenagement", "terrassement"],
-  "2": ["structure", "gros oeuvre", "fondations", "maconnerie"],
-  "3": ["clos couvert", "toiture", "couverture", "facade"],
-  "4": ["finitions", "amenagement interieur", "platrerie"],
-  "5": ["lots techniques", "plomberie", "electricite", "climatisation"],
-  PI: ["professions intellectuelles", "architecte", "bet", "maitrise oeuvre"],
-}
 
 const SUB_ACTIVITY_SEED: SubActivityDefinition[] = [
   {
