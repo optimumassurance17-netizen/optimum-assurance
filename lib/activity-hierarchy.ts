@@ -1,6 +1,7 @@
 import "server-only"
 
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@/lib/prisma-client"
 import {
   ACTIVITE_EXCLUSIONS,
   ACTIVITE_TO_NOMENCLATURE,
@@ -216,6 +217,13 @@ const CODE_DEFINITION_OVERRIDES: Record<
 }
 
 let seedPromise: Promise<void> | null = null
+
+function isSchemaDriftError(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2021" || error.code === "P2022")
+  )
+}
 
 function normalizeText(value: string): string {
   return value
@@ -442,18 +450,52 @@ export function buildActivityHierarchyExampleJson(): Record<string, unknown> {
 }
 
 async function loadHierarchyStore(): Promise<HierarchyStore> {
-  const dbGroups = await prisma.activityGroup.findMany({
-    where: { isActive: true },
-    include: {
-      activities: {
-        where: { isActive: true },
-        include: {
-          subActivities: { where: { isActive: true } },
+  type DbSubActivity = {
+    code: string
+    activityCode: string
+    groupCode: string
+    name: string
+    description: string
+    includedWorks: string | null
+    excludedWorks: string | null
+    relatedActivities: string | null
+  }
+  type DbActivity = {
+    code: string
+    groupCode: string
+    name: string
+    definition: string
+    includedWorks: string | null
+    excludedWorks: string | null
+    relatedActivities: string | null
+    isAccessoryAllowed: boolean
+    subActivities: DbSubActivity[]
+  }
+  type DbGroup = {
+    code: string
+    name: string
+    definition: string | null
+    activities: DbActivity[]
+  }
+
+  let dbGroups: DbGroup[] = []
+  try {
+    dbGroups = await prisma.activityGroup.findMany({
+      where: { isActive: true },
+      include: {
+        activities: {
+          where: { isActive: true },
+          include: {
+            subActivities: { where: { isActive: true } },
+          },
         },
       },
-    },
-    orderBy: { code: "asc" },
-  })
+      orderBy: { code: "asc" },
+    })
+  } catch (error) {
+    if (isSchemaDriftError(error)) return canonicalHierarchy()
+    throw error
+  }
 
   if (!dbGroups.length) return canonicalHierarchy()
 
@@ -610,6 +652,10 @@ export async function ensureActivityHierarchySeeded(): Promise<void> {
         })
       }
     })().catch((error) => {
+      if (isSchemaDriftError(error)) {
+        // Dégradé temporaire: on retombe sur la nomenclature canonique en mémoire.
+        return
+      }
       seedPromise = null
       throw error
     })
@@ -765,18 +811,44 @@ async function persistUnmatchedActivities(
   userId?: string
 ): Promise<void> {
   if (!unmatched.length) return
-
-  for (const missing of unmatched) {
-    if (userId) {
-      await prisma.missingSubActivity.upsert({
-        where: {
-          userId_userInput: {
+  try {
+    for (const missing of unmatched) {
+      if (userId) {
+        await prisma.missingSubActivity.upsert({
+          where: {
+            userId_userInput: {
+              userId,
+              userInput: missing.input,
+            },
+          },
+          create: {
             userId,
             userInput: missing.input,
+            suggestedGroupCode: missing.suggestedGroup?.code,
+            suggestedGroupName: missing.suggestedGroup?.name,
+            suggestedActivityCode: missing.suggestedActivity?.code,
+            suggestedActivityName: missing.suggestedActivity?.name,
+            suggestedSubActivityCode: missing.suggestedSubActivity?.code,
+            suggestedSubActivityName: missing.suggestedSubActivity?.name,
+            confidence: missing.confidence || null,
           },
-        },
-        create: {
-          userId,
+          update: {
+            suggestedGroupCode: missing.suggestedGroup?.code,
+            suggestedGroupName: missing.suggestedGroup?.name,
+            suggestedActivityCode: missing.suggestedActivity?.code,
+            suggestedActivityName: missing.suggestedActivity?.name,
+            suggestedSubActivityCode: missing.suggestedSubActivity?.code,
+            suggestedSubActivityName: missing.suggestedSubActivity?.name,
+            confidence: missing.confidence || null,
+            occurrenceCount: { increment: 1 },
+            lastSeenAt: new Date(),
+          },
+        })
+        continue
+      }
+
+      await prisma.missingSubActivity.create({
+        data: {
           userInput: missing.input,
           suggestedGroupCode: missing.suggestedGroup?.code,
           suggestedGroupName: missing.suggestedGroup?.name,
@@ -786,33 +858,11 @@ async function persistUnmatchedActivities(
           suggestedSubActivityName: missing.suggestedSubActivity?.name,
           confidence: missing.confidence || null,
         },
-        update: {
-          suggestedGroupCode: missing.suggestedGroup?.code,
-          suggestedGroupName: missing.suggestedGroup?.name,
-          suggestedActivityCode: missing.suggestedActivity?.code,
-          suggestedActivityName: missing.suggestedActivity?.name,
-          suggestedSubActivityCode: missing.suggestedSubActivity?.code,
-          suggestedSubActivityName: missing.suggestedSubActivity?.name,
-          confidence: missing.confidence || null,
-          occurrenceCount: { increment: 1 },
-          lastSeenAt: new Date(),
-        },
       })
-      continue
     }
-
-    await prisma.missingSubActivity.create({
-      data: {
-        userInput: missing.input,
-        suggestedGroupCode: missing.suggestedGroup?.code,
-        suggestedGroupName: missing.suggestedGroup?.name,
-        suggestedActivityCode: missing.suggestedActivity?.code,
-        suggestedActivityName: missing.suggestedActivity?.name,
-        suggestedSubActivityCode: missing.suggestedSubActivity?.code,
-        suggestedSubActivityName: missing.suggestedSubActivity?.name,
-        confidence: missing.confidence || null,
-      },
-    })
+  } catch (error) {
+    if (isSchemaDriftError(error)) return
+    throw error
   }
 }
 
