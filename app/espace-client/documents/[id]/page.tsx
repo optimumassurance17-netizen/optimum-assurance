@@ -248,12 +248,21 @@ export default function DocumentPage() {
             {resiliationRequested && (
               <span className="text-sm font-medium text-blue-700">Demande de résiliation envoyée</span>
             )}
-            <button
-              onClick={handlePrint}
-              className="bg-[#2563eb] text-white px-6 py-2 rounded-xl hover:bg-[#1d4ed8] font-medium"
-            >
-              Imprimer / PDF
-            </button>
+            {document.type === "attestation_nominative" ? (
+              <a
+                href={`/api/documents/${document.id}/pdf`}
+                className="bg-[#2563eb] text-white px-6 py-2 rounded-xl hover:bg-[#1d4ed8] font-medium inline-flex items-center"
+              >
+                Télécharger PDF A4
+              </a>
+            ) : (
+              <button
+                onClick={handlePrint}
+                className="bg-[#2563eb] text-white px-6 py-2 rounded-xl hover:bg-[#1d4ed8] font-medium"
+              >
+                Imprimer / PDF
+              </button>
+            )}
           </div>
         </div>
 

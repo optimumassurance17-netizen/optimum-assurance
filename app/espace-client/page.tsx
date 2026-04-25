@@ -643,11 +643,16 @@ export default function EspaceClientPage() {
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="submit"
-                  disabled={nominativeLoading}
+                  disabled={nominativeLoading || documents.some((d) => d.type === "attestation" && d.status === "suspendu")}
                   className="rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
                 >
                   {nominativeLoading ? "Création..." : "Créer l’attestation nominative"}
                 </button>
+                {documents.some((d) => d.type === "attestation" && d.status === "suspendu") && (
+                  <p className="text-sm text-blue-800">
+                    Paiement non à jour : régularisez vos échéances pour générer l&apos;attestation nominative.
+                  </p>
+                )}
                 {nominativeSuccess && <p className="text-sm text-emerald-700">{nominativeSuccess}</p>}
                 {nominativeError && <p className="text-sm text-red-700">{nominativeError}</p>}
               </div>

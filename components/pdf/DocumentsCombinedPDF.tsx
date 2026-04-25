@@ -3,6 +3,7 @@ import { Document } from "@react-pdf/renderer"
 import {
   ContratPDFPage,
   AttestationPDFPage,
+  AttestationNominativePDFPage,
   AttestationDoPDFPage,
   FactureDoPDFPage,
   FactureDecennalePDFPage,
@@ -23,7 +24,7 @@ const pageMap: Record<
 > = {
   contrat: (p) => React.createElement(ContratPDFPage, p),
   attestation: (p) => React.createElement(AttestationPDFPage, p),
-  attestation_nominative: (p) => React.createElement(AttestationPDFPage, p),
+  attestation_nominative: (p) => React.createElement(AttestationNominativePDFPage, p),
   attestation_do: (p) => React.createElement(AttestationDoPDFPage, p),
   facture_do: (p) => React.createElement(FactureDoPDFPage, p),
   facture_decennale: (p) => React.createElement(FactureDecennalePDFPage, p),
