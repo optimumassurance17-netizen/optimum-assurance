@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
+import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
   try {
@@ -89,13 +91,15 @@ export async function PATCH(
         userId: session.user.id,
         type: { in: ["devis", "devis_do", "contrat"] },
       },
-      select: { id: true, userId: true, type: true, data: true },
+      select: { id: true, userId: true, type: true, status: true, numero: true, data: true },
     })
     if (!document) {
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
     const currentData = parseDocumentData(document.data)
+    const contractCoverageLocked =
+      document.type === "contrat" && ["valide", "suspendu"].includes((document.status || "").toLowerCase())
     const editableKeys = [
       "raisonSociale",
       "siret",
@@ -139,11 +143,67 @@ export async function PATCH(
       filtered[key] = value
     }
 
+    if (contractCoverageLocked && ("activites" in filtered || "chiffreAffaires" in filtered)) {
+      return NextResponse.json(
+        {
+          error:
+            "Contrat actif: la modification des activités et du chiffre d'affaires est verrouillée. Contactez la gestion pour un avenant.",
+        },
+        { status: 409 }
+      )
+    }
+
     if (Object.keys(filtered).length === 0) {
       return NextResponse.json({ error: "Aucun champ modifiable fourni" }, { status: 400 })
     }
 
-    const mergedData = { ...currentData, ...filtered }
+    const mergedData: Record<string, unknown> = { ...currentData, ...filtered }
+    if ("activites" in filtered) {
+      const rawActivities = Array.isArray(filtered.activites)
+        ? filtered.activites
+        : typeof filtered.activites === "string"
+          ? filtered.activites
+              .split(/[,\n;]/)
+              .map((item) => item.trim())
+              .filter(Boolean)
+          : []
+      const hierarchy = await resolveUserActivitiesHierarchy(
+        rawActivities.filter((item): item is string => typeof item === "string"),
+        { userId: session.user.id }
+      )
+      if (!hierarchy.guaranteedActivitiesFlat.length) {
+        return NextResponse.json(
+          {
+            error:
+              "Aucune activité ne correspond à la nomenclature officielle. Merci de préciser vos activités.",
+            unmatchedActivities: hierarchy.unmatched,
+          },
+          { status: 400 }
+        )
+      }
+      const exclusions = generateOptimizedExclusions(
+        hierarchy.guaranteedHierarchyLines.length
+          ? hierarchy.guaranteedHierarchyLines
+          : hierarchy.guaranteedActivitiesFlat,
+        { selections: hierarchy.selections }
+      )
+      mergedData.activites = hierarchy.guaranteedHierarchyLines
+      mergedData.activitesNormalisees = hierarchy.guaranteedActivitiesFlat
+      mergedData.activitesHorsNomenclature = hierarchy.unmatched.map((item) => item.input)
+      mergedData.alertsNomenclature = hierarchy.unmatched.map(
+        (item) =>
+          `Activité hors nomenclature: ${item.input}${
+            item.suggestedActivity
+              ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+              : ""
+          }`
+      )
+      mergedData.confidenceNomenclature = hierarchy.confidence
+      mergedData.exclusionsOptimisees = exclusions.lines
+      mergedData.exclusionScore = exclusions.score
+      mergedData.activityExclusions = exclusions.lines
+      mergedData.exclusions = exclusions.lines
+    }
     await prisma.document.update({
       where: { id: document.id },
       data: { data: JSON.stringify(mergedData) },
@@ -165,6 +225,21 @@ export async function PATCH(
         return NextResponse.json({ error: sync.error }, { status: sync.status })
       }
     }
+
+    await prisma.adminActivityLog.create({
+      data: {
+        adminEmail: session.user.email || `client:${session.user.id}`,
+        action: "client_document_update",
+        targetType: "document",
+        targetId: document.id,
+        details: JSON.stringify({
+          documentNumero: document.numero,
+          documentType: document.type,
+          changedKeys: Object.keys(filtered),
+          lockedCoverage: contractCoverageLocked,
+        }),
+      },
+    })
 
     return NextResponse.json({ ok: true, data: mergedData })
   } catch (error) {

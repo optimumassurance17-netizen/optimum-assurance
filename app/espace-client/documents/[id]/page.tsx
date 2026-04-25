@@ -10,6 +10,7 @@ import { Breadcrumb } from "@/components/Breadcrumb"
 import { Toast } from "@/components/Toast"
 import { DevoirConseil } from "@/components/DevoirConseil"
 import { readResponseJson } from "@/lib/read-response-json"
+import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
 const DevisDoTemplate = dynamic(() => import("@/components/documents/DevisDoTemplate").then((m) => m.DevisDoTemplate), { ssr: false })
@@ -157,7 +158,11 @@ export default function DocumentPage() {
     ["valide", "suspendu"].includes(document.status || "") &&
     dateEcheance !== null &&
     isInResiliationWindow(dateEffet, dateEcheance)
-  const canEditDocument = Boolean(document && ["devis", "devis_do", "contrat"].includes(document.type))
+  const canEditDocument = Boolean(
+    document &&
+      ["devis", "devis_do", "contrat"].includes(document.type) &&
+      !(document.type === "contrat" && document.status === "active")
+  )
 
   useEffect(() => {
     if (!document) return
@@ -238,6 +243,10 @@ export default function DocumentPage() {
   const handleSaveEdition = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!document || !canEditDocument) return
+    if (document.status === CONTRACT_STATUS.active) {
+      setEditError("Modification verrouillée : contrat actif. Passez par une demande d'avenant.")
+      return
+    }
     setEditSaving(true)
     setEditError(null)
     setEditSuccess(null)
@@ -389,12 +398,19 @@ export default function DocumentPage() {
                 <button
                   type="button"
                   onClick={() => setEditMode(true)}
+                  disabled={document?.status === CONTRACT_STATUS.active}
                   className="rounded-xl bg-[#2563eb] px-4 py-2 text-sm font-medium text-white hover:bg-[#1d4ed8]"
                 >
                   Modifier
                 </button>
               ) : null}
             </div>
+
+            {document?.status === CONTRACT_STATUS.active && (
+              <p className="mb-3 text-sm text-amber-700">
+                Modification verrouillée : ce contrat est actif. Contactez la gestion pour un avenant.
+              </p>
+            )}
 
             {editSuccess && <p className="mb-3 text-sm text-emerald-700">{editSuccess}</p>}
             {editError && <p className="mb-3 text-sm text-red-700">{editError}</p>}
