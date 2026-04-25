@@ -28,6 +28,7 @@
     "print:post-launch": "node scripts/print-post-launch.mjs",
     "start": "next start",
     "lint": "eslint",
+    "check:boundaries": "node scripts/check-client-server-boundaries.mjs",
     "typecheck": "tsc --noEmit",
     "test:pdf-contractual": "tsx scripts/verify-pdf-contractual-mentions.ts",
     "test:e2e": "playwright test",
@@ -85,7 +86,8 @@
     "qrcode.react": "^4.2.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-signature-canvas": "^1.1.0-alpha.2"
+    "react-signature-canvas": "^1.1.0-alpha.2",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",

@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { fetchUserDocumentReviews } from "@/lib/user-document-review"
-import { UPLOAD_DOC_TYPES } from "@/lib/user-document-types"
 
 function isSchemaDriftError(error: unknown): boolean {
   return (
@@ -22,10 +21,7 @@ export async function GET() {
     }
 
     const docs = await prisma.userDocument.findMany({
-      where: {
-        userId: session.user.id,
-        type: { in: [...UPLOAD_DOC_TYPES] },
-      },
+      where: { userId: session.user.id },
       orderBy: { type: "asc" },
     })
 

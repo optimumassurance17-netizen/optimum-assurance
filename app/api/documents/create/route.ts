@@ -6,6 +6,8 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { asJsonObject } from "@/lib/json-object"
 import { getNextNumero } from "@/lib/documents"
+import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -79,21 +81,65 @@ export async function POST(request: NextRequest) {
         : await getNextNumero(type)
 
     try {
+      let normalizedData: unknown = data
+      if (data && typeof data === "object" && !Array.isArray(data)) {
+        const dataRecord = { ...(data as Record<string, unknown>) }
+        const activitesInput = Array.isArray(dataRecord.activites)
+          ? dataRecord.activites
+              .filter((value): value is string => typeof value === "string")
+              .map((value) => value.trim())
+              .filter((value) => value.length > 0)
+          : []
+
+        if (activitesInput.length > 0) {
+          const hierarchy = await resolveUserActivitiesHierarchy(activitesInput, {
+            userId: session.user.id,
+          })
+          if (hierarchy.guaranteedHierarchyLines.length > 0) {
+            const optimizedExclusions = generateOptimizedExclusions(
+              hierarchy.guaranteedHierarchyLines,
+              { selections: hierarchy.selections }
+            )
+            dataRecord.activites = hierarchy.guaranteedHierarchyLines
+            dataRecord.activitesStructurees = hierarchy.guaranteedHierarchyLines
+            dataRecord.activitesNormalisees = hierarchy.guaranteedActivitiesFlat
+            dataRecord.confidenceNomenclature = hierarchy.confidence
+            dataRecord.activitesHorsNomenclature = hierarchy.unmatched.map((item) => item.input)
+            dataRecord.alertsNomenclature = hierarchy.unmatched.map(
+              (item) =>
+                `Activité hors nomenclature: ${item.input}${
+                  item.suggestedActivity
+                    ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+                    : ""
+                }`
+            )
+            dataRecord.exclusionsOptimisees = optimizedExclusions.lines
+            dataRecord.exclusionScore = optimizedExclusions.score
+            dataRecord.activityExclusions = optimizedExclusions.lines
+            dataRecord.exclusions = optimizedExclusions.lines
+          }
+        }
+        normalizedData = dataRecord
+      }
+
       const document = await prisma.document.create({
         data: {
           userId: session.user.id,
           type,
           numero,
           data: JSON.stringify(
-            type === "attestation" && data && typeof data === "object" && !Array.isArray(data)
+            type === "attestation" &&
+              normalizedData &&
+              typeof normalizedData === "object" &&
+              !Array.isArray(normalizedData)
               ? {
-                  ...(data as Record<string, unknown>),
+                  ...(normalizedData as Record<string, unknown>),
                   molliePaymentId:
                     typeof body?.paymentId === "string" && body.paymentId.trim().length > 0
                       ? body.paymentId.trim()
                       : undefined,
                 }
-              : data
+              : normalizedData
           ),
           ...(type === "attestation" && {
             verificationToken: generateVerificationToken(),

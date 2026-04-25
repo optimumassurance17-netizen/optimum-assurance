@@ -5,7 +5,7 @@ import { existsSync } from "fs"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
-import { resolveGedFileReadTarget, resolveGedFileStorageTarget } from "@/lib/user-documents"
+import { getLocalGedPathCandidates, resolveGedFileReadTarget, resolveGedFileStorageTarget } from "@/lib/user-documents"
 
 function isSchemaDriftError(error: unknown): boolean {
   return (
@@ -51,10 +51,18 @@ export async function GET(
           break
         }
       }
-      if (!downloaded) {
-        return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
+      if (downloaded) {
+        buffer = Buffer.from(await downloaded.arrayBuffer())
+      } else {
+        // Fallback legacy: certains fichiers ont été migrés avec un filepath "type Supabase"
+        // mais résident encore localement.
+        const localCandidates = getLocalGedPathCandidates(doc.filepath)
+        const existingLocalPath = localCandidates.find((candidate) => existsSync(candidate))
+        if (!existingLocalPath) {
+          return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
+        }
+        buffer = await readFile(existingLocalPath)
       }
-      buffer = Buffer.from(await downloaded.arrayBuffer())
     } else {
       if (!existsSync(readTarget.path)) {
         return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })

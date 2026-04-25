@@ -3,6 +3,7 @@ import { TYPES_OUVRAGE } from "@/lib/dommage-ouvrage-types"
 import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
 import type { InsuranceData } from "@/lib/pdf/types"
 import { PdfValidationError } from "@/lib/pdf/errors"
+import { buildOptimizedExclusionSummary } from "@/lib/optimized-exclusions"
 
 function isoAddYears(iso: string, years: number): string {
   const d = new Date(iso)
@@ -33,6 +34,7 @@ export function insuranceDataFromDecennaleDevis(
   if (!activites?.length) {
     throw new PdfValidationError("activites requis pour le PDF décennale", "MISSING_FIELD")
   }
+  const optimizedExclusions = buildOptimizedExclusionSummary(activites)
 
   const raison =
     (typeof d.raisonSociale === "string" && d.raisonSociale.trim()) ||
@@ -52,6 +54,7 @@ export function insuranceDataFromDecennaleDevis(
     siret: siret || undefined,
     address,
     activities: activites,
+    activityExclusions: optimizedExclusions.lines,
     premium: tarif.primeAnnuelle,
     createdAt: createdAtIso,
     startDate: createdAtIso,

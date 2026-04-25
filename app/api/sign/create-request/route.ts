@@ -9,11 +9,8 @@ import { getNextNumero } from "@/lib/documents"
 import { prisma } from "@/lib/prisma"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
-import {
-  resolveUserActivities,
-  buildOutOfNomenclatureAlerts,
-  summarizeGuaranteedActivities,
-} from "@/lib/activity-nomenclature"
+import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
 export const runtime = "nodejs"
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -92,26 +89,39 @@ export async function POST(request: NextRequest) {
         : primeAnnuelle > 0
           ? Math.round((primeAnnuelle / 4) * 100) / 100
           : undefined
-    const activitesInput = Array.isArray(rawSouscription.activites)
+    const activites = Array.isArray(rawSouscription.activites)
       ? rawSouscription.activites
           .filter((value): value is string => typeof value === "string")
           .map((activity) => activity.trim())
           .filter((activity) => activity.length > 0)
           .slice(0, 50)
       : []
-    const activityResolution = await resolveUserActivities(activitesInput, { userId: session.user.id })
-    const activites = summarizeGuaranteedActivities(activityResolution.matched)
-    const nomenclatureAlerts = buildOutOfNomenclatureAlerts(activityResolution.unmatched)
-    if (activites.length === 0) {
+    const hierarchy = await resolveUserActivitiesHierarchy(activites, {
+      userId: session.user.id,
+    })
+    if (!hierarchy.guaranteedActivitiesFlat.length) {
       return NextResponse.json(
         {
           error:
-            "Aucune activité ne correspond à la nomenclature officielle France Assureurs 2019. Merci de reformuler vos activités.",
-          unmatchedActivities: activityResolution.unmatched.map((item) => item.userInput),
+            "Aucune activité ne correspond à la nomenclature officielle. Merci de préciser vos activités.",
+          unmatchedActivities: hierarchy.unmatched,
+          nomenclatureAlerts: hierarchy.unmatched.map(
+            (item) =>
+              `Activité hors nomenclature: ${item.input}${
+                item.suggestedActivity
+                  ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+                  : ""
+              }`
+          ),
         },
         { status: 400 }
       )
     }
+    const matchedActivities = hierarchy.guaranteedActivitiesFlat
+    const optimizedExclusions = generateOptimizedExclusions(
+      hierarchy.guaranteedHierarchyLines.length ? hierarchy.guaranteedHierarchyLines : matchedActivities,
+      { selections: hierarchy.selections }
+    )
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
     const now = new Date()
@@ -128,7 +138,20 @@ export async function POST(request: NextRequest) {
       ville: asOptionalTrimmedString(rawSouscription.ville),
       representantLegal,
       civilite: asOptionalTrimmedString(rawSouscription.civilite),
-      activites,
+      activites: hierarchy.guaranteedHierarchyLines,
+      activitesNormalisees: matchedActivities,
+      activitesHorsNomenclature: hierarchy.unmatched.map((item) => item.input),
+      alertsNomenclature: hierarchy.unmatched.map(
+        (item) =>
+          `Activité hors nomenclature: ${item.input}${
+            item.suggestedActivity
+              ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+              : ""
+          }`
+      ),
+      confidenceNomenclature: hierarchy.confidence,
+      exclusionsOptimisees: optimizedExclusions.lines,
+      exclusionScore: optimizedExclusions.score,
       chiffreAffaires: asNonNegativeNumber(rawSouscription.chiffreAffaires, 0),
       primeAnnuelle,
       primeMensuelle: primeMensuelle > 0 ? primeMensuelle : undefined,
@@ -142,8 +165,6 @@ export async function POST(request: NextRequest) {
       dateEffet,
       dateEffetIso,
       dateEcheance,
-      activitesHorsNomenclature: activityResolution.unmatched.map((item) => item.userInput),
-      alertsNomenclature: nomenclatureAlerts,
       jamaisAssure: asOptionalBoolean(rawSouscription.jamaisAssure),
       reprisePasse: asOptionalBoolean(rawSouscription.reprisePasse),
       dateCreationSociete: asOptionalTrimmedString(rawSouscription.dateCreationSociete),

@@ -8,6 +8,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["@react-pdf/renderer", "pdf-lib", "@prisma/client"],
+  outputFileTracingRoot: process.cwd(),
   experimental: {
     inlineCss: true,
     optimizePackageImports: ["qrcode.react", "next-auth/react"],

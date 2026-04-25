@@ -2,6 +2,8 @@
 
 import { QRCodeSVG } from "qrcode.react"
 import { SITE_URL } from "@/lib/site-url"
+import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
+import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 
 interface AttestationTemplateProps {
   numero: string
@@ -20,6 +22,8 @@ interface AttestationTemplateProps {
 }
 
 export function AttestationTemplate({ numero, verificationUrl, data }: AttestationTemplateProps) {
+  const activities = extractStructuredActivities(data)
+  const optimizedExclusions = extractOptimizedExclusionLines(data)
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0">
       <div className="border-b-2 border-[#2563eb] pb-4 mb-8">
@@ -43,7 +47,17 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
         <p className="mb-4">
           est garantie au titre de l&apos;<strong>assurance responsabilité civile décennale</strong> pour les activités de :
         </p>
-        <p className="font-medium mb-4">{data.activites.join(", ")}</p>
+        <p className="font-medium mb-4 whitespace-pre-line">{activities.join("\n")}</p>
+        {optimizedExclusions.length > 0 && (
+          <>
+            <p className="mb-2 font-medium">Ne sont pas couverts :</p>
+            <ul className="list-disc list-inside text-sm text-[#171717] mb-3 space-y-1">
+              {optimizedExclusions.map((line, index) => (
+                <li key={`optimized-exclusion-${index}`}>{line}</li>
+              ))}
+            </ul>
+          </>
+        )}
         <p className="mb-2">Période de validité : du <strong>{data.dateEffet}</strong> au <strong>{data.dateEcheance}</strong></p>
         <p className="mb-2 text-sm text-[#171717]">Renouvelable automatiquement du 01/01 au 31/12 des années suivantes.</p>
         <p>Prime annuelle : {data.primeAnnuelle.toLocaleString("fr-FR")} € TTC</p>

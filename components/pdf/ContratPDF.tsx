@@ -4,6 +4,8 @@ import { pdfTheme, PdfBrandHeader } from "@/lib/pdf/react-pdf-brand"
 import { pdfLegalLinksLine } from "@/lib/pdf-legal-links"
 import { DEVOIR_CONSEIL_TEXT_BY_PRODUCT } from "@/lib/devoir-conseil"
 import { DECENNALE_CUSTOM_LEGAL_CLAUSES } from "@/lib/decennale-legal-clauses"
+import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
+import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 
 interface ContratPDFProps {
   numero: string
@@ -32,6 +34,8 @@ interface ContratPDFProps {
 
 export function ContratPDF({ numero, data }: ContratPDFProps) {
   const devoirConseil = DEVOIR_CONSEIL_TEXT_BY_PRODUCT.decennale
+  const activities = extractStructuredActivities(data)
+  const optimizedExclusions = extractOptimizedExclusionLines(data)
   return (
     <Document>
       <Page size="A4" style={pdfTheme.page}>
@@ -57,7 +61,7 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
           <Text style={pdfTheme.h3}>Article 2 - Objet</Text>
           <Text style={pdfTheme.p}>
             Le présent contrat garantit la responsabilité civile décennale de l&apos;assuré pour les activités :{" "}
-            {data.activites?.join(", ") || "—"}.
+            {activities.length ? activities.join("\n") : "—"}.
           </Text>
         </View>
 
@@ -153,6 +157,12 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
             Restent notamment exclus les dommages résultant d&apos;une activité non déclarée, d&apos;une faute intentionnelle,
             d&apos;un défaut d&apos;entretien ou des exclusions prévues par les conditions générales.
           </Text>
+          {optimizedExclusions.length > 0 && (
+            <Text style={pdfTheme.p}>
+              Ne sont pas couverts :{" "}
+              {optimizedExclusions.join(" ; ")}
+            </Text>
+          )}
         </View>
 
         <View style={pdfTheme.section}>

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { createInsuranceContract } from "@/lib/insurance-contract-service"
-import { resolveUserActivities } from "@/lib/activity-nomenclature"
+import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
 function asTrimmedString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined
@@ -50,13 +51,13 @@ export async function POST(request: NextRequest) {
     const clientName = asTrimmedString(raw.clientName)
     const address = asTrimmedString(raw.address)
     const premium = asPositiveNumber(raw.premium)
-    const activitiesInput = Array.isArray(raw.activities)
+    const activities = Array.isArray(raw.activities)
       ? raw.activities
           .filter((value): value is string => typeof value === "string")
           .map((value) => value.trim())
           .filter((value) => value.length > 0)
       : undefined
-    const exclusionsInput = Array.isArray(raw.exclusions)
+    const exclusions = Array.isArray(raw.exclusions)
       ? raw.exclusions
           .filter((value): value is string => typeof value === "string")
           .map((value) => value.trim())
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
     if (premium == null) {
       return NextResponse.json({ error: "premium invalide" }, { status: 400 })
     }
-    if (productType === "decennale" && (!activitiesInput || activitiesInput.length === 0)) {
+    if (productType === "decennale" && (!activities || activities.length === 0)) {
       return NextResponse.json({ error: "activities requis (décennale)" }, { status: 400 })
     }
     if (productType === "do" && (!projectName || !projectAddress)) {
@@ -85,42 +86,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "companyAgeMonths invalide" }, { status: 400 })
     }
 
-    let normalizedActivities = activitiesInput
-    let exclusions = exclusionsInput
-    let nomenclatureAlerts: string[] = []
-    let unmatchedActivities: string[] = []
-    if (productType === "decennale") {
-      const resolved = await resolveUserActivities(activitiesInput || [], {
-        userId: session.user.id,
-      })
-      normalizedActivities = resolved.matched.map((m) => `${m.code} ${m.name}`)
-      unmatchedActivities = resolved.unmatched.map((u) => u.userInput)
-      if (unmatchedActivities.length > 0) {
-        nomenclatureAlerts = unmatchedActivities.map(
-          (activity) =>
-            `Cette activité n’est pas couverte faute de correspondance nomenclature : "${activity}".`
-        )
-        exclusions = [...(exclusionsInput || []), ...nomenclatureAlerts]
-      }
-      if (normalizedActivities.length === 0) {
-        return NextResponse.json(
-          {
-            error:
-              "Aucune activité ne correspond à la nomenclature officielle France Assureurs 2019. Merci de reformuler vos activités.",
-            unmatchedActivities,
-          },
-          { status: 400 }
-        )
-      }
+    const hierarchy =
+      productType === "decennale" && activities?.length
+        ? await resolveUserActivitiesHierarchy(activities, { userId: session.user.id })
+        : null
+    const matchedActivities = hierarchy?.guaranteedActivitiesFlat ?? activities ?? []
+    const nomenclatureAlerts =
+      hierarchy?.unmatched.map(
+        (item) =>
+          `Activité hors nomenclature: ${item.input}${
+            item.suggestedActivity
+              ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+              : ""
+          }`
+      ) ?? []
+
+    if (productType === "decennale" && matchedActivities.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Aucune activité ne correspond à la nomenclature officielle. Merci de préciser vos activités.",
+          unmatchedActivities: hierarchy?.unmatched ?? [],
+          nomenclatureAlerts,
+        },
+        { status: 400 }
+      )
     }
+
+    const optimizedExclusions =
+      productType === "decennale"
+        ? generateOptimizedExclusions(
+            hierarchy?.guaranteedHierarchyLines.length
+              ? hierarchy.guaranteedHierarchyLines
+              : matchedActivities,
+            { selections: hierarchy?.selections }
+          )
+        : null
+    const mergedExclusionsRaw = [
+      ...(exclusions ?? []),
+      ...(optimizedExclusions?.lines ?? []),
+      ...nomenclatureAlerts,
+    ]
+    const mergedExclusions = [...new Set(mergedExclusionsRaw)]
 
     const { contract, risk } = await createInsuranceContract({
       productType,
       clientName,
       siret,
       address,
-      activities: normalizedActivities,
-      exclusions,
+      activities:
+        productType === "decennale"
+          ? hierarchy?.guaranteedHierarchyLines ?? matchedActivities
+          : matchedActivities,
+      exclusions: mergedExclusions,
       projectName,
       projectAddress,
       constructionNature,
@@ -138,8 +156,13 @@ export async function POST(request: NextRequest) {
         riskScore: risk.score,
         riskReasons: risk.reasons,
         rejectedReason: contract.rejectedReason,
-        unmatchedActivities,
+        matchedActivities,
+        matchedHierarchy: hierarchy?.guaranteedHierarchyLines ?? [],
+        unmatchedActivities: hierarchy?.unmatched ?? [],
         nomenclatureAlerts,
+        confidence: hierarchy?.confidence ?? null,
+        optimizedExclusions: optimizedExclusions?.lines ?? [],
+        exclusionScore: optimizedExclusions?.score ?? null,
       },
     })
   } catch (e) {

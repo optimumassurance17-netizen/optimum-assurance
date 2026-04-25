@@ -47,6 +47,9 @@ jobs:
       - name: ESLint
         run: npm run lint
 
+      - name: Check client/server boundaries
+        run: npm run check:boundaries
+
       - name: TypeScript
         run: npm run typecheck
 

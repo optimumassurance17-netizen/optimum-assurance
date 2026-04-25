@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createMollieClient } from "@mollie/api-client"
 import { assertCronAuthorized } from "@/lib/cron-auth"
-import { primeTrimestrielle } from "@/lib/insurance-premium"
 import {
   createSepaTrimestrePayment,
   refreshMandateStatus,
 } from "@/lib/mollie-sepa"
+import { primeTrimestrielle } from "@/lib/premium"
 import { prisma } from "@/lib/prisma"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 

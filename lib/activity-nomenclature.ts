@@ -42,6 +42,15 @@ export type ActivityResolution = {
 
 const DEFAULT_VERSION = "france-assureurs-2019"
 
+const GROUP_LABELS: Record<string, string> = {
+  "1": "Preparation et amenagement du site",
+  "2": "Structure et gros oeuvre",
+  "3": "Clos et couvert",
+  "4": "Divisions - Amenagements - Finitions",
+  "5": "Lots techniques et activites specifiques",
+  PI: "Professions intellectuelles du batiment",
+}
+
 const CODE_DEFINITION_OVERRIDES: Record<string, string> = {
   "1.1": "Travaux de démolition d'ouvrages existants, préparation et sécurisation du site avant reconstruction.",
   "1.2": "Démolition spécialisée avec procédés à risques et protocoles renforcés.",
@@ -130,6 +139,11 @@ function confidenceLabel(score: number): "high" | "medium" | "low" {
 
 function parseJsonArray(raw: string | null | undefined): string[] {
   if (!raw) return []
+  const delimited = raw
+    .split("||")
+    .map((v) => v.trim())
+    .filter(Boolean)
+  if (delimited.length > 0) return delimited
   try {
     const p = JSON.parse(raw) as unknown
     if (!Array.isArray(p)) return []
@@ -142,6 +156,16 @@ function parseJsonArray(raw: string | null | undefined): string[] {
 function buildFallbackDefinition(item: NomenclatureItem): string {
   const catLabel = CATEGORIE_LABELS[item.categorie] ?? "Nomenclature BTP"
   return `Travaux relevant du code ${item.code} (${item.libelleOfficiel}) selon la nomenclature France Assureurs 2019, incluant conception d'exécution, mise en œuvre, réparation et entretien dans le périmètre assuré. Catégorie : ${catLabel}.`
+}
+
+function groupCodeFromActivityCode(code: string): string {
+  if (code.startsWith("PI")) return "PI"
+  const head = code.split(".")[0]?.trim()
+  return head && head.length > 0 ? head : "PI"
+}
+
+function groupLabelFromCode(code: string): string {
+  return GROUP_LABELS[code] ?? `Groupe ${code}`
 }
 
 function buildCanonicalActivities(): ActivityDefinition[] {
@@ -208,8 +232,11 @@ async function ensureCanonicalActivitiesSeeded(): Promise<void> {
   await prisma.$transaction(
     canonicalActivities.map((activity) =>
       prisma.activity.upsert({
+        const groupCode = groupCodeFromActivityCode(activity.code)
         where: { code: activity.code },
         update: {
+          groupCode,
+          group: { connect: { code: groupCode } },
           name: activity.name,
           definition: activity.definition,
           includedWorks: JSON.stringify(activity.includedWorks),
@@ -220,6 +247,19 @@ async function ensureCanonicalActivitiesSeeded(): Promise<void> {
           version: DEFAULT_VERSION,
         },
         create: {
+          groupCode,
+          group: {
+            connectOrCreate: {
+              where: { code: groupCode },
+              create: {
+                code: groupCode,
+                name: groupLabelFromCode(groupCode),
+                definition: groupLabelFromCode(groupCode),
+                version: DEFAULT_VERSION,
+                isActive: true,
+              },
+            },
+          },
           code: activity.code,
           name: activity.name,
           definition: activity.definition,
@@ -329,27 +369,36 @@ async function recordMissingActivity(
 ): Promise<void> {
   const normalized = normalizeText(userInput)
   if (!normalized) return
-  const existing = await prisma.missingActivity.findFirst({
-    where: { userInput: normalized },
+  const existing = await prisma.missingSubActivity.findFirst({
+    where: userId ? { userId, userInput: normalized } : { userInput: normalized },
     select: { id: true, occurrenceCount: true },
   })
+  const suggestedGroupCode = suggestedMatch ? groupCodeFromActivityCode(suggestedMatch.code) : null
+  const suggestedGroupName = suggestedGroupCode ? groupLabelFromCode(suggestedGroupCode) : null
   if (existing) {
-    await prisma.missingActivity.update({
+    await prisma.missingSubActivity.update({
       where: { id: existing.id },
       data: {
         occurrenceCount: existing.occurrenceCount + 1,
         lastSeenAt: new Date(),
-        suggestedMatch: suggestedMatch ? `${suggestedMatch.code} ${suggestedMatch.name}` : null,
+        suggestedGroupCode,
+        suggestedGroupName,
+        suggestedActivityCode: suggestedMatch?.code ?? null,
+        suggestedActivityName: suggestedMatch?.name ?? null,
         ...(userId ? { userId } : {}),
       },
     })
     return
   }
-  await prisma.missingActivity.create({
+  await prisma.missingSubActivity.create({
     data: {
       userId,
       userInput: normalized,
-      suggestedMatch: suggestedMatch ? `${suggestedMatch.code} ${suggestedMatch.name}` : null,
+      suggestedGroupCode,
+      suggestedGroupName,
+      suggestedActivityCode: suggestedMatch?.code ?? null,
+      suggestedActivityName: suggestedMatch?.name ?? null,
+      confidence: suggestedMatch?.score ?? null,
       validated: false,
     },
   })
@@ -472,9 +521,12 @@ export async function upsertActivityDefinition(
   input: ActivityDefinition & { version?: string; isActive?: boolean }
 ): Promise<void> {
   const version = input.version?.trim() || DEFAULT_VERSION
+  const groupCode = groupCodeFromActivityCode(input.code)
   await prisma.activity.upsert({
     where: { code: input.code },
     update: {
+      groupCode,
+      group: { connect: { code: groupCode } },
       name: input.name,
       definition: input.definition,
       includedWorks: JSON.stringify(input.includedWorks),
@@ -485,6 +537,19 @@ export async function upsertActivityDefinition(
       isActive: input.isActive ?? true,
     },
     create: {
+      groupCode,
+      group: {
+        connectOrCreate: {
+          where: { code: groupCode },
+          create: {
+            code: groupCode,
+            name: groupLabelFromCode(groupCode),
+            definition: groupLabelFromCode(groupCode),
+            version,
+            isActive: true,
+          },
+        },
+      },
       code: input.code,
       name: input.name,
       definition: input.definition,

@@ -31,6 +31,7 @@ model User {
   resiliationRequests   ResiliationRequest[]
   clientNotes           ClientNote[]
   sinistres             Sinistre[]
+  missingSubActivities  MissingSubActivity[]
   sepaSubscription      SepaSubscription?
   insuranceContracts    InsuranceContract[]
   missingActivities     MissingActivity[]
@@ -181,6 +182,83 @@ model Sinistre {
   montantIndemnisation Float?
   description      String?
   createdAt        DateTime      @default(now())
+}
+
+model ActivityGroup {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  name        String
+  definition  String?    @db.Text
+  version     String     @default("france-assureurs-2019")
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  activities  Activity[]
+}
+
+model Activity {
+  id                String        @id @default(cuid())
+  groupId           String
+  group             ActivityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupCode         String
+  code              String        @unique
+  name              String
+  definition        String        @db.Text
+  includedWorks     String?       @db.Text
+  excludedWorks     String?       @db.Text
+  relatedActivities String?       @db.Text
+  isAccessoryAllowed Boolean      @default(false)
+  version           String        @default("france-assureurs-2019")
+  isActive          Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  subActivities     SubActivity[]
+
+  @@index([groupId])
+  @@index([groupCode])
+}
+
+model SubActivity {
+  id                String   @id @default(cuid())
+  activityId        String
+  activity          Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  groupCode         String
+  activityCode      String
+  code              String   @unique
+  name              String
+  description       String   @db.Text
+  includedWorks     String?  @db.Text
+  excludedWorks     String?  @db.Text
+  relatedActivities String?  @db.Text
+  version           String   @default("france-assureurs-2019")
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([activityId])
+  @@index([groupCode])
+  @@index([activityCode])
+}
+
+model MissingSubActivity {
+  id                     String   @id @default(cuid())
+  userId                 String?
+  user                   User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userInput              String
+  suggestedGroupCode     String?
+  suggestedGroupName     String?
+  suggestedActivityCode  String?
+  suggestedActivityName  String?
+  suggestedSubActivityCode String?
+  suggestedSubActivityName String?
+  confidence             Float?
+  validated              Boolean  @default(false)
+  occurrenceCount        Int      @default(1)
+  createdAt              DateTime @default(now())
+  lastSeenAt             DateTime @default(now())
+
+  @@index([userInput])
+  @@unique([userId, userInput], map: "missing_sub_activity_user_input_unique")
 }
 
 model Document {

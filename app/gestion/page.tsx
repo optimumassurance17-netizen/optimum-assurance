@@ -116,6 +116,11 @@ function getSlaBadge(hours: number): { label: string; className: string } {
   }
 }
 
+function toPercent(part: number, total: number): number {
+  if (!Number.isFinite(part) || !Number.isFinite(total) || total <= 0) return 0
+  return Math.max(0, Math.min(100, Math.round((part / total) * 100)))
+}
+
 function editFormFromDocData(parsed: Record<string, unknown>): EditContratForm {
   return {
     raisonSociale: String(parsed.raisonSociale ?? ""),
@@ -316,6 +321,9 @@ interface DashboardData {
   }
 }
 
+type RcFabLeadRow = NonNullable<DashboardData["devisRcFabriquantLeads"]>[number]
+type PendingSignatureRow = NonNullable<DashboardData["pendingSignatures"]>[number]
+
 export default function GestionPage() {
   const { status } = useSession()
   const router = useRouter()
@@ -363,6 +371,11 @@ export default function GestionPage() {
   const [devisDecSubmitting, setDevisDecSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [docTypeFilter, setDocTypeFilter] = useState<string>("all")
+  const [actionsFilter, setActionsFilter] = useState<"all" | "high" | "overdue72h">("all")
+  const [signatureFlowFilter, setSignatureFlowFilter] = useState<
+    "all" | "custom_pdf" | "decennale" | "repair_eligible"
+  >("all")
+  const [rcFabFilter, setRcFabFilter] = useState<"all" | "a_traiter" | "sla72h">("all")
   const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
   const [resiliationModal, setResiliationModal] = useState<{ docId: string; motif: string } | null>(null)
   const [editModal, setEditModal] = useState<{
@@ -571,6 +584,158 @@ export default function GestionPage() {
       return false
     })
   }
+
+  const matchesPendingSignatureSearch = (signature: PendingSignatureRow, q: string): boolean => {
+    const query = q.trim().toLowerCase()
+    if (!query) return true
+    if (signature.contractNumero.toLowerCase().includes(query)) return true
+    if (signature.signatureRequestId.toLowerCase().includes(query)) return true
+    if ((signature.user?.email ?? "").toLowerCase().includes(query)) return true
+    if ((signature.user?.raisonSociale ?? "").toLowerCase().includes(query)) return true
+    return false
+  }
+
+  const matchesRcFabLeadSearch = (lead: RcFabLeadRow, q: string): boolean => {
+    const query = q.trim()
+    if (!query) return true
+    const lower = query.toLowerCase()
+    const queryDigits = query.replace(/\s/g, "").toLowerCase()
+    const parsed = parseRcFabLeadData(lead.data || "{}")
+    if (lead.email.toLowerCase().includes(lower)) return true
+    if ((parsed.raisonSociale ?? "").toLowerCase().includes(lower)) return true
+    if ((parsed.activiteFabrication ?? "").toLowerCase().includes(lower)) return true
+    if ((parsed.siret ?? "").replace(/\s/g, "").toLowerCase().includes(queryDigits)) return true
+    return false
+  }
+
+  const attestations = useMemo(() => {
+    if (!data) return []
+    return data.documents.filter((d) => {
+      if (docTypeFilter === "attestation") {
+        return d.type === "attestation" || d.type === "attestation_nominative"
+      }
+      if (docTypeFilter === "attestation_do") return d.type === "attestation_do"
+      return d.type === "attestation" || d.type === "attestation_nominative" || d.type === "attestation_do"
+    })
+  }, [data, docTypeFilter])
+
+  const contrats = useMemo(() => (data ? data.documents.filter((d) => d.type === "contrat") : []), [data])
+  const filteredUsers = useMemo(() => (data ? filterUsersBySearch(data.users, searchQuery) : []), [data, searchQuery])
+  const filteredPayments = useMemo(() => (data ? filterBySearch(data.payments, searchQuery) : []), [data, searchQuery])
+  const filteredAttestations = useMemo(() => filterBySearch(attestations, searchQuery), [attestations, searchQuery])
+  const filteredContrats = useMemo(() => filterBySearch(contrats, searchQuery), [contrats, searchQuery])
+
+  const filteredPendingSignatures = useMemo(() => {
+    if (!data?.pendingSignatures) return []
+    return data.pendingSignatures.filter((signature) => {
+      if (!matchesPendingSignatureSearch(signature, searchQuery)) return false
+      if (signatureFlowFilter === "custom_pdf") return signature.signatureFlow === "custom_pdf"
+      if (signatureFlowFilter === "decennale") return signature.signatureFlow !== "custom_pdf"
+      if (signatureFlowFilter === "repair_eligible") return signature.repairEligible === true
+      return true
+    })
+  }, [data, searchQuery, signatureFlowFilter])
+
+  const filteredDashboardActions = useMemo(() => {
+    const list = data?.dashboardActions ?? []
+    if (actionsFilter === "high") return list.filter((a) => a.priority === "high")
+    if (actionsFilter === "overdue72h") return list.filter((a) => a.ageHours >= 72)
+    return list
+  }, [data, actionsFilter])
+
+  const filteredRcFabriquantLeads = useMemo(() => {
+    const list = data?.devisRcFabriquantLeads ?? []
+    return list.filter((lead) => {
+      if (!matchesRcFabLeadSearch(lead, searchQuery)) return false
+      if (rcFabFilter === "a_traiter") return normalizeRcFabriquantLeadStatut(lead.statut) === "a_traiter"
+      if (rcFabFilter === "sla72h") return (lead.slaHours ?? 0) >= 72
+      return true
+    })
+  }, [data, searchQuery, rcFabFilter])
+
+  const pilotageV2 = useMemo(() => {
+    if (!data) return null
+
+    const decennaleLeads = data.devisLeads ?? []
+    const rcFabriquantLeads = data.devisRcFabriquantLeads ?? []
+    const doEtudeLeads = data.devisEtudeLeads ?? []
+    const pendingSignatures = data.pendingSignatures ?? []
+    const contracts = data.insuranceContracts ?? []
+
+    const totalLeads = decennaleLeads.length + rcFabriquantLeads.length + doEtudeLeads.length
+    const hotLeads =
+      decennaleLeads.filter((lead) => !lead.rappelSentAt && (lead.slaHours ?? 0) >= 24).length +
+      rcFabriquantLeads.filter((lead) => normalizeRcFabriquantLeadStatut(lead.statut) === "a_traiter").length +
+      doEtudeLeads.filter((lead) => lead.statut === "pending").length
+
+    const devisEmis = data.documents.filter((d) => d.type === "devis" || d.type === "devis_do").length
+    const signedContracts = contracts.filter((c) => c.status === "approved" || c.status === "active")
+    const paidContracts = signedContracts.filter((c) => Boolean(c.paidAt))
+    const paidRevenue = data.payments
+      .filter((payment) => payment.status === "paid")
+      .reduce((acc, payment) => acc + payment.amount, 0)
+
+    const funnel = [
+      { id: "lead-to-quote", label: "Leads -> Devis émis", from: totalLeads, to: devisEmis },
+      { id: "quote-to-signed", label: "Devis -> Contrats signés", from: devisEmis, to: signedContracts.length },
+      {
+        id: "signed-to-paid",
+        label: "Contrats signés -> Contrats payés",
+        from: signedContracts.length,
+        to: paidContracts.length,
+      },
+    ].map((stage) => ({
+      ...stage,
+      rate: toPercent(stage.to, stage.from),
+    }))
+
+    const topCommercialActions = (data.dashboardActions ?? [])
+      .filter((action) =>
+        [
+          "decennale_lead_followup",
+          "rc_fabriquant_pending",
+          "do_etude_pending",
+          "approved_unpaid_contract",
+        ].includes(action.kind)
+      )
+      .sort((a, b) => b.ageHours - a.ageHours)
+      .slice(0, 5)
+
+    return {
+      totalLeads,
+      hotLeads,
+      devisEmis,
+      pendingSignatures: pendingSignatures.length,
+      signedContracts: signedContracts.length,
+      paidContracts: paidContracts.length,
+      unpaidSignedContracts: signedContracts.length - paidContracts.length,
+      paidRevenue,
+      funnel,
+      topCommercialActions,
+      lineBreakdown: [
+        {
+          key: "decennale",
+          label: "Décennale",
+          leads: decennaleLeads.length,
+          toHandle: decennaleLeads.filter((lead) => !lead.rappelSentAt && (lead.slaHours ?? 0) >= 24).length,
+        },
+        {
+          key: "rc-fabriquant",
+          label: "RC Fabriquant",
+          leads: rcFabriquantLeads.length,
+          toHandle: rcFabriquantLeads.filter(
+            (lead) => normalizeRcFabriquantLeadStatut(lead.statut) === "a_traiter"
+          ).length,
+        },
+        {
+          key: "do-etude",
+          label: "DO (étude)",
+          leads: doEtudeLeads.length,
+          toHandle: doEtudeLeads.filter((lead) => lead.statut === "pending").length,
+        },
+      ],
+    }
+  }, [data])
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -889,19 +1054,6 @@ export default function GestionPage() {
 
   if (!data) return null
 
-  const attestations = data.documents.filter((d) => {
-    if (docTypeFilter === "attestation") {
-      return d.type === "attestation" || d.type === "attestation_nominative"
-    }
-    if (docTypeFilter === "attestation_do") return d.type === "attestation_do"
-    return (
-      d.type === "attestation" ||
-      d.type === "attestation_nominative" ||
-      d.type === "attestation_do"
-    )
-  })
-  const contrats = data.documents.filter((d) => d.type === "contrat")
-
   return (
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
       <header className="border-b border-gray-700 px-6 py-4">
@@ -1088,14 +1240,32 @@ export default function GestionPage() {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-10">
         {data && (
           <>
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-              <input
-                type="search"
-                placeholder="Rechercher (email, raison sociale, SIRET, n° contrat / attestation)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-80"
-              />
+            <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <input
+                  type="search"
+                  placeholder="Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant)..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-[29rem]"
+                />
+                {searchQuery.trim() ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-gray-600 text-gray-200 hover:border-gray-500"
+                  >
+                    Effacer
+                  </button>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => setDashboardLoadKey((k) => k + 1)}
+                className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-[#2563eb]/70 text-[#93c5fd] hover:bg-[#2563eb]/20"
+              >
+                Rafraîchir les données
+              </button>
             </div>
             <nav
               className="flex flex-wrap gap-2 items-center rounded-xl border border-gray-700 bg-[#222] px-4 py-3"
@@ -1114,6 +1284,20 @@ export default function GestionPage() {
               >
                 Indicateurs
               </a>
+              <a
+                href="#pilotage-commercial-v2"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#0b3b2f] text-emerald-100 border border-emerald-800/80 hover:bg-[#104536]"
+              >
+                Pilotage commercial V2
+              </a>
+              {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
+                <a
+                  href="#actions-du-jour"
+                  className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#4a2c08] text-amber-100 border border-amber-700/70 hover:bg-[#5c3710]"
+                >
+                  Actions du jour
+                </a>
+              )}
               <a
                 href="#clients"
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
@@ -1174,7 +1358,7 @@ export default function GestionPage() {
               )}
               {data.devisEtudeLeads && data.devisEtudeLeads.length > 0 && (
                 <a
-                  href="#demandes-etude"
+                  href="#etudes-do"
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
                 >
                   Études
@@ -1182,7 +1366,7 @@ export default function GestionPage() {
               )}
               {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
                 <a
-                  href="#rc-fab-leads"
+                  href="#rc-fabriquant-leads"
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
                 >
                   RC Fab
@@ -1357,16 +1541,16 @@ export default function GestionPage() {
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">Clients</p>
                 <Link href="#clients" className="text-2xl font-bold text-white hover:text-[#2563eb] block">
-                  {filterUsersBySearch(data.users, searchQuery).length}
+                  {filteredUsers.length}
                 </Link>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">Paiements</p>
-                <p className="text-2xl font-bold text-white">{filterBySearch(data.payments, searchQuery).length}</p>
+                <p className="text-2xl font-bold text-white">{filteredPayments.length}</p>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">CA (paiements)</p>
-                <p className="text-2xl font-bold text-green-400">{filterBySearch(data.payments, searchQuery).filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0).toLocaleString("fr-FR")} €</p>
+                <p className="text-2xl font-bold text-green-400">{filteredPayments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0).toLocaleString("fr-FR")} €</p>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">Décennale suspendue (impayé)</p>
@@ -1437,6 +1621,134 @@ export default function GestionPage() {
               </div>
             </section>
 
+            {pilotageV2 && (
+              <section
+                id="pilotage-commercial-v2"
+                className="scroll-mt-24 bg-[#1f2421] rounded-xl p-5 border border-emerald-900/60"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Pilotage commercial V2</h2>
+                    <p className="text-xs text-emerald-200/90">
+                      Vue funnel + priorités business pour piloter les relances et la conversion.
+                    </p>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded border border-emerald-700/70 bg-emerald-950/40 text-emerald-200">
+                    Mise à jour temps réel
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+                  <div className="rounded-lg border border-gray-700 bg-[#242a27] px-3 py-2">
+                    <p className="text-[11px] text-gray-300">Leads entrants</p>
+                    <p className="text-xl font-semibold text-white">{pilotageV2.totalLeads}</p>
+                  </div>
+                  <div className="rounded-lg border border-amber-700/50 bg-amber-950/20 px-3 py-2">
+                    <p className="text-[11px] text-amber-200">Leads chauds (24h+)</p>
+                    <p className="text-xl font-semibold text-amber-100">{pilotageV2.hotLeads}</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-700 bg-[#242a27] px-3 py-2">
+                    <p className="text-[11px] text-gray-300">Devis émis</p>
+                    <p className="text-xl font-semibold text-white">{pilotageV2.devisEmis}</p>
+                  </div>
+                  <div className="rounded-lg border border-violet-700/50 bg-violet-950/20 px-3 py-2">
+                    <p className="text-[11px] text-violet-200">Signatures en attente</p>
+                    <p className="text-xl font-semibold text-violet-100">{pilotageV2.pendingSignatures}</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-700 bg-[#242a27] px-3 py-2">
+                    <p className="text-[11px] text-gray-300">Contrats signés</p>
+                    <p className="text-xl font-semibold text-white">{pilotageV2.signedContracts}</p>
+                  </div>
+                  <div className="rounded-lg border border-emerald-700/60 bg-emerald-950/20 px-3 py-2">
+                    <p className="text-[11px] text-emerald-200">Contrats payés</p>
+                    <p className="text-xl font-semibold text-emerald-100">{pilotageV2.paidContracts}</p>
+                  </div>
+                  <div className="rounded-lg border border-red-700/50 bg-red-950/20 px-3 py-2">
+                    <p className="text-[11px] text-red-200">Signés non payés</p>
+                    <p className="text-xl font-semibold text-red-100">{pilotageV2.unpaidSignedContracts}</p>
+                  </div>
+                  <div className="rounded-lg border border-sky-700/60 bg-sky-950/20 px-3 py-2">
+                    <p className="text-[11px] text-sky-200">CA encaissé</p>
+                    <p className="text-xl font-semibold text-sky-100">
+                      {pilotageV2.paidRevenue.toLocaleString("fr-FR")} €
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid lg:grid-cols-2 gap-4">
+                  <div className="rounded-lg border border-gray-700 bg-[#242a27] p-3">
+                    <h3 className="text-sm font-semibold text-white mb-2">Entonnoir conversion</h3>
+                    <div className="space-y-3">
+                      {pilotageV2.funnel.map((stage) => (
+                        <div key={stage.id}>
+                          <div className="flex justify-between items-center text-xs text-gray-200 mb-1">
+                            <span>{stage.label}</span>
+                            <span>
+                              {stage.to}/{stage.from} ({stage.rate}%)
+                            </span>
+                          </div>
+                          <div className="h-2 rounded bg-[#161a18] overflow-hidden border border-gray-700">
+                            <div
+                              className={`h-full ${
+                                stage.rate >= 70
+                                  ? "bg-emerald-500"
+                                  : stage.rate >= 40
+                                    ? "bg-amber-400"
+                                    : "bg-red-500"
+                              }`}
+                              style={{ width: `${stage.rate}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-gray-700 bg-[#242a27] p-3">
+                    <h3 className="text-sm font-semibold text-white mb-2">Pilotage par ligne business</h3>
+                    <div className="space-y-2">
+                      {pilotageV2.lineBreakdown.map((line) => (
+                        <div
+                          key={line.key}
+                          className="flex items-center justify-between rounded border border-gray-700 bg-[#1a201d] px-3 py-2"
+                        >
+                          <span className="text-sm text-gray-100">{line.label}</span>
+                          <div className="text-right">
+                            <p className="text-sm text-white">{line.leads} lead(s)</p>
+                            <p className="text-xs text-amber-200">{line.toHandle} à traiter</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-3">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-300 mb-2">
+                        Priorités commerciales immédiates
+                      </h4>
+                      {pilotageV2.topCommercialActions.length === 0 ? (
+                        <p className="text-xs text-gray-400">Aucune priorité commerciale critique détectée.</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {pilotageV2.topCommercialActions.map((action) => (
+                            <a
+                              key={action.id}
+                              href={action.href}
+                              className="block rounded border border-gray-700 bg-[#1a201d] px-2.5 py-2 hover:border-emerald-500/80"
+                            >
+                              <p className="text-xs text-white">
+                                {action.title} <span className="text-gray-400">({action.ageHours}h)</span>
+                              </p>
+                              <p className="text-[11px] text-gray-300 mt-0.5">{action.description}</p>
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
             {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
               <section id="actions-du-jour" className="scroll-mt-24 bg-[#252525] rounded-xl p-5 border border-amber-700/60">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -1456,8 +1768,48 @@ export default function GestionPage() {
                     </span>
                   </div>
                 </div>
+                <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setActionsFilter("all")}
+                    className={`px-2.5 py-1 rounded border ${
+                      actionsFilter === "all"
+                        ? "bg-[#2563eb]/30 border-[#2563eb] text-white"
+                        : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
+                    }`}
+                  >
+                    Toutes ({data.dashboardActions?.length ?? 0})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActionsFilter("high")}
+                    className={`px-2.5 py-1 rounded border ${
+                      actionsFilter === "high"
+                        ? "bg-red-900/40 border-red-600 text-red-100"
+                        : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
+                    }`}
+                  >
+                    Priorité haute
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActionsFilter("overdue72h")}
+                    className={`px-2.5 py-1 rounded border ${
+                      actionsFilter === "overdue72h"
+                        ? "bg-amber-900/40 border-amber-600 text-amber-100"
+                        : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
+                    }`}
+                  >
+                    72h+ seulement
+                  </button>
+                </div>
                 <div className="space-y-2">
-                  {(data.dashboardActions ?? []).map((a) => (
+                  {filteredDashboardActions.length === 0 ? (
+                    <div className="rounded-lg border border-gray-700 bg-[#1f1f1f] px-3 py-2 text-sm text-gray-300">
+                      Aucune action pour ce filtre.
+                    </div>
+                  ) : (
+                    filteredDashboardActions.map((a) => (
                     <div
                       key={a.id}
                       className="rounded-lg border border-gray-700 bg-[#1f1f1f] px-3 py-2"
@@ -1511,7 +1863,8 @@ export default function GestionPage() {
                         </button>
                       </div>
                     </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </section>
             )}
@@ -1546,10 +1899,10 @@ export default function GestionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filterUsersBySearch(data.users, searchQuery).length === 0 ? (
+                  {filteredUsers.length === 0 ? (
                     <tr><td colSpan={5} className="p-4 text-gray-200">Aucun client</td></tr>
                   ) : (
-                    filterUsersBySearch(data.users, searchQuery).map((u) => (
+                    filteredUsers.map((u) => (
                       <tr key={u.id} className="border-b border-gray-700/50">
                         <td className="p-3 sm:p-4">{u.raisonSociale || "—"}</td>
                         <td className="p-3 sm:p-4">{u.email}</td>
@@ -1678,6 +2031,52 @@ export default function GestionPage() {
               après signature). Tant qu&apos;une ligne est présente, le client ne peut pas recevoir une nouvelle invitation
               sur le même compte.
             </p>
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setSignatureFlowFilter("all")}
+                className={`px-2.5 py-1 rounded border ${
+                  signatureFlowFilter === "all"
+                    ? "bg-[#2563eb]/30 border-[#2563eb] text-white"
+                    : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
+                }`}
+              >
+                Tous ({data.pendingSignatures?.length ?? 0})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSignatureFlowFilter("decennale")}
+                className={`px-2.5 py-1 rounded border ${
+                  signatureFlowFilter === "decennale"
+                    ? "bg-violet-900/40 border-violet-600 text-violet-100"
+                    : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
+                }`}
+              >
+                Décennale
+              </button>
+              <button
+                type="button"
+                onClick={() => setSignatureFlowFilter("custom_pdf")}
+                className={`px-2.5 py-1 rounded border ${
+                  signatureFlowFilter === "custom_pdf"
+                    ? "bg-teal-900/40 border-teal-600 text-teal-100"
+                    : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
+                }`}
+              >
+                PDF perso
+              </button>
+              <button
+                type="button"
+                onClick={() => setSignatureFlowFilter("repair_eligible")}
+                className={`px-2.5 py-1 rounded border ${
+                  signatureFlowFilter === "repair_eligible"
+                    ? "bg-amber-900/40 border-amber-600 text-amber-100"
+                    : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
+                }`}
+              >
+                Réparables (24h+)
+              </button>
+            </div>
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[720px]">
                 <thead>
@@ -1692,14 +2091,16 @@ export default function GestionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(data.pendingSignatures?.length ?? 0) === 0 ? (
+                  {filteredPendingSignatures.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="p-4 text-gray-200">
-                        Aucune signature en attente.
+                        {searchQuery.trim()
+                          ? "Aucune signature ne correspond à la recherche."
+                          : "Aucune signature en attente."}
                       </td>
                     </tr>
                   ) : (
-                    data.pendingSignatures!.map((s) => {
+                    filteredPendingSignatures.map((s) => {
                       const flow = s.signatureFlow ?? "decennale"
                       return (
                         <tr key={s.id} className="border-b border-gray-700/50">
@@ -1920,10 +2321,10 @@ export default function GestionPage() {
                 </tr>
               </thead>
               <tbody>
-                {filterBySearch(data.payments, searchQuery).length === 0 ? (
+                {filteredPayments.length === 0 ? (
                   <tr><td colSpan={6} className="p-4 text-gray-200">Aucun paiement</td></tr>
                 ) : (
-                  filterBySearch(data.payments, searchQuery).map((p) => (
+                  filteredPayments.map((p) => (
                     <tr key={p.id} className="border-b border-gray-700/50">
                       <td className="p-3 sm:p-4">{new Date(p.paidAt || p.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-3 sm:p-4">{p.user.raisonSociale || p.user.email}</td>
@@ -1978,10 +2379,10 @@ export default function GestionPage() {
                 </tr>
               </thead>
               <tbody>
-                {filterBySearch(attestations, searchQuery).length === 0 ? (
+                {filteredAttestations.length === 0 ? (
                   <tr><td colSpan={6} className="p-4 text-gray-200">Aucune attestation</td></tr>
                 ) : (
-                  filterBySearch(attestations, searchQuery).map((d) => (
+                  filteredAttestations.map((d) => (
                     <tr key={d.id} className="border-b border-gray-700/50">
                       <td className="p-3 sm:p-4">
                         <span className="text-xs text-gray-200">
@@ -2079,10 +2480,10 @@ export default function GestionPage() {
                 </tr>
               </thead>
               <tbody>
-                {filterBySearch(contrats, searchQuery).length === 0 ? (
+                {filteredContrats.length === 0 ? (
                   <tr><td colSpan={5} className="p-4 text-gray-200">Aucun contrat</td></tr>
                 ) : (
-                  filterBySearch(contrats, searchQuery).map((d) => (
+                  filteredContrats.map((d) => (
                     <tr key={d.id} className="border-b border-gray-700/50">
                       <td className="p-3 sm:p-4 font-mono">{d.numero}</td>
                       <td className="p-3 sm:p-4">{d.user.raisonSociale || d.user.email}</td>
@@ -2628,7 +3029,44 @@ export default function GestionPage() {
         {/* Demandes devis DO en attente */}
         {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
           <section id="rc-fabriquant-leads" className="scroll-mt-24">
-            <h2 className="text-lg font-semibold text-white mb-2">Demandes RC Fabriquant</h2>
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold text-white">Demandes RC Fabriquant</h2>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setRcFabFilter("all")}
+                  className={`px-2.5 py-1 rounded border ${
+                    rcFabFilter === "all"
+                      ? "bg-[#2563eb]/30 border-[#2563eb] text-white"
+                      : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
+                  }`}
+                >
+                  Toutes ({data.devisRcFabriquantLeads.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRcFabFilter("a_traiter")}
+                  className={`px-2.5 py-1 rounded border ${
+                    rcFabFilter === "a_traiter"
+                      ? "bg-amber-900/40 border-amber-600 text-amber-100"
+                      : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
+                  }`}
+                >
+                  À traiter
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRcFabFilter("sla72h")}
+                  className={`px-2.5 py-1 rounded border ${
+                    rcFabFilter === "sla72h"
+                      ? "bg-red-900/40 border-red-600 text-red-100"
+                      : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
+                  }`}
+                >
+                  SLA 72h+
+                </button>
+              </div>
+            </div>
             <p className="text-sm text-gray-200 mb-4 max-w-3xl">
               Statut et notes sont visibles uniquement en gestion. Aucun refus ni tarif n’est communiqué automatiquement au
               prospect — tout passe par votre action. Vous pouvez créer l’espace client puis lancer un dossier étude natif
@@ -2648,7 +3086,14 @@ export default function GestionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.devisRcFabriquantLeads.map((d) => {
+                  {filteredRcFabriquantLeads.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-4 text-gray-200">
+                        Aucune demande RC Fabriquant pour ce filtre/recherche.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRcFabriquantLeads.map((d) => {
                     const leadData = parseRcFabLeadData(d.data || "{}")
                     const rs = leadData.raisonSociale || ""
                     const act = leadData.activiteFabrication || ""
@@ -2886,7 +3331,8 @@ export default function GestionPage() {
                         </td>
                       </tr>
                     )
-                  })}
+                    })
+                  )}
                 </tbody>
               </table>
             </div>

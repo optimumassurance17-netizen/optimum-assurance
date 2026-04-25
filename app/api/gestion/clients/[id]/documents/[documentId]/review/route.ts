@@ -5,7 +5,6 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { USER_DOCUMENT_REVIEW_ACTION } from "@/lib/user-document-review"
-import { UPLOAD_DOC_TYPES } from "@/lib/user-document-types"
 
 export async function POST(
   request: NextRequest,
@@ -48,11 +47,7 @@ export async function POST(
     }
 
     const doc = await prisma.userDocument.findFirst({
-      where: {
-        id: documentId,
-        userId,
-        type: { in: [...UPLOAD_DOC_TYPES] },
-      },
+      where: { id: documentId, userId },
       select: { id: true },
     })
     if (!doc) {

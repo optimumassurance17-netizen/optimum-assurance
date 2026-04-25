@@ -17,6 +17,8 @@ import { createSupabaseServiceClient } from "@/lib/supabase"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { validateSignatureQualityGate } from "@/lib/signature-quality-gates"
+import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
 export const runtime = "nodejs"
 
@@ -89,6 +91,48 @@ export async function POST(request: NextRequest) {
       id: doc.id,
       numero: doc.numero,
     })
+    const sourceActivities = Array.isArray(baseContract.activites)
+      ? (baseContract.activites as unknown[])
+          .filter((item): item is string => typeof item === "string")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : []
+    if (!sourceActivities.length) {
+      return NextResponse.json({ error: "Au moins une activité est requise." }, { status: 400 })
+    }
+    const hierarchy = await resolveUserActivitiesHierarchy(sourceActivities, {
+      userId: doc.userId,
+    })
+    if (!hierarchy.guaranteedHierarchyLines.length) {
+      return NextResponse.json(
+        {
+          error:
+            "Aucune activité ne correspond à la nomenclature officielle. Merci d'ajuster les activités du devis.",
+          unmatchedActivities: hierarchy.unmatched,
+        },
+        { status: 400 }
+      )
+    }
+    baseContract.activites = hierarchy.guaranteedHierarchyLines
+    baseContract.activitesNormalisees = hierarchy.guaranteedActivitiesFlat
+    const optimizedExclusions = generateOptimizedExclusions(
+      hierarchy.guaranteedHierarchyLines.length
+        ? hierarchy.guaranteedHierarchyLines
+        : hierarchy.guaranteedActivitiesFlat,
+      { selections: hierarchy.selections }
+    )
+    baseContract.exclusionsOptimisees = optimizedExclusions.lines
+    baseContract.exclusionScore = optimizedExclusions.score
+    baseContract.activitesHorsNomenclature = hierarchy.unmatched.map((item) => item.input)
+    baseContract.alertsNomenclature = hierarchy.unmatched.map(
+      (item) =>
+        `Activité hors nomenclature: ${item.input}${
+          item.suggestedActivity
+            ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+            : ""
+        }`
+    )
+    baseContract.confidenceNomenclature = hierarchy.confidence
 
     const validationError = validateDevisContractData(baseContract)
     if (validationError) {

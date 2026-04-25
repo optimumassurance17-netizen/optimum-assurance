@@ -113,7 +113,6 @@ export default function ClientDetailPage() {
   })
   const [profileSaving, setProfileSaving] = useState(false)
   const [clientAccessLoading, setClientAccessLoading] = useState(false)
-  const [gedZipSending, setGedZipSending] = useState(false)
   const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
   const [deleteModal, setDeleteModal] = useState(false)
   const [deleteConfirmEmail, setDeleteConfirmEmail] = useState("")
@@ -471,52 +470,7 @@ export default function ClientDetailPage() {
         </section>
 
         <section>
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 className="text-lg font-semibold text-white">Documents GED déposés par le client</h2>
-            <button
-              type="button"
-              disabled={gedZipSending || !clientId}
-              onClick={async () => {
-                if (!clientId) return
-                setGedZipSending(true)
-                try {
-                  const res = await fetch(`/api/gestion/clients/${clientId}/documents/export-zip-email`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ to: "contact@optimum-assurance.fr" }),
-                  })
-                  const json = await readResponseJson<{
-                    error?: string
-                    ok?: boolean
-                    sentTo?: string
-                    includedCount?: number
-                    missingCount?: number
-                    zipName?: string
-                  }>(res)
-                  if (!res.ok || !json.ok) {
-                    throw new Error(json.error || "Impossible d'envoyer l'archive GED.")
-                  }
-                  setToast({
-                    message: `Archive GED envoyée à ${json.sentTo} (${json.includedCount ?? 0} fichier(s), ${json.missingCount ?? 0} manquant(s)).`,
-                    type: "success",
-                  })
-                } catch (error) {
-                  setToast({
-                    message:
-                      error instanceof Error
-                        ? error.message
-                        : "Impossible d'envoyer l'archive GED.",
-                    type: "error",
-                  })
-                } finally {
-                  setGedZipSending(false)
-                }
-              }}
-              className="px-3 py-1.5 rounded-lg border border-indigo-500/60 text-indigo-200 text-sm hover:bg-indigo-900/30 disabled:opacity-50"
-            >
-              {gedZipSending ? "Envoi ZIP…" : "Envoyer ZIP GED (contact)"}
-            </button>
-          </div>
+          <h2 className="text-lg font-semibold text-white mb-4">Documents GED déposés par le client</h2>
           <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
             {userDocuments.length === 0 ? (
               <p className="p-4 text-gray-200">Aucun document GED déposé</p>

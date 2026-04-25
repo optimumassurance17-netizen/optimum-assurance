@@ -11,9 +11,9 @@ import { GedUpload } from "@/components/GedUpload"
 import { InstallPrompt } from "@/components/InstallPrompt"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import type { InsuranceContractListItem } from "@/lib/insurance-contract-types"
-import { primeTrimestrielle } from "@/lib/insurance-premium"
 import { PayInsuranceContractButton } from "@/components/insurance/PayInsuranceContractButton"
 import { InsuranceContractPdfLinks } from "@/components/insurance/InsuranceContractPdfLinks"
+import { primeTrimestrielle } from "@/lib/premium"
 
 interface DocumentItem {
   id: string
@@ -643,16 +643,11 @@ export default function EspaceClientPage() {
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="submit"
-                  disabled={nominativeLoading || documents.some((d) => d.type === "attestation" && d.status === "suspendu")}
+                  disabled={nominativeLoading}
                   className="rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
                 >
                   {nominativeLoading ? "Création..." : "Créer l’attestation nominative"}
                 </button>
-                {documents.some((d) => d.type === "attestation" && d.status === "suspendu") && (
-                  <p className="text-sm text-blue-800">
-                    Paiement non à jour : régularisez vos échéances pour générer l&apos;attestation nominative.
-                  </p>
-                )}
                 {nominativeSuccess && <p className="text-sm text-emerald-700">{nominativeSuccess}</p>}
                 {nominativeError && <p className="text-sm text-red-700">{nominativeError}</p>}
               </div>

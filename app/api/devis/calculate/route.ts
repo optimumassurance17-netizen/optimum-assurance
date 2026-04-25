@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { calculerTarif, CA_MINIMUM } from "@/lib/tarification"
-import { resolveUserActivities } from "@/lib/activity-nomenclature"
-import { formatResolutionForDocuments } from "@/lib/activity-nomenclature-format"
+import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,40 +34,63 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const activityResolution = await resolveUserActivities(
-      Array.isArray(activites) ? activites.filter((value): value is string => typeof value === "string") : []
-    )
-    if (activityResolution.matched.length === 0) {
+    const activitesInput = Array.isArray(activites)
+      ? activites
+          .filter((value): value is string => typeof value === "string")
+          .map((value) => value.trim())
+          .filter((value) => value.length > 0)
+      : []
+
+    const hierarchy = await resolveUserActivitiesHierarchy(activitesInput)
+    if (!hierarchy.guaranteedActivitiesFlat.length) {
       return NextResponse.json(
         {
           error:
-            "Aucune activité ne correspond à la nomenclature officielle France Assureurs 2019. Merci de reformuler vos activités.",
-          unmatchedActivities: activityResolution.unmatched.map((item) => item.userInput),
+            "Aucune activité n'a pu être rattachée à la nomenclature officielle. Merci de préciser vos activités.",
+          unmatchedActivities: hierarchy.unmatched,
+          nomenclatureAlerts: hierarchy.unmatched.map(
+            (item) =>
+              `Activité hors nomenclature: ${item.input}${
+                item.suggestedActivity
+                  ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+                  : ""
+              }`
+          ),
         },
         { status: 400 }
       )
     }
+
+    const optimizedExclusions = generateOptimizedExclusions(
+      hierarchy.guaranteedHierarchyLines.length ? hierarchy.guaranteedHierarchyLines : activitesInput,
+      { selections: hierarchy.selections }
+    )
+
     const result = calculerTarif({
       chiffreAffaires: Number(chiffreAffaires),
       sinistres: Number(sinistres),
       jamaisAssure: Boolean(jamaisAssure),
       resilieNonPaiement: Boolean(resilieNonPaiement),
-      activites: activityResolution.matched.map((item) => item.name),
+      activites: activitesInput,
       reprisePasse: Boolean(reprisePasse),
     })
-    const projection = formatResolutionForDocuments(activityResolution)
 
     return NextResponse.json({
       ...result,
-      matchedActivities: projection.guaranteedLines,
-      unmatchedActivities: activityResolution.unmatched.map((item) => item.userInput),
-      nomenclatureAlerts: projection.uncoveredAlerts,
-      confidence: activityResolution.matched.map((item) => ({
-        code: item.code,
-        name: item.name,
-        score: item.score,
-        confidenceLabel: item.confidenceLabel,
-      })),
+      matchedActivities: hierarchy.guaranteedActivitiesFlat,
+      matchedHierarchy: hierarchy.guaranteedHierarchyLines,
+      unmatchedActivities: hierarchy.unmatched,
+      nomenclatureAlerts: hierarchy.unmatched.map(
+        (item) =>
+          `Activité hors nomenclature: ${item.input}${
+            item.suggestedActivity
+              ? ` (suggestion: ${item.suggestedActivity.code} ${item.suggestedActivity.name})`
+              : ""
+          }`
+      ),
+      confidence: hierarchy.confidence,
+      optimizedExclusions: optimizedExclusions.lines,
+      exclusionScore: optimizedExclusions.score,
     })
   } catch (error) {
     console.error("Erreur calcul devis:", error)

@@ -4,6 +4,7 @@
  * @see https://docs.mollie.com/docs/recurring-payments
  */
 
+import "server-only"
 import type { MollieClient } from "@mollie/api-client"
 import { MandateMethod, MandateStatus, PaymentMethod, SequenceType } from "@mollie/api-client"
 import { prisma } from "@/lib/prisma"
