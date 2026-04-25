@@ -5,6 +5,7 @@ import { EMAIL_TEMPLATES, sendEmail } from "@/lib/email"
 import { SITE_URL } from "@/lib/site-url"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { sendOperationsAlert } from "@/lib/operations-alert"
+import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 
 const CLIENT_REMINDER_AFTER_HOURS = 24
 const ADMIN_ALERT_AFTER_HOURS = 72
@@ -110,6 +111,7 @@ export async function GET(request: NextRequest) {
 
     let reminded = 0
     let skippedAlreadySent = 0
+    let skippedUnsubscribed = 0
     let failed = 0
     let missingUser = 0
 
@@ -132,12 +134,17 @@ export async function GET(request: NextRequest) {
         missingUser++
         continue
       }
+      if (await isReminderUnsubscribed(email, "signature_reminder")) {
+        skippedUnsubscribed++
+        continue
+      }
 
       const userLabel = (user?.raisonSociale || user?.email || "Client").trim()
       const payload = getSignatureReminderPayload(pending, userLabel)
       const tpl = EMAIL_TEMPLATES.rappelSignatureEnAttente(
         payload.raisonSociale,
         payload.signatureLink,
+        email,
         { produitLabel: payload.produitLabel, reference: payload.reference }
       )
 
@@ -213,6 +220,7 @@ export async function GET(request: NextRequest) {
       total: pendingSignatures.length,
       reminded,
       skippedAlreadySent,
+      skippedUnsubscribed,
       missingUser,
       failed,
       staleCount: staleRows.length,

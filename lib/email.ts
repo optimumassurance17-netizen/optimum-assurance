@@ -8,6 +8,7 @@ import {
   appendTransactionalEmailTextFooter,
   wrapTransactionalEmailHtml,
 } from "@/lib/email-layout"
+import { buildReminderUnsubscribeUrl, type ReminderUnsubscribeType } from "@/lib/reminder-unsubscribe"
 
 const FROM = process.env.EMAIL_FROM || "Optimum Assurance <noreply@optimum-assurance.fr>"
 
@@ -17,6 +18,22 @@ function escapeHtmlForEmail(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
+}
+
+function reminderUnsubscribeTextFooter(
+  type: ReminderUnsubscribeType,
+  email: string
+): string {
+  const url = buildReminderUnsubscribeUrl(type, email)
+  return `\n\n—\nSe désabonner de ces relances : ${url}`
+}
+
+function reminderUnsubscribeHtmlFooter(
+  type: ReminderUnsubscribeType,
+  email: string
+): string {
+  const url = buildReminderUnsubscribeUrl(type, email)
+  return `<p style="font-size:12px;color:#64748b;margin-top:16px;">Vous ne souhaitez plus recevoir ces relances ? <a href="${url}" style="color:#2563eb;">Se désabonner</a>.</p>`
 }
 
 export async function sendEmail(params: {
@@ -108,6 +125,7 @@ export const EMAIL_TEMPLATES = {
   rappelSignatureEnAttente: (
     raisonSociale: string,
     signatureLink: string,
+    recipientEmail: string,
     opts?: { produitLabel?: string; reference?: string }
   ) => {
     const produit = opts?.produitLabel?.trim() || "votre document"
@@ -118,8 +136,12 @@ export const EMAIL_TEMPLATES = {
       : ""
     return {
       subject: `Rappel signature électronique — ${produit} - Optimum Assurance`,
-      text: `Bonjour ${raisonSociale},\n\nNous vous rappelons que la signature électronique de ${produit} est toujours en attente.${refText}\n\nLien sécurisé :\n${signatureLink}\n\nAprès signature, votre dossier continue automatiquement son traitement.\n\nCordialement,\nOptimum Assurance`,
-      html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Nous vous rappelons que la <strong>signature électronique</strong> de <strong>${escapeHtmlForEmail(produit)}</strong> est toujours en attente.</p>${refHtml}<p><a href="${signatureLink}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Signer maintenant</a></p><p style="font-size:13px;color:#64748b;">Après signature, votre dossier continue automatiquement son traitement.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+      text:
+        `Bonjour ${raisonSociale},\n\nNous vous rappelons que la signature électronique de ${produit} est toujours en attente.${refText}\n\nLien sécurisé :\n${signatureLink}\n\nAprès signature, votre dossier continue automatiquement son traitement.\n\nCordialement,\nOptimum Assurance` +
+        reminderUnsubscribeTextFooter("signature", recipientEmail),
+      html:
+        `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Nous vous rappelons que la <strong>signature électronique</strong> de <strong>${escapeHtmlForEmail(produit)}</strong> est toujours en attente.</p>${refHtml}<p><a href="${signatureLink}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Signer maintenant</a></p><p style="font-size:13px;color:#64748b;">Après signature, votre dossier continue automatiquement son traitement.</p><p>Cordialement,<br>Optimum Assurance</p>` +
+        reminderUnsubscribeHtmlFooter("signature", recipientEmail),
     }
   },
   rappelPaiementContrat: (
@@ -161,10 +183,18 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nVotre attestation d’assurance décennale a été suspendue pour défaut de paiement.\n\nRégularisez en ligne par carte bancaire : ${APP_URL}/espace-client/regularisation\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Votre <strong>attestation d’assurance décennale</strong> a été suspendue pour défaut de paiement.</p><p><a href="${APP_URL}/espace-client/regularisation" style="color:#2563eb;font-weight:bold">Régulariser mon paiement par CB</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
-  rappelDevisAbandonne: (raisonSociale: string, primeAnnuelle?: number) => ({
+  rappelDevisAbandonne: (
+    raisonSociale: string,
+    recipientEmail: string,
+    primeAnnuelle?: number
+  ) => ({
     subject: "Votre devis assurance décennale vous attend - Optimum Assurance",
-    text: `Bonjour ${raisonSociale},\n\nVous avez demandé un devis assurance décennale. La prime annuelle était de ${primeAnnuelle ? primeAnnuelle.toLocaleString("fr-FR") + " €" : "disponible"}.\n\nFinalisez votre souscription en ligne : ${APP_URL}/devis\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour ${raisonSociale},</p><p>Vous avez demandé un devis assurance décennale. La prime annuelle était de <strong>${primeAnnuelle ? primeAnnuelle.toLocaleString("fr-FR") + " €" : "disponible"}</strong>.</p><p><a href="${APP_URL}/devis" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Finaliser mon devis</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+    text:
+      `Bonjour ${raisonSociale},\n\nVous avez demandé un devis assurance décennale. La prime annuelle était de ${primeAnnuelle ? primeAnnuelle.toLocaleString("fr-FR") + " €" : "disponible"}.\n\nFinalisez votre souscription en ligne : ${APP_URL}/devis\n\nCordialement,\nOptimum Assurance` +
+      reminderUnsubscribeTextFooter("devis", recipientEmail),
+    html:
+      `<p>Bonjour ${raisonSociale},</p><p>Vous avez demandé un devis assurance décennale. La prime annuelle était de <strong>${primeAnnuelle ? primeAnnuelle.toLocaleString("fr-FR") + " €" : "disponible"}</strong>.</p><p><a href="${APP_URL}/devis" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Finaliser mon devis</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
+      reminderUnsubscribeHtmlFooter("devis", recipientEmail),
   }),
   rappelDossierIncomplet: (
     raisonSociale: string,
