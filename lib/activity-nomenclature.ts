@@ -230,9 +230,9 @@ async function ensureCanonicalActivitiesSeeded(): Promise<void> {
   })
   if (count >= canonicalActivities.length) return
   await prisma.$transaction(
-    canonicalActivities.map((activity) =>
-      prisma.activity.upsert({
-        const groupCode = groupCodeFromActivityCode(activity.code)
+    canonicalActivities.map((activity) => {
+      const groupCode = groupCodeFromActivityCode(activity.code)
+      return prisma.activity.upsert({
         where: { code: activity.code },
         update: {
           groupCode,
@@ -271,7 +271,7 @@ async function ensureCanonicalActivitiesSeeded(): Promise<void> {
           isActive: true,
         },
       })
-    )
+    })
   )
 }
 

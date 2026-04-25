@@ -34,40 +34,6 @@ model User {
   missingSubActivities  MissingSubActivity[]
   sepaSubscription      SepaSubscription?
   insuranceContracts    InsuranceContract[]
-  missingActivities     MissingActivity[]
-}
-
-/// Nomenclature interne des activités BTP (référentiel France Assureurs 2019)
-model Activity {
-  id                 String   @id @default(cuid())
-  code               String   @unique
-  name               String
-  definition         String   @db.Text
-  includedWorks      String   @db.Text // JSON string[]
-  excludedWorks      String   @db.Text // JSON string[]
-  relatedActivities  String   @db.Text // JSON string[]
-  isAccessoryAllowed Boolean  @default(false)
-  version            String   @default("france-assureurs-2019")
-  isActive           Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-}
-
-/// Activités saisies non reconnues pour revue nomenclature (amélioration continue)
-model MissingActivity {
-  id            String   @id @default(cuid())
-  userId        String?
-  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  userInput     String
-  suggestedMatch String?
-  date          DateTime @default(now())
-  validated     Boolean  @default(false)
-  occurrenceCount Int    @default(1)
-  lastSeenAt    DateTime @default(now())
-
-  @@index([userInput])
-  @@index([validated, date])
-  @@index([suggestedMatch])
 }
 
 /// Cycle de vie assurance (plateforme SaaS — décennale | DO). DB : PostgreSQL (URL Supabase possible).
