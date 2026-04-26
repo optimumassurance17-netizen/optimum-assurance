@@ -1,6 +1,7 @@
 "use client"
 
 import { SITE_URL } from "@/lib/site-url"
+import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 
 /**
  * Facture acquittée dommage ouvrage.
@@ -32,10 +33,7 @@ export function FactureDoTemplate({ numero, data }: FactureDoTemplateProps) {
 
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0 text-sm">
-      <div className="border-b-2 border-[#2563eb] pb-4 mb-6">
-        <h1 className="text-2xl font-bold text-[#2563eb]">Optimum Assurance</h1>
-        <p className="text-sm text-[#171717]">Assurance dommage ouvrage</p>
-      </div>
+      <DocumentBrandHeader tagline="Assurance dommage ouvrage" />
 
       <h2 className="text-xl font-semibold mb-2 text-center">FACTURE ACQUITTÉE</h2>
       <p className="text-center text-[#171717] mb-6">Dommage Ouvrage</p>

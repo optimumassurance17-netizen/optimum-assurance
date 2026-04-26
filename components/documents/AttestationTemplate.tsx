@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react"
 import { SITE_URL } from "@/lib/site-url"
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
+import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 
 interface AttestationTemplateProps {
   numero: string
@@ -26,10 +27,10 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
   const optimizedExclusions = extractOptimizedExclusionLines(data)
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0">
-      <div className="border-b-2 border-[#2563eb] pb-4 mb-8">
-        <h1 className="text-2xl font-bold text-[#2563eb]">Optimum Assurance</h1>
-        <p className="text-sm text-[#171717]">Assurance décennale professionnelle</p>
-      </div>
+      <DocumentBrandHeader
+        tagline="Assurance décennale professionnelle"
+        className="border-b-2 border-[#2563eb] pb-4 mb-8"
+      />
 
       <h2 className="text-xl font-semibold mb-2 text-center">ATTESTATION D&apos;ASSURANCE</h2>
       <p className="text-center font-semibold mb-8 text-[#2563eb]">Responsabilité Civile Décennale</p>
