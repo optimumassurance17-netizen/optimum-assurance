@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation"
 import { buildWhatsAppInternalUrl } from "@/lib/whatsapp"
 
-const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP || "33781596707").replace(/\D/g, "")
 const WHATSAPP_MESSAGE =
   process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE ||
   "Bonjour, je souhaite une assistance pour mon dossier."
@@ -19,7 +18,6 @@ export function WhatsAppButton() {
     !pathname.startsWith("/api")
 
   const trackingUrl = buildWhatsAppInternalUrl({
-    number: WHATSAPP_NUMBER,
     source: "floating_button",
     text: WHATSAPP_MESSAGE,
   })

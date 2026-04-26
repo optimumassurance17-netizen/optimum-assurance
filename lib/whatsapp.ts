@@ -1,4 +1,4 @@
-const DEFAULT_WHATSAPP_NUMBER = "33781596707"
+const DEFAULT_WHATSAPP_NUMBER = "33600000000"
 const DEFAULT_WHATSAPP_MESSAGE = "Bonjour, je souhaite un devis décennale."
 
 function sanitizePhone(input: string): string {
@@ -18,7 +18,11 @@ function sanitizeSource(input: string): string {
 }
 
 export function getWhatsAppSupportNumber(): string {
-  return sanitizePhone(process.env.NEXT_PUBLIC_WHATSAPP || DEFAULT_WHATSAPP_NUMBER)
+  return sanitizePhone(
+    process.env.WHATSAPP_SUPPORT_NUMBER ||
+      process.env.NEXT_PUBLIC_WHATSAPP ||
+      DEFAULT_WHATSAPP_NUMBER
+  )
 }
 
 export function getWhatsAppDefaultMessage(): string {
@@ -35,7 +39,6 @@ export function buildWhatsAppTrackingPath(params: {
 }) {
   const qp = new URLSearchParams()
   qp.set("source", params.source.trim().slice(0, 80))
-  qp.set("phone", getWhatsAppSupportNumber())
   qp.set("text", sanitizeText(params.message || getWhatsAppDefaultMessage()))
   if (params.reference?.trim()) qp.set("reference", params.reference.trim().slice(0, 120))
   if (params.leadType?.trim()) qp.set("leadType", params.leadType.trim().slice(0, 40))
@@ -45,7 +48,7 @@ export function buildWhatsAppTrackingPath(params: {
 }
 
 export function buildWhatsAppInternalUrl(params: {
-  number: string
+  number?: string
   source: string
   text: string
   reference?: string
@@ -55,7 +58,7 @@ export function buildWhatsAppInternalUrl(params: {
 }): string {
   const qp = new URLSearchParams()
   qp.set("source", params.source.trim().slice(0, 80))
-  qp.set("phone", sanitizePhone(params.number))
+  if (params.number?.trim()) qp.set("phone", sanitizePhone(params.number))
   qp.set("text", sanitizeText(params.text))
   if (params.reference?.trim()) qp.set("reference", params.reference.trim().slice(0, 120))
   if (params.leadType?.trim()) qp.set("leadType", params.leadType.trim().slice(0, 40))
@@ -75,7 +78,6 @@ export function buildWhatsAppRedirectPath(params: {
 }): string {
   const message = params.text || params.context || getWhatsAppDefaultMessage()
   return buildWhatsAppInternalUrl({
-    number: getWhatsAppSupportNumber(),
     source: params.source,
     text: message,
     reference: params.reference,

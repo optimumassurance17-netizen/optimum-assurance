@@ -27,7 +27,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="text-slate-700 transition-colors hover:text-[#25D366]"
             >
-              WhatsApp : +33 7 81 59 67 07
+              WhatsApp
             </a>
           </div>
         </div>
