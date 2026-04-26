@@ -40,6 +40,49 @@ interface ClientData {
     string,
     { status: "valid" | "invalid"; reason: string | null; updatedAt: string }
   >
+  dda?: {
+    consents: {
+      id: string
+      page: string
+      produit: string
+      acceptedAt: string
+      email: string | null
+      userId: string | null
+    }[]
+    events: {
+      id: string
+      adminEmail: string
+      action: string
+      targetType: string | null
+      targetId: string | null
+      targetLabel: string | null
+      details: Record<string, unknown>
+      createdAt: string
+    }[]
+  }
+}
+
+function asMaybeString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
+}
+
+function ddaProductLabel(value: string | null | undefined): string {
+  const normalized = (value ?? "").trim().toLowerCase()
+  if (["decennale"].includes(normalized)) return "Décennale"
+  if (["dommage-ouvrage", "dommage_ouvrage", "do"].includes(normalized)) return "Dommage ouvrage"
+  if (["rc-fabriquant", "rc_fabriquant"].includes(normalized)) return "RC fabricant"
+  return value?.trim() || "—"
+}
+
+function ddaPageLabel(value: string | null | undefined): string {
+  const normalized = (value ?? "").trim().toLowerCase()
+  if (normalized === "souscription") return "Souscription"
+  if (normalized === "souscription_do") return "Souscription DO"
+  if (normalized === "signature") return "Signature"
+  if (normalized === "formulaire_do") return "Formulaire DO"
+  if (normalized === "paiement_do") return "Paiement DO"
+  if (normalized === "rc_fabriquant_result") return "Résultat RC fabricant"
+  return value?.trim() || "—"
 }
 
 const typeLabels: Record<string, string> = {
@@ -186,6 +229,8 @@ export default function ClientDetailPage() {
   const { user, documents, payments, avenantFees } = data
   const caTotal = payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0)
   const isOwnAdminAccount = authSession?.user?.id === clientId
+  const ddaConsents = data.dda?.consents ?? []
+  const ddaEvents = data.dda?.events ?? []
 
   return (
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
@@ -399,6 +444,121 @@ export default function ClientDetailPage() {
                 </pre>
               </details>
             ) : null}
+          </section>
+        )}
+
+        {(ddaConsents.length > 0 || ddaEvents.length > 0) && (
+          <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-5">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Conformité DDA</h2>
+              <p className="text-xs text-gray-400 mt-1">
+                Journal des consentements devoir de conseil et contrôles d&apos;adéquation produit.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+                <p className="text-[11px] uppercase tracking-wide text-gray-400">Consentements DDA</p>
+                <p className="mt-1 text-xl font-semibold text-white">{ddaConsents.length}</p>
+              </div>
+              <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+                <p className="text-[11px] uppercase tracking-wide text-gray-400">Contrôles adéquation</p>
+                <p className="mt-1 text-xl font-semibold text-white">{ddaEvents.length}</p>
+              </div>
+              <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+                <p className="text-[11px] uppercase tracking-wide text-gray-400">Dernière preuve</p>
+                <p className="mt-1 text-sm font-medium text-gray-200">
+                  {(() => {
+                    const latest = [
+                      ...ddaConsents.map((entry) => entry.acceptedAt),
+                      ...ddaEvents.map((entry) => entry.createdAt),
+                    ]
+                      .sort()
+                      .at(-1)
+                    return latest ? new Date(latest).toLocaleString("fr-FR") : "—"
+                  })()}
+                </p>
+              </div>
+            </div>
+
+            {ddaConsents.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-sky-200 mb-2">Consentements devoir de conseil</h3>
+                <div className="bg-[#1a1a1a] rounded-lg border border-gray-700 overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="text-left p-3 font-medium text-gray-300">Date</th>
+                        <th className="text-left p-3 font-medium text-gray-300">Produit</th>
+                        <th className="text-left p-3 font-medium text-gray-300">Étape</th>
+                        <th className="text-left p-3 font-medium text-gray-300">Email</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ddaConsents.map((row) => (
+                        <tr key={row.id} className="border-b border-gray-800/80">
+                          <td className="p-3 text-gray-200">{new Date(row.acceptedAt).toLocaleString("fr-FR")}</td>
+                          <td className="p-3">
+                            <span className="rounded bg-sky-900/40 px-2 py-1 text-sky-200">
+                              {ddaProductLabel(row.produit)}
+                            </span>
+                          </td>
+                          <td className="p-3 text-gray-200">{ddaPageLabel(row.page)}</td>
+                          <td className="p-3 text-gray-400">{row.email || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {ddaEvents.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-emerald-200 mb-2">Preuves d&apos;adéquation et contrôles</h3>
+                <div className="space-y-3">
+                  {ddaEvents.map((event) => (
+                    <div key={event.id} className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="rounded bg-emerald-900/40 px-2 py-1 text-emerald-200">
+                          {event.action}
+                        </span>
+                        <span className="text-gray-300">{new Date(event.createdAt).toLocaleString("fr-FR")}</span>
+                        <span className="text-gray-400">
+                          {event.targetType || "—"}
+                          {event.targetId ? ` #${event.targetId.slice(-8)}` : ""}
+                        </span>
+                      </div>
+                      {event.targetLabel ? (
+                        <p className="mt-1 text-xs text-gray-400">
+                          Cible : <span className="text-gray-300">{event.targetLabel}</span>
+                        </p>
+                      ) : null}
+                      <p className="mt-2 text-xs text-gray-300">
+                        Produit :{" "}
+                        <span className="text-white">
+                          {ddaProductLabel(
+                            asMaybeString(event.details.product) ||
+                              asMaybeString(event.details.produit) ||
+                              asMaybeString(event.details.recommendedProduct)
+                          )}
+                        </span>
+                      </p>
+                      {asMaybeString(event.details.needsSummary) && (
+                        <p className="mt-1 text-xs text-gray-200">
+                          <span className="text-gray-400">Besoins :</span> {asMaybeString(event.details.needsSummary)}
+                        </p>
+                      )}
+                      {asMaybeString(event.details.suitability) && (
+                        <p className="mt-1 text-xs text-gray-200">
+                          <span className="text-gray-400">Adéquation :</span> {asMaybeString(event.details.suitability)}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
 
