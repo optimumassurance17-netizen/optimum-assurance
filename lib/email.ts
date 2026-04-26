@@ -236,6 +236,29 @@ export const EMAIL_TEMPLATES = {
         reminderUnsubscribeHtmlFooter("dossier", recipientEmail),
     }
   },
+  relanceConformiteDda: (
+    raisonSociale: string,
+    opts: {
+      produitLabel: string
+      ctaUrl: string
+      reference?: string
+      manque?: string
+    }
+  ) => {
+    const reference = opts.reference?.trim()
+    const manque = opts.manque?.trim() || "validation des exigences et besoins"
+    const referenceText = reference ? `\nRéférence : ${reference}` : ""
+    const referenceHtml = reference
+      ? `<p style="font-size:13px;color:#64748b;margin:8px 0 0;">Référence : <strong>${escapeHtmlForEmail(reference)}</strong></p>`
+      : ""
+    return {
+      subject: `Action requise : conformité DDA (${opts.produitLabel}) - Optimum Assurance`,
+      text:
+        `Bonjour ${raisonSociale},\n\nVotre dossier ${opts.produitLabel} nécessite une action de conformité DDA (${manque}).${referenceText}\n\nMerci de vous reconnecter et de confirmer vos exigences/besoins depuis votre espace client :\n${opts.ctaUrl}\n\nCette étape est nécessaire pour poursuivre le traitement de votre dossier.\n\nCordialement,\nOptimum Assurance`,
+      html:
+        `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre dossier <strong>${escapeHtmlForEmail(opts.produitLabel)}</strong> nécessite une action de conformité DDA (<strong>${escapeHtmlForEmail(manque)}</strong>).</p>${referenceHtml}<p><a href="${opts.ctaUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Finaliser ma conformité DDA</a></p><p style="font-size:13px;color:#64748b;">Cette étape est nécessaire pour poursuivre le traitement de votre dossier.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+    }
+  },
   bienvenue: (raisonSociale: string) => ({
     subject: "Bienvenue chez Optimum Assurance",
     text: `Bonjour ${raisonSociale},\n\nVotre compte a été créé avec succès.\n\nConnectez-vous à votre espace client pour gérer vos documents et votre assurance décennale : ${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,

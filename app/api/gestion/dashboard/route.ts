@@ -67,6 +67,59 @@ function parseAdminLogDetails(raw: string | null | undefined): Record<string, un
   }
 }
 
+function normalizeInternalPath(path: string): string {
+  const trimmed = path.trim()
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) return "/espace-client"
+  return trimmed.slice(0, 512)
+}
+
+function buildClientLoginPath(productType: string): string {
+  const destination =
+    productType === "decennale"
+      ? "/signature"
+      : productType === "rc_fabriquant"
+        ? "/espace-client/rcpro"
+        : "/espace-client"
+  return `/connexion?callbackUrl=${encodeURIComponent(destination)}`
+}
+
+function formatDdaProductLabel(productType: string): string {
+  if (productType === "do") return "Dommage-ouvrage"
+  if (productType === "rc_fabriquant") return "RC Fabriquant"
+  return "Décennale"
+}
+
+function parseJsonObject(raw: string | null | undefined): Record<string, unknown> {
+  if (!raw?.trim()) return {}
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {}
+    return parsed as Record<string, unknown>
+  } catch {
+    return {}
+  }
+}
+
+function inferProductTypeFromDocumentData(rawData: string | null | undefined): "decennale" | "do" | "rc_fabriquant" {
+  const data = parseJsonObject(rawData)
+  const normalized = typeof data.insuranceProduct === "string"
+    ? data.insuranceProduct.trim().toLowerCase()
+    : typeof data.productType === "string"
+      ? data.productType.trim().toLowerCase()
+      : ""
+  if (normalized === "do" || normalized === "dommage-ouvrage") return "do"
+  if (normalized === "rc_fabriquant" || normalized === "rc-fabriquant") return "rc_fabriquant"
+  return "decennale"
+}
+
+function parseLeadCompanyName(rawData: string | null | undefined): string | null {
+  const data = parseJsonObject(rawData)
+  if (typeof data.raisonSociale === "string" && data.raisonSociale.trim()) {
+    return data.raisonSociale.trim().slice(0, 160)
+  }
+  return null
+}
+
 function buildSchemaDriftFallbackDashboard() {
   return {
     users: [],
@@ -561,6 +614,15 @@ export async function GET() {
       description: string
       href: string
       ageHours: number
+      remediation?: {
+        kind: "dda"
+        toEmail: string
+        clientLabel: string
+        produitLabel: string
+        ctaPath: string
+        reference?: string
+        missing?: string
+      }
     }
     const dismissedLogs = await prisma.adminActivityLog.findMany({
       where: {
@@ -676,6 +738,19 @@ export async function GET() {
       ]
         .filter(Boolean)
         .join(" + ")
+      const produitLabel = formatDdaProductLabel(c.productType)
+      const remediation =
+        email && email.includes("@")
+          ? {
+              kind: "dda" as const,
+              toEmail: email,
+              clientLabel: (c.user?.raisonSociale || c.clientName || c.user?.email || email).trim(),
+              produitLabel,
+              ctaPath: normalizeInternalPath(buildClientLoginPath(c.productType)),
+              reference: c.contractNumber,
+              missing,
+            }
+          : undefined
       dashboardActions.push({
         id: `dda-contract-${c.id}`,
         kind: "dda_proof_missing",
@@ -684,6 +759,7 @@ export async function GET() {
         description: `${c.contractNumber} (${c.productType}) — manque: ${missing || "preuve"} — ${ageHours}h`,
         href: userId ? `/gestion/clients/${userId}` : "#contrats-plateforme",
         ageHours,
+        remediation,
       })
     }
 
@@ -693,6 +769,21 @@ export async function GET() {
       if (ageMs < reminder24hMs) continue
       if (ddaEventDocumentIds.has(d.id)) continue
       const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      const productType = inferProductTypeFromDocumentData(d.data)
+      const customerEmail = d.user?.email?.trim().toLowerCase()
+      const customerLabel = (d.user?.raisonSociale || d.user?.email || "client").trim()
+      const remediation =
+        customerEmail && customerEmail.includes("@")
+          ? {
+              kind: "dda" as const,
+              toEmail: customerEmail,
+              clientLabel: customerLabel,
+              produitLabel: formatDdaProductLabel(productType),
+              ctaPath: normalizeInternalPath(buildClientLoginPath(productType)),
+              reference: d.numero,
+              missing: "trace d’adéquation DDA sur l’avenant",
+            }
+          : undefined
       dashboardActions.push({
         id: `dda-avenant-${d.id}`,
         kind: "dda_avenant_missing",
@@ -701,6 +792,7 @@ export async function GET() {
         description: `${d.numero} — ${(d.user?.raisonSociale || d.user?.email || "client")} — ${ageHours}h`,
         href: `/gestion/documents/${d.id}`,
         ageHours,
+        remediation,
       })
     }
 
@@ -711,6 +803,23 @@ export async function GET() {
       const ageMs = now.getTime() - l.createdAt.getTime()
       if (ageMs < reminder24hMs) continue
       const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      const rcFabEmail = l.matchedUser?.email?.trim().toLowerCase() || l.email.trim().toLowerCase()
+      const remediation =
+        rcFabEmail && rcFabEmail.includes("@")
+          ? {
+              kind: "dda" as const,
+              toEmail: rcFabEmail,
+              clientLabel: (
+                l.matchedUser?.raisonSociale ||
+                parseLeadCompanyName(l.data) ||
+                l.matchedUser?.email ||
+                l.email
+              ).trim(),
+              produitLabel: "RC Fabriquant",
+              ctaPath: normalizeInternalPath(buildClientLoginPath("rc_fabriquant")),
+              missing: "consentement / traçabilité DDA du parcours RC Fabriquant",
+            }
+          : undefined
       dashboardActions.push({
         id: `dda-rcfab-${l.id}`,
         kind: "dda_rc_fabriquant_missing",
@@ -719,6 +828,7 @@ export async function GET() {
         description: `${l.email} — statut ${statut} — ${ageHours}h`,
         href: "#rc-fabriquant-leads",
         ageHours,
+        remediation,
       })
     }
 

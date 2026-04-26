@@ -306,12 +306,23 @@ interface DashboardData {
       | "decennale_lead_followup"
       | "do_etude_pending"
       | "rc_fabriquant_pending"
-      | "dda_missing_or_stale"
+      | "dda_proof_missing"
+      | "dda_avenant_missing"
+      | "dda_rc_fabriquant_missing"
     priority: "high" | "medium"
     title: string
     description: string
     href: string
     ageHours: number
+    remediation?: {
+      kind: "dda"
+      toEmail: string
+      clientLabel: string
+      produitLabel: string
+      ctaPath: string
+      reference?: string
+      missing?: string
+    }
   }[]
   dashboardActionsSummary?: {
     total: number
@@ -396,6 +407,7 @@ export default function GestionPage() {
   const [cancellingSignatureId, setCancellingSignatureId] = useState<string | null>(null)
   const [repairingSignatureId, setRepairingSignatureId] = useState<string | null>(null)
   const [dismissingActionId, setDismissingActionId] = useState<string | null>(null)
+  const [remediatingActionId, setRemediatingActionId] = useState<string | null>(null)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
   const customDevisPdfInputRef = useRef<HTMLInputElement>(null)
   const [customDevisUserFilter, setCustomDevisUserFilter] = useState("")
@@ -1832,36 +1844,78 @@ export default function GestionPage() {
                           </div>
                           <p className="text-xs text-gray-300 mt-1">{a.description}</p>
                         </a>
-                        <button
-                          type="button"
-                          disabled={dismissingActionId === a.id}
-                          onClick={async () => {
-                            setDismissingActionId(a.id)
-                            try {
-                              const res = await fetch("/api/gestion/actions-du-jour/dismiss", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ actionId: a.id }),
-                              })
-                              const j = await readResponseJson<{ error?: string }>(res)
-                              if (!res.ok) throw new Error(j.error || "Impossible de marquer l'action comme traitée.")
+                        <div className="shrink-0 flex flex-col sm:flex-row items-stretch gap-2">
+                          {a.remediation?.kind === "dda" ? (
+                            <button
+                              type="button"
+                              disabled={remediatingActionId === a.id}
+                              onClick={async () => {
+                                setRemediatingActionId(a.id)
+                                try {
+                                  const res = await fetch("/api/gestion/actions-du-jour/remediate", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      actionId: a.id,
+                                      remediation: a.remediation,
+                                    }),
+                                  })
+                                  const j = await readResponseJson<{ error?: string; alreadySent?: boolean }>(res)
+                                  if (!res.ok) throw new Error(j.error || "Impossible d'envoyer la relance DDA.")
 
-                              const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
-                              if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
-                              setToast({ message: "Action marquée comme traitée.", type: "success" })
-                            } catch (err) {
-                              setToast({
-                                message: err instanceof Error ? err.message : "Erreur lors de la mise à jour",
-                                type: "error",
-                              })
-                            } finally {
-                              setDismissingActionId(null)
-                            }
-                          }}
-                          className="shrink-0 text-xs px-2.5 py-1.5 rounded border border-gray-600 text-gray-100 hover:border-[#2563eb] hover:text-[#60a5fa] disabled:opacity-50"
-                        >
-                          {dismissingActionId === a.id ? "…" : "Marquer traité"}
-                        </button>
+                                  const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+                                  if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                  setToast({
+                                    message: j.alreadySent
+                                      ? "Relance DDA déjà envoyée aujourd'hui."
+                                      : "Relance DDA envoyée automatiquement.",
+                                    type: "success",
+                                  })
+                                } catch (err) {
+                                  setToast({
+                                    message: err instanceof Error ? err.message : "Erreur lors de la relance DDA",
+                                    type: "error",
+                                  })
+                                } finally {
+                                  setRemediatingActionId(null)
+                                }
+                              }}
+                              className="text-xs px-2.5 py-1.5 rounded border border-[#2563eb] text-[#93c5fd] hover:bg-[#2563eb]/20 disabled:opacity-50"
+                            >
+                              {remediatingActionId === a.id ? "…" : "Remédier auto DDA"}
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            disabled={dismissingActionId === a.id}
+                            onClick={async () => {
+                              setDismissingActionId(a.id)
+                              try {
+                                const res = await fetch("/api/gestion/actions-du-jour/dismiss", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ actionId: a.id }),
+                                })
+                                const j = await readResponseJson<{ error?: string }>(res)
+                                if (!res.ok) throw new Error(j.error || "Impossible de marquer l'action comme traitée.")
+
+                                const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+                                if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                setToast({ message: "Action marquée comme traitée.", type: "success" })
+                              } catch (err) {
+                                setToast({
+                                  message: err instanceof Error ? err.message : "Erreur lors de la mise à jour",
+                                  type: "error",
+                                })
+                              } finally {
+                                setDismissingActionId(null)
+                              }
+                            }}
+                            className="text-xs px-2.5 py-1.5 rounded border border-gray-600 text-gray-100 hover:border-[#2563eb] hover:text-[#60a5fa] disabled:opacity-50"
+                          >
+                            {dismissingActionId === a.id ? "…" : "Marquer traité"}
+                          </button>
+                        </div>
                       </div>
                     </div>
                     ))
