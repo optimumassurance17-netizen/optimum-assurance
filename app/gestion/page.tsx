@@ -408,6 +408,7 @@ export default function GestionPage() {
   const [repairingSignatureId, setRepairingSignatureId] = useState<string | null>(null)
   const [dismissingActionId, setDismissingActionId] = useState<string | null>(null)
   const [remediatingActionId, setRemediatingActionId] = useState<string | null>(null)
+  const [bulkRemediatingDda, setBulkRemediatingDda] = useState(false)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
   const customDevisPdfInputRef = useRef<HTMLInputElement>(null)
   const [customDevisUserFilter, setCustomDevisUserFilter] = useState("")
@@ -655,6 +656,15 @@ export default function GestionPage() {
     if (actionsFilter === "overdue72h") return list.filter((a) => a.ageHours >= 72)
     return list
   }, [data, actionsFilter])
+
+  const bulkDdaRemediationCandidates = useMemo(() => {
+    const list = data?.dashboardActions ?? []
+    return list.filter(
+      (action) =>
+        action.priority === "high" &&
+        action.remediation?.kind === "dda"
+    )
+  }, [data])
 
   const filteredRcFabriquantLeads = useMemo(() => {
     const list = data?.devisRcFabriquantLeads ?? []
@@ -1815,6 +1825,62 @@ export default function GestionPage() {
                   >
                     72h+ seulement
                   </button>
+                  {bulkDdaRemediationCandidates.length > 0 ? (
+                    <button
+                      type="button"
+                      disabled={bulkRemediatingDda}
+                      onClick={async () => {
+                        setBulkRemediatingDda(true)
+                        try {
+                          const res = await fetch("/api/gestion/actions-du-jour/remediate", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              items: bulkDdaRemediationCandidates.map((action) => ({
+                                actionId: action.id,
+                                remediation: action.remediation,
+                              })),
+                            }),
+                          })
+                          const j = await readResponseJson<{
+                            error?: string
+                            summary?: {
+                              total: number
+                              sent: number
+                              alreadySent: number
+                              failed: number
+                            }
+                          }>(res)
+                          if (!res.ok) throw new Error(j.error || "Échec de la remédiation DDA en lot.")
+
+                          const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+                          if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+
+                          const s = j.summary
+                          if (s) {
+                            setToast({
+                              message: `Remédiation DDA en lot : ${s.sent} envoyée(s), ${s.alreadySent} déjà envoyée(s), ${s.failed} en échec.`,
+                              type: s.failed > 0 ? "error" : "success",
+                            })
+                          } else {
+                            setToast({ message: "Remédiation DDA en lot terminée.", type: "success" })
+                          }
+                        } catch (err) {
+                          setToast({
+                            message: err instanceof Error ? err.message : "Erreur remédiation DDA en lot",
+                            type: "error",
+                          })
+                        } finally {
+                          setBulkRemediatingDda(false)
+                        }
+                      }}
+                      className="px-2.5 py-1 rounded border bg-[#2563eb]/20 border-[#2563eb] text-[#bfdbfe] hover:bg-[#2563eb]/30 disabled:opacity-50"
+                    >
+                      {bulkRemediatingDda
+                        ? "Remédiation lot…"
+                        : `Remédier tout DDA prioritaire (${bulkDdaRemediationCandidates.length})`}
+                    </button>
+                  ) : null}
                 </div>
                 <div className="space-y-2">
                   {filteredDashboardActions.length === 0 ? (
