@@ -67,6 +67,16 @@ export async function POST(request: NextRequest) {
       )
     }
     const rawSouscription = souscription as Record<string, unknown>
+    const insuranceProductRaw = asTrimmedString(rawSouscription.insuranceProduct)?.toLowerCase()
+    if (insuranceProductRaw === "do" || insuranceProductRaw === "dommage-ouvrage") {
+      return NextResponse.json(
+        {
+          error:
+            "Ce parcours de signature est réservé à la décennale. Pour le dommage-ouvrage, utilisez le contrat plateforme depuis l'espace client.",
+        },
+        { status: 400 }
+      )
+    }
     const raisonSociale = asTrimmedString(rawSouscription.raisonSociale)
     const email = asTrimmedString(rawSouscription.email)?.toLowerCase()
     const representantLegal = asTrimmedString(rawSouscription.representantLegal)
@@ -138,6 +148,18 @@ export async function POST(request: NextRequest) {
           code: "DDA_CONSENT_REQUIRED",
         },
         { status: 412 }
+      )
+    }
+    const existingPending = await prisma.pendingSignature.findFirst({
+      where: { userId: session.user.id },
+    })
+    if (existingPending) {
+      return NextResponse.json(
+        {
+          error:
+            "Une demande de signature est déjà en attente pour ce dossier. Finalisez-la ou annulez-la avant d'en créer une nouvelle.",
+        },
+        { status: 409 }
       )
     }
 
