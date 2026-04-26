@@ -10,6 +10,52 @@ import { logAdminActivity } from "@/lib/admin-activity"
 
 const UUID_RE = /^[0-9a-f-]{36}$/i
 
+function normalizeStoragePath(path: string): string {
+  return decodeURIComponent(path).replace(/^\/+/, "").trim()
+}
+
+function extractBucketPathFromUrl(url: string, bucket: string): string | null {
+  const raw = url.trim()
+  if (!raw) return null
+  const plainBucketPrefix = `${bucket}/`
+  if (raw.startsWith(plainBucketPrefix)) {
+    return normalizeStoragePath(raw.slice(plainBucketPrefix.length))
+  }
+  const directBucket = raw.indexOf(`/${bucket}/`)
+  if (directBucket >= 0) {
+    const segment = raw.slice(directBucket + bucket.length + 2).split("?")[0]
+    return normalizeStoragePath(segment)
+  }
+  const objectPrefix = `/object/public/${bucket}/`
+  const objectSignedPrefix = `/object/sign/${bucket}/`
+  const objectAuthPrefix = `/object/authenticated/${bucket}/`
+  for (const prefix of [objectPrefix, objectSignedPrefix, objectAuthPrefix]) {
+    const idx = raw.indexOf(prefix)
+    if (idx >= 0) {
+      const segment = raw.slice(idx + prefix.length).split("?")[0]
+      return normalizeStoragePath(segment)
+    }
+  }
+  return null
+}
+
+function extractSignedKey(value: string): string | null {
+  const raw = value.trim()
+  if (!raw) return null
+  const marker = `/${ESIGN_BUCKET_SIGNED}/`
+  const idx = raw.indexOf(marker)
+  if (idx >= 0) {
+    const key = raw.slice(idx + marker.length).split("?")[0].trim()
+    return key ? decodeURIComponent(key) : null
+  }
+  const bucketPath = extractBucketPathFromUrl(raw, ESIGN_BUCKET_SIGNED)
+  if (bucketPath) return bucketPath
+  if (!raw.includes("://") && !raw.startsWith("/")) {
+    return decodeURIComponent(raw.replace(/^signed_documents\//, "").trim())
+  }
+  return null
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -82,16 +128,41 @@ export async function POST(request: NextRequest) {
       .from(ESIGN_BUCKET_ORIGINALS)
       .getPublicUrl(documentStoragePath.trim())
     const originalDocumentUrl = originalPublic.publicUrl
+    const normalizedOriginalPath = normalizeStoragePath(documentStoragePath)
+    const encodedOriginalPath = encodeURIComponent(normalizedOriginalPath).replace(/%2F/g, "/")
 
-    const { data: signedRows, error: signedErr } = await supabase
+    let { data: signedRows, error: signedErr } = await supabase
       .from("signatures")
       .select("signed_document_url, document_url, created_at")
       .eq("document_url", originalDocumentUrl)
       .order("created_at", { ascending: false })
-      .limit(1)
+      .limit(5)
 
     if (signedErr) {
       return NextResponse.json({ error: "Lecture des signatures Supabase impossible." }, { status: 502 })
+    }
+
+    // Fallback compatibilité : historique potentiellement non strict sur `document_url`.
+    if (!signedRows?.length) {
+      const { data: fallbackRows, error: fallbackErr } = await supabase
+        .from("signatures")
+        .select("signed_document_url, document_url, created_at")
+        .order("created_at", { ascending: false })
+        .limit(400)
+      if (fallbackErr) {
+        return NextResponse.json({ error: "Lecture des signatures Supabase impossible." }, { status: 502 })
+      }
+      signedRows =
+        fallbackRows?.filter((row) => {
+          const docUrl = typeof row.document_url === "string" ? row.document_url : ""
+          if (!docUrl) return false
+          const extracted = extractBucketPathFromUrl(docUrl, ESIGN_BUCKET_ORIGINALS)
+          if (extracted && extracted === normalizedOriginalPath) return true
+          return (
+            docUrl.includes(`/${ESIGN_BUCKET_ORIGINALS}/${normalizedOriginalPath}`) ||
+            docUrl.includes(`/${ESIGN_BUCKET_ORIGINALS}/${encodedOriginalPath}`)
+          )
+        }) ?? []
     }
 
     const signedUrl = signedRows?.[0]?.signed_document_url as string | undefined
@@ -102,17 +173,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const marker = `/${ESIGN_BUCKET_SIGNED}/`
-    const idx = signedUrl.indexOf(marker)
-    if (idx === -1) {
+    const signedKey = extractSignedKey(signedUrl)
+    if (!signedKey) {
       return NextResponse.json(
         { error: "URL de document signé invalide (bucket signé introuvable)." },
         { status: 422 }
       )
-    }
-    const signedKey = signedUrl.slice(idx + marker.length).split("?")[0]
-    if (!signedKey.trim()) {
-      return NextResponse.json({ error: "Clé de PDF signé introuvable." }, { status: 422 })
     }
 
     await applyPendingFinalize(pending, { signedQuoteStorageKey: signedKey.trim() })
