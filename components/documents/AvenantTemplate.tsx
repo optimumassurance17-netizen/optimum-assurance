@@ -2,6 +2,7 @@
 
 import { SITE_URL } from "@/lib/site-url"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
+import { COMPANY_BRAND } from "@/lib/legal-branding"
 
 interface AvenantTemplateProps {
   numero: string
@@ -54,7 +55,7 @@ export function AvenantTemplate({ numero, data }: AvenantTemplateProps) {
         Fait à Paris, le {new Date().toLocaleDateString("fr-FR")}
       </p>
       <p className="text-sm mt-4">
-        Pour Optimum Assurance
+        Pour {COMPANY_BRAND}
       </p>
       <p className="text-xs text-[#171717] mt-4">
         <a href={`${SITE_URL}/cgv`} className="text-[#2563eb] underline">

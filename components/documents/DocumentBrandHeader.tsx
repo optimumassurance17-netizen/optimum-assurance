@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import {
+  COMPANY_BRAND,
   INSURER_NAME,
   LEGAL_DELEGATION_MANDATORY,
   LEGAL_ORIAS_LINE,
@@ -38,7 +39,7 @@ export function DocumentBrandHeader({ tagline, className }: DocumentBrandHeaderP
         )}
       </div>
 
-      <h1 className="text-xl font-bold text-[#2563eb]">Optimum Assurance</h1>
+      <h1 className="text-xl font-bold text-[#2563eb]">{COMPANY_BRAND}</h1>
       <p className="text-sm font-semibold text-[#171717] mt-1">{tagline}</p>
       <p className="text-xs text-[#171717] mt-1">
         Assureur : {INSURER_NAME} — {LEGAL_ORIAS_LINE}

@@ -6,6 +6,7 @@ import { DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSE_TEXT } from "@/lib/decennale-
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
+import { INSURER_NAME } from "@/lib/legal-branding"
 
 interface ContratTemplateProps {
   numero: string
@@ -47,7 +48,7 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
       <div className="space-y-6 text-sm">
         <section>
           <h3 className="font-semibold mb-2">Article 1 - Parties</h3>
-          <p><strong>L&apos;Assureur :</strong> Optimum Assurance</p>
+          <p><strong>L&apos;Assureur :</strong> {INSURER_NAME}</p>
           <p className="mt-2"><strong>L&apos;Assuré :</strong> {data.raisonSociale}</p>
           <p>SIRET : {data.siret}</p>
           {data.adresse && <p>{data.adresse}</p>}

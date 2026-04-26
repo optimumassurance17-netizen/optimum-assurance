@@ -2,6 +2,7 @@
 
 import { SITE_URL } from "@/lib/site-url"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
+import { COMPANY_BRAND } from "@/lib/legal-branding"
 
 /**
  * Facture acquittée dommage ouvrage.
@@ -113,7 +114,7 @@ export function FactureDoTemplate({ numero, data }: FactureDoTemplateProps) {
       </div>
 
       <p className="text-xs text-[#171717]">
-        TVA non applicable, article 293 B du CGI. Optimum Assurance — Assurance dommage ouvrage.
+        TVA non applicable, article 293 B du CGI. {COMPANY_BRAND} — Assurance dommage ouvrage.
       </p>
       <p className="text-xs text-[#171717] mt-3">
         <a href={`${SITE_URL}/cgv`} className="text-[#2563eb] underline">
@@ -130,7 +131,7 @@ export function FactureDoTemplate({ numero, data }: FactureDoTemplateProps) {
       <p className="text-xs text-[#171717] mt-4">
         Fait à Paris, le {data.datePaiement}
       </p>
-      <p className="text-xs font-medium mt-2">Pour Optimum Assurance</p>
+      <p className="text-xs font-medium mt-2">Pour {COMPANY_BRAND}</p>
     </div>
   )
 }
