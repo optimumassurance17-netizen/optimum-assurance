@@ -8,6 +8,7 @@ import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert
 import { createSupabaseServiceClient } from "@/lib/supabase"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
+import { buildDdaNeedSummary } from "@/lib/dda-compliance"
 import {
   buildRcFabDossierConfig,
   normalizeRcFabPeriodicity,
@@ -310,6 +311,26 @@ export async function POST(request: NextRequest) {
         primeAnnuelleTtc: dossierConfig.primeAnnuelleTtc,
         primeParEcheanceTtc: dossierConfig.montantParEcheanceTtc,
         copySent,
+      },
+    })
+    await logAdminActivity({
+      adminEmail: "dda@system",
+      action: "dda_rc_fabriquant_signature_suitability_checked",
+      targetType: "DevisRcFabriquantLead",
+      targetId: lead.id,
+      details: {
+        product: "rc_fabriquant",
+        sourcePage: "rc_fabriquant_result",
+        sourcePath: "/gestion",
+        needsSummary: buildDdaNeedSummary({
+          insuranceProduct: "rc_fabriquant",
+          companyName: nomSociete,
+          projectName: dossierConfig.referenceContrat,
+        }),
+        recommendedProduct: "rc-fabriquant",
+        suitabilityScore: 0.94,
+        suitability:
+          "Contrat RC fabricant proposé après qualification du risque, validation humaine et invitation signature.",
       },
     })
 

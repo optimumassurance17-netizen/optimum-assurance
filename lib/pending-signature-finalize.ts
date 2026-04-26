@@ -3,6 +3,7 @@
  */
 import type { PendingSignature } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
+import { logAdminActivity } from "@/lib/admin-activity"
 import { getNextNumero } from "@/lib/documents"
 import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
 import { SITE_URL } from "@/lib/site-url"
@@ -107,6 +108,30 @@ export async function applyPendingFinalize(
       periodicitePaiement: periodicite,
       primeAnnuelleTtc,
       primeAnnuelleHt,
+    })
+    await logAdminActivity({
+      adminEmail: "dda@system",
+      action: "dda_rc_fabriquant_contract_suitability_checked",
+      targetType: "insurance_contract",
+      targetId: c.id,
+      details: {
+        source: "pending_signature_finalize",
+        signatureRequestId: pending.signatureRequestId,
+        produit: "rc-fabriquant",
+        sourcePage: "rc_fabriquant_result",
+        sourcePath: "/devis/rcpro/result",
+        recommendedProduct: "rc-fabriquant",
+        needsSummary: [
+          `Société: ${c.clientName}`,
+          c.siret ? `SIRET: ${c.siret}` : null,
+          `Périodicité: ${periodicite}`,
+          `Prime annuelle TTC: ${primeAnnuelleTtc.toLocaleString("fr-FR")} €`,
+        ]
+          .filter(Boolean)
+          .join(" | "),
+        suitability:
+          "Adéquation RC fabricant validée après signature du devis personnalisé et création du contrat plateforme.",
+      },
     })
 
     await prisma.pendingSignature.delete({

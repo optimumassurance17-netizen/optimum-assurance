@@ -81,6 +81,11 @@ function ddaPageLabel(value: string | null | undefined): string {
   if (normalized === "signature") return "Signature"
   if (normalized === "formulaire_do") return "Formulaire DO"
   if (normalized === "paiement_do") return "Paiement DO"
+  if (normalized === "devis_rc_fabriquant") return "Devis RC fabricant"
+  if (normalized === "proposition_rc_fabriquant") return "Proposition RC fabricant"
+  if (normalized === "signature_rc_fabriquant") return "Signature RC fabricant"
+  if (normalized === "avenant_create") return "Création avenant"
+  if (normalized === "avenant_update") return "Mise à jour avenant"
   if (normalized === "rc_fabriquant_result") return "Résultat RC fabricant"
   return value?.trim() || "—"
 }

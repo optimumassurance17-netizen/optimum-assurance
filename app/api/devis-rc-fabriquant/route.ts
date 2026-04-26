@@ -6,6 +6,8 @@ import { getClientIp, checkRateLimitMemory } from "@/lib/rate-limit"
 import type { DevisRcFabriquantData, RcTypeProduit, RcZoneDistribution } from "@/lib/rc-fabriquant-types"
 import { computeRcFabIndicatif } from "@/lib/rc-fabriquant-underwriting"
 import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
+import { logAdminActivity } from "@/lib/admin-activity"
+import { buildDdaNeedSummary } from "@/lib/dda-compliance"
 
 export const runtime = "nodejs"
 
@@ -148,10 +150,45 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await prisma.devisRcFabriquantLead.create({
+    const createdLead = await prisma.devisRcFabriquantLead.create({
       data: {
         email,
         data: JSON.stringify(storedPayload),
+      },
+    })
+    await prisma.devoirConseilLog.create({
+      data: {
+        email,
+        page: "rc_fabriquant_result",
+        produit: "rc_fabriquant",
+      },
+    })
+    await logAdminActivity({
+      adminEmail: "dda@system",
+      action: "dda_rc_fabriquant_needs_captured",
+      targetType: "DevisRcFabriquantLead",
+      targetId: createdLead.id,
+      details: {
+        product: "rc_fabriquant",
+        sourcePage: "devis-rc-fabriquant",
+        sourcePath: "/devis-rc-fabriquant",
+        needsSummary: buildDdaNeedSummary({
+          insuranceProduct: "rc_fabriquant",
+          companyName: data.raisonSociale,
+          turnover: data.caAnnuelTotal,
+        }),
+        recommendedProduct: "rc-fabriquant",
+        suitabilityScore: 0.9,
+        context: {
+          activiteFabrication: data.activiteFabrication,
+          typeProduit: data.typeProduit,
+          zoneDistribution: data.zoneDistribution,
+          sousTraitance: data.sousTraitance,
+          controleQualite: data.controleQualite,
+          certification: data.certification,
+          testsSecurite: data.testsSecurite,
+          caExport: data.caExport ?? null,
+        },
       },
     })
   } catch (e) {

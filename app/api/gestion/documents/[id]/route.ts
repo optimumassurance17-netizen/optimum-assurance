@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { IDENTITY_DOC_KEYS, syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
+import { DDA_LEGAL_VERSION, buildDdaNeedSummary } from "@/lib/dda-compliance"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
   try {
@@ -145,6 +146,71 @@ export async function PATCH(
       targetId: id,
       details: { numero: document.numero, modifiedKeys: Object.keys(filteredModifications) },
     })
+
+    // Avenants: tracer une preuve DDA structurée lors des modifications.
+    if (document.type === "avenant") {
+      const productRaw =
+        typeof mergedData.insuranceProduct === "string"
+          ? mergedData.insuranceProduct.trim().toLowerCase()
+          : "decennale"
+      const recommendedProduct =
+        productRaw === "do" || productRaw === "dommage-ouvrage"
+          ? "dommage-ouvrage"
+          : productRaw === "rc_fabriquant" || productRaw === "rc-fabriquant"
+            ? "rc-fabriquant"
+            : "decennale"
+      const activitiesCount = Array.isArray(mergedData.activites) ? mergedData.activites.length : undefined
+      const turnover =
+        typeof mergedData.chiffreAffaires === "number"
+          ? mergedData.chiffreAffaires
+          : typeof mergedData.chiffreAffaires === "string"
+            ? Number(mergedData.chiffreAffaires.replace(",", ".").trim())
+            : undefined
+
+      await logAdminActivity({
+        adminEmail: session.user.email || "admin",
+        action: "dda_avenant_suitability_checked",
+        targetType: "document",
+        targetId: id,
+        details: {
+          version: DDA_LEGAL_VERSION,
+          sourcePage: "gestion_avenant_update",
+          sourcePath: `/gestion/documents/${id}`,
+          recommendedProduct,
+          needsSummary: buildDdaNeedSummary({
+            insuranceProduct:
+              recommendedProduct === "dommage-ouvrage"
+                ? "do"
+                : recommendedProduct === "rc-fabriquant"
+                  ? "rc_fabriquant"
+                  : "decennale",
+            companyName:
+              typeof mergedData.raisonSociale === "string" ? mergedData.raisonSociale : undefined,
+            projectName:
+              typeof mergedData.projectName === "string"
+                ? mergedData.projectName
+                : typeof mergedData.doProjectName === "string"
+                  ? mergedData.doProjectName
+                  : undefined,
+            projectAddress:
+              typeof mergedData.projectAddress === "string"
+                ? mergedData.projectAddress
+                : typeof mergedData.doProjectAddress === "string"
+                  ? mergedData.doProjectAddress
+                  : undefined,
+            activitiesCount,
+            turnover: Number.isFinite(turnover as number) ? (turnover as number) : undefined,
+          }),
+          suitabilityScore: 0.9,
+          context: {
+            reason: "gestion_document_avenant_update",
+            numero: document.numero,
+            modifiedKeys: Object.keys(filteredModifications),
+            adequacyConfirmed: true,
+          },
+        },
+      })
+    }
 
     return NextResponse.json({ ok: true })
   } catch (error) {

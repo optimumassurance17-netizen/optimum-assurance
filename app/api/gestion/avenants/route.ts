@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { getNextNumero } from "@/lib/documents"
+import { logAdminActivity } from "@/lib/admin-activity"
 
 export async function POST(request: NextRequest) {
   try {
@@ -74,6 +75,25 @@ export async function POST(request: NextRequest) {
         documentId: document.id,
         amount: 60,
         status: "pending",
+      },
+    })
+
+    await logAdminActivity({
+      adminEmail: session.user.email || "admin",
+      action: "dda_avenant_created",
+      targetType: "document",
+      targetId: document.id,
+      details: {
+        numero: document.numero,
+        contractNumero,
+        motif: motif || "Modification contractuelle",
+        modifiedKeys: Object.keys(modifications),
+        requirementSummary:
+          "Demande d’avenant suite à évolution de situation déclarée par le client.",
+        recommendationSummary:
+          "Maintien du produit en cours avec adaptation des paramètres contractuels (avenant).",
+        adequacyConfirmed: true,
+        produit: "avenant",
       },
     })
 
