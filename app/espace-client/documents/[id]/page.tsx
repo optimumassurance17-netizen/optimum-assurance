@@ -141,7 +141,19 @@ export default function DocumentPage() {
       await fetch("/api/devoir-conseil/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ page: "paiement_do", produit: "dommage-ouvrage" }),
+        body: JSON.stringify({
+          page: "paiement_do",
+          produit: "dommage-ouvrage",
+          context: {
+            parcours: "espace_client_document",
+            finalite: "paiement_devis_do",
+            requirementSummary:
+              "Validation du devis DO, des garanties et des conditions avant déclenchement du virement.",
+            recommendationSummary:
+              "Poursuite du produit dommage-ouvrage avec paiement sécurisé par virement via Mollie.",
+            adequacyConfirmed: true,
+          },
+        }),
       })
     } catch {
       /* non bloquant */

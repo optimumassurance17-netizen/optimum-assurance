@@ -69,6 +69,21 @@ export default function SignaturePage() {
         body: JSON.stringify({
           page: "signature",
           produit: souscription.insuranceProduct === "do" ? "dommage-ouvrage" : "decennale",
+          sourcePage: "signature_page",
+          sourcePath: "/signature",
+          needsSummary:
+            souscription.insuranceProduct === "do"
+              ? "Signature du parcours dommage-ouvrage après récapitulatif chantier et conditions."
+              : "Signature du parcours décennale après validation activités, garanties et exclusions.",
+          recommendedProduct: souscription.insuranceProduct === "do" ? "dommage-ouvrage" : "decennale",
+          suitabilityScore: 0.96,
+          context: {
+            source: "signature_page",
+            finalStepBeforeSign: true,
+            insuranceProduct: souscription.insuranceProduct ?? "decennale",
+            activitesCount: Array.isArray(souscription.activites) ? souscription.activites.length : 0,
+            hasDoProject: Boolean(souscription.doProjectName),
+          },
         }),
       })
     } catch {

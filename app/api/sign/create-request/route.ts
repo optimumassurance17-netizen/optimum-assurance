@@ -11,6 +11,7 @@ import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
+import { assertRecentDdaConsent } from "@/lib/dda-compliance"
 
 export const runtime = "nodejs"
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -122,6 +123,23 @@ export async function POST(request: NextRequest) {
       hierarchy.guaranteedHierarchyLines.length ? hierarchy.guaranteedHierarchyLines : matchedActivities,
       { selections: hierarchy.selections }
     )
+
+    const ddaConsent = await assertRecentDdaConsent({
+      userId: session.user.id,
+      produit: "decennale",
+      maxAgeHours: 72,
+      allowedPages: ["signature", "souscription"],
+    })
+    if (!ddaConsent.ok) {
+      return NextResponse.json(
+        {
+          error:
+            "Validation DDA manquante ou expirée. Merci de confirmer à nouveau vos exigences et besoins avant signature.",
+          code: "DDA_CONSENT_REQUIRED",
+        },
+        { status: 412 }
+      )
+    }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
     const now = new Date()

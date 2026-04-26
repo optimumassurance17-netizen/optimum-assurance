@@ -100,7 +100,22 @@ export default function SouscriptionPage() {
       await fetch("/api/devoir-conseil/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ page: "souscription", produit: "decennale", email }),
+        body: JSON.stringify({
+          page: "souscription",
+          produit: "decennale",
+          email,
+          sourcePage: "souscription",
+          sourcePath: "/souscription",
+          needsSummary: `Décennale | ${devis.activites?.length ?? 0} activités | CA ${devis.chiffreAffaires ?? 0} €`,
+          recommendedProduct: "decennale",
+          suitabilityScore: 0.93,
+          context: {
+            source: "app/souscription",
+            tarifPrimeAnnuelle: devis.tarif?.primeAnnuelle ?? null,
+            activitesCount: devis.activites?.length ?? 0,
+            chiffreAffaires: devis.chiffreAffaires ?? null,
+          },
+        }),
       })
     } catch {
       /* non bloquant */

@@ -4,6 +4,12 @@ import { createMollieClient, Locale, PaymentMethod } from "@mollie/api-client"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import {
+  assertRecentDdaConsent,
+  buildDdaNeedsSummary,
+  buildDdaSuitabilityStatement,
+  normalizeDdaProduct,
+} from "@/lib/dda-compliance"
 
 /**
  * Crée un paiement Mollie pour un document devis_do.
@@ -43,6 +49,10 @@ export async function POST(
       primeAnnuelle: number
       fraisGestion?: number
       fraisCourtage?: number
+      address?: string
+      projectName?: string
+      projectAddress?: string
+      constructionNature?: string
     }
 
     const primeAnnuelle = Number(data.primeAnnuelle) || 0
@@ -64,6 +74,45 @@ export async function POST(
         { status: 400 }
       )
     }
+
+    const produit = normalizeDdaProduct("dommage-ouvrage")
+    if (!produit) {
+      return NextResponse.json({ error: "Produit DDA invalide" }, { status: 500 })
+    }
+    const recentDda = await assertRecentDdaConsent({
+      userId: session.user.id,
+      email,
+      produit,
+      maxAgeHours: 72,
+      allowedPages: ["paiement_do", "souscription_do", "formulaire_do"],
+    })
+    if (!recentDda.ok) {
+      return NextResponse.json(
+        {
+          error:
+            "Validation DDA requise : confirmez le devoir de conseil avant de poursuivre le paiement.",
+          code: "DDA_CONSENT_REQUIRED",
+        },
+        { status: 412 }
+      )
+    }
+
+    const besoins = buildDdaNeedsSummary({
+      productType: produit,
+      clientName: document.user.raisonSociale || "Client dommage-ouvrage",
+      address: data.address,
+      projectName: data.projectName || "Opération dommage-ouvrage",
+      projectAddress: data.projectAddress,
+      premium: amount,
+    })
+    const adequation = buildDdaSuitabilityStatement({
+      productType: produit,
+      matchedActivities: data.constructionNature ? [data.constructionNature] : [],
+      missingActivitiesCount: 0,
+      riskReasons: [],
+      exclusions: ["techniques_non_courantes_non_validees", "travaux_non_declares"],
+      sourcePage: recentDda.log.page,
+    })
 
     const baseUrl = getMolliePublicBaseUrl()
 
@@ -89,6 +138,23 @@ export async function POST(
         userId: session.user.id,
         email,
         raisonSociale: document.user.raisonSociale || "",
+      },
+    })
+
+    await prisma.adminActivityLog.create({
+      data: {
+        adminEmail: "dda@system",
+        action: "dda_do_payment_suitability_checked",
+        targetType: "document",
+        targetId: document.id,
+        details: JSON.stringify({
+          product: produit,
+          consentLogId: recentDda.logId,
+          needs: besoins,
+          suitability: adequation,
+          amount,
+          paymentId: payment.id,
+        }),
       },
     })
 

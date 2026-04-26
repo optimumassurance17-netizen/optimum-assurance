@@ -54,7 +54,27 @@ export default function SouscriptionDommageOuvragePage() {
       await fetch("/api/devoir-conseil/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ page: "souscription_do", produit: "dommage-ouvrage", email: payload.email }),
+        body: JSON.stringify({
+          page: "souscription_do",
+          produit: "dommage-ouvrage",
+          email: payload.email,
+          sourcePage: "souscription_do",
+          sourcePath: "/souscription-dommage-ouvrage",
+          needsSummary: [
+            "Produit visé: dommage-ouvrage",
+            payload.projectName ? `Projet: ${payload.projectName}` : null,
+            payload.projectAddress ? `Adresse projet: ${payload.projectAddress}` : null,
+          ]
+            .filter(Boolean)
+            .join(" | "),
+          recommendedProduct: "dommage-ouvrage",
+          suitabilityScore: 94,
+          context: {
+            reason: "validation_souscription_do",
+            projectName: payload.projectName,
+            projectAddress: payload.projectAddress,
+          },
+        }),
       })
     } catch {
       /* non bloquant */
