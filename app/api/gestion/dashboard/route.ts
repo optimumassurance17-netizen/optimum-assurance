@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
+import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -159,6 +160,9 @@ export async function GET() {
     if (!session?.user?.id || !isAdmin(session)) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
+    const now = new Date()
+    const ddaConsentWindowStart = new Date(now.getTime() - 72 * 60 * 60 * 1000)
+    const ddaEventWindowStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
     const [
       users,
@@ -178,6 +182,8 @@ export async function GET() {
       insuranceContractsCount,
       insuranceContractsList,
       usersDoQuestionnaireRows,
+      recentDdaConsents,
+      recentDdaEvents,
     ] = await Promise.all([
       prisma.user.findMany({
         select: {
@@ -317,6 +323,49 @@ export async function GET() {
         },
       }),
       fetchUsersDoQuestionnaireRowsSafe(),
+      prisma.devoirConseilLog.findMany({
+        where: {
+          acceptedAt: { gte: ddaConsentWindowStart },
+        },
+        select: {
+          id: true,
+          userId: true,
+          email: true,
+          produit: true,
+          page: true,
+          acceptedAt: true,
+        },
+        orderBy: { acceptedAt: "desc" },
+        take: DASH_LIST_LIMIT,
+      }),
+      prisma.adminActivityLog.findMany({
+        where: {
+          createdAt: { gte: ddaEventWindowStart },
+          action: {
+            in: [
+              "dda_advice_acknowledged",
+              "dda_contract_suitability_checked",
+              "dda_do_payment_suitability_checked",
+              "dda_rc_fabriquant_initial_request_logged",
+              "dda_rc_fabriquant_proposition_suitability_checked",
+              "dda_rc_fabriquant_signature_suitability_checked",
+              "dda_rc_fabriquant_contract_created_after_signature",
+              "dda_avenant_suitability_checked",
+              "dda_document_update_suitability_checked",
+            ],
+          },
+        },
+        select: {
+          id: true,
+          action: true,
+          targetType: true,
+          targetId: true,
+          details: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: DASH_LIST_LIMIT,
+      }),
     ])
 
     const doQuestionnaireByUserId = new Map<
@@ -454,10 +503,48 @@ export async function GET() {
       }
     })
 
-    const now = new Date()
     const todayStart = startOfUtcDay(now)
     const reminder24hMs = 24 * 60 * 60 * 1000
     const overdue72hMs = 72 * 60 * 60 * 1000
+    const recentDdaConsentUserIds = new Set(
+      recentDdaConsents.map((row) => (typeof row.userId === "string" ? row.userId : "")).filter(Boolean)
+    )
+    const recentDdaConsentEmails = new Set(
+      recentDdaConsents
+        .map((row) => (typeof row.email === "string" ? row.email.trim().toLowerCase() : ""))
+        .filter(Boolean)
+    )
+    const ddaEventContractIds = new Set(
+      recentDdaEvents
+        .filter((row) => row.targetType === "insurance_contract" && typeof row.targetId === "string")
+        .map((row) => row.targetId as string)
+    )
+    const ddaEventDocumentIds = new Set(
+      recentDdaEvents
+        .filter((row) => row.targetType === "document" && typeof row.targetId === "string")
+        .map((row) => row.targetId as string)
+    )
+    const ddaEventLeadIds = new Set(
+      recentDdaEvents
+        .filter((row) => row.targetType === "DevisRcFabriquantLead" && typeof row.targetId === "string")
+        .map((row) => row.targetId as string)
+    )
+    const recentDdaEventUserIds = new Set<string>()
+    const recentDdaEventEmails = new Set<string>()
+    for (const row of recentDdaEvents) {
+      const details = parseAdminLogDetails(row.details)
+      const uid = typeof details.userId === "string" ? details.userId.trim() : ""
+      if (uid) recentDdaEventUserIds.add(uid)
+      const emailCandidates = [
+        typeof details.userEmail === "string" ? details.userEmail : "",
+        typeof details.email === "string" ? details.email : "",
+        typeof details.to === "string" ? details.to : "",
+      ]
+      for (const candidate of emailCandidates) {
+        const normalized = candidate.trim().toLowerCase()
+        if (normalized) recentDdaEventEmails.add(normalized)
+      }
+    }
     type DashboardAction = {
       id: string
       kind:
@@ -466,6 +553,9 @@ export async function GET() {
         | "decennale_lead_followup"
         | "do_etude_pending"
         | "rc_fabriquant_pending"
+        | "dda_proof_missing"
+        | "dda_avenant_missing"
+        | "dda_rc_fabriquant_missing"
       priority: "high" | "medium"
       title: string
       description: string
@@ -560,6 +650,73 @@ export async function GET() {
         priority: ageMs >= overdue72hMs ? "high" : "medium",
         title: "Lead RC Fabriquant à traiter",
         description: `${l.email} — ${ageHours}h`,
+        href: "#rc-fabriquant-leads",
+        ageHours,
+      })
+    }
+
+    for (const c of insuranceContractsList) {
+      if (!["decennale", "do", "rc_fabriquant"].includes(c.productType)) continue
+      if (c.status !== CONTRACT_STATUS.approved && c.status !== CONTRACT_STATUS.active) continue
+      const ageMs = now.getTime() - c.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      const userId = c.user?.id ?? c.userId ?? ""
+      const email = c.user?.email?.trim().toLowerCase() ?? ""
+      const hasConsent =
+        (userId && recentDdaConsentUserIds.has(userId)) || (email && recentDdaConsentEmails.has(email))
+      const hasEvent =
+        ddaEventContractIds.has(c.id) ||
+        (userId && recentDdaEventUserIds.has(userId)) ||
+        (email && recentDdaEventEmails.has(email))
+      if (hasConsent && hasEvent) continue
+      const missing = [
+        hasConsent ? null : "consentement récent",
+        hasEvent ? null : "trace d’adéquation",
+      ]
+        .filter(Boolean)
+        .join(" + ")
+      dashboardActions.push({
+        id: `dda-contract-${c.id}`,
+        kind: "dda_proof_missing",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "DDA incomplète (contrat)",
+        description: `${c.contractNumber} (${c.productType}) — manque: ${missing || "preuve"} — ${ageHours}h`,
+        href: userId ? `/gestion/clients/${userId}` : "#contrats-plateforme",
+        ageHours,
+      })
+    }
+
+    for (const d of documents) {
+      if (d.type !== "avenant") continue
+      const ageMs = now.getTime() - d.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      if (ddaEventDocumentIds.has(d.id)) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `dda-avenant-${d.id}`,
+        kind: "dda_avenant_missing",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Avenant sans preuve DDA",
+        description: `${d.numero} — ${(d.user?.raisonSociale || d.user?.email || "client")} — ${ageHours}h`,
+        href: `/gestion/documents/${d.id}`,
+        ageHours,
+      })
+    }
+
+    for (const l of devisRcFabriquantLeadsWithUser) {
+      const statut = normalizeRcFabriquantLeadStatut(l.statut)
+      if (!["a_traiter", "en_cours", "proposition_envoyee"].includes(statut)) continue
+      if (ddaEventLeadIds.has(l.id)) continue
+      const ageMs = now.getTime() - l.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `dda-rcfab-${l.id}`,
+        kind: "dda_rc_fabriquant_missing",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "RC Fabriquant sans preuve DDA",
+        description: `${l.email} — statut ${statut} — ${ageHours}h`,
         href: "#rc-fabriquant-leads",
         ageHours,
       })

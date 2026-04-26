@@ -306,6 +306,7 @@ interface DashboardData {
       | "decennale_lead_followup"
       | "do_etude_pending"
       | "rc_fabriquant_pending"
+      | "dda_missing_or_stale"
     priority: "high" | "medium"
     title: string
     description: string
