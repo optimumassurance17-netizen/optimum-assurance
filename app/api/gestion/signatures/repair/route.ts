@@ -5,7 +5,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
 import { applyPendingFinalize } from "@/lib/pending-signature-finalize"
-import { ESIGN_BUCKET_SIGNED } from "@/lib/esign/buckets"
+import { ESIGN_BUCKET_ORIGINALS, ESIGN_BUCKET_SIGNED } from "@/lib/esign/buckets"
 import { logAdminActivity } from "@/lib/admin-activity"
 
 const UUID_RE = /^[0-9a-f-]{36}$/i
@@ -52,10 +52,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    /**
+     * Compatibilité schéma:
+     * - certains environnements n'ont pas `signatures.request_id`.
+     * - on récupère donc la signature via l'URL du document original portée par `sign_requests`.
+     */
+    const { data: signRequestRow, error: signReqErr } = await supabase
+      .from("sign_requests")
+      .select("document_storage_path")
+      .eq("id", signatureRequestId)
+      .maybeSingle()
+
+    if (signReqErr) {
+      return NextResponse.json(
+        { error: "Lecture de la demande de signature Supabase impossible." },
+        { status: 502 }
+      )
+    }
+
+    const documentStoragePath = signRequestRow?.document_storage_path as string | undefined
+    if (!documentStoragePath || !documentStoragePath.trim()) {
+      return NextResponse.json(
+        { error: "Demande de signature introuvable côté Supabase (document source absent)." },
+        { status: 409 }
+      )
+    }
+
+    const { data: originalPublic } = supabase.storage
+      .from(ESIGN_BUCKET_ORIGINALS)
+      .getPublicUrl(documentStoragePath.trim())
+    const originalDocumentUrl = originalPublic.publicUrl
+
     const { data: signedRows, error: signedErr } = await supabase
       .from("signatures")
       .select("signed_document_url, document_url, created_at")
-      .eq("request_id", signatureRequestId)
+      .eq("document_url", originalDocumentUrl)
       .order("created_at", { ascending: false })
       .limit(1)
 
