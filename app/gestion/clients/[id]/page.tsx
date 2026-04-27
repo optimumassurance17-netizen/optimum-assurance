@@ -16,6 +16,86 @@ function prettyQuestionnaireJson(raw: string | null | undefined): string {
   }
 }
 
+type ProfileForm = {
+  email: string
+  raisonSociale: string
+  siret: string
+  adresse: string
+  codePostal: string
+  ville: string
+  telephone: string
+}
+
+type QuestionnaireProfilePrefill = ProfileForm & {
+  sources: string[]
+}
+
+function parseQuestionnaireJson(raw: string | null | undefined): Record<string, unknown> | null {
+  if (!raw?.trim()) return null
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null
+    return parsed as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
+function nestedRecord(source: Record<string, unknown> | null, key: string): Record<string, unknown> | null {
+  const value = source?.[key]
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+function stringField(source: Record<string, unknown> | null, key: string): string {
+  const value = source?.[key]
+  return typeof value === "string" ? value.trim() : ""
+}
+
+function buildQuestionnaireProfilePrefill(user: ClientData["user"]): QuestionnaireProfilePrefill | null {
+  const initial = parseQuestionnaireJson(user.doInitialQuestionnaireJson)
+  const etude = parseQuestionnaireJson(user.doEtudeQuestionnaireJson)
+  const souscripteurEtude = nestedRecord(etude, "souscripteur")
+
+  const fromInitial: ProfileForm = {
+    email: stringField(initial, "email"),
+    raisonSociale: stringField(initial, "raisonSociale"),
+    siret: stringField(initial, "siret").replace(/\s/g, ""),
+    adresse: stringField(initial, "adresse"),
+    codePostal: stringField(initial, "codePostal"),
+    ville: stringField(initial, "ville"),
+    telephone: stringField(initial, "telephone"),
+  }
+  const fromEtude: ProfileForm = {
+    email: stringField(souscripteurEtude, "email"),
+    raisonSociale: stringField(souscripteurEtude, "nomRaisonSociale"),
+    siret: "",
+    adresse: stringField(souscripteurEtude, "adresse"),
+    codePostal: stringField(souscripteurEtude, "codePostal"),
+    ville: stringField(souscripteurEtude, "ville"),
+    telephone: stringField(souscripteurEtude, "telephone"),
+  }
+
+  const merged: QuestionnaireProfilePrefill = {
+    email: fromEtude.email || fromInitial.email || user.email || "",
+    raisonSociale: fromEtude.raisonSociale || fromInitial.raisonSociale || "",
+    siret: fromInitial.siret,
+    adresse: fromEtude.adresse || fromInitial.adresse || "",
+    codePostal: fromEtude.codePostal || fromInitial.codePostal || "",
+    ville: fromEtude.ville || fromInitial.ville || "",
+    telephone: fromEtude.telephone || fromInitial.telephone || "",
+    sources: [
+      initial ? "premier devis DO" : "",
+      etude ? "questionnaire d'étude DO" : "",
+    ].filter(Boolean),
+  }
+
+  return Object.entries(merged).some(([key, value]) => key !== "sources" && String(value).trim())
+    ? merged
+    : null
+}
+
 interface ClientData {
   user: {
     id: string
@@ -150,7 +230,7 @@ export default function ClientDetailPage() {
   const [sinistreForm, setSinistreForm] = useState({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [profileForm, setProfileForm] = useState({
+  const [profileForm, setProfileForm] = useState<ProfileForm>({
     email: "",
     raisonSociale: "",
     siret: "",
@@ -236,6 +316,7 @@ export default function ClientDetailPage() {
   const isOwnAdminAccount = authSession?.user?.id === clientId
   const ddaConsents = data.dda?.consents ?? []
   const ddaEvents = data.dda?.events ?? []
+  const questionnaireProfilePrefill = buildQuestionnaireProfilePrefill(user)
 
   return (
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
@@ -307,6 +388,78 @@ export default function ClientDetailPage() {
             Client depuis le {new Date(user.createdAt).toLocaleDateString("fr-FR")} — modifiez les coordonnées compte
             (connexion, facturation) ci-dessous.
           </p>
+          {questionnaireProfilePrefill ? (
+            <div className="mb-4 rounded-lg border border-sky-800/60 bg-sky-950/20 p-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium text-sky-100">
+                    Données déjà remplies détectées
+                  </p>
+                  <p className="mt-1 text-xs text-sky-200/80">
+                    Source : {questionnaireProfilePrefill.sources.join(" + ")}. Cliquez pour préremplir la fiche client avec les coordonnées du questionnaire.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileForm((current) => ({
+                      ...current,
+                      email: questionnaireProfilePrefill.email || current.email,
+                      raisonSociale: questionnaireProfilePrefill.raisonSociale || current.raisonSociale,
+                      siret: questionnaireProfilePrefill.siret || current.siret,
+                      adresse: questionnaireProfilePrefill.adresse || current.adresse,
+                      codePostal: questionnaireProfilePrefill.codePostal || current.codePostal,
+                      ville: questionnaireProfilePrefill.ville || current.ville,
+                      telephone: questionnaireProfilePrefill.telephone || current.telephone,
+                    }))
+                    setToast({
+                      message: "Coordonnées du questionnaire reprises dans le formulaire. Pensez à enregistrer.",
+                      type: "success",
+                    })
+                  }}
+                  className="shrink-0 rounded-lg border border-sky-500/70 px-3 py-2 text-xs font-medium text-sky-100 hover:bg-sky-900/40"
+                >
+                  Reprendre dans la fiche
+                </button>
+              </div>
+              <dl className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                {questionnaireProfilePrefill.raisonSociale ? (
+                  <div>
+                    <dt className="text-sky-300/70">Raison sociale</dt>
+                    <dd className="text-gray-100">{questionnaireProfilePrefill.raisonSociale}</dd>
+                  </div>
+                ) : null}
+                {questionnaireProfilePrefill.siret ? (
+                  <div>
+                    <dt className="text-sky-300/70">SIRET</dt>
+                    <dd className="font-mono text-gray-100">{questionnaireProfilePrefill.siret}</dd>
+                  </div>
+                ) : null}
+                {questionnaireProfilePrefill.adresse || questionnaireProfilePrefill.codePostal || questionnaireProfilePrefill.ville ? (
+                  <div className="sm:col-span-2">
+                    <dt className="text-sky-300/70">Adresse</dt>
+                    <dd className="text-gray-100">
+                      {[questionnaireProfilePrefill.adresse, questionnaireProfilePrefill.codePostal, questionnaireProfilePrefill.ville]
+                        .filter(Boolean)
+                        .join(" ")}
+                    </dd>
+                  </div>
+                ) : null}
+                {questionnaireProfilePrefill.telephone ? (
+                  <div>
+                    <dt className="text-sky-300/70">Téléphone</dt>
+                    <dd className="text-gray-100">{questionnaireProfilePrefill.telephone}</dd>
+                  </div>
+                ) : null}
+                {questionnaireProfilePrefill.email ? (
+                  <div>
+                    <dt className="text-sky-300/70">Email</dt>
+                    <dd className="text-gray-100">{questionnaireProfilePrefill.email}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </div>
+          ) : null}
           <form
             className="space-y-4"
             onSubmit={async (e) => {
