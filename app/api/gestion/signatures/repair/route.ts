@@ -131,12 +131,13 @@ export async function POST(request: NextRequest) {
     const normalizedOriginalPath = normalizeStoragePath(documentStoragePath)
     const encodedOriginalPath = encodeURIComponent(normalizedOriginalPath).replace(/%2F/g, "/")
 
-    let { data: signedRows, error: signedErr } = await supabase
+    const { data: signedRowsInitial, error: signedErr } = await supabase
       .from("signatures")
       .select("signed_document_url, document_url, created_at")
       .eq("document_url", originalDocumentUrl)
       .order("created_at", { ascending: false })
       .limit(5)
+    let signedRows = signedRowsInitial
 
     if (signedErr) {
       return NextResponse.json({ error: "Lecture des signatures Supabase impossible." }, { status: 502 })
