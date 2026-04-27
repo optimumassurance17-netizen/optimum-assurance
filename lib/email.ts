@@ -259,6 +259,11 @@ export const EMAIL_TEMPLATES = {
         `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre dossier <strong>${escapeHtmlForEmail(opts.produitLabel)}</strong> nécessite une action de conformité DDA (<strong>${escapeHtmlForEmail(manque)}</strong>).</p>${referenceHtml}<p><a href="${opts.ctaUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Finaliser ma conformité DDA</a></p><p style="font-size:13px;color:#64748b;">Cette étape est nécessaire pour poursuivre le traitement de votre dossier.</p><p>Cordialement,<br>Optimum Assurance</p>`,
     }
   },
+  pieceGedRefusee: (raisonSociale: string, documentLabel: string, reason: string) => ({
+    subject: "Action requise : pièce justificative à remplacer - Optimum Assurance",
+    text: `Bonjour ${raisonSociale},\n\nUne pièce justificative déposée dans votre espace client doit être remplacée.\n\nPièce concernée : ${documentLabel}\nMotif : ${reason}\n\nMerci de vous connecter à votre espace client pour déposer une nouvelle version : ${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Une <strong>pièce justificative</strong> déposée dans votre espace client doit être remplacée.</p><p><strong>Pièce concernée :</strong> ${escapeHtmlForEmail(documentLabel)}<br/><strong>Motif :</strong> ${escapeHtmlForEmail(reason)}</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Déposer une nouvelle pièce</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+  }),
   bienvenue: (raisonSociale: string) => ({
     subject: "Bienvenue chez Optimum Assurance",
     text: `Bonjour ${raisonSociale},\n\nVotre compte a été créé avec succès.\n\nConnectez-vous à votre espace client pour gérer vos documents et votre assurance décennale : ${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
