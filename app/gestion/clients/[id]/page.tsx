@@ -401,25 +401,55 @@ export default function ClientDetailPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setProfileForm((current) => ({
-                      ...current,
-                      email: questionnaireProfilePrefill.email || current.email,
-                      raisonSociale: questionnaireProfilePrefill.raisonSociale || current.raisonSociale,
-                      siret: questionnaireProfilePrefill.siret || current.siret,
-                      adresse: questionnaireProfilePrefill.adresse || current.adresse,
-                      codePostal: questionnaireProfilePrefill.codePostal || current.codePostal,
-                      ville: questionnaireProfilePrefill.ville || current.ville,
-                      telephone: questionnaireProfilePrefill.telephone || current.telephone,
-                    }))
-                    setToast({
-                      message: "Coordonnées du questionnaire reprises dans le formulaire. Pensez à enregistrer.",
-                      type: "success",
-                    })
+                  disabled={profileSaving}
+                  onClick={async () => {
+                    const nextProfile = {
+                      ...profileForm,
+                      email: questionnaireProfilePrefill.email || profileForm.email,
+                      raisonSociale: questionnaireProfilePrefill.raisonSociale || profileForm.raisonSociale,
+                      siret: questionnaireProfilePrefill.siret || profileForm.siret,
+                      adresse: questionnaireProfilePrefill.adresse || profileForm.adresse,
+                      codePostal: questionnaireProfilePrefill.codePostal || profileForm.codePostal,
+                      ville: questionnaireProfilePrefill.ville || profileForm.ville,
+                      telephone: questionnaireProfilePrefill.telephone || profileForm.telephone,
+                    }
+                    setProfileSaving(true)
+                    setProfileForm(nextProfile)
+                    try {
+                      const res = await fetch(`/api/gestion/clients/${clientId}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(nextProfile),
+                      })
+                      const json = await readResponseJson<{
+                        error?: string
+                        user?: ClientData["user"]
+                        syncedDocuments?: number
+                      }>(res)
+                      if (!res.ok) throw new Error(json.error || "Reprise automatique impossible")
+                      if (json.user) {
+                        setData((d) => (d ? { ...d, user: json.user! } : d))
+                      }
+                      const n = json.syncedDocuments ?? 0
+                      setToast({
+                        message:
+                          n > 0
+                            ? `Coordonnées reprises et enregistrées — ${n} contrat(s) / avenant(s) synchronisé(s)`
+                            : "Coordonnées reprises et enregistrées.",
+                        type: "success",
+                      })
+                    } catch (err) {
+                      setToast({
+                        message: err instanceof Error ? err.message : "Erreur reprise automatique",
+                        type: "error",
+                      })
+                    } finally {
+                      setProfileSaving(false)
+                    }
                   }}
-                  className="shrink-0 rounded-lg border border-sky-500/70 px-3 py-2 text-xs font-medium text-sky-100 hover:bg-sky-900/40"
+                  className="shrink-0 rounded-lg border border-sky-500/70 px-3 py-2 text-xs font-medium text-sky-100 hover:bg-sky-900/40 disabled:opacity-50"
                 >
-                  Reprendre dans la fiche
+                  {profileSaving ? "Reprise..." : "Reprendre et enregistrer"}
                 </button>
               </div>
               <dl className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">

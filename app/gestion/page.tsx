@@ -410,6 +410,7 @@ export default function GestionPage() {
   const [remediatingActionId, setRemediatingActionId] = useState<string | null>(null)
   const [bulkRemediatingDda, setBulkRemediatingDda] = useState(false)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
+  const [creatingLeadAccountId, setCreatingLeadAccountId] = useState<string | null>(null)
   const customDevisPdfInputRef = useRef<HTMLInputElement>(null)
   const [customDevisUserFilter, setCustomDevisUserFilter] = useState("")
   const [customDevisUserId, setCustomDevisUserId] = useState("")
@@ -427,6 +428,26 @@ export default function GestionPage() {
         {badge.label} ({ageHours}h)
       </span>
     )
+  }
+
+  const handleCreateLeadAccount = async (leadId: string, leadType: string) => {
+    setCreatingLeadAccountId(leadId)
+    try {
+      const res = await fetch("/api/gestion/users/create-from-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadId, leadType }),
+      })
+      const json = await readResponseJson<{ error?: string; email?: string }>(res)
+      if (!res.ok) throw new Error(json.error || "Erreur création compte")
+      setToast({ message: `Compte créé pour ${json.email}`, type: "success" })
+      const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+      if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : "Erreur création compte", type: "error" })
+    } finally {
+      setCreatingLeadAccountId(null)
+    }
   }
 
   const customDevisUserOptions = useMemo(() => {
@@ -2080,24 +2101,44 @@ export default function GestionPage() {
                     <th className="text-left p-3 sm:p-4 font-medium">Email</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden md:table-cell">Raison sociale</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden lg:table-cell">SIRET</th>
-                      <th className="text-right p-3 sm:p-4 font-medium">Prime / SLA</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Client</th>
+                    <th className="text-right p-3 sm:p-4 font-medium">Prime / SLA</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.devisLeads!.map((l) => (
-                    <tr key={l.id} className="border-b border-gray-700/50">
-                      <td className="p-3 sm:p-4 whitespace-nowrap">{new Date(l.createdAt).toLocaleString("fr-FR")}</td>
-                      <td className="p-3 sm:p-4">{l.email}</td>
-                      <td className="p-3 sm:p-4 hidden md:table-cell">{l.raisonSociale || "—"}</td>
-                      <td className="p-3 sm:p-4 font-mono text-gray-200 hidden lg:table-cell">{l.siret || "—"}</td>
-                      <td className="p-3 sm:p-4 text-right">
-                        <div className="flex flex-col items-end gap-1">
-                          <span>{l.primeAnnuelle != null ? `${l.primeAnnuelle.toLocaleString("fr-FR")} €` : "—"}</span>
-                          {typeof l.slaHours === "number" ? leadSlaBadge(l.slaHours) : null}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {data.devisLeads!.map((l) => {
+                    const matchingUser = data.users.find((u) => u.email.toLowerCase() === l.email.toLowerCase())
+                    return (
+                      <tr key={l.id} className="border-b border-gray-700/50">
+                        <td className="p-3 sm:p-4 whitespace-nowrap">{new Date(l.createdAt).toLocaleString("fr-FR")}</td>
+                        <td className="p-3 sm:p-4">{l.email}</td>
+                        <td className="p-3 sm:p-4 hidden md:table-cell">{l.raisonSociale || "—"}</td>
+                        <td className="p-3 sm:p-4 font-mono text-gray-200 hidden lg:table-cell">{l.siret || "—"}</td>
+                        <td className="p-3 sm:p-4">
+                          {matchingUser ? (
+                            <Link href={`/gestion/clients/${matchingUser.id}`} className="text-green-400 hover:text-green-300">
+                              ✓ Compte existant
+                            </Link>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={creatingLeadAccountId === l.id}
+                              onClick={() => void handleCreateLeadAccount(l.id, "decennale")}
+                              className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium disabled:opacity-50"
+                            >
+                              {creatingLeadAccountId === l.id ? "Création..." : "Créer le compte"}
+                            </button>
+                          )}
+                        </td>
+                        <td className="p-3 sm:p-4 text-right">
+                          <div className="flex flex-col items-end gap-1">
+                            <span>{l.primeAnnuelle != null ? `${l.primeAnnuelle.toLocaleString("fr-FR")} €` : "—"}</span>
+                            {typeof l.slaHours === "number" ? leadSlaBadge(l.slaHours) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -2690,6 +2731,7 @@ export default function GestionPage() {
                       /* ignore */
                     }
                     const estDomaine = parsed.type === "domaine_non_liste"
+                    const matchingUser = data.users.find((u) => u.email.toLowerCase() === lead.email.toLowerCase())
                     const resume = estDomaine
                       ? (parsed.descriptionActivite ?? "").slice(0, 80) + ((parsed.descriptionActivite?.length ?? 0) > 80 ? "…" : "")
                       : `CA ${parsed.chiffreAffaires?.toLocaleString("fr-FR") ?? "—"} € · ${parsed.sinistres ?? 0} sinistre(s)`
@@ -2707,17 +2749,33 @@ export default function GestionPage() {
                         <td className="p-3 sm:p-4 font-mono text-gray-200 hidden sm:table-cell">{lead.siret || "—"}</td>
                         <td className="p-3 sm:p-4">{new Date(lead.createdAt).toLocaleDateString("fr-FR")}</td>
                         <td className="p-3 sm:p-4">
-                          <button
-                            onClick={() => setEtudeMiseModal({
-                              id: lead.id,
-                              email: lead.email,
-                              raisonSociale: lead.raisonSociale,
-                              primeAnnuelle: "",
-                            })}
-                            className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium"
-                          >
-                            Faire une remise
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            {matchingUser ? (
+                              <Link href={`/gestion/clients/${matchingUser.id}`} className="text-green-400 hover:text-green-300 text-sm font-medium">
+                                ✓ Compte client
+                              </Link>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={creatingLeadAccountId === lead.id}
+                                onClick={() => void handleCreateLeadAccount(lead.id, "etude")}
+                                className="text-sky-400 hover:text-sky-300 text-sm font-medium disabled:opacity-50"
+                              >
+                                {creatingLeadAccountId === lead.id ? "Création..." : "Créer compte"}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setEtudeMiseModal({
+                                id: lead.id,
+                                email: lead.email,
+                                raisonSociale: lead.raisonSociale,
+                                primeAnnuelle: "",
+                              })}
+                              className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium"
+                            >
+                              Faire une remise
+                            </button>
+                          </div>
                           <span className="text-gray-200 text-xs ml-2 block sm:inline mt-1 sm:mt-0" title={estDomaine ? parsed.descriptionActivite : undefined}>
                             {resume}
                           </span>
