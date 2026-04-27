@@ -51,6 +51,7 @@
     "supabase:bundle": "node scripts/bundle-supabase-sql.mjs",
     "supabase:apply-rls-sql": "node scripts/apply-supabase-rls-sql.mjs",
     "supabase:apply-esign-policies": "node scripts/apply-supabase-esign-policies.mjs",
+    "supabase:touch-migration": "node scripts/supabase-touch-migration.mjs",
     "vercel:push-supabase-env": "node scripts/vercel-push-supabase-env.mjs",
     "verify:vercel-env": "node scripts/verify-vercel-env.mjs",
     "verify:release": "npm run verify:vercel-env && npm run verify:prod",

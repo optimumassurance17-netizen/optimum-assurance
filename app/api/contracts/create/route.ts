@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { createInsuranceContract } from "@/lib/insurance-contract-service"
+import { logAdminActivity } from "@/lib/admin-activity"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
+import {
+  assertRecentDdaConsent,
+  buildDdaNeedSummary,
+  buildDdaSuitabilityStatement,
+  normalizeDdaProduct,
+} from "@/lib/dda-compliance"
 
 function asTrimmedString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined
@@ -69,6 +76,7 @@ export async function POST(request: NextRequest) {
     const constructionNature = asTrimmedString(raw.constructionNature)
     const missingDocuments = typeof raw.missingDocuments === "boolean" ? raw.missingDocuments : undefined
     const companyAgeMonths = asOptionalNonNegativeNumber(raw.companyAgeMonths)
+    const expectedDdaProduct = normalizeDdaProduct(productType)
 
     if (!productType || !clientName || !address) {
       return NextResponse.json({ error: "Champs requis : productType, clientName, address" }, { status: 400 })
@@ -84,6 +92,16 @@ export async function POST(request: NextRequest) {
     }
     if (companyAgeMonths === undefined) {
       return NextResponse.json({ error: "companyAgeMonths invalide" }, { status: 400 })
+    }
+    const ddaCheck = await assertRecentDdaConsent(session.user.id, expectedDdaProduct, 72)
+    if (!ddaCheck.ok) {
+      return NextResponse.json(
+        {
+          error: ddaCheck.reason,
+          dda: { expectedProduct: expectedDdaProduct, requiredFreshConsent: true },
+        },
+        { status: 412 }
+      )
     }
 
     const hierarchy =
@@ -122,6 +140,22 @@ export async function POST(request: NextRequest) {
             { selections: hierarchy?.selections }
           )
         : null
+    const ddaNeedsSummary = buildDdaNeedSummary({
+      insuranceProduct: productType === "do" ? "do" : "decennale",
+      companyName: clientName,
+      activitiesCount: matchedActivities.length,
+      turnover: asPositiveNumber(raw.chiffreAffaires),
+      projectName,
+      projectAddress,
+    })
+    const ddaSuitability = buildDdaSuitabilityStatement({
+      productType: expectedDdaProduct ?? (productType === "do" ? "dommage-ouvrage" : "decennale"),
+      matchedActivities,
+      missingActivitiesCount: hierarchy?.unmatched.length ?? 0,
+      riskReasons: [],
+      exclusions: optimizedExclusions?.lines ?? [],
+      sourcePage: ddaCheck.log.page,
+    })
     const mergedExclusionsRaw = [
       ...(exclusions ?? []),
       ...(optimizedExclusions?.lines ?? []),
@@ -146,6 +180,22 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       missingDocuments,
       companyAgeMonths,
+    })
+
+    await logAdminActivity({
+      adminEmail: "dda@system",
+      action: "dda_contract_suitability_checked",
+      targetType: "insurance_contract",
+      targetId: contract.id,
+      details: {
+        consentLogId: ddaCheck.log.id,
+        acceptedAt: ddaCheck.log.acceptedAt,
+        page: ddaCheck.log.page,
+        productLogged: ddaCheck.log.produit,
+        needsSummary: ddaNeedsSummary,
+        suitability: ddaSuitability,
+        riskReasons: risk.reasons,
+      },
     })
 
     return NextResponse.json({

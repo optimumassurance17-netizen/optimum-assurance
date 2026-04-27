@@ -306,11 +306,23 @@ interface DashboardData {
       | "decennale_lead_followup"
       | "do_etude_pending"
       | "rc_fabriquant_pending"
+      | "dda_proof_missing"
+      | "dda_avenant_missing"
+      | "dda_rc_fabriquant_missing"
     priority: "high" | "medium"
     title: string
     description: string
     href: string
     ageHours: number
+    remediation?: {
+      kind: "dda"
+      toEmail: string
+      clientLabel: string
+      produitLabel: string
+      ctaPath: string
+      reference?: string
+      missing?: string
+    }
   }[]
   dashboardActionsSummary?: {
     total: number
@@ -395,7 +407,10 @@ export default function GestionPage() {
   const [cancellingSignatureId, setCancellingSignatureId] = useState<string | null>(null)
   const [repairingSignatureId, setRepairingSignatureId] = useState<string | null>(null)
   const [dismissingActionId, setDismissingActionId] = useState<string | null>(null)
+  const [remediatingActionId, setRemediatingActionId] = useState<string | null>(null)
+  const [bulkRemediatingDda, setBulkRemediatingDda] = useState(false)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
+  const [creatingLeadAccountId, setCreatingLeadAccountId] = useState<string | null>(null)
   const customDevisPdfInputRef = useRef<HTMLInputElement>(null)
   const [customDevisUserFilter, setCustomDevisUserFilter] = useState("")
   const [customDevisUserId, setCustomDevisUserId] = useState("")
@@ -413,6 +428,26 @@ export default function GestionPage() {
         {badge.label} ({ageHours}h)
       </span>
     )
+  }
+
+  const handleCreateLeadAccount = async (leadId: string, leadType: string) => {
+    setCreatingLeadAccountId(leadId)
+    try {
+      const res = await fetch("/api/gestion/users/create-from-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadId, leadType }),
+      })
+      const json = await readResponseJson<{ error?: string; email?: string }>(res)
+      if (!res.ok) throw new Error(json.error || "Erreur création compte")
+      setToast({ message: `Compte créé pour ${json.email}`, type: "success" })
+      const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+      if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : "Erreur création compte", type: "error" })
+    } finally {
+      setCreatingLeadAccountId(null)
+    }
   }
 
   const customDevisUserOptions = useMemo(() => {
@@ -642,6 +677,15 @@ export default function GestionPage() {
     if (actionsFilter === "overdue72h") return list.filter((a) => a.ageHours >= 72)
     return list
   }, [data, actionsFilter])
+
+  const bulkDdaRemediationCandidates = useMemo(() => {
+    const list = data?.dashboardActions ?? []
+    return list.filter(
+      (action) =>
+        action.priority === "high" &&
+        action.remediation?.kind === "dda"
+    )
+  }, [data])
 
   const filteredRcFabriquantLeads = useMemo(() => {
     const list = data?.devisRcFabriquantLeads ?? []
@@ -1340,6 +1384,12 @@ export default function GestionPage() {
               >
                 Contrats
               </a>
+              <Link
+                href="/gestion/rectification"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#1f2937] text-cyan-100 border border-cyan-700/70 hover:bg-[#273547]"
+              >
+                Rectification 100%
+              </Link>
               {(data.devisLeads?.length ?? 0) > 0 && (
                 <a
                   href="#leads-decennale"
@@ -1802,6 +1852,62 @@ export default function GestionPage() {
                   >
                     72h+ seulement
                   </button>
+                  {bulkDdaRemediationCandidates.length > 0 ? (
+                    <button
+                      type="button"
+                      disabled={bulkRemediatingDda}
+                      onClick={async () => {
+                        setBulkRemediatingDda(true)
+                        try {
+                          const res = await fetch("/api/gestion/actions-du-jour/remediate", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              items: bulkDdaRemediationCandidates.map((action) => ({
+                                actionId: action.id,
+                                remediation: action.remediation,
+                              })),
+                            }),
+                          })
+                          const j = await readResponseJson<{
+                            error?: string
+                            summary?: {
+                              total: number
+                              sent: number
+                              alreadySent: number
+                              failed: number
+                            }
+                          }>(res)
+                          if (!res.ok) throw new Error(j.error || "Échec de la remédiation DDA en lot.")
+
+                          const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+                          if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+
+                          const s = j.summary
+                          if (s) {
+                            setToast({
+                              message: `Remédiation DDA en lot : ${s.sent} envoyée(s), ${s.alreadySent} déjà envoyée(s), ${s.failed} en échec.`,
+                              type: s.failed > 0 ? "error" : "success",
+                            })
+                          } else {
+                            setToast({ message: "Remédiation DDA en lot terminée.", type: "success" })
+                          }
+                        } catch (err) {
+                          setToast({
+                            message: err instanceof Error ? err.message : "Erreur remédiation DDA en lot",
+                            type: "error",
+                          })
+                        } finally {
+                          setBulkRemediatingDda(false)
+                        }
+                      }}
+                      className="px-2.5 py-1 rounded border bg-[#2563eb]/20 border-[#2563eb] text-[#bfdbfe] hover:bg-[#2563eb]/30 disabled:opacity-50"
+                    >
+                      {bulkRemediatingDda
+                        ? "Remédiation lot…"
+                        : `Remédier tout DDA prioritaire (${bulkDdaRemediationCandidates.length})`}
+                    </button>
+                  ) : null}
                 </div>
                 <div className="space-y-2">
                   {filteredDashboardActions.length === 0 ? (
@@ -1831,36 +1937,78 @@ export default function GestionPage() {
                           </div>
                           <p className="text-xs text-gray-300 mt-1">{a.description}</p>
                         </a>
-                        <button
-                          type="button"
-                          disabled={dismissingActionId === a.id}
-                          onClick={async () => {
-                            setDismissingActionId(a.id)
-                            try {
-                              const res = await fetch("/api/gestion/actions-du-jour/dismiss", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ actionId: a.id }),
-                              })
-                              const j = await readResponseJson<{ error?: string }>(res)
-                              if (!res.ok) throw new Error(j.error || "Impossible de marquer l'action comme traitée.")
+                        <div className="shrink-0 flex flex-col sm:flex-row items-stretch gap-2">
+                          {a.remediation?.kind === "dda" ? (
+                            <button
+                              type="button"
+                              disabled={remediatingActionId === a.id}
+                              onClick={async () => {
+                                setRemediatingActionId(a.id)
+                                try {
+                                  const res = await fetch("/api/gestion/actions-du-jour/remediate", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      actionId: a.id,
+                                      remediation: a.remediation,
+                                    }),
+                                  })
+                                  const j = await readResponseJson<{ error?: string; alreadySent?: boolean }>(res)
+                                  if (!res.ok) throw new Error(j.error || "Impossible d'envoyer la relance DDA.")
 
-                              const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
-                              if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
-                              setToast({ message: "Action marquée comme traitée.", type: "success" })
-                            } catch (err) {
-                              setToast({
-                                message: err instanceof Error ? err.message : "Erreur lors de la mise à jour",
-                                type: "error",
-                              })
-                            } finally {
-                              setDismissingActionId(null)
-                            }
-                          }}
-                          className="shrink-0 text-xs px-2.5 py-1.5 rounded border border-gray-600 text-gray-100 hover:border-[#2563eb] hover:text-[#60a5fa] disabled:opacity-50"
-                        >
-                          {dismissingActionId === a.id ? "…" : "Marquer traité"}
-                        </button>
+                                  const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+                                  if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                  setToast({
+                                    message: j.alreadySent
+                                      ? "Relance DDA déjà envoyée aujourd'hui."
+                                      : "Relance DDA envoyée automatiquement.",
+                                    type: "success",
+                                  })
+                                } catch (err) {
+                                  setToast({
+                                    message: err instanceof Error ? err.message : "Erreur lors de la relance DDA",
+                                    type: "error",
+                                  })
+                                } finally {
+                                  setRemediatingActionId(null)
+                                }
+                              }}
+                              className="text-xs px-2.5 py-1.5 rounded border border-[#2563eb] text-[#93c5fd] hover:bg-[#2563eb]/20 disabled:opacity-50"
+                            >
+                              {remediatingActionId === a.id ? "…" : "Remédier auto DDA"}
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            disabled={dismissingActionId === a.id}
+                            onClick={async () => {
+                              setDismissingActionId(a.id)
+                              try {
+                                const res = await fetch("/api/gestion/actions-du-jour/dismiss", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ actionId: a.id }),
+                                })
+                                const j = await readResponseJson<{ error?: string }>(res)
+                                if (!res.ok) throw new Error(j.error || "Impossible de marquer l'action comme traitée.")
+
+                                const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+                                if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                setToast({ message: "Action marquée comme traitée.", type: "success" })
+                              } catch (err) {
+                                setToast({
+                                  message: err instanceof Error ? err.message : "Erreur lors de la mise à jour",
+                                  type: "error",
+                                })
+                              } finally {
+                                setDismissingActionId(null)
+                              }
+                            }}
+                            className="text-xs px-2.5 py-1.5 rounded border border-gray-600 text-gray-100 hover:border-[#2563eb] hover:text-[#60a5fa] disabled:opacity-50"
+                          >
+                            {dismissingActionId === a.id ? "…" : "Marquer traité"}
+                          </button>
+                        </div>
                       </div>
                     </div>
                     ))
@@ -1953,24 +2101,44 @@ export default function GestionPage() {
                     <th className="text-left p-3 sm:p-4 font-medium">Email</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden md:table-cell">Raison sociale</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden lg:table-cell">SIRET</th>
-                      <th className="text-right p-3 sm:p-4 font-medium">Prime / SLA</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Client</th>
+                    <th className="text-right p-3 sm:p-4 font-medium">Prime / SLA</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.devisLeads!.map((l) => (
-                    <tr key={l.id} className="border-b border-gray-700/50">
-                      <td className="p-3 sm:p-4 whitespace-nowrap">{new Date(l.createdAt).toLocaleString("fr-FR")}</td>
-                      <td className="p-3 sm:p-4">{l.email}</td>
-                      <td className="p-3 sm:p-4 hidden md:table-cell">{l.raisonSociale || "—"}</td>
-                      <td className="p-3 sm:p-4 font-mono text-gray-200 hidden lg:table-cell">{l.siret || "—"}</td>
-                      <td className="p-3 sm:p-4 text-right">
-                        <div className="flex flex-col items-end gap-1">
-                          <span>{l.primeAnnuelle != null ? `${l.primeAnnuelle.toLocaleString("fr-FR")} €` : "—"}</span>
-                          {typeof l.slaHours === "number" ? leadSlaBadge(l.slaHours) : null}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {data.devisLeads!.map((l) => {
+                    const matchingUser = data.users.find((u) => u.email.toLowerCase() === l.email.toLowerCase())
+                    return (
+                      <tr key={l.id} className="border-b border-gray-700/50">
+                        <td className="p-3 sm:p-4 whitespace-nowrap">{new Date(l.createdAt).toLocaleString("fr-FR")}</td>
+                        <td className="p-3 sm:p-4">{l.email}</td>
+                        <td className="p-3 sm:p-4 hidden md:table-cell">{l.raisonSociale || "—"}</td>
+                        <td className="p-3 sm:p-4 font-mono text-gray-200 hidden lg:table-cell">{l.siret || "—"}</td>
+                        <td className="p-3 sm:p-4">
+                          {matchingUser ? (
+                            <Link href={`/gestion/clients/${matchingUser.id}`} className="text-green-400 hover:text-green-300">
+                              ✓ Compte existant
+                            </Link>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={creatingLeadAccountId === l.id}
+                              onClick={() => void handleCreateLeadAccount(l.id, "decennale")}
+                              className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium disabled:opacity-50"
+                            >
+                              {creatingLeadAccountId === l.id ? "Création..." : "Créer le compte"}
+                            </button>
+                          )}
+                        </td>
+                        <td className="p-3 sm:p-4 text-right">
+                          <div className="flex flex-col items-end gap-1">
+                            <span>{l.primeAnnuelle != null ? `${l.primeAnnuelle.toLocaleString("fr-FR")} €` : "—"}</span>
+                            {typeof l.slaHours === "number" ? leadSlaBadge(l.slaHours) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -2563,6 +2731,7 @@ export default function GestionPage() {
                       /* ignore */
                     }
                     const estDomaine = parsed.type === "domaine_non_liste"
+                    const matchingUser = data.users.find((u) => u.email.toLowerCase() === lead.email.toLowerCase())
                     const resume = estDomaine
                       ? (parsed.descriptionActivite ?? "").slice(0, 80) + ((parsed.descriptionActivite?.length ?? 0) > 80 ? "…" : "")
                       : `CA ${parsed.chiffreAffaires?.toLocaleString("fr-FR") ?? "—"} € · ${parsed.sinistres ?? 0} sinistre(s)`
@@ -2580,17 +2749,33 @@ export default function GestionPage() {
                         <td className="p-3 sm:p-4 font-mono text-gray-200 hidden sm:table-cell">{lead.siret || "—"}</td>
                         <td className="p-3 sm:p-4">{new Date(lead.createdAt).toLocaleDateString("fr-FR")}</td>
                         <td className="p-3 sm:p-4">
-                          <button
-                            onClick={() => setEtudeMiseModal({
-                              id: lead.id,
-                              email: lead.email,
-                              raisonSociale: lead.raisonSociale,
-                              primeAnnuelle: "",
-                            })}
-                            className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium"
-                          >
-                            Faire une remise
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            {matchingUser ? (
+                              <Link href={`/gestion/clients/${matchingUser.id}`} className="text-green-400 hover:text-green-300 text-sm font-medium">
+                                ✓ Compte client
+                              </Link>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={creatingLeadAccountId === lead.id}
+                                onClick={() => void handleCreateLeadAccount(lead.id, "etude")}
+                                className="text-sky-400 hover:text-sky-300 text-sm font-medium disabled:opacity-50"
+                              >
+                                {creatingLeadAccountId === lead.id ? "Création..." : "Créer compte"}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setEtudeMiseModal({
+                                id: lead.id,
+                                email: lead.email,
+                                raisonSociale: lead.raisonSociale,
+                                primeAnnuelle: "",
+                              })}
+                              className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium"
+                            >
+                              Faire une remise
+                            </button>
+                          </div>
                           <span className="text-gray-200 text-xs ml-2 block sm:inline mt-1 sm:mt-0" title={estDomaine ? parsed.descriptionActivite : undefined}>
                             {resume}
                           </span>

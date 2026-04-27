@@ -1,5 +1,8 @@
 "use client"
 
+import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
+import { COMPANY_BRAND } from "@/lib/legal-branding"
+
 interface AttestationNonSinistraliteTemplateProps {
   numero: string
   data: {
@@ -30,10 +33,7 @@ export function AttestationNonSinistraliteTemplate({
 
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0">
-      <div className="border-b-2 border-[#2563eb] pb-4 mb-8">
-        <h1 className="text-2xl font-bold text-[#2563eb]">Optimum Assurance</h1>
-        <p className="text-sm text-[#171717]">Assurance décennale professionnelle</p>
-      </div>
+      <DocumentBrandHeader tagline="Assurance décennale professionnelle" className="border-b-2 border-[#2563eb] pb-4 mb-8" />
 
       <h2 className="text-xl font-semibold mb-2 text-center">
         ATTESTATION DE NON SINISTRALITÉ
@@ -46,7 +46,7 @@ export function AttestationNonSinistraliteTemplate({
 
       <div className="border-2 border-[#E5E0D8] p-6 rounded-xl mb-8">
         <p className="mb-4">
-          La société <strong>Optimum Assurance</strong> atteste que :
+          La société <strong>{COMPANY_BRAND}</strong> atteste que :
         </p>
         <p className="mb-2 font-semibold">{data.raisonSociale}</p>
         <p className="mb-2">SIRET : {data.siret}</p>
@@ -79,7 +79,7 @@ export function AttestationNonSinistraliteTemplate({
       <p className="text-sm">
         Fait à Paris, le {new Date().toLocaleDateString("fr-FR")}
       </p>
-      <p className="text-sm mt-4">Pour Optimum Assurance</p>
+      <p className="text-sm mt-4">Pour {COMPANY_BRAND}</p>
     </div>
   )
 }

@@ -23,6 +23,41 @@ interface DocumentItem {
   createdAt: string
 }
 
+type PendingSignatureItem = {
+  signatureRequestId: string
+  contractNumero: string
+  signatureFlow: "decennale" | "custom_pdf"
+  signatureFlowLabel?: string
+  createdAt: string
+  signatureLink: string
+}
+
+type AutonomyStatusAction = {
+  id: string
+  title: string
+  description: string
+  href: string
+  priority: "high" | "medium" | "low"
+}
+
+type AutonomyStatusPayload = {
+  pendingSignaturesTotal: number
+  pendingSignaturesDecennale: number
+  hasDecennaleContract: boolean
+  firstDecennalePaymentDone: boolean
+  approvedUnpaidContractsCount: number
+  suspendedAttestationsCount: number
+  sepaSubscription: {
+    status: string
+    nextSepaDue: string | null
+    trimestresSepaPayes: number
+    lastError: string | null
+  }
+    | null
+  advisories: string[]
+  actions: AutonomyStatusAction[]
+}
+
 type SavedDevisDraftItem = {
   id: string
   token: string
@@ -75,6 +110,8 @@ export default function EspaceClientPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [payments, setPayments] = useState<{ id: string; amount: number; status: string; paidAt: string | null; createdAt: string }[]>([])
   const [savedDevisDrafts, setSavedDevisDrafts] = useState<SavedDevisDraftItem[]>([])
+  const [pendingSignatures, setPendingSignatures] = useState<PendingSignatureItem[]>([])
+  const [autonomyStatus, setAutonomyStatus] = useState<AutonomyStatusPayload | null>(null)
   const [profile, setProfile] = useState<{ adresse?: string; codePostal?: string; ville?: string; telephone?: string; siret?: string } | null>(null)
   const [profileEditing, setProfileEditing] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
@@ -109,13 +146,15 @@ export default function EspaceClientPage() {
 
     const fetchData = async () => {
       try {
-        const [docsRes, summaryRes, paymentsRes, insRes, doqRes, draftsRes] = await Promise.all([
+        const [docsRes, summaryRes, paymentsRes, insRes, doqRes, draftsRes, pendingSignaturesRes, autonomyStatusRes] = await Promise.all([
           fetch("/api/documents/list"),
           fetch("/api/client/summary"),
           fetch("/api/client/payments"),
           fetch("/api/client/insurance-contracts"),
           fetch("/api/client/do-questionnaire"),
           fetch("/api/client/devis-drafts"),
+          fetch("/api/client/pending-signatures"),
+          fetch("/api/client/autonomy-status"),
         ])
         if (docsRes.ok) setDocuments(await docsRes.json())
         if (summaryRes.ok) setSummary(await summaryRes.json())
@@ -139,6 +178,27 @@ export default function EspaceClientPage() {
           }
         } else {
           setSavedDevisDrafts([])
+        }
+        if (pendingSignaturesRes.ok) {
+          const pendingPayload = (await pendingSignaturesRes.json()) as {
+            items?: PendingSignatureItem[]
+            pendingSignatures?: PendingSignatureItem[]
+          }
+          setPendingSignatures(
+            Array.isArray(pendingPayload.items)
+              ? pendingPayload.items
+              : Array.isArray(pendingPayload.pendingSignatures)
+                ? pendingPayload.pendingSignatures
+                : []
+          )
+        } else {
+          setPendingSignatures([])
+        }
+        if (autonomyStatusRes.ok) {
+          const autonomyPayload = (await autonomyStatusRes.json()) as AutonomyStatusPayload
+          setAutonomyStatus(autonomyPayload)
+        } else {
+          setAutonomyStatus(null)
         }
         const profileRes = await fetch("/api/client/profile")
         if (profileRes.ok) setProfile(await profileRes.json())
@@ -177,6 +237,88 @@ export default function EspaceClientPage() {
         <p className="text-[#171717] mb-6 text-lg">
           Bienvenue, {session?.user?.name || session?.user?.email}
         </p>
+
+        {!loading && autonomyStatus && (
+          <div className="mb-8 rounded-2xl border border-[#0ea5e9]/35 bg-[#f0f9ff] p-6 text-[#0a0a0a]">
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+              <div>
+                <h2 className="font-bold text-lg">Centre d&apos;autonomie client</h2>
+                <p className="text-sm text-[#171717]">
+                  Pilotez votre dossier de A à Z sans intervention manuelle.
+                </p>
+              </div>
+              <span className="inline-flex rounded-lg bg-white border border-[#7dd3fc] px-3 py-1.5 text-xs font-semibold text-[#0c4a6e]">
+                {autonomyStatus.actions.some((action) => action.priority === "high")
+                  ? "Action requise"
+                  : "Dossier autonome"}
+              </span>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-3 mb-4">
+              <div className="rounded-xl border border-[#bae6fd] bg-white p-3">
+                <p className="text-xs text-[#0c4a6e]">Signatures en attente</p>
+                <p className="text-xl font-bold text-[#082f49]">{autonomyStatus.pendingSignaturesTotal}</p>
+              </div>
+              <div className="rounded-xl border border-[#bae6fd] bg-white p-3">
+                <p className="text-xs text-[#0c4a6e]">Contrats approuvés non payés</p>
+                <p className="text-xl font-bold text-[#082f49]">{autonomyStatus.approvedUnpaidContractsCount}</p>
+              </div>
+              <div className="rounded-xl border border-[#bae6fd] bg-white p-3">
+                <p className="text-xs text-[#0c4a6e]">Attestations à régulariser</p>
+                <p className="text-xl font-bold text-[#082f49]">{autonomyStatus.suspendedAttestationsCount}</p>
+              </div>
+            </div>
+
+            {autonomyStatus.sepaSubscription && (
+              <p className="text-xs text-[#155e75] mb-4">
+                SEPA : <strong>{autonomyStatus.sepaSubscription.status}</strong>
+                {autonomyStatus.sepaSubscription.nextSepaDue
+                  ? ` · prochaine échéance ${new Date(autonomyStatus.sepaSubscription.nextSepaDue).toLocaleDateString("fr-FR")}`
+                  : ""}
+                {autonomyStatus.sepaSubscription.lastError
+                  ? ` · dernier incident : ${autonomyStatus.sepaSubscription.lastError}`
+                  : ""}
+              </p>
+            )}
+
+            <div className="space-y-3">
+              {autonomyStatus.actions.map((action) => (
+                <div
+                  key={action.id}
+                  className="rounded-xl border border-[#cbd5e1] bg-white p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-[#0a0a0a]">{action.title}</p>
+                    <p className="text-xs text-[#334155]">{action.description}</p>
+                  </div>
+                  {action.href.startsWith("#") ? (
+                    <a
+                      href={action.href}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#0284c7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0369a1]"
+                    >
+                      Continuer
+                    </a>
+                  ) : (
+                    <Link
+                      href={action.href}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#0284c7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0369a1]"
+                    >
+                      Continuer
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {autonomyStatus.advisories.length > 0 && (
+              <ul className="mt-4 list-disc pl-5 text-xs text-[#155e75] space-y-1">
+                {autonomyStatus.advisories.map((advisory, index) => (
+                  <li key={`advisory-${index}`}>{advisory}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {!loading && doEtudeBanner?.show && (
           <div className="mb-8 rounded-2xl border border-[#2563eb]/30 bg-[#eff6ff] p-5 text-[#0a0a0a]">
@@ -259,7 +401,7 @@ export default function EspaceClientPage() {
         ) : null}
 
         {!loading && insuranceContracts.length > 0 && (
-          <div className="mb-10 p-6 bg-[#eff6ff] border border-[#2563eb]/25 rounded-2xl">
+          <div id="contrats-plateforme" className="mb-10 p-6 bg-[#eff6ff] border border-[#2563eb]/25 rounded-2xl">
             <h2 className="font-bold text-[#0a0a0a] text-lg mb-4">Contrats plateforme (souscription en ligne)</h2>
             <ul className="space-y-4">
               {insuranceContracts.map((c) => (
@@ -702,6 +844,44 @@ export default function EspaceClientPage() {
                     >
                       Reprendre
                     </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "documents" && !loading && (
+          <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-10 shadow-sm">
+            <h2 className="font-bold text-[#0a0a0a] text-lg mb-3">Signature électronique à reprendre</h2>
+            {pendingSignatures.length === 0 ? (
+              <p className="text-sm text-[#171717]">
+                Aucune signature électronique en attente.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {pendingSignatures.map((item) => (
+                  <div
+                    key={item.signatureRequestId}
+                    className="rounded-xl border border-[#d4d4d4] bg-white p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-[#0a0a0a]">
+                        {item.signatureFlow === "custom_pdf"
+                          ? item.signatureFlowLabel || "Dossier personnalisé"
+                          : "Contrat décennale"}
+                      </p>
+                      <p className="text-xs text-[#171717]">
+                        Référence {item.contractNumero} · créé le{" "}
+                        {new Date(item.createdAt).toLocaleDateString("fr-FR")}
+                      </p>
+                    </div>
+                    <a
+                      href={item.signatureLink}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+                    >
+                      Reprendre la signature
+                    </a>
                   </div>
                 ))}
               </div>

@@ -12,6 +12,7 @@ import {
 } from "@/lib/nomenclature-activites"
 import { COMPANY_BRAND, INSURER_NAME, LEGAL_ORIAS_LINE } from "@/lib/legal-branding"
 import { DEVOIR_CONSEIL_TEXTE_BY_PRODUCT } from "@/lib/devoir-conseil"
+import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 
 /**
  * Template de proposition d'assurance dommage ouvrage.
@@ -56,9 +57,9 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0 text-sm">
       {/* En-tête */}
-      <div className="border-b-2 border-[#2563eb] pb-4 mb-6">
+      <DocumentBrandHeader tagline="Dommage Ouvrage" />
+      <div className="mb-6">
         <h1 className="text-xl font-bold text-[#2563eb]">PROPOSITION D&apos;ASSURANCE</h1>
-        <p className="text-lg font-semibold text-[#171717] mt-1">Dommage Ouvrage</p>
         <p className="font-medium text-black mt-2">
           Proposition n° {numero} — valable 90 jours à partir du {dateCreation}
         </p>

@@ -11,6 +11,7 @@ import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
+import { assertRecentDdaConsent } from "@/lib/dda-compliance"
 
 export const runtime = "nodejs"
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -66,6 +67,16 @@ export async function POST(request: NextRequest) {
       )
     }
     const rawSouscription = souscription as Record<string, unknown>
+    const insuranceProductRaw = asTrimmedString(rawSouscription.insuranceProduct)?.toLowerCase()
+    if (insuranceProductRaw === "do" || insuranceProductRaw === "dommage-ouvrage") {
+      return NextResponse.json(
+        {
+          error:
+            "Ce parcours de signature est réservé à la décennale. Pour le dommage-ouvrage, utilisez le contrat plateforme depuis l'espace client.",
+        },
+        { status: 400 }
+      )
+    }
     const raisonSociale = asTrimmedString(rawSouscription.raisonSociale)
     const email = asTrimmedString(rawSouscription.email)?.toLowerCase()
     const representantLegal = asTrimmedString(rawSouscription.representantLegal)
@@ -122,6 +133,35 @@ export async function POST(request: NextRequest) {
       hierarchy.guaranteedHierarchyLines.length ? hierarchy.guaranteedHierarchyLines : matchedActivities,
       { selections: hierarchy.selections }
     )
+
+    const ddaConsent = await assertRecentDdaConsent({
+      userId: session.user.id,
+      produit: "decennale",
+      maxAgeHours: 72,
+      allowedPages: ["signature", "souscription"],
+    })
+    if (!ddaConsent.ok) {
+      return NextResponse.json(
+        {
+          error:
+            "Validation DDA manquante ou expirée. Merci de confirmer à nouveau vos exigences et besoins avant signature.",
+          code: "DDA_CONSENT_REQUIRED",
+        },
+        { status: 412 }
+      )
+    }
+    const existingPending = await prisma.pendingSignature.findFirst({
+      where: { userId: session.user.id },
+    })
+    if (existingPending) {
+      return NextResponse.json(
+        {
+          error:
+            "Une demande de signature est déjà en attente pour ce dossier. Finalisez-la ou annulez-la avant d'en créer une nouvelle.",
+        },
+        { status: 409 }
+      )
+    }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
     const now = new Date()
@@ -193,7 +233,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const nextPath = "/signature/callback?success=1"
+    const nextPath = "/mandat-sepa"
     const signatureLink = `${baseUrl}/sign/${signRequestId}?next=${encodeURIComponent(nextPath)}`
 
     return NextResponse.json({

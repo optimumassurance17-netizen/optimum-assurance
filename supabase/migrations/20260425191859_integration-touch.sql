@@ -1,0 +1,3 @@
+-- No-op migration
+-- Purpose: trigger Supabase extraction when no schema SQL changed yet.
+-- Created at: 2026-04-25T19:18:59.917Z

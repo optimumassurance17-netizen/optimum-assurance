@@ -18,6 +18,37 @@ function generateTempPassword(): string {
   return pwd
 }
 
+type SupportedLeadType = "dommage_ouvrage" | "rc_fabriquant" | "decennale" | "etude"
+
+function normalizeLeadType(raw: string): SupportedLeadType {
+  if (["rc_fabriquant", "rc-fabriquant", "rc fabricant", "rc_fabricant"].includes(raw)) {
+    return "rc_fabriquant"
+  }
+  if (["decennale", "décennale", "devis_decennale", "devis-décennale"].includes(raw)) {
+    return "decennale"
+  }
+  if (["etude", "étude", "devis_etude", "devis-étude"].includes(raw)) {
+    return "etude"
+  }
+  return "dommage_ouvrage"
+}
+
+function parseLeadData(raw: string | null | undefined): Record<string, unknown> {
+  if (!raw?.trim()) return {}
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {}
+  } catch {
+    return {}
+  }
+}
+
+function optionalString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -37,12 +68,7 @@ export async function POST(request: NextRequest) {
     const payload = body as { leadId?: unknown; leadType?: unknown }
     const leadId = typeof payload.leadId === "string" ? payload.leadId.trim() : ""
     const leadTypeRaw = typeof payload.leadType === "string" ? payload.leadType.trim().toLowerCase() : ""
-    const isRcFabLeadType =
-      leadTypeRaw === "rc_fabriquant" ||
-      leadTypeRaw === "rc-fabriquant" ||
-      leadTypeRaw === "rc fabricant" ||
-      leadTypeRaw === "rc_fabricant"
-    const leadType = isRcFabLeadType ? "rc_fabriquant" : "dommage_ouvrage"
+    const leadType = normalizeLeadType(leadTypeRaw)
 
     if (!leadId) {
       return NextResponse.json({ error: "leadId requis" }, { status: 400 })
@@ -54,10 +80,20 @@ export async function POST(request: NextRequest) {
             where: { id: leadId },
             select: { id: true, email: true, data: true },
           })
-        : await prisma.devisDommageOuvrageLead.findUnique({
-            where: { id: leadId },
-            select: { id: true, email: true, data: true },
-          })
+        : leadType === "decennale"
+          ? await prisma.devisLead.findUnique({
+              where: { id: leadId },
+              select: { id: true, email: true, raisonSociale: true, siret: true },
+            })
+          : leadType === "etude"
+            ? await prisma.devisEtudeLead.findUnique({
+                where: { id: leadId },
+                select: { id: true, email: true, data: true, raisonSociale: true, siret: true },
+              })
+            : await prisma.devisDommageOuvrageLead.findUnique({
+                where: { id: leadId },
+                select: { id: true, email: true, data: true },
+              })
 
     if (!lead) {
       return NextResponse.json({ error: "Lead introuvable" }, { status: 404 })
@@ -77,21 +113,14 @@ export async function POST(request: NextRequest) {
     const tempPassword = generateTempPassword()
     const passwordHash = await hash(tempPassword, 12)
 
-    let raisonSociale: string | null = null
-    let siret: string | null = null
-    let telephone: string | null = null
-    try {
-      const leadData = JSON.parse(lead.data) as {
-        raisonSociale?: string
-        siret?: string
-        telephone?: string
-      }
-      raisonSociale = leadData.raisonSociale || null
-      siret = leadData.siret ? String(leadData.siret).replace(/\s/g, "").trim() : null
-      telephone = leadData.telephone ? String(leadData.telephone).trim() : null
-    } catch {
-      /* ignore */
-    }
+    const leadData = "data" in lead ? parseLeadData(lead.data) : {}
+    const raisonSociale = optionalString("raisonSociale" in lead ? lead.raisonSociale : null) || optionalString(leadData.raisonSociale)
+    const siretRaw = optionalString("siret" in lead ? lead.siret : null) || optionalString(leadData.siret)
+    const siret = siretRaw ? siretRaw.replace(/\s/g, "").trim() : null
+    const telephone = optionalString(leadData.telephone)
+    const adresse = optionalString(leadData.adresse)
+    const codePostal = optionalString(leadData.codePostal)
+    const ville = optionalString(leadData.ville)
 
     const user = await prisma.user.create({
       data: {
@@ -100,6 +129,10 @@ export async function POST(request: NextRequest) {
         raisonSociale: raisonSociale || lead.email,
         ...(siret ? { siret } : {}),
         ...(telephone ? { telephone } : {}),
+        ...(adresse ? { adresse } : {}),
+        ...(codePostal ? { codePostal } : {}),
+        ...(ville ? { ville } : {}),
+        ...(leadType === "dommage_ouvrage" && "data" in lead ? { doInitialQuestionnaireJson: lead.data } : {}),
       },
     })
 

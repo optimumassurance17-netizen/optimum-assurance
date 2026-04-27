@@ -6,6 +6,7 @@ import { SITE_URL } from "@/lib/site-url"
 import { sendOperationsAlert } from "@/lib/operations-alert"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 
 const CLIENT_REMINDER_AFTER_HOURS = 24
 const ADMIN_ALERT_AFTER_HOURS = 72
@@ -136,6 +137,7 @@ export async function GET(request: NextRequest) {
     let contractAdminAlerted = 0
     let skippedNoEmail = 0
     let skippedAlreadyDoneToday = 0
+    let skippedUnsubscribed = 0
 
     for (const pending of pendingSignatures) {
       const user = signatureUserById.get(pending.userId)
@@ -146,13 +148,22 @@ export async function GET(request: NextRequest) {
       }
       const ageHours = Math.floor((now.getTime() - pending.createdAt.getTime()) / (1000 * 60 * 60))
       const userLabel = (user?.raisonSociale || user?.email || "Client").trim()
-      const link = `${SITE_URL}/sign/${pending.signatureRequestId}?next=${encodeURIComponent("/signature/callback?success=1")}`
+      const link = `${SITE_URL}/sign/${pending.signatureRequestId}?next=${encodeURIComponent("/mandat-sepa")}`
 
       if (!signatureSentTodaySet.has(pending.signatureRequestId)) {
-        const tpl = EMAIL_TEMPLATES.rappelDossierIncomplet(userLabel, link, {
-          produitLabel: "signature électronique",
-          reference: pending.contractNumero,
-        })
+        if (await isReminderUnsubscribed(email, "dossier_incomplete_reminder")) {
+          skippedUnsubscribed++
+          continue
+        }
+        const tpl = EMAIL_TEMPLATES.rappelDossierIncomplet(
+          userLabel,
+          link,
+          email,
+          {
+            produitLabel: "signature électronique",
+            reference: pending.contractNumero,
+          }
+        )
         const ok = await sendEmail({
           to: email,
           subject: tpl.subject,
@@ -213,10 +224,19 @@ export async function GET(request: NextRequest) {
       const espaceClient = `${SITE_URL}/espace-client`
 
       if (!contractSentTodaySet.has(contract.id)) {
-        const tpl = EMAIL_TEMPLATES.rappelDossierIncomplet(userLabel, espaceClient, {
-          produitLabel: `${produit} (paiement en attente)`,
-          reference: contract.contractNumber,
-        })
+        if (await isReminderUnsubscribed(email, "dossier_incomplete_reminder")) {
+          skippedUnsubscribed++
+          continue
+        }
+        const tpl = EMAIL_TEMPLATES.rappelDossierIncomplet(
+          userLabel,
+          espaceClient,
+          email,
+          {
+            produitLabel: `${produit} (paiement en attente)`,
+            reference: contract.contractNumber,
+          }
+        )
         const ok = await sendEmail({
           to: email,
           subject: tpl.subject,
@@ -287,6 +307,7 @@ export async function GET(request: NextRequest) {
       contractAdminAlerted,
       skippedNoEmail,
       skippedAlreadyDoneToday,
+      skippedUnsubscribed,
     })
   } catch (error) {
     console.error("[cron rappel-dossiers-incomplets]", error)

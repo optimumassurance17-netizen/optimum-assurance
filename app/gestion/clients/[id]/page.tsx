@@ -16,6 +16,86 @@ function prettyQuestionnaireJson(raw: string | null | undefined): string {
   }
 }
 
+type ProfileForm = {
+  email: string
+  raisonSociale: string
+  siret: string
+  adresse: string
+  codePostal: string
+  ville: string
+  telephone: string
+}
+
+type QuestionnaireProfilePrefill = ProfileForm & {
+  sources: string[]
+}
+
+function parseQuestionnaireJson(raw: string | null | undefined): Record<string, unknown> | null {
+  if (!raw?.trim()) return null
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null
+    return parsed as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
+function nestedRecord(source: Record<string, unknown> | null, key: string): Record<string, unknown> | null {
+  const value = source?.[key]
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+function stringField(source: Record<string, unknown> | null, key: string): string {
+  const value = source?.[key]
+  return typeof value === "string" ? value.trim() : ""
+}
+
+function buildQuestionnaireProfilePrefill(user: ClientData["user"]): QuestionnaireProfilePrefill | null {
+  const initial = parseQuestionnaireJson(user.doInitialQuestionnaireJson)
+  const etude = parseQuestionnaireJson(user.doEtudeQuestionnaireJson)
+  const souscripteurEtude = nestedRecord(etude, "souscripteur")
+
+  const fromInitial: ProfileForm = {
+    email: stringField(initial, "email"),
+    raisonSociale: stringField(initial, "raisonSociale"),
+    siret: stringField(initial, "siret").replace(/\s/g, ""),
+    adresse: stringField(initial, "adresse"),
+    codePostal: stringField(initial, "codePostal"),
+    ville: stringField(initial, "ville"),
+    telephone: stringField(initial, "telephone"),
+  }
+  const fromEtude: ProfileForm = {
+    email: stringField(souscripteurEtude, "email"),
+    raisonSociale: stringField(souscripteurEtude, "nomRaisonSociale"),
+    siret: "",
+    adresse: stringField(souscripteurEtude, "adresse"),
+    codePostal: stringField(souscripteurEtude, "codePostal"),
+    ville: stringField(souscripteurEtude, "ville"),
+    telephone: stringField(souscripteurEtude, "telephone"),
+  }
+
+  const merged: QuestionnaireProfilePrefill = {
+    email: fromEtude.email || fromInitial.email || user.email || "",
+    raisonSociale: fromEtude.raisonSociale || fromInitial.raisonSociale || "",
+    siret: fromInitial.siret,
+    adresse: fromEtude.adresse || fromInitial.adresse || "",
+    codePostal: fromEtude.codePostal || fromInitial.codePostal || "",
+    ville: fromEtude.ville || fromInitial.ville || "",
+    telephone: fromEtude.telephone || fromInitial.telephone || "",
+    sources: [
+      initial ? "premier devis DO" : "",
+      etude ? "questionnaire d'étude DO" : "",
+    ].filter(Boolean),
+  }
+
+  return Object.entries(merged).some(([key, value]) => key !== "sources" && String(value).trim())
+    ? merged
+    : null
+}
+
 interface ClientData {
   user: {
     id: string
@@ -40,6 +120,54 @@ interface ClientData {
     string,
     { status: "valid" | "invalid"; reason: string | null; updatedAt: string }
   >
+  dda?: {
+    consents: {
+      id: string
+      page: string
+      produit: string
+      acceptedAt: string
+      email: string | null
+      userId: string | null
+    }[]
+    events: {
+      id: string
+      adminEmail: string
+      action: string
+      targetType: string | null
+      targetId: string | null
+      targetLabel: string | null
+      details: Record<string, unknown>
+      createdAt: string
+    }[]
+  }
+}
+
+function asMaybeString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
+}
+
+function ddaProductLabel(value: string | null | undefined): string {
+  const normalized = (value ?? "").trim().toLowerCase()
+  if (["decennale"].includes(normalized)) return "Décennale"
+  if (["dommage-ouvrage", "dommage_ouvrage", "do"].includes(normalized)) return "Dommage ouvrage"
+  if (["rc-fabriquant", "rc_fabriquant"].includes(normalized)) return "RC fabricant"
+  return value?.trim() || "—"
+}
+
+function ddaPageLabel(value: string | null | undefined): string {
+  const normalized = (value ?? "").trim().toLowerCase()
+  if (normalized === "souscription") return "Souscription"
+  if (normalized === "souscription_do") return "Souscription DO"
+  if (normalized === "signature") return "Signature"
+  if (normalized === "formulaire_do") return "Formulaire DO"
+  if (normalized === "paiement_do") return "Paiement DO"
+  if (normalized === "devis_rc_fabriquant") return "Devis RC fabricant"
+  if (normalized === "proposition_rc_fabriquant") return "Proposition RC fabricant"
+  if (normalized === "signature_rc_fabriquant") return "Signature RC fabricant"
+  if (normalized === "avenant_create") return "Création avenant"
+  if (normalized === "avenant_update") return "Mise à jour avenant"
+  if (normalized === "rc_fabriquant_result") return "Résultat RC fabricant"
+  return value?.trim() || "—"
 }
 
 const typeLabels: Record<string, string> = {
@@ -102,7 +230,7 @@ export default function ClientDetailPage() {
   const [sinistreForm, setSinistreForm] = useState({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [profileForm, setProfileForm] = useState({
+  const [profileForm, setProfileForm] = useState<ProfileForm>({
     email: "",
     raisonSociale: "",
     siret: "",
@@ -186,6 +314,9 @@ export default function ClientDetailPage() {
   const { user, documents, payments, avenantFees } = data
   const caTotal = payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0)
   const isOwnAdminAccount = authSession?.user?.id === clientId
+  const ddaConsents = data.dda?.consents ?? []
+  const ddaEvents = data.dda?.events ?? []
+  const questionnaireProfilePrefill = buildQuestionnaireProfilePrefill(user)
 
   return (
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
@@ -257,6 +388,108 @@ export default function ClientDetailPage() {
             Client depuis le {new Date(user.createdAt).toLocaleDateString("fr-FR")} — modifiez les coordonnées compte
             (connexion, facturation) ci-dessous.
           </p>
+          {questionnaireProfilePrefill ? (
+            <div className="mb-4 rounded-lg border border-sky-800/60 bg-sky-950/20 p-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium text-sky-100">
+                    Données déjà remplies détectées
+                  </p>
+                  <p className="mt-1 text-xs text-sky-200/80">
+                    Source : {questionnaireProfilePrefill.sources.join(" + ")}. Cliquez pour préremplir la fiche client avec les coordonnées du questionnaire.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={profileSaving}
+                  onClick={async () => {
+                    const nextProfile = {
+                      ...profileForm,
+                      email: questionnaireProfilePrefill.email || profileForm.email,
+                      raisonSociale: questionnaireProfilePrefill.raisonSociale || profileForm.raisonSociale,
+                      siret: questionnaireProfilePrefill.siret || profileForm.siret,
+                      adresse: questionnaireProfilePrefill.adresse || profileForm.adresse,
+                      codePostal: questionnaireProfilePrefill.codePostal || profileForm.codePostal,
+                      ville: questionnaireProfilePrefill.ville || profileForm.ville,
+                      telephone: questionnaireProfilePrefill.telephone || profileForm.telephone,
+                    }
+                    setProfileSaving(true)
+                    setProfileForm(nextProfile)
+                    try {
+                      const res = await fetch(`/api/gestion/clients/${clientId}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(nextProfile),
+                      })
+                      const json = await readResponseJson<{
+                        error?: string
+                        user?: ClientData["user"]
+                        syncedDocuments?: number
+                      }>(res)
+                      if (!res.ok) throw new Error(json.error || "Reprise automatique impossible")
+                      if (json.user) {
+                        setData((d) => (d ? { ...d, user: json.user! } : d))
+                      }
+                      const n = json.syncedDocuments ?? 0
+                      setToast({
+                        message:
+                          n > 0
+                            ? `Coordonnées reprises et enregistrées — ${n} contrat(s) / avenant(s) synchronisé(s)`
+                            : "Coordonnées reprises et enregistrées.",
+                        type: "success",
+                      })
+                    } catch (err) {
+                      setToast({
+                        message: err instanceof Error ? err.message : "Erreur reprise automatique",
+                        type: "error",
+                      })
+                    } finally {
+                      setProfileSaving(false)
+                    }
+                  }}
+                  className="shrink-0 rounded-lg border border-sky-500/70 px-3 py-2 text-xs font-medium text-sky-100 hover:bg-sky-900/40 disabled:opacity-50"
+                >
+                  {profileSaving ? "Reprise..." : "Reprendre et enregistrer"}
+                </button>
+              </div>
+              <dl className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                {questionnaireProfilePrefill.raisonSociale ? (
+                  <div>
+                    <dt className="text-sky-300/70">Raison sociale</dt>
+                    <dd className="text-gray-100">{questionnaireProfilePrefill.raisonSociale}</dd>
+                  </div>
+                ) : null}
+                {questionnaireProfilePrefill.siret ? (
+                  <div>
+                    <dt className="text-sky-300/70">SIRET</dt>
+                    <dd className="font-mono text-gray-100">{questionnaireProfilePrefill.siret}</dd>
+                  </div>
+                ) : null}
+                {questionnaireProfilePrefill.adresse || questionnaireProfilePrefill.codePostal || questionnaireProfilePrefill.ville ? (
+                  <div className="sm:col-span-2">
+                    <dt className="text-sky-300/70">Adresse</dt>
+                    <dd className="text-gray-100">
+                      {[questionnaireProfilePrefill.adresse, questionnaireProfilePrefill.codePostal, questionnaireProfilePrefill.ville]
+                        .filter(Boolean)
+                        .join(" ")}
+                    </dd>
+                  </div>
+                ) : null}
+                {questionnaireProfilePrefill.telephone ? (
+                  <div>
+                    <dt className="text-sky-300/70">Téléphone</dt>
+                    <dd className="text-gray-100">{questionnaireProfilePrefill.telephone}</dd>
+                  </div>
+                ) : null}
+                {questionnaireProfilePrefill.email ? (
+                  <div>
+                    <dt className="text-sky-300/70">Email</dt>
+                    <dd className="text-gray-100">{questionnaireProfilePrefill.email}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </div>
+          ) : null}
           <form
             className="space-y-4"
             onSubmit={async (e) => {
@@ -399,6 +632,121 @@ export default function ClientDetailPage() {
                 </pre>
               </details>
             ) : null}
+          </section>
+        )}
+
+        {(ddaConsents.length > 0 || ddaEvents.length > 0) && (
+          <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-5">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Conformité DDA</h2>
+              <p className="text-xs text-gray-400 mt-1">
+                Journal des consentements devoir de conseil et contrôles d&apos;adéquation produit.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+                <p className="text-[11px] uppercase tracking-wide text-gray-400">Consentements DDA</p>
+                <p className="mt-1 text-xl font-semibold text-white">{ddaConsents.length}</p>
+              </div>
+              <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+                <p className="text-[11px] uppercase tracking-wide text-gray-400">Contrôles adéquation</p>
+                <p className="mt-1 text-xl font-semibold text-white">{ddaEvents.length}</p>
+              </div>
+              <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+                <p className="text-[11px] uppercase tracking-wide text-gray-400">Dernière preuve</p>
+                <p className="mt-1 text-sm font-medium text-gray-200">
+                  {(() => {
+                    const latest = [
+                      ...ddaConsents.map((entry) => entry.acceptedAt),
+                      ...ddaEvents.map((entry) => entry.createdAt),
+                    ]
+                      .sort()
+                      .at(-1)
+                    return latest ? new Date(latest).toLocaleString("fr-FR") : "—"
+                  })()}
+                </p>
+              </div>
+            </div>
+
+            {ddaConsents.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-sky-200 mb-2">Consentements devoir de conseil</h3>
+                <div className="bg-[#1a1a1a] rounded-lg border border-gray-700 overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="text-left p-3 font-medium text-gray-300">Date</th>
+                        <th className="text-left p-3 font-medium text-gray-300">Produit</th>
+                        <th className="text-left p-3 font-medium text-gray-300">Étape</th>
+                        <th className="text-left p-3 font-medium text-gray-300">Email</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ddaConsents.map((row) => (
+                        <tr key={row.id} className="border-b border-gray-800/80">
+                          <td className="p-3 text-gray-200">{new Date(row.acceptedAt).toLocaleString("fr-FR")}</td>
+                          <td className="p-3">
+                            <span className="rounded bg-sky-900/40 px-2 py-1 text-sky-200">
+                              {ddaProductLabel(row.produit)}
+                            </span>
+                          </td>
+                          <td className="p-3 text-gray-200">{ddaPageLabel(row.page)}</td>
+                          <td className="p-3 text-gray-400">{row.email || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {ddaEvents.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-emerald-200 mb-2">Preuves d&apos;adéquation et contrôles</h3>
+                <div className="space-y-3">
+                  {ddaEvents.map((event) => (
+                    <div key={event.id} className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="rounded bg-emerald-900/40 px-2 py-1 text-emerald-200">
+                          {event.action}
+                        </span>
+                        <span className="text-gray-300">{new Date(event.createdAt).toLocaleString("fr-FR")}</span>
+                        <span className="text-gray-400">
+                          {event.targetType || "—"}
+                          {event.targetId ? ` #${event.targetId.slice(-8)}` : ""}
+                        </span>
+                      </div>
+                      {event.targetLabel ? (
+                        <p className="mt-1 text-xs text-gray-400">
+                          Cible : <span className="text-gray-300">{event.targetLabel}</span>
+                        </p>
+                      ) : null}
+                      <p className="mt-2 text-xs text-gray-300">
+                        Produit :{" "}
+                        <span className="text-white">
+                          {ddaProductLabel(
+                            asMaybeString(event.details.product) ||
+                              asMaybeString(event.details.produit) ||
+                              asMaybeString(event.details.recommendedProduct)
+                          )}
+                        </span>
+                      </p>
+                      {asMaybeString(event.details.needsSummary) && (
+                        <p className="mt-1 text-xs text-gray-200">
+                          <span className="text-gray-400">Besoins :</span> {asMaybeString(event.details.needsSummary)}
+                        </p>
+                      )}
+                      {asMaybeString(event.details.suitability) && (
+                        <p className="mt-1 text-xs text-gray-200">
+                          <span className="text-gray-400">Adéquation :</span> {asMaybeString(event.details.suitability)}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
 
