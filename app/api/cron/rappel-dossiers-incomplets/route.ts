@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
       }
       const ageHours = Math.floor((now.getTime() - pending.createdAt.getTime()) / (1000 * 60 * 60))
       const userLabel = (user?.raisonSociale || user?.email || "Client").trim()
-      const link = `${SITE_URL}/sign/${pending.signatureRequestId}?next=${encodeURIComponent("/signature/callback?success=1")}`
+      const link = `${SITE_URL}/sign/${pending.signatureRequestId}?next=${encodeURIComponent("/mandat-sepa")}`
 
       if (!signatureSentTodaySet.has(pending.signatureRequestId)) {
         if (await isReminderUnsubscribed(email, "dossier_incomplete_reminder")) {

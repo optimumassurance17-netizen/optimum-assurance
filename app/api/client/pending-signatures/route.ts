@@ -50,7 +50,7 @@ export async function GET() {
 
       const customUploadedDevisFlow = parsed.customUploadedDevisFlow === true
       const produitLabel = asTrimmedString(parsed.produitLabel)
-      const fallbackNextPath = customUploadedDevisFlow ? "/espace-client" : "/signature/callback?success=1"
+      const fallbackNextPath = customUploadedDevisFlow ? "/espace-client" : "/mandat-sepa"
       const nextPath = normalizeInternalPath(asTrimmedString(parsed.afterSignNextPath), fallbackNextPath)
       const signatureLink = `/sign/${row.signatureRequestId}?next=${encodeURIComponent(nextPath)}`
 

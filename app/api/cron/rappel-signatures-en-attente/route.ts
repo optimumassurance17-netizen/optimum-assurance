@@ -48,10 +48,13 @@ function getSignatureReminderPayload(
     typeof data.devisReference === "string"
       ? data.devisReference.trim()
       : pending.contractNumero.trim()
-  const nextPathRaw = typeof data.afterSignNextPath === "string" ? data.afterSignNextPath.trim() : ""
+  const legacyNextPath = typeof data.afterSignNextPath === "string" ? data.afterSignNextPath.trim() : ""
+  const nextPathRaw = custom ? legacyNextPath : "/mandat-sepa"
   const nextPath = nextPathRaw.startsWith("/") && !nextPathRaw.startsWith("//")
     ? nextPathRaw
-    : "/signature/callback?success=1"
+    : custom
+      ? "/espace-client"
+      : "/mandat-sepa"
   const signatureLink = `${SITE_URL}/sign/${pending.signatureRequestId}?next=${encodeURIComponent(nextPath)}`
 
   return {
