@@ -23,6 +23,15 @@ interface DocumentItem {
   createdAt: string
 }
 
+type PendingSignatureItem = {
+  signatureRequestId: string
+  contractNumero: string
+  signatureFlow: "decennale" | "custom_pdf"
+  signatureFlowLabel?: string
+  createdAt: string
+  signatureLink: string
+}
+
 type SavedDevisDraftItem = {
   id: string
   token: string
@@ -75,6 +84,7 @@ export default function EspaceClientPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [payments, setPayments] = useState<{ id: string; amount: number; status: string; paidAt: string | null; createdAt: string }[]>([])
   const [savedDevisDrafts, setSavedDevisDrafts] = useState<SavedDevisDraftItem[]>([])
+  const [pendingSignatures, setPendingSignatures] = useState<PendingSignatureItem[]>([])
   const [profile, setProfile] = useState<{ adresse?: string; codePostal?: string; ville?: string; telephone?: string; siret?: string } | null>(null)
   const [profileEditing, setProfileEditing] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
@@ -109,13 +119,14 @@ export default function EspaceClientPage() {
 
     const fetchData = async () => {
       try {
-        const [docsRes, summaryRes, paymentsRes, insRes, doqRes, draftsRes] = await Promise.all([
+        const [docsRes, summaryRes, paymentsRes, insRes, doqRes, draftsRes, pendingSignaturesRes] = await Promise.all([
           fetch("/api/documents/list"),
           fetch("/api/client/summary"),
           fetch("/api/client/payments"),
           fetch("/api/client/insurance-contracts"),
           fetch("/api/client/do-questionnaire"),
           fetch("/api/client/devis-drafts"),
+          fetch("/api/client/pending-signatures"),
         ])
         if (docsRes.ok) setDocuments(await docsRes.json())
         if (summaryRes.ok) setSummary(await summaryRes.json())
@@ -139,6 +150,21 @@ export default function EspaceClientPage() {
           }
         } else {
           setSavedDevisDrafts([])
+        }
+        if (pendingSignaturesRes.ok) {
+          const pendingPayload = (await pendingSignaturesRes.json()) as {
+            items?: PendingSignatureItem[]
+            pendingSignatures?: PendingSignatureItem[]
+          }
+          setPendingSignatures(
+            Array.isArray(pendingPayload.items)
+              ? pendingPayload.items
+              : Array.isArray(pendingPayload.pendingSignatures)
+                ? pendingPayload.pendingSignatures
+                : []
+          )
+        } else {
+          setPendingSignatures([])
         }
         const profileRes = await fetch("/api/client/profile")
         if (profileRes.ok) setProfile(await profileRes.json())
@@ -702,6 +728,44 @@ export default function EspaceClientPage() {
                     >
                       Reprendre
                     </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "documents" && !loading && (
+          <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-10 shadow-sm">
+            <h2 className="font-bold text-[#0a0a0a] text-lg mb-3">Signature électronique à reprendre</h2>
+            {pendingSignatures.length === 0 ? (
+              <p className="text-sm text-[#171717]">
+                Aucune signature électronique en attente.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {pendingSignatures.map((item) => (
+                  <div
+                    key={item.signatureRequestId}
+                    className="rounded-xl border border-[#d4d4d4] bg-white p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-[#0a0a0a]">
+                        {item.signatureFlow === "custom_pdf"
+                          ? item.signatureFlowLabel || "Dossier personnalisé"
+                          : "Contrat décennale"}
+                      </p>
+                      <p className="text-xs text-[#171717]">
+                        Référence {item.contractNumero} · créé le{" "}
+                        {new Date(item.createdAt).toLocaleDateString("fr-FR")}
+                      </p>
+                    </div>
+                    <a
+                      href={item.signatureLink}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+                    >
+                      Reprendre la signature
+                    </a>
                   </div>
                 ))}
               </div>
