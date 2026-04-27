@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from "fs"
-import path from "path"
 
-const LOGO_PATH_SEGMENTS = ["public", "branding", "accelerant-logo.png"] as const
+const LOGO_URL = new URL("../../../public/branding/accelerant-logo.png", import.meta.url)
 
 let cache: string | undefined | null = null
 
@@ -9,12 +8,11 @@ let cache: string | undefined | null = null
 export function getAccelerantLogoDataUriSync(): string | undefined {
   if (cache !== null) return cache
   try {
-    const fp = path.join(process.cwd(), ...LOGO_PATH_SEGMENTS)
-    if (!existsSync(fp)) {
+    if (!existsSync(LOGO_URL)) {
       cache = undefined
       return undefined
     }
-    const buf = readFileSync(fp)
+    const buf = readFileSync(LOGO_URL)
     cache = `data:image/png;base64,${buf.toString("base64")}`
     return cache
   } catch {
