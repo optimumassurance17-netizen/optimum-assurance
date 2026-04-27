@@ -232,6 +232,7 @@ export async function GET() {
       devisLeads,
       devisDrafts,
       pendingSignaturesRaw,
+      sepaSubscriptions,
       insuranceContractsCount,
       insuranceContractsList,
       usersDoQuestionnaireRows,
@@ -346,6 +347,24 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         take: 25,
       }),
+      prisma.sepaSubscription.findMany({
+        orderBy: { updatedAt: "desc" },
+        take: 200,
+        select: {
+          id: true,
+          userId: true,
+          status: true,
+          mollieCustomerId: true,
+          mollieMandateId: true,
+          primeAnnuelle: true,
+          trimestresSepaPayes: true,
+          firstTrimesterPaidAt: true,
+          nextSepaDue: true,
+          lastError: true,
+          sepaPendingPaymentId: true,
+          updatedAt: true,
+        },
+      }),
       prisma.insuranceContract.count(),
       prisma.insuranceContract.findMany({
         orderBy: { createdAt: "desc" },
@@ -359,6 +378,7 @@ export async function GET() {
           premium: true,
           status: true,
           paidAt: true,
+          rejectedReason: true,
           validUntil: true,
           createdAt: true,
           user: { select: { id: true, email: true, raisonSociale: true } },
@@ -441,6 +461,7 @@ export async function GET() {
     })
 
     const pendingUserIds = [...new Set(pendingSignaturesRaw.map((p) => p.userId))]
+    const sepaUserIds = [...new Set(sepaSubscriptions.map((s) => s.userId))]
     const pendingUsers =
       pendingUserIds.length > 0
         ? await prisma.user.findMany({
@@ -448,7 +469,15 @@ export async function GET() {
             select: { id: true, email: true, raisonSociale: true },
           })
         : []
+    const sepaUsers =
+      sepaUserIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: sepaUserIds } },
+            select: { id: true, email: true, raisonSociale: true },
+          })
+        : []
     const pendingUserById = Object.fromEntries(pendingUsers.map((u) => [u.id, u]))
+    const sepaUserById = Object.fromEntries(sepaUsers.map((u) => [u.id, u]))
     const pendingSignatures = pendingSignaturesRaw.map((p) => {
       let signatureFlow: "custom_pdf" | "decennale" = "decennale"
       let signatureFlowLabel: string | undefined
@@ -476,6 +505,21 @@ export async function GET() {
         repairEligible: ageHours >= 24,
       }
     })
+    const sepaSubscriptionsRows = sepaSubscriptions.map((s) => ({
+      id: s.id,
+      userId: s.userId,
+      user: sepaUserById[s.userId] ?? null,
+      status: s.status,
+      mollieCustomerId: s.mollieCustomerId,
+      mollieMandateId: s.mollieMandateId,
+      primeAnnuelle: s.primeAnnuelle,
+      trimestresSepaPayes: s.trimestresSepaPayes,
+      firstTrimesterPaidAt: s.firstTrimesterPaidAt,
+      nextSepaDue: s.nextSepaDue,
+      lastError: s.lastError,
+      sepaPendingPaymentId: s.sepaPendingPaymentId,
+      updatedAt: s.updatedAt,
+    }))
 
     const rcLeadEmails = [
       ...new Set(
@@ -867,6 +911,7 @@ export async function GET() {
       devisLeads: devisLeadsWithSla,
       devisDrafts,
       pendingSignatures,
+      sepaSubscriptions: sepaSubscriptionsRows,
       insuranceContractsCount,
       insuranceContracts: insuranceContractsList,
       dashboardActions: dashboardActionsLimited,
