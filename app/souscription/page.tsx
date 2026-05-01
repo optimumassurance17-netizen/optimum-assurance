@@ -18,6 +18,7 @@ import { readResponseJson } from "@/lib/read-response-json"
 export default function SouscriptionPage() {
   const router = useRouter()
   const { status: sessionStatus } = useSession()
+  const [fromEspaceClient, setFromEspaceClient] = useState(false)
   const [devis, setDevis] = useState<DevisData | null>(null)
   const [devoirConseilAccepte, setDevoirConseilAccepte] = useState(false)
   const [siretLoading, setSiretLoading] = useState(false)
@@ -33,6 +34,12 @@ export default function SouscriptionPage() {
     representantLegal: "",
     civilite: "M",
   })
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    setFromEspaceClient(params.get("from") === "espace-client")
+  }, [])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -146,6 +153,36 @@ export default function SouscriptionPage() {
       } finally {
         setInsuranceLoading(false)
       }
+      if (fromEspaceClient) {
+        try {
+          const autonomyRes = await fetch("/api/client/autonomy-status")
+          if (autonomyRes.ok) {
+            const autonomy = (await autonomyRes.json()) as {
+              actions?: Array<{ href?: string; priority?: "high" | "medium" | "low" }>
+            }
+            const sortedActions = Array.isArray(autonomy.actions)
+              ? [...autonomy.actions].sort((a, b) => {
+                  const weight = (priority?: "high" | "medium" | "low") =>
+                    priority === "high" ? 3 : priority === "medium" ? 2 : 1
+                  return weight(b.priority) - weight(a.priority)
+                })
+              : []
+            const nextHref = sortedActions.find((action) => typeof action.href === "string" && action.href.trim().length > 0)?.href
+            if (nextHref) {
+              if (nextHref.startsWith("/")) {
+                router.push(nextHref)
+                return
+              }
+              if (nextHref.startsWith("#")) {
+                router.push(`/espace-client${nextHref}`)
+                return
+              }
+            }
+          }
+        } catch {
+          // fallback ci-dessous
+        }
+      }
       router.push("/signature")
       return
     }
@@ -174,6 +211,12 @@ export default function SouscriptionPage() {
         <p className="text-[#171717] mb-8">
           Complétez vos coordonnées pour finaliser votre assurance décennale.
         </p>
+        {fromEspaceClient && (
+          <p className="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-6">
+            Après validation, vous serez redirigé automatiquement vers votre prochaine étape active
+            (signature, mandat SEPA ou paiement).
+          </p>
+        )}
 
         <div className="bg-[#ebe0db] border border-[#d4c9c4] rounded-xl p-4 mb-8">
           <p className="font-medium text-black">

@@ -1009,6 +1009,29 @@ export default function EspaceClientPage() {
           <p className="text-sm text-[#171717]">
             Lancez un nouveau parcours en conservant vos informations de compte.
           </p>
+          {autonomyStatus?.actions?.[0] && autonomyStatus.actions[0].id !== "autonomy-ok" && (
+            <div className="rounded-xl border border-[#7dd3fc] bg-[#f0f9ff] p-4">
+              <p className="text-sm font-semibold text-[#0c4a6e] mb-1">Parcours en cours détecté</p>
+              <p className="text-xs text-[#155e75] mb-3">
+                Reprenez d&apos;abord votre étape bloquante pour finaliser votre dossier actuel.
+              </p>
+              {autonomyStatus.actions[0].href.startsWith("#") ? (
+                <a
+                  href={autonomyStatus.actions[0].href}
+                  className="inline-flex items-center justify-center rounded-xl bg-[#0284c7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0369a1]"
+                >
+                  Continuer mon parcours
+                </a>
+              ) : (
+                <Link
+                  href={autonomyStatus.actions[0].href}
+                  className="inline-flex items-center justify-center rounded-xl bg-[#0284c7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0369a1]"
+                >
+                  Continuer mon parcours
+                </Link>
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap gap-4">
             <Link
               href="/devis?from=espace-client"

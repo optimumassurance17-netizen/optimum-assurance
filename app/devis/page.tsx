@@ -67,6 +67,7 @@ function formatActiviteTarifLabel(item: {
 function DevisPageContent() {
   const router = useRouter()
   const { status: sessionStatus } = useSession()
+  const [fromEspaceClient, setFromEspaceClient] = useState(false)
   const [metierParam, setMetierParam] = useState<string | null>(null)
   const [resumeParam, setResumeParam] = useState<string | null>(null)
   const [activites, setActivites] = useState<string[]>([])
@@ -132,6 +133,7 @@ function DevisPageContent() {
     const urlParams = new URLSearchParams(window.location.search)
     setMetierParam(urlParams.get("metier"))
     setResumeParam(urlParams.get("resume"))
+    setFromEspaceClient(urlParams.get("from") === "espace-client")
   }, [])
 
   const nbSinistres = Number(sinistres) || 0
@@ -292,7 +294,8 @@ function DevisPageContent() {
     if (typeof window !== "undefined") {
       sessionStorage.setItem(STORAGE_KEYS.devis, JSON.stringify(data))
     }
-    router.push("/souscription")
+    const nextSouscriptionPath = fromEspaceClient ? "/souscription?from=espace-client" : "/souscription"
+    router.push(nextSouscriptionPath)
     setLoading(false)
   }
 
