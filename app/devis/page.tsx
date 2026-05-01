@@ -27,6 +27,7 @@ const DevisFaq = dynamic(
   { ssr: false },
 )
 
+const ALL_CATEGORIES_DEVIS = "__all__"
 const ACTIVITES_LISTING = ACTIVITES_AVEC_TARIFS.map((item) => item.activite)
 const CATEGORIES_DEVIS = (() => {
   const out: string[] = []
@@ -41,6 +42,7 @@ const CATEGORIES_DEVIS = (() => {
 })()
 
 function activitesDansCategorieDevis(categorie: string) {
+  if (categorie === ALL_CATEGORIES_DEVIS) return ACTIVITES_AVEC_TARIFS
   return ACTIVITES_AVEC_TARIFS.filter((item) => item.categorie === categorie)
 }
 
@@ -67,6 +69,7 @@ function DevisPageContent() {
   const [resumeParam, setResumeParam] = useState<string | null>(null)
   const [activites, setActivites] = useState<string[]>([])
   const [categorieSelectionnee, setCategorieSelectionnee] = useState<string>(CATEGORIES_DEVIS[0] ?? "")
+  const [activiteRecherche, setActiviteRecherche] = useState("")
   const [activiteSelectionnee, setActiviteSelectionnee] = useState("")
   const [siret, setSiret] = useState("")
   const [chiffreAffaires, setChiffreAffaires] = useState<string>("")
@@ -197,7 +200,9 @@ function DevisPageContent() {
     setActivites(activites.filter((_, i) => i !== index))
   }
 
-  const activitesCategorieSelectionnee = activitesDansCategorieDevis(categorieSelectionnee)
+  const activitesCategorieSelectionnee = activitesDansCategorieDevis(categorieSelectionnee).filter((item) =>
+    item.activite.toLowerCase().includes(activiteRecherche.trim().toLowerCase())
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -574,12 +579,29 @@ function DevisPageContent() {
                 }}
                 className={`w-full rounded-xl px-4 py-3.5 transition-all ${inputFieldBg} ${inputTextDark}`}
               >
+                <option value={ALL_CATEGORIES_DEVIS}>Toutes les catégories</option>
                 {CATEGORIES_DEVIS.map((categorie) => (
                   <option key={categorie} value={categorie}>
                     {categorie}
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="mb-4">
+              <label htmlFor="activite-recherche" className="block mb-2 text-sm font-medium text-slate-900">
+                Rechercher une activité
+              </label>
+              <input
+                id="activite-recherche"
+                type="search"
+                value={activiteRecherche}
+                onChange={(e) => {
+                  setActiviteRecherche(e.target.value)
+                  setActiviteSelectionnee("")
+                }}
+                placeholder="Ex : électricité, maçonnerie, étanchéité…"
+                className={`w-full rounded-xl px-4 py-3.5 transition-all ${inputFieldBg} ${inputTextDark}`}
+              />
             </div>
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <select
@@ -604,6 +626,9 @@ function DevisPageContent() {
                 Ajouter
               </button>
             </div>
+            <p className="text-xs text-slate-600 mb-3">
+              {activitesCategorieSelectionnee.length} activité(s) trouvée(s)
+            </p>
             <div className="space-y-2">
               {activites.map((act, index) => (
                 <div
