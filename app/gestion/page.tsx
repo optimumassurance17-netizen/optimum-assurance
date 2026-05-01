@@ -379,6 +379,7 @@ export default function GestionPage() {
     dateCreationSociete: "",
   })
   const [devisDecActivitePick, setDevisDecActivitePick] = useState("")
+  const [devisDecActiviteSearch, setDevisDecActiviteSearch] = useState("")
   const [devisDecUserFilter, setDevisDecUserFilter] = useState("")
   const [devisDecSubmitting, setDevisDecSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -481,6 +482,12 @@ export default function GestionPage() {
     list.sort((a, b) => a.email.localeCompare(b.email))
     return list.slice(0, 300)
   }, [data?.users, devisDecUserFilter])
+
+  const devisDecActiviteOptions = useMemo(() => {
+    const q = devisDecActiviteSearch.trim().toLowerCase()
+    if (!q) return ACTIVITES_BTP
+    return ACTIVITES_BTP.filter((act) => act.toLowerCase().includes(q))
+  }, [devisDecActiviteSearch])
 
   const [rcFabDrafts, setRcFabDrafts] = useState<Record<string, { statut: string; notes: string }>>({})
   const [rcFabSavingId, setRcFabSavingId] = useState<string | null>(null)
@@ -2828,6 +2835,13 @@ export default function GestionPage() {
               <label className="block text-sm font-medium text-gray-200 mb-1">
                 Activités à assurer (liste tarificateur, max. 8)
               </label>
+              <input
+                type="search"
+                value={devisDecActiviteSearch}
+                onChange={(e) => setDevisDecActiviteSearch(e.target.value)}
+                placeholder="Rechercher une activité (ex: étanchéité, maçonnerie...)"
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm mb-2"
+              />
               <div className="flex flex-col sm:flex-row gap-2 mb-3">
                 <select
                   value={devisDecActivitePick}
@@ -2835,7 +2849,7 @@ export default function GestionPage() {
                   className="flex-1 bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white text-sm"
                 >
                   <option value="">— Choisir une activité —</option>
-                  {ACTIVITES_BTP.map((act) => (
+                  {devisDecActiviteOptions.map((act) => (
                     <option key={act} value={act} disabled={devisDecForm.activites.includes(act)}>
                       {act}
                     </option>
@@ -2858,6 +2872,9 @@ export default function GestionPage() {
                   Ajouter
                 </button>
               </div>
+              {devisDecActiviteOptions.length === 0 && (
+                <p className="text-xs text-amber-300 mb-2">Aucune activité trouvée pour cette recherche.</p>
+              )}
               {devisDecForm.activites.length === 0 ? (
                 <p className="text-sm text-amber-400/90 mb-2">Au moins une activité est requise pour créer le devis.</p>
               ) : (
