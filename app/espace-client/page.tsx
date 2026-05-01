@@ -1006,12 +1006,15 @@ export default function EspaceClientPage() {
 
         <div className="space-y-4">
           <h2 className="font-bold text-[#0a0a0a] mb-2 text-lg">Nouveaux devis</h2>
+          <p className="text-sm text-[#171717]">
+            Lancez un nouveau parcours en conservant vos informations de compte.
+          </p>
           <div className="flex flex-wrap gap-4">
             <Link
-              href="/devis"
+              href="/devis?from=espace-client"
               className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-2xl hover:bg-[#1d4ed8] transition-all font-semibold shadow-lg shadow-[#2563eb]/20"
             >
-              Devis décennale BTP
+              Nouveau devis décennale
             </Link>
             <Link
               href="/devis-dommage-ouvrage"

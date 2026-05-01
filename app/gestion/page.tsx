@@ -412,6 +412,7 @@ export default function GestionPage() {
   const [bulkRemediatingDda, setBulkRemediatingDda] = useState(false)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
   const [creatingLeadAccountId, setCreatingLeadAccountId] = useState<string | null>(null)
+  const [sendingClientAccessId, setSendingClientAccessId] = useState<string | null>(null)
   const customDevisPdfInputRef = useRef<HTMLInputElement>(null)
   const [customDevisUserFilter, setCustomDevisUserFilter] = useState("")
   const [customDevisUserId, setCustomDevisUserId] = useState("")
@@ -448,6 +449,24 @@ export default function GestionPage() {
       setToast({ message: err instanceof Error ? err.message : "Erreur création compte", type: "error" })
     } finally {
       setCreatingLeadAccountId(null)
+    }
+  }
+
+  const handleSendClientAccess = async (userId: string, email: string) => {
+    setSendingClientAccessId(userId)
+    try {
+      const res = await fetch(`/api/gestion/clients/${userId}/send-client-access`, {
+        method: "POST",
+      })
+      const json = await readResponseJson<{ error?: string; ok?: boolean; sentTo?: string }>(res)
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error || "Impossible d'envoyer l'accès client")
+      }
+      setToast({ message: `Accès client envoyé à ${json.sentTo || email}`, type: "success" })
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : "Erreur envoi accès client", type: "error" })
+    } finally {
+      setSendingClientAccessId(null)
     }
   }
 
@@ -2081,12 +2100,22 @@ export default function GestionPage() {
                           )}
                         </td>
                         <td className="p-3 sm:p-4">
-                          <Link
-                            href={`/gestion/clients/${u.id}`}
-                            className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium"
-                          >
-                            Fiche client →
-                          </Link>
+                          <div className="flex flex-col items-start gap-1.5">
+                            <Link
+                              href={`/gestion/clients/${u.id}`}
+                              className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium"
+                            >
+                              Fiche client →
+                            </Link>
+                            <button
+                              type="button"
+                              disabled={sendingClientAccessId === u.id}
+                              onClick={() => void handleSendClientAccess(u.id, u.email)}
+                              className="text-xs text-emerald-300 hover:text-emerald-200 font-medium disabled:opacity-50"
+                            >
+                              {sendingClientAccessId === u.id ? "Envoi accès..." : "Créer / renvoyer accès client"}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))

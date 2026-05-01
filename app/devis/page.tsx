@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
 import { Header } from "@/components/Header"
 import { Stepper } from "@/components/Stepper"
 import { Breadcrumb } from "@/components/Breadcrumb"
@@ -65,6 +66,7 @@ function formatActiviteTarifLabel(item: {
 
 function DevisPageContent() {
   const router = useRouter()
+  const { status: sessionStatus } = useSession()
   const [metierParam, setMetierParam] = useState<string | null>(null)
   const [resumeParam, setResumeParam] = useState<string | null>(null)
   const [activites, setActivites] = useState<string[]>([])
@@ -88,6 +90,42 @@ function DevisPageContent() {
   const [emailDevis, setEmailDevis] = useState("")
   const [sendEmailLoading, setSendEmailLoading] = useState(false)
   const [sendEmailDone, setSendEmailDone] = useState(false)
+
+  useEffect(() => {
+    if (sessionStatus !== "authenticated") return
+    let active = true
+    ;(async () => {
+      try {
+        const res = await fetch("/api/client/profile")
+        if (!res.ok || !active) return
+        const profile = (await res.json()) as {
+          email?: string | null
+          siret?: string | null
+          raisonSociale?: string | null
+          adresse?: string | null
+          codePostal?: string | null
+          ville?: string | null
+        }
+        if (!active) return
+        if (profile.email) setEmailDevis((prev) => prev || String(profile.email))
+        if (profile.siret) setSiret((prev) => prev || String(profile.siret).replace(/\D/g, "").slice(0, 14))
+        if (profile.raisonSociale || profile.adresse || profile.codePostal || profile.ville) {
+          setSiretPrefill((prev) => ({
+            raisonSociale: profile.raisonSociale || prev?.raisonSociale,
+            adresse: profile.adresse || prev?.adresse,
+            codePostal: profile.codePostal || prev?.codePostal,
+            ville: profile.ville || prev?.ville,
+            dateCreationSociete: prev?.dateCreationSociete,
+          }))
+        }
+      } catch {
+        // non bloquant
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [sessionStatus])
 
   useEffect(() => {
     if (typeof window === "undefined") return
