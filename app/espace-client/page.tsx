@@ -58,6 +58,16 @@ type AutonomyStatusPayload = {
   actions: AutonomyStatusAction[]
 }
 
+type DecennaleTimelineState = "done" | "current" | "blocked" | "todo"
+
+type DecennaleTimelineStep = {
+  id: string
+  title: string
+  description: string
+  state: DecennaleTimelineState
+  href: string
+}
+
 type SavedDevisDraftItem = {
   id: string
   token: string
@@ -102,6 +112,69 @@ const typeIcons: Record<string, string> = {
   avenant: "📝",
   facture_do: "🧾",
   facture_decennale: "🧾",
+}
+
+function getActionPriorityWeight(priority: AutonomyStatusAction["priority"]): number {
+  return priority === "high" ? 3 : priority === "medium" ? 2 : 1
+}
+
+function pickTopAutonomyAction(actions: AutonomyStatusAction[]): AutonomyStatusAction | null {
+  if (!actions.length) return null
+  const sorted = [...actions].sort((a, b) => getActionPriorityWeight(b.priority) - getActionPriorityWeight(a.priority))
+  return sorted.find((action) => action.id !== "autonomy-ok") ?? null
+}
+
+function buildDecennaleTimeline(status: AutonomyStatusPayload): DecennaleTimelineStep[] {
+  const pendingSignature = status.pendingSignaturesDecennale > 0
+  const hasDecennaleJourney = status.hasDecennaleContract || pendingSignature || status.firstDecennalePaymentDone
+  const sepaStatus = status.sepaSubscription?.status ?? null
+  const sepaBlocked = sepaStatus === "pending_mandate" || sepaStatus === "failed"
+  const paymentDone = status.firstDecennalePaymentDone
+  const paymentStepOpen = hasDecennaleJourney && !pendingSignature && !paymentDone
+
+  const hrefFor = (actionId: string, fallback: string) =>
+    status.actions.find((action) => action.id === actionId && action.href.trim().length > 0)?.href ?? fallback
+
+  return [
+    {
+      id: "devis",
+      title: "Devis et souscription",
+      description: "Simulation, validation des informations et création du dossier.",
+      state: hasDecennaleJourney ? "done" : "current",
+      href: "/devis?from=espace-client",
+    },
+    {
+      id: "signature",
+      title: "Signature électronique",
+      description: "Signature du contrat décennale pour passer au mandat SEPA.",
+      state: pendingSignature ? "current" : hasDecennaleJourney ? "done" : "todo",
+      href: hrefFor("resume-signature-decennale", "/signature"),
+    },
+    {
+      id: "sepa",
+      title: "Mandat SEPA",
+      description: "Validation de l’IBAN pour activer les prélèvements trimestriels.",
+      state: paymentDone ? "done" : paymentStepOpen ? (sepaBlocked ? "blocked" : "current") : "todo",
+      href: hrefFor("continue-sepa-and-payment", "/mandat-sepa"),
+    },
+    {
+      id: "payment",
+      title: "Paiement d’activation",
+      description: "Paiement du premier trimestre et des frais de gestion.",
+      state: paymentDone ? "done" : paymentStepOpen ? "current" : "todo",
+      href: hrefFor("pay-approved-contracts", "#contrats-plateforme"),
+    },
+    {
+      id: "attestation",
+      title: "Attestation active",
+      description: "Attestation disponible après validation du paiement.",
+      state: status.suspendedAttestationsCount > 0 ? "blocked" : paymentDone ? "done" : "todo",
+      href:
+        status.suspendedAttestationsCount > 0
+          ? hrefFor("regularize-suspended-attestation", "/espace-client/regularisation")
+          : "/espace-client",
+    },
+  ]
 }
 
 export default function EspaceClientPage() {
@@ -225,6 +298,9 @@ export default function EspaceClientPage() {
     return null
   }
 
+  const topAutonomyAction = autonomyStatus ? pickTopAutonomyAction(autonomyStatus.actions) : null
+  const decennaleTimeline = autonomyStatus ? buildDecennaleTimeline(autonomyStatus) : []
+
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <Header />
@@ -279,6 +355,64 @@ export default function EspaceClientPage() {
                   ? ` · dernier incident : ${autonomyStatus.sepaSubscription.lastError}`
                   : ""}
               </p>
+            )}
+
+            {decennaleTimeline.length > 0 && (
+              <div className="mb-4 rounded-xl border border-[#cbd5e1] bg-white p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <h3 className="text-sm font-semibold text-[#0a0a0a]">Timeline dossier décennale</h3>
+                  {topAutonomyAction &&
+                    (topAutonomyAction.href.startsWith("#") ? (
+                      <a
+                        href={topAutonomyAction.href}
+                        className="text-xs font-semibold text-[#0369a1] hover:underline"
+                      >
+                        Continuer mon parcours →
+                      </a>
+                    ) : (
+                      <Link
+                        href={topAutonomyAction.href}
+                        className="text-xs font-semibold text-[#0369a1] hover:underline"
+                      >
+                        Continuer mon parcours →
+                      </Link>
+                    ))}
+                </div>
+                <ol className="space-y-3">
+                  {decennaleTimeline.map((step, index) => {
+                    const badge =
+                      step.state === "done"
+                        ? { label: "Terminé", dot: "bg-emerald-500", text: "text-emerald-700" }
+                        : step.state === "current"
+                          ? { label: "En cours", dot: "bg-sky-500", text: "text-sky-700" }
+                          : step.state === "blocked"
+                            ? { label: "À régulariser", dot: "bg-amber-500", text: "text-amber-700" }
+                            : { label: "À venir", dot: "bg-slate-300", text: "text-slate-500" }
+                    return (
+                      <li key={step.id} className="flex gap-3">
+                        <span className={`mt-1.5 h-2.5 w-2.5 rounded-full ${badge.dot}`} aria-hidden />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[#0a0a0a]">
+                            {index + 1}. {step.title}{" "}
+                            <span className={`text-xs font-medium ${badge.text}`}>({badge.label})</span>
+                          </p>
+                          <p className="text-xs text-[#334155]">{step.description}</p>
+                          {step.state !== "done" &&
+                            (step.href.startsWith("#") ? (
+                              <a href={step.href} className="inline-flex mt-1 text-xs font-medium text-[#0284c7] hover:underline">
+                                Aller à cette étape
+                              </a>
+                            ) : (
+                              <Link href={step.href} className="inline-flex mt-1 text-xs font-medium text-[#0284c7] hover:underline">
+                                Aller à cette étape
+                              </Link>
+                            ))}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ol>
+              </div>
             )}
 
             <div className="space-y-3">
@@ -1009,22 +1143,22 @@ export default function EspaceClientPage() {
           <p className="text-sm text-[#171717]">
             Lancez un nouveau parcours en conservant vos informations de compte.
           </p>
-          {autonomyStatus?.actions?.[0] && autonomyStatus.actions[0].id !== "autonomy-ok" && (
+          {topAutonomyAction && (
             <div className="rounded-xl border border-[#7dd3fc] bg-[#f0f9ff] p-4">
               <p className="text-sm font-semibold text-[#0c4a6e] mb-1">Parcours en cours détecté</p>
               <p className="text-xs text-[#155e75] mb-3">
                 Reprenez d&apos;abord votre étape bloquante pour finaliser votre dossier actuel.
               </p>
-              {autonomyStatus.actions[0].href.startsWith("#") ? (
+              {topAutonomyAction.href.startsWith("#") ? (
                 <a
-                  href={autonomyStatus.actions[0].href}
+                  href={topAutonomyAction.href}
                   className="inline-flex items-center justify-center rounded-xl bg-[#0284c7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0369a1]"
                 >
                   Continuer mon parcours
                 </a>
               ) : (
                 <Link
-                  href={autonomyStatus.actions[0].href}
+                  href={topAutonomyAction.href}
                   className="inline-flex items-center justify-center rounded-xl bg-[#0284c7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0369a1]"
                 >
                   Continuer mon parcours
