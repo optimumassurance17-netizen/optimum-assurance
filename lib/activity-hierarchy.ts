@@ -217,6 +217,45 @@ const CODE_DEFINITION_OVERRIDES: Record<
 
 let seedPromise: Promise<void> | null = null
 
+function isHierarchySchemaError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false
+  const payload = error as { code?: unknown; message?: unknown }
+  const code = typeof payload.code === "string" ? payload.code : ""
+  const message = typeof payload.message === "string" ? payload.message : ""
+  if (code === "P2021" || code === "P2022") {
+    return (
+      /ActivityGroup/i.test(message) ||
+      /SubActivity/i.test(message) ||
+      /MissingSubActivity/i.test(message) ||
+      /activity/i.test(message)
+    )
+  }
+  return false
+}
+
+async function loadHierarchyStoreResilient(skipSeed?: boolean): Promise<{ store: HierarchyStore; degraded: boolean }> {
+  if (!skipSeed) {
+    try {
+      await ensureActivityHierarchySeeded()
+    } catch (error) {
+      if (isHierarchySchemaError(error)) {
+        return { store: canonicalHierarchy(), degraded: true }
+      }
+      throw error
+    }
+  }
+
+  try {
+    const store = await loadHierarchyStore()
+    return { store, degraded: false }
+  } catch (error) {
+    if (isHierarchySchemaError(error)) {
+      return { store: canonicalHierarchy(), degraded: true }
+    }
+    throw error
+  }
+}
+
 function normalizeText(value: string): string {
   return value
     .normalize("NFD")
@@ -820,11 +859,7 @@ export async function resolveUserActivitiesHierarchy(
   inputs: string[],
   options: ResolveOptions = {}
 ): Promise<ActivityHierarchyResolution> {
-  if (!options.skipSeed) {
-    await ensureActivityHierarchySeeded()
-  }
-
-  const store = await loadHierarchyStore()
+  const { store, degraded } = await loadHierarchyStoreResilient(options.skipSeed)
   const normalizedInputs = inputs
     .filter((value): value is string => typeof value === "string")
     .map((value) => value.trim())
@@ -866,7 +901,14 @@ export async function resolveUserActivitiesHierarchy(
     return compareCodes(codeA, codeB)
   })
 
-  await persistUnmatchedActivities(unmatched, options.userId)
+  if (!degraded) {
+    try {
+      await persistUnmatchedActivities(unmatched, options.userId)
+    } catch (error) {
+      if (!isHierarchySchemaError(error)) throw error
+      // Base sans tables de nomenclature : on ignore la persistance des non-correspondances.
+    }
+  }
 
   const guaranteedHierarchyLines = buildHierarchyLinesFromSelections(selections)
   const guaranteedActivitiesFlat = buildFlatActivityLabels(selections)
@@ -887,8 +929,7 @@ export async function searchActivityHierarchy(
   const term = rawTerm.trim()
   if (term.length < 2) return []
 
-  await ensureActivityHierarchySeeded()
-  const store = await loadHierarchyStore()
+  const { store } = await loadHierarchyStoreResilient(false)
   const normalizedTerm = normalizeText(term)
   const limit = Math.max(1, Math.min(options.limit ?? 10, 50))
 
