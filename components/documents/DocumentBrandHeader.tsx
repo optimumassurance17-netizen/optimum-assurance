@@ -33,7 +33,7 @@ export function DocumentBrandHeader({ tagline, className }: DocumentBrandHeaderP
             alt="Logo Accelerant Insurance"
             width={ACCELERANT_LOGO_WIDTH_PX}
             height={ACCELERANT_LOGO_HEIGHT_PX}
-            className="h-[42px] w-auto object-contain"
+            className="w-auto object-contain"
             onError={() => setLogoBroken(true)}
             priority
           />
