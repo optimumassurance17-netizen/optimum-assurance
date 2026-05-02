@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "fs"
+import { ACCELERANT_LOGO_HEIGHT_PT, ACCELERANT_LOGO_WIDTH_PT } from "@/lib/accelerant-logo"
 
 const LOGO_URL = new URL("../../../public/branding/accelerant-logo.png", import.meta.url)
 
@@ -21,5 +22,5 @@ export function getAccelerantLogoDataUriSync(): string | undefined {
   }
 }
 
-/** Largeur logo (pt) alignée sur pdf-lib */
-export const ACCELERANT_LOGO_WIDTH_PT = 168
+/** Largeur / hauteur logo (pt) alignées sur pdf-lib et @react-pdf */
+export { ACCELERANT_LOGO_WIDTH_PT, ACCELERANT_LOGO_HEIGHT_PT }

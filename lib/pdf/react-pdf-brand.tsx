@@ -4,7 +4,11 @@
 import React from "react"
 import { Image, Text, View, StyleSheet } from "@react-pdf/renderer"
 import { LEGAL_ORIAS_LINE } from "@/lib/legal-branding"
-import { ACCELERANT_LOGO_WIDTH_PT, getAccelerantLogoDataUriSync } from "@/lib/pdf/shared/accelerantLogoDataUri"
+import {
+  ACCELERANT_LOGO_HEIGHT_PT,
+  ACCELERANT_LOGO_WIDTH_PT,
+  getAccelerantLogoDataUriSync,
+} from "@/lib/pdf/shared/accelerantLogoDataUri"
 
 export const pdfTheme = StyleSheet.create({
   page: {
@@ -133,7 +137,11 @@ const brandStyles = StyleSheet.create({
   tagline: { fontSize: 9, color: "#64748b" },
   logoWrap: { alignItems: "center", marginBottom: 10 },
   /** Ratio large ≈ 4:1 (logo paysage Accelerant) */
-  logoImage: { width: ACCELERANT_LOGO_WIDTH_PT, height: 42, objectFit: "contain" as const },
+  logoImage: {
+    width: ACCELERANT_LOGO_WIDTH_PT,
+    height: ACCELERANT_LOGO_HEIGHT_PT,
+    objectFit: "contain" as const,
+  },
 })
 
 export function PdfBrandHeader({ tagline }: { tagline: string }) {

@@ -1,6 +1,10 @@
 import React from "react"
 import { Document, Image, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
-import { ACCELERANT_LOGO_WIDTH_PT, getAccelerantLogoDataUriSync } from "@/lib/pdf/shared/accelerantLogoDataUri"
+import {
+  ACCELERANT_LOGO_HEIGHT_PT,
+  ACCELERANT_LOGO_WIDTH_PT,
+  getAccelerantLogoDataUriSync,
+} from "@/lib/pdf/shared/accelerantLogoDataUri"
 import { COMPANY_BRAND, INSURER_NAME } from "@/lib/legal-branding"
 
 const styles = StyleSheet.create({
@@ -14,7 +18,7 @@ const styles = StyleSheet.create({
   },
   logoImage: {
     width: ACCELERANT_LOGO_WIDTH_PT,
-    height: 42,
+    height: ACCELERANT_LOGO_HEIGHT_PT,
     marginBottom: 12,
     objectFit: "contain" as const,
   },

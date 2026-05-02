@@ -8,6 +8,7 @@ import {
   LEGAL_DELEGATION_MANDATORY,
   LEGAL_ORIAS_LINE,
 } from "@/lib/legal-branding"
+import { ACCELERANT_LOGO_HEIGHT_PX, ACCELERANT_LOGO_WIDTH_PX } from "@/lib/accelerant-logo"
 
 type DocumentBrandHeaderProps = {
   tagline: string
@@ -30,9 +31,9 @@ export function DocumentBrandHeader({ tagline, className }: DocumentBrandHeaderP
           <Image
             src={ACCELERANT_LOGO_SRC}
             alt="Logo Accelerant Insurance"
-            width={168}
-            height={42}
-            className="h-10 w-auto object-contain"
+            width={ACCELERANT_LOGO_WIDTH_PX}
+            height={ACCELERANT_LOGO_HEIGHT_PX}
+            className="h-[42px] w-auto object-contain"
             onError={() => setLogoBroken(true)}
             priority
           />
