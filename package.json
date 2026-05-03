@@ -65,8 +65,8 @@
     "extract:cg-do": "node scripts/extract-cg-do.mjs",
     "vercel:import": "node scripts/import-vercel-env.mjs",
     "vercel:db-push": "node scripts/db-push-vercel.mjs",
-    "deploy": "vercel --prod",
-    "deploy:preview": "vercel",
+    "deploy": "npx vercel --prod",
+    "deploy:preview": "npx vercel",
     "esign:create-request": "node scripts/esign-create-request.mjs",
     "skills:supabase": "npx skills add supabase/agent-skills --yes"
   },
@@ -111,8 +111,7 @@
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5",
-    "vercel": "^50.39.0"
+    "typescript": "^5"
   },
   "overrides": {
     "tar": "7.5.13",
