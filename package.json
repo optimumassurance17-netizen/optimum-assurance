@@ -31,6 +31,7 @@
     "check:boundaries": "node scripts/check-client-server-boundaries.mjs",
     "typecheck": "tsc --noEmit",
     "test:pdf-contractual": "tsx scripts/verify-pdf-contractual-mentions.ts",
+    "test:activity-fallback": "tsx scripts/verify-activity-hierarchy-fallback.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "e2e:seed-admin": "node scripts/seed-e2e-admin.mjs",

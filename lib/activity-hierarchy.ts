@@ -13,6 +13,7 @@ import {
   type ActivityNodeRef,
   type MissingHierarchyActivity,
 } from "@/lib/activity-hierarchy-format"
+import { isActivityHierarchySchemaError } from "@/lib/activity-hierarchy-errors"
 
 type GroupDefinition = {
   code: string
@@ -217,28 +218,12 @@ const CODE_DEFINITION_OVERRIDES: Record<
 
 let seedPromise: Promise<void> | null = null
 
-function isHierarchySchemaError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false
-  const payload = error as { code?: unknown; message?: unknown }
-  const code = typeof payload.code === "string" ? payload.code : ""
-  const message = typeof payload.message === "string" ? payload.message : ""
-  if (code === "P2021" || code === "P2022") {
-    return (
-      /ActivityGroup/i.test(message) ||
-      /SubActivity/i.test(message) ||
-      /MissingSubActivity/i.test(message) ||
-      /activity/i.test(message)
-    )
-  }
-  return false
-}
-
 async function loadHierarchyStoreResilient(skipSeed?: boolean): Promise<{ store: HierarchyStore; degraded: boolean }> {
   if (!skipSeed) {
     try {
       await ensureActivityHierarchySeeded()
     } catch (error) {
-      if (isHierarchySchemaError(error)) {
+      if (isActivityHierarchySchemaError(error)) {
         return { store: canonicalHierarchy(), degraded: true }
       }
       throw error
@@ -249,7 +234,7 @@ async function loadHierarchyStoreResilient(skipSeed?: boolean): Promise<{ store:
     const store = await loadHierarchyStore()
     return { store, degraded: false }
   } catch (error) {
-    if (isHierarchySchemaError(error)) {
+    if (isActivityHierarchySchemaError(error)) {
       return { store: canonicalHierarchy(), degraded: true }
     }
     throw error
@@ -905,7 +890,7 @@ export async function resolveUserActivitiesHierarchy(
     try {
       await persistUnmatchedActivities(unmatched, options.userId)
     } catch (error) {
-      if (!isHierarchySchemaError(error)) throw error
+      if (!isActivityHierarchySchemaError(error)) throw error
       // Base sans tables de nomenclature : on ignore la persistance des non-correspondances.
     }
   }
