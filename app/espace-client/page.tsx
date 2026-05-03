@@ -471,6 +471,45 @@ export default function EspaceClientPage() {
           </div>
         )}
 
+        {!loading && (
+          <section className="mb-8 rounded-2xl border border-[#bfdbfe] bg-white p-5 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#2563eb]">Créer un devis</p>
+                <h2 className="mt-1 text-xl font-bold text-[#0a0a0a]">Nouveau dossier depuis votre espace client</h2>
+                <p className="mt-1 text-sm text-[#171717]">
+                  Lancez un nouveau parcours avec vos informations de compte, sans repasser par la gestion.
+                </p>
+                {savedDevisDrafts.length > 0 && (
+                  <a href="#devis-enregistres" className="mt-2 inline-flex text-sm font-semibold text-[#2563eb] hover:underline">
+                    {savedDevisDrafts.length} devis sauvegardé{savedDevisDrafts.length > 1 ? "s" : ""} à reprendre →
+                  </a>
+                )}
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3 md:min-w-[520px]">
+                <Link
+                  href="/devis?from=espace-client"
+                  className="inline-flex items-center justify-center rounded-xl bg-[#2563eb] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+                >
+                  Décennale
+                </Link>
+                <Link
+                  href="/devis-dommage-ouvrage?from=espace-client"
+                  className="inline-flex items-center justify-center rounded-xl border border-[#2563eb] px-4 py-3 text-sm font-semibold text-[#2563eb] hover:bg-[#eff6ff]"
+                >
+                  Dommage ouvrage
+                </Link>
+                <Link
+                  href="/devis-rc-fabriquant?from=espace-client"
+                  className="inline-flex items-center justify-center rounded-xl border border-[#2563eb] px-4 py-3 text-sm font-semibold text-[#2563eb] hover:bg-[#eff6ff]"
+                >
+                  RC fabricant
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Onglets */}
         <div className="flex gap-1 p-1 bg-[#e4e4e4] rounded-xl mb-10 w-fit" role="tablist">
           <button
@@ -941,7 +980,7 @@ export default function EspaceClientPage() {
         )}
 
         {activeTab === "documents" && !loading && (
-          <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-10 shadow-sm">
+          <div id="devis-enregistres" className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-10 shadow-sm scroll-mt-24">
             <h2 className="font-bold text-[#0a0a0a] text-lg mb-3">Reprise de devis enregistrés</h2>
             {savedDevisDrafts.length === 0 ? (
               <p className="text-sm text-[#171717]">
