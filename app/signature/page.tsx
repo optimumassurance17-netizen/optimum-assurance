@@ -58,6 +58,10 @@ export default function SignaturePage() {
 
   const handleSignContract = async () => {
     if (!souscription) return
+    if (souscription.insuranceProduct === "do") {
+      router.push("/espace-client")
+      return
+    }
 
     setLoading(true)
     setError(null)
@@ -68,7 +72,20 @@ export default function SignaturePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           page: "signature",
-          produit: souscription.insuranceProduct === "do" ? "dommage-ouvrage" : "decennale",
+          produit: "decennale",
+          sourcePage: "signature_page",
+          sourcePath: "/signature",
+          needsSummary:
+            "Signature du parcours décennale après validation activités, garanties et exclusions.",
+          recommendedProduct: "decennale",
+          suitabilityScore: 0.96,
+          context: {
+            source: "signature_page",
+            finalStepBeforeSign: true,
+            insuranceProduct: "decennale",
+            activitesCount: Array.isArray(souscription.activites) ? souscription.activites.length : 0,
+            hasDoProject: Boolean(souscription.doProjectName),
+          },
         }),
       })
     } catch {
@@ -191,31 +208,33 @@ export default function SignaturePage() {
           </div>
         ) : null}
 
-        <DevoirConseil
-          produit={souscription.insuranceProduct === "do" ? "dommage-ouvrage" : "decennale"}
-          checkboxId="devoir-conseil-signature"
-          checked={devoirConseilAccepte}
-          onCheckedChange={setDevoirConseilAccepte}
-          labelCheckbox={
-            souscription.insuranceProduct === "do"
-              ? "Je confirme avoir pris connaissance du récapitulatif et des informations sur la suite du dossier dommage ouvrage."
-              : "Je confirme avoir pris connaissance du récapitulatif, des garanties et exclusions avant de signer."
-          }
-        />
+        {souscription.insuranceProduct !== "do" ? (
+          <DevoirConseil
+            produit="decennale"
+            checkboxId="devoir-conseil-signature"
+            checked={devoirConseilAccepte}
+            onCheckedChange={setDevoirConseilAccepte}
+            labelCheckbox="Je confirme avoir pris connaissance du récapitulatif, des garanties et exclusions avant de signer."
+          />
+        ) : null}
 
         <div className="bg-[#ebe6e0] border border-[#d4d4d4] rounded-2xl p-6 mb-8 mt-6">
           <p className="text-sm text-[#171717] mb-4">
             {souscription.insuranceProduct === "do"
-              ? "Vous pouvez signer le contrat type décennale ci-dessous si votre conseiller vous y a invité ; sinon rendez-vous dans l'espace client pour le dossier dommage ouvrage."
+              ? "Le dossier dommage-ouvrage se pilote depuis votre espace client (contrat plateforme, paiement et attestations)."
               : "Vous serez redirigé vers la page de signature pour apposer votre signature sur le PDF. Poursuivez ensuite vers le mandat SEPA et le paiement."}
           </p>
           <button
             type="button"
             onClick={handleSignContract}
-            disabled={loading || !devoirConseilAccepte}
+            disabled={loading || (souscription.insuranceProduct !== "do" && !devoirConseilAccepte)}
             className="w-full bg-[#2563eb] text-white py-4 rounded-xl hover:bg-[#1d4ed8] transition font-medium disabled:bg-slate-300 disabled:cursor-not-allowed"
           >
-            {loading ? "Préparation en cours..." : "Signer le contrat (contrat type)"}
+            {loading
+              ? "Préparation en cours..."
+              : souscription.insuranceProduct === "do"
+                ? "Accéder à mon espace client"
+                : "Signer le contrat (contrat type)"}
           </button>
         </div>
 
@@ -226,7 +245,10 @@ export default function SignaturePage() {
         )}
 
         <p className="text-center text-sm text-[#171717]">
-          <Link href="/souscription" className="text-[#2563eb] hover:underline">
+          <Link
+            href={souscription.insuranceProduct === "do" ? "/souscription-dommage-ouvrage" : "/souscription"}
+            className="text-[#2563eb] hover:underline"
+          >
             Retour à la souscription
           </Link>
         </p>

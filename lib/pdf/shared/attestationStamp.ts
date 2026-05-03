@@ -1,14 +1,8 @@
 import { readFile } from "fs/promises"
-import path from "path"
 import type { PDFDocument, PDFImage, PDFPage } from "pdf-lib"
 import { PDF_PAGE } from "./pdfLayout"
 
-const STAMP_PATH_SEGMENTS = ["public", "branding", "optimum-delegation-stamp.png"] as const
-const STAMP_FILE_PATH = path.resolve(
-  path.dirname(new URL(import.meta.url).pathname),
-  "../../../",
-  ...STAMP_PATH_SEGMENTS
-)
+const STAMP_FILE_URL = new URL("../../../public/branding/optimum-delegation-stamp.png", import.meta.url)
 
 /** ~43 mm — tampon lisible, au-dessus du pied de page légal */
 export const ATTESTATION_STAMP_MAX_WIDTH_PT = 122
@@ -18,7 +12,7 @@ export const ATTESTATION_STAMP_MAX_WIDTH_PT = 122
  */
 export async function loadAttestationStampImage(pdf: PDFDocument): Promise<PDFImage | null> {
   try {
-    const buf = await readFile(STAMP_FILE_PATH)
+    const buf = await readFile(STAMP_FILE_URL)
     return await pdf.embedPng(buf)
   } catch {
     return null

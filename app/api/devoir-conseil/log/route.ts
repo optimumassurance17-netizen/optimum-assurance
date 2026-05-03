@@ -3,32 +3,52 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { asJsonObject } from "@/lib/json-object"
+import {
+  buildDdaLogDetails,
+  normalizeDdaProduct,
+  normalizeDdaSourcePage,
+} from "@/lib/dda-compliance"
+import { logAdminActivity } from "@/lib/admin-activity"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = asJsonObject<{ page?: string; produit?: string; email?: string }>(await request.json())
-    const { page, produit } = body
+    const body = asJsonObject<{
+      page?: string
+      produit?: string
+      email?: string
+      sourcePage?: string
+      sourcePath?: string
+      needsSummary?: string
+      needsVersion?: string
+      recommendedProduct?: string
+      suitabilityScore?: number
+      context?: Record<string, unknown>
+    }>(await request.json())
+    const page = normalizeDdaSourcePage(body.page)
+    const produit = normalizeDdaProduct(body.produit)
 
     if (!page || !produit) {
       return NextResponse.json({ error: "page et produit requis" }, { status: 400 })
     }
 
-    const validPages = ["souscription", "signature", "formulaire_do", "paiement_do"]
-    const validProduits = ["decennale", "dommage-ouvrage"]
-    if (!validPages.includes(page) || !validProduits.includes(produit)) {
-      return NextResponse.json({ error: "page ou produit invalide" }, { status: 400 })
-    }
-
     const session = await getServerSession(authOptions)
     const email = body.email as string | undefined
 
-    await prisma.devoirConseilLog.create({
+    const log = await prisma.devoirConseilLog.create({
       data: {
         email: email || session?.user?.email || null,
         userId: session?.user?.id || null,
         page,
         produit,
       },
+    })
+
+    await logAdminActivity({
+      adminEmail: "dda@system",
+      action: "dda_advice_acknowledged",
+      targetType: "devoir_conseil_log",
+      targetId: log.id,
+      details: buildDdaLogDetails(body),
     })
 
     return NextResponse.json({ ok: true })

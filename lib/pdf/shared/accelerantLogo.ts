@@ -3,7 +3,7 @@ import type { PDFDocument, PDFImage, PDFPage } from "pdf-lib"
 import { ACCELERANT_LOGO_WIDTH_PT } from "./accelerantLogoDataUri"
 import { PDF_PAGE } from "./pdfLayout"
 
-const LOGO_FILE_URL = new URL("../../../public/branding/accelerant-logo.png", import.meta.url)
+const ACCELERANT_LOGO_URL = new URL("../../../public/branding/accelerant-logo.png", import.meta.url)
 
 /**
  * Charge le PNG Accelerant depuis `public/branding/accelerant-logo.png`.
@@ -11,7 +11,7 @@ const LOGO_FILE_URL = new URL("../../../public/branding/accelerant-logo.png", im
  */
 export async function loadAccelerantLogoImage(pdf: PDFDocument): Promise<PDFImage | null> {
   try {
-    const buf = await readFile(LOGO_FILE_URL)
+    const buf = await readFile(ACCELERANT_LOGO_URL)
     return await pdf.embedPng(buf)
   } catch {
     return null

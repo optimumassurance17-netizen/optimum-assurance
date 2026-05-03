@@ -142,7 +142,26 @@ export function FormulaireDevisDommageOuvrage() {
       await fetch("/api/devoir-conseil/log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ page: "formulaire_do", produit: "dommage-ouvrage", email: data.email }),
+        body: JSON.stringify({
+          page: "formulaire_do",
+          produit: "dommage-ouvrage",
+          email: data.email,
+          sourcePage: "formulaire_do",
+          sourcePath: "/devis-dommage-ouvrage",
+          needsSummary:
+            "Besoin DO pour opération déclarée (coût travaux, garanties souhaitées, caractéristiques chantier).",
+          recommendedProduct: "dommage-ouvrage",
+          suitabilityScore: 0.92,
+          context: {
+            parcours: "devis_do",
+            finalite: "devis",
+            requirementSummary:
+              "Demande de devis dommages-ouvrage pour opération déclarée (coût, garanties, chantier).",
+            recommendationSummary:
+              "Proposition dommage-ouvrage soumise à étude et conformité des pièces techniques.",
+            adequacyConfirmed: true,
+          },
+        }),
       })
     } catch {
       /* non bloquant */

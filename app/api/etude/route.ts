@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
 import { asJsonObject } from "@/lib/json-object"
 
 /**
@@ -43,6 +44,31 @@ export async function POST(request: NextRequest) {
         statut: "pending",
       },
     })
+
+    try {
+      const parsed = dataObj as Record<string, unknown>
+      const lines = [
+        raisonSociale?.trim() ? `Raison sociale : ${raisonSociale.trim()}` : "",
+        siret?.trim() ? `SIRET : ${siret.replace(/\D/g, "").slice(0, 14)}` : "",
+        typeof parsed.type === "string" ? `Type de demande : ${parsed.type}` : "",
+        typeof parsed.descriptionActivite === "string"
+          ? `Activité à étudier : ${parsed.descriptionActivite.trim().slice(0, 500)}`
+          : "",
+        Array.isArray(parsed.activites)
+          ? `Activités : ${parsed.activites.filter(Boolean).join(", ").slice(0, 500)}`
+          : "",
+        typeof parsed.chiffreAffaires === "number" || typeof parsed.chiffreAffaires === "string"
+          ? `Chiffre d'affaires déclaré : ${String(parsed.chiffreAffaires)}`
+          : "",
+      ].filter(Boolean)
+      await sendNewDevisRequestAlert({
+        type: "etude",
+        clientEmail: emailNorm,
+        lines,
+      })
+    } catch (e) {
+      console.error("[etude] alerte interne:", e)
+    }
 
     return NextResponse.json({ ok: true })
   } catch (error) {

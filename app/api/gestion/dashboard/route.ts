@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
+import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -64,6 +65,59 @@ function parseAdminLogDetails(raw: string | null | undefined): Record<string, un
   } catch {
     return {}
   }
+}
+
+function normalizeInternalPath(path: string): string {
+  const trimmed = path.trim()
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) return "/espace-client"
+  return trimmed.slice(0, 512)
+}
+
+function buildClientLoginPath(productType: string): string {
+  const destination =
+    productType === "decennale"
+      ? "/signature"
+      : productType === "rc_fabriquant"
+        ? "/espace-client/rcpro"
+        : "/espace-client"
+  return `/connexion?callbackUrl=${encodeURIComponent(destination)}`
+}
+
+function formatDdaProductLabel(productType: string): string {
+  if (productType === "do") return "Dommage-ouvrage"
+  if (productType === "rc_fabriquant") return "RC Fabriquant"
+  return "Décennale"
+}
+
+function parseJsonObject(raw: string | null | undefined): Record<string, unknown> {
+  if (!raw?.trim()) return {}
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {}
+    return parsed as Record<string, unknown>
+  } catch {
+    return {}
+  }
+}
+
+function inferProductTypeFromDocumentData(rawData: string | null | undefined): "decennale" | "do" | "rc_fabriquant" {
+  const data = parseJsonObject(rawData)
+  const normalized = typeof data.insuranceProduct === "string"
+    ? data.insuranceProduct.trim().toLowerCase()
+    : typeof data.productType === "string"
+      ? data.productType.trim().toLowerCase()
+      : ""
+  if (normalized === "do" || normalized === "dommage-ouvrage") return "do"
+  if (normalized === "rc_fabriquant" || normalized === "rc-fabriquant") return "rc_fabriquant"
+  return "decennale"
+}
+
+function parseLeadCompanyName(rawData: string | null | undefined): string | null {
+  const data = parseJsonObject(rawData)
+  if (typeof data.raisonSociale === "string" && data.raisonSociale.trim()) {
+    return data.raisonSociale.trim().slice(0, 160)
+  }
+  return null
 }
 
 function buildSchemaDriftFallbackDashboard() {
@@ -159,6 +213,9 @@ export async function GET() {
     if (!session?.user?.id || !isAdmin(session)) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
+    const now = new Date()
+    const ddaConsentWindowStart = new Date(now.getTime() - 72 * 60 * 60 * 1000)
+    const ddaEventWindowStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
     const [
       users,
@@ -175,9 +232,12 @@ export async function GET() {
       devisLeads,
       devisDrafts,
       pendingSignaturesRaw,
+      sepaSubscriptions,
       insuranceContractsCount,
       insuranceContractsList,
       usersDoQuestionnaireRows,
+      recentDdaConsents,
+      recentDdaEvents,
     ] = await Promise.all([
       prisma.user.findMany({
         select: {
@@ -287,6 +347,24 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         take: 25,
       }),
+      prisma.sepaSubscription.findMany({
+        orderBy: { updatedAt: "desc" },
+        take: 200,
+        select: {
+          id: true,
+          userId: true,
+          status: true,
+          mollieCustomerId: true,
+          mollieMandateId: true,
+          primeAnnuelle: true,
+          trimestresSepaPayes: true,
+          firstTrimesterPaidAt: true,
+          nextSepaDue: true,
+          lastError: true,
+          sepaPendingPaymentId: true,
+          updatedAt: true,
+        },
+      }),
       prisma.insuranceContract.count(),
       prisma.insuranceContract.findMany({
         orderBy: { createdAt: "desc" },
@@ -300,6 +378,7 @@ export async function GET() {
           premium: true,
           status: true,
           paidAt: true,
+          rejectedReason: true,
           validUntil: true,
           createdAt: true,
           user: { select: { id: true, email: true, raisonSociale: true } },
@@ -317,6 +396,49 @@ export async function GET() {
         },
       }),
       fetchUsersDoQuestionnaireRowsSafe(),
+      prisma.devoirConseilLog.findMany({
+        where: {
+          acceptedAt: { gte: ddaConsentWindowStart },
+        },
+        select: {
+          id: true,
+          userId: true,
+          email: true,
+          produit: true,
+          page: true,
+          acceptedAt: true,
+        },
+        orderBy: { acceptedAt: "desc" },
+        take: DASH_LIST_LIMIT,
+      }),
+      prisma.adminActivityLog.findMany({
+        where: {
+          createdAt: { gte: ddaEventWindowStart },
+          action: {
+            in: [
+              "dda_advice_acknowledged",
+              "dda_contract_suitability_checked",
+              "dda_do_payment_suitability_checked",
+              "dda_rc_fabriquant_initial_request_logged",
+              "dda_rc_fabriquant_proposition_suitability_checked",
+              "dda_rc_fabriquant_signature_suitability_checked",
+              "dda_rc_fabriquant_contract_created_after_signature",
+              "dda_avenant_suitability_checked",
+              "dda_document_update_suitability_checked",
+            ],
+          },
+        },
+        select: {
+          id: true,
+          action: true,
+          targetType: true,
+          targetId: true,
+          details: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: DASH_LIST_LIMIT,
+      }),
     ])
 
     const doQuestionnaireByUserId = new Map<
@@ -339,6 +461,7 @@ export async function GET() {
     })
 
     const pendingUserIds = [...new Set(pendingSignaturesRaw.map((p) => p.userId))]
+    const sepaUserIds = [...new Set(sepaSubscriptions.map((s) => s.userId))]
     const pendingUsers =
       pendingUserIds.length > 0
         ? await prisma.user.findMany({
@@ -346,7 +469,15 @@ export async function GET() {
             select: { id: true, email: true, raisonSociale: true },
           })
         : []
+    const sepaUsers =
+      sepaUserIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: sepaUserIds } },
+            select: { id: true, email: true, raisonSociale: true },
+          })
+        : []
     const pendingUserById = Object.fromEntries(pendingUsers.map((u) => [u.id, u]))
+    const sepaUserById = Object.fromEntries(sepaUsers.map((u) => [u.id, u]))
     const pendingSignatures = pendingSignaturesRaw.map((p) => {
       let signatureFlow: "custom_pdf" | "decennale" = "decennale"
       let signatureFlowLabel: string | undefined
@@ -374,6 +505,21 @@ export async function GET() {
         repairEligible: ageHours >= 24,
       }
     })
+    const sepaSubscriptionsRows = sepaSubscriptions.map((s) => ({
+      id: s.id,
+      userId: s.userId,
+      user: sepaUserById[s.userId] ?? null,
+      status: s.status,
+      mollieCustomerId: s.mollieCustomerId,
+      mollieMandateId: s.mollieMandateId,
+      primeAnnuelle: s.primeAnnuelle,
+      trimestresSepaPayes: s.trimestresSepaPayes,
+      firstTrimesterPaidAt: s.firstTrimesterPaidAt,
+      nextSepaDue: s.nextSepaDue,
+      lastError: s.lastError,
+      sepaPendingPaymentId: s.sepaPendingPaymentId,
+      updatedAt: s.updatedAt,
+    }))
 
     const rcLeadEmails = [
       ...new Set(
@@ -454,10 +600,48 @@ export async function GET() {
       }
     })
 
-    const now = new Date()
     const todayStart = startOfUtcDay(now)
     const reminder24hMs = 24 * 60 * 60 * 1000
     const overdue72hMs = 72 * 60 * 60 * 1000
+    const recentDdaConsentUserIds = new Set(
+      recentDdaConsents.map((row) => (typeof row.userId === "string" ? row.userId : "")).filter(Boolean)
+    )
+    const recentDdaConsentEmails = new Set(
+      recentDdaConsents
+        .map((row) => (typeof row.email === "string" ? row.email.trim().toLowerCase() : ""))
+        .filter(Boolean)
+    )
+    const ddaEventContractIds = new Set(
+      recentDdaEvents
+        .filter((row) => row.targetType === "insurance_contract" && typeof row.targetId === "string")
+        .map((row) => row.targetId as string)
+    )
+    const ddaEventDocumentIds = new Set(
+      recentDdaEvents
+        .filter((row) => row.targetType === "document" && typeof row.targetId === "string")
+        .map((row) => row.targetId as string)
+    )
+    const ddaEventLeadIds = new Set(
+      recentDdaEvents
+        .filter((row) => row.targetType === "DevisRcFabriquantLead" && typeof row.targetId === "string")
+        .map((row) => row.targetId as string)
+    )
+    const recentDdaEventUserIds = new Set<string>()
+    const recentDdaEventEmails = new Set<string>()
+    for (const row of recentDdaEvents) {
+      const details = parseAdminLogDetails(row.details)
+      const uid = typeof details.userId === "string" ? details.userId.trim() : ""
+      if (uid) recentDdaEventUserIds.add(uid)
+      const emailCandidates = [
+        typeof details.userEmail === "string" ? details.userEmail : "",
+        typeof details.email === "string" ? details.email : "",
+        typeof details.to === "string" ? details.to : "",
+      ]
+      for (const candidate of emailCandidates) {
+        const normalized = candidate.trim().toLowerCase()
+        if (normalized) recentDdaEventEmails.add(normalized)
+      }
+    }
     type DashboardAction = {
       id: string
       kind:
@@ -466,11 +650,23 @@ export async function GET() {
         | "decennale_lead_followup"
         | "do_etude_pending"
         | "rc_fabriquant_pending"
+        | "dda_proof_missing"
+        | "dda_avenant_missing"
+        | "dda_rc_fabriquant_missing"
       priority: "high" | "medium"
       title: string
       description: string
       href: string
       ageHours: number
+      remediation?: {
+        kind: "dda"
+        toEmail: string
+        clientLabel: string
+        produitLabel: string
+        ctaPath: string
+        reference?: string
+        missing?: string
+      }
     }
     const dismissedLogs = await prisma.adminActivityLog.findMany({
       where: {
@@ -565,6 +761,121 @@ export async function GET() {
       })
     }
 
+    for (const c of insuranceContractsList) {
+      if (!["decennale", "do", "rc_fabriquant"].includes(c.productType)) continue
+      if (c.status !== CONTRACT_STATUS.approved && c.status !== CONTRACT_STATUS.active) continue
+      const ageMs = now.getTime() - c.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      const userId = c.user?.id ?? c.userId ?? ""
+      const email = c.user?.email?.trim().toLowerCase() ?? ""
+      const hasConsent =
+        (userId && recentDdaConsentUserIds.has(userId)) || (email && recentDdaConsentEmails.has(email))
+      const hasEvent =
+        ddaEventContractIds.has(c.id) ||
+        (userId && recentDdaEventUserIds.has(userId)) ||
+        (email && recentDdaEventEmails.has(email))
+      if (hasConsent && hasEvent) continue
+      const missing = [
+        hasConsent ? null : "consentement récent",
+        hasEvent ? null : "trace d’adéquation",
+      ]
+        .filter(Boolean)
+        .join(" + ")
+      const produitLabel = formatDdaProductLabel(c.productType)
+      const remediation =
+        email && email.includes("@")
+          ? {
+              kind: "dda" as const,
+              toEmail: email,
+              clientLabel: (c.user?.raisonSociale || c.clientName || c.user?.email || email).trim(),
+              produitLabel,
+              ctaPath: normalizeInternalPath(buildClientLoginPath(c.productType)),
+              reference: c.contractNumber,
+              missing,
+            }
+          : undefined
+      dashboardActions.push({
+        id: `dda-contract-${c.id}`,
+        kind: "dda_proof_missing",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "DDA incomplète (contrat)",
+        description: `${c.contractNumber} (${c.productType}) — manque: ${missing || "preuve"} — ${ageHours}h`,
+        href: userId ? `/gestion/clients/${userId}` : "#contrats-plateforme",
+        ageHours,
+        remediation,
+      })
+    }
+
+    for (const d of documents) {
+      if (d.type !== "avenant") continue
+      const ageMs = now.getTime() - d.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      if (ddaEventDocumentIds.has(d.id)) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      const productType = inferProductTypeFromDocumentData(d.data)
+      const customerEmail = d.user?.email?.trim().toLowerCase()
+      const customerLabel = (d.user?.raisonSociale || d.user?.email || "client").trim()
+      const remediation =
+        customerEmail && customerEmail.includes("@")
+          ? {
+              kind: "dda" as const,
+              toEmail: customerEmail,
+              clientLabel: customerLabel,
+              produitLabel: formatDdaProductLabel(productType),
+              ctaPath: normalizeInternalPath(buildClientLoginPath(productType)),
+              reference: d.numero,
+              missing: "trace d’adéquation DDA sur l’avenant",
+            }
+          : undefined
+      dashboardActions.push({
+        id: `dda-avenant-${d.id}`,
+        kind: "dda_avenant_missing",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Avenant sans preuve DDA",
+        description: `${d.numero} — ${(d.user?.raisonSociale || d.user?.email || "client")} — ${ageHours}h`,
+        href: `/gestion/documents/${d.id}`,
+        ageHours,
+        remediation,
+      })
+    }
+
+    for (const l of devisRcFabriquantLeadsWithUser) {
+      const statut = normalizeRcFabriquantLeadStatut(l.statut)
+      if (!["a_traiter", "en_cours", "proposition_envoyee"].includes(statut)) continue
+      if (ddaEventLeadIds.has(l.id)) continue
+      const ageMs = now.getTime() - l.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      const rcFabEmail = l.matchedUser?.email?.trim().toLowerCase() || l.email.trim().toLowerCase()
+      const remediation =
+        rcFabEmail && rcFabEmail.includes("@")
+          ? {
+              kind: "dda" as const,
+              toEmail: rcFabEmail,
+              clientLabel: (
+                l.matchedUser?.raisonSociale ||
+                parseLeadCompanyName(l.data) ||
+                l.matchedUser?.email ||
+                l.email
+              ).trim(),
+              produitLabel: "RC Fabriquant",
+              ctaPath: normalizeInternalPath(buildClientLoginPath("rc_fabriquant")),
+              missing: "consentement / traçabilité DDA du parcours RC Fabriquant",
+            }
+          : undefined
+      dashboardActions.push({
+        id: `dda-rcfab-${l.id}`,
+        kind: "dda_rc_fabriquant_missing",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "RC Fabriquant sans preuve DDA",
+        description: `${l.email} — statut ${statut} — ${ageHours}h`,
+        href: "#rc-fabriquant-leads",
+        ageHours,
+        remediation,
+      })
+    }
+
     const dashboardActionsVisible = dashboardActions.filter((a) => !dismissedActionIds.has(a.id))
     dashboardActionsVisible.sort((a, b) => b.ageHours - a.ageHours)
     const dashboardActionsLimited = dashboardActionsVisible.slice(0, 20)
@@ -600,6 +911,7 @@ export async function GET() {
       devisLeads: devisLeadsWithSla,
       devisDrafts,
       pendingSignatures,
+      sepaSubscriptions: sepaSubscriptionsRows,
       insuranceContractsCount,
       insuranceContracts: insuranceContractsList,
       dashboardActions: dashboardActionsLimited,

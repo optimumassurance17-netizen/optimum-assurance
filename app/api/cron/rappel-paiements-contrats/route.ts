@@ -6,6 +6,7 @@ import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { SITE_URL } from "@/lib/site-url"
 import { sendOperationsAlert } from "@/lib/operations-alert"
 import { logAdminActivity } from "@/lib/admin-activity"
+import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 
 const LOOKBACK_DAYS = 14
 const CLIENT_REMINDER_AFTER_HOURS = 24
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest) {
     let skippedTooRecent = 0
     let skippedAlreadyReminded = 0
     let skippedAlreadyAlerted = 0
+    let skippedUnsubscribed = 0
     const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
     const paymentIds = candidates.map((c) => c.lifecyclePayments[0]?.id).filter(Boolean) as string[]
     const contractIds = candidates.map((c) => c.id)
@@ -91,8 +93,13 @@ export async function GET(request: NextRequest) {
 
     for (const contract of candidates) {
       const user = contract.user
-      if (!user?.email) {
+      const normalizedEmail = user?.email?.trim().toLowerCase() || ""
+      if (!normalizedEmail) {
         skippedNoUser++
+        continue
+      }
+      if (await isReminderUnsubscribed(normalizedEmail, "payment_reminder")) {
+        skippedUnsubscribed++
         continue
       }
 
@@ -120,19 +127,20 @@ export async function GET(request: NextRequest) {
         if (alreadyAlertedContractIds.has(contract.id)) {
           skippedAlreadyAlerted++
         } else {
+          const userLabel = user?.raisonSociale || normalizedEmail
           const alertOk = await sendOperationsAlert({
             subject: "[Optimum] Alerte admin — paiement contrat non finalisé",
             lines: [
               `Contrat: ${contract.contractNumber}`,
               `Produit: ${produitLabel}`,
-              `Client: ${user.raisonSociale || user.email}`,
-              `Email client: ${user.email}`,
+              `Client: ${userLabel}`,
+              `Email client: ${normalizedEmail}`,
               `Statut paiement: ${latestPayment.status}`,
               `Dernière tentative: ${latestPayment.createdAt.toISOString()}`,
               `Montant: ${latestPayment.amount.toLocaleString("fr-FR")} €`,
               `Espace client: ${SITE_URL}/espace-client`,
             ],
-            replyTo: user.email,
+            replyTo: normalizedEmail,
           })
           if (alertOk) {
             alerts++
@@ -147,7 +155,7 @@ export async function GET(request: NextRequest) {
                 paymentId: latestPayment.id,
                 paymentStatus: latestPayment.status,
                 amount: latestPayment.amount,
-                email: user.email,
+                email: normalizedEmail,
               },
             })
           }
@@ -160,14 +168,15 @@ export async function GET(request: NextRequest) {
         continue
       }
       const template = EMAIL_TEMPLATES.rappelPaiementContrat(
-        user.raisonSociale || contract.clientName || user.email,
+        user?.raisonSociale || contract.clientName || normalizedEmail,
         produitLabel,
         contract.premium,
         `${SITE_URL}/espace-client`,
+        normalizedEmail,
         { reference: contract.contractNumber }
       )
       const emailOk = await sendEmail({
-        to: user.email,
+        to: normalizedEmail,
         subject: template.subject,
         text: template.text,
         html: template.html,
@@ -185,7 +194,7 @@ export async function GET(request: NextRequest) {
         details: {
           contractId: contract.id,
           contractNumber: contract.contractNumber,
-          email: user.email,
+          email: normalizedEmail,
           paymentStatus: latestPayment.status,
           amount: latestPayment.amount,
         },
@@ -202,6 +211,7 @@ export async function GET(request: NextRequest) {
       skippedTooRecent,
       skippedAlreadyReminded,
       skippedAlreadyAlerted,
+      skippedUnsubscribed,
     })
   } catch (error) {
     console.error("[cron rappel-paiements-contrats]", error)

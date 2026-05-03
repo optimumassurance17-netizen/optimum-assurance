@@ -1,6 +1,11 @@
 "use client"
 
 import { SITE_URL } from "@/lib/site-url"
+import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
+import {
+  COMPANY_BRAND,
+  INSURER_NAME,
+} from "@/lib/legal-branding"
 
 /**
  * Facture acquittée — assurance décennale (1er trimestre CB + frais).
@@ -28,10 +33,7 @@ interface FactureDecennaleTemplateProps {
 export function FactureDecennaleTemplate({ numero, data }: FactureDecennaleTemplateProps) {
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0 text-sm">
-      <div className="border-b-2 border-[#2563eb] pb-4 mb-6">
-        <h1 className="text-2xl font-bold text-[#2563eb]">Optimum Assurance</h1>
-        <p className="text-sm text-[#171717]">Assurance décennale professionnelle</p>
-      </div>
+      <DocumentBrandHeader tagline="Assurance décennale professionnelle" />
 
       <h2 className="text-xl font-semibold mb-2 text-center">FACTURE ACQUITTÉE</h2>
       <p className="text-center text-[#171717] mb-6">Premier trimestre et frais de gestion</p>
@@ -102,7 +104,7 @@ export function FactureDecennaleTemplate({ numero, data }: FactureDecennaleTempl
       </div>
 
       <p className="text-xs text-[#171717]">
-        TVA non applicable, article 293 B du CGI. Optimum Assurance — assurance décennale.
+        TVA non applicable, article 293 B du CGI. {COMPANY_BRAND} — assurance décennale (Assureur : {INSURER_NAME}).
       </p>
       <p className="text-xs text-[#171717] mt-3">
         <a href={`${SITE_URL}/cgv`} className="text-[#2563eb] underline">
@@ -119,7 +121,7 @@ export function FactureDecennaleTemplate({ numero, data }: FactureDecennaleTempl
         effectuées par les courtiers et intermédiaires d&apos;assurance.
       </p>
       <p className="text-xs text-[#171717] mt-4">Fait à Paris, le {data.datePaiement}</p>
-      <p className="text-xs font-medium mt-2">Pour Optimum Assurance</p>
+      <p className="text-xs font-medium mt-2">Pour {COMPANY_BRAND}</p>
     </div>
   )
 }

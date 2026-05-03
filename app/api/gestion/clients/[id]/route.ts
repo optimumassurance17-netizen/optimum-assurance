@@ -14,6 +14,17 @@ import { GED_SUPABASE_BUCKET } from "@/lib/user-documents"
 import { asJsonObject } from "@/lib/json-object"
 import { fetchUserDocumentReviews } from "@/lib/user-document-review"
 
+function parseLogDetails(raw: string | null | undefined): Record<string, unknown> | null {
+  if (!raw?.trim()) return null
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null
+    return parsed as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -47,7 +58,8 @@ export async function GET(
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
     }
 
-    const [documents, payments, avenantFees, notes, sinistres, userDocuments] = await Promise.all([
+    const [documents, payments, avenantFees, notes, sinistres, userDocuments, insuranceContracts, devoirConseilLogs] =
+      await Promise.all([
       prisma.document.findMany({
         where: { userId: id },
         select: { id: true, type: true, numero: true, status: true, createdAt: true },
@@ -77,7 +89,70 @@ export async function GET(
         select: { id: true, type: true, filename: true, size: true, createdAt: true },
         orderBy: { type: "asc" },
       }),
+      prisma.insuranceContract.findMany({
+        where: { userId: id },
+        select: { id: true, contractNumber: true, productType: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.devoirConseilLog.findMany({
+        where: {
+          OR: [{ userId: id }, { email: user.email.trim().toLowerCase() }],
+        },
+        select: { id: true, email: true, userId: true, page: true, produit: true, acceptedAt: true },
+        orderBy: { acceptedAt: "desc" },
+        take: 60,
+      }),
     ])
+
+    const contractById = new Map(insuranceContracts.map((c) => [c.id, c] as const))
+    const documentById = new Map(documents.map((d) => [d.id, d] as const))
+    const devoirConseilIds = devoirConseilLogs.map((row) => row.id)
+    const insuranceContractIds = insuranceContracts.map((row) => row.id)
+    const documentIds = documents.map((row) => row.id)
+
+    const ddaScopes: { targetType: string; targetId: { in: string[] } }[] = []
+    if (devoirConseilIds.length > 0) {
+      ddaScopes.push({ targetType: "devoir_conseil_log", targetId: { in: devoirConseilIds } })
+    }
+    if (insuranceContractIds.length > 0) {
+      ddaScopes.push({ targetType: "insurance_contract", targetId: { in: insuranceContractIds } })
+    }
+    if (documentIds.length > 0) {
+      ddaScopes.push({ targetType: "document", targetId: { in: documentIds } })
+    }
+
+    const ddaAuditLogs =
+      ddaScopes.length > 0
+        ? await prisma.adminActivityLog.findMany({
+            where: {
+              action: {
+                in: [
+                  "dda_advice_acknowledged",
+                  "dda_contract_suitability_checked",
+                  "dda_do_payment_suitability_checked",
+                  "dda_rc_fabriquant_lead_collected",
+                  "dda_rc_fabriquant_proposition_sent",
+                  "dda_rc_fabriquant_signature_invited",
+                  "dda_rc_fabriquant_contract_created",
+                  "dda_avenant_created",
+                  "dda_avenant_updated",
+                ],
+              },
+              OR: ddaScopes,
+            },
+            select: {
+              id: true,
+              adminEmail: true,
+              action: true,
+              targetType: true,
+              targetId: true,
+              details: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: "desc" },
+            take: 120,
+          })
+        : []
 
     const userDocumentReviews = await fetchUserDocumentReviews(
       userDocuments.map((d) => d.id)
@@ -92,6 +167,38 @@ export async function GET(
       sinistres,
       userDocuments,
       userDocumentReviews,
+      dda: {
+        consents: devoirConseilLogs.map((row) => ({
+          id: row.id,
+          email: row.email,
+          userId: row.userId,
+          page: row.page,
+          produit: row.produit,
+          acceptedAt: row.acceptedAt,
+        })),
+        events: ddaAuditLogs.map((row) => {
+          let targetLabel: string | null = null
+          if (row.targetType === "insurance_contract" && row.targetId) {
+            const contract = contractById.get(row.targetId)
+            targetLabel = contract ? `${contract.contractNumber} (${contract.productType})` : row.targetId
+          } else if (row.targetType === "document" && row.targetId) {
+            const document = documentById.get(row.targetId)
+            targetLabel = document ? `${document.numero} (${document.type})` : row.targetId
+          } else if (row.targetType === "devoir_conseil_log" && row.targetId) {
+            targetLabel = `Log #${row.targetId.slice(-8)}`
+          }
+          return {
+            id: row.id,
+            adminEmail: row.adminEmail,
+            action: row.action,
+            targetType: row.targetType,
+            targetId: row.targetId,
+            targetLabel,
+            details: parseLogDetails(row.details),
+            createdAt: row.createdAt,
+          }
+        }),
+      },
     })
   } catch (error) {
     console.error("Erreur détail client:", error)

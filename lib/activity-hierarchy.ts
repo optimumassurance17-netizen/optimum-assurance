@@ -1,7 +1,6 @@
 import "server-only"
 
 import { prisma } from "@/lib/prisma"
-import { Prisma } from "@/lib/prisma-client"
 import {
   ACTIVITE_EXCLUSIONS,
   ACTIVITE_TO_NOMENCLATURE,
@@ -14,6 +13,7 @@ import {
   type ActivityNodeRef,
   type MissingHierarchyActivity,
 } from "@/lib/activity-hierarchy-format"
+import { isActivityHierarchySchemaError } from "@/lib/activity-hierarchy-errors"
 
 type GroupDefinition = {
   code: string
@@ -218,11 +218,27 @@ const CODE_DEFINITION_OVERRIDES: Record<
 
 let seedPromise: Promise<void> | null = null
 
-function isSchemaDriftError(error: unknown): boolean {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    (error.code === "P2021" || error.code === "P2022")
-  )
+async function loadHierarchyStoreResilient(skipSeed?: boolean): Promise<{ store: HierarchyStore; degraded: boolean }> {
+  if (!skipSeed) {
+    try {
+      await ensureActivityHierarchySeeded()
+    } catch (error) {
+      if (isActivityHierarchySchemaError(error)) {
+        return { store: canonicalHierarchy(), degraded: true }
+      }
+      throw error
+    }
+  }
+
+  try {
+    const store = await loadHierarchyStore()
+    return { store, degraded: false }
+  } catch (error) {
+    if (isActivityHierarchySchemaError(error)) {
+      return { store: canonicalHierarchy(), degraded: true }
+    }
+    throw error
+  }
 }
 
 function normalizeText(value: string): string {
@@ -493,7 +509,7 @@ async function loadHierarchyStore(): Promise<HierarchyStore> {
       orderBy: { code: "asc" },
     })
   } catch (error) {
-    if (isSchemaDriftError(error)) return canonicalHierarchy()
+    if (isActivityHierarchySchemaError(error)) return canonicalHierarchy()
     throw error
   }
 
@@ -652,10 +668,6 @@ export async function ensureActivityHierarchySeeded(): Promise<void> {
         })
       }
     })().catch((error) => {
-      if (isSchemaDriftError(error)) {
-        // Dégradé temporaire: on retombe sur la nomenclature canonique en mémoire.
-        return
-      }
       seedPromise = null
       throw error
     })
@@ -861,7 +873,7 @@ async function persistUnmatchedActivities(
       })
     }
   } catch (error) {
-    if (isSchemaDriftError(error)) return
+    if (isActivityHierarchySchemaError(error)) return
     throw error
   }
 }
@@ -870,11 +882,7 @@ export async function resolveUserActivitiesHierarchy(
   inputs: string[],
   options: ResolveOptions = {}
 ): Promise<ActivityHierarchyResolution> {
-  if (!options.skipSeed) {
-    await ensureActivityHierarchySeeded()
-  }
-
-  const store = await loadHierarchyStore()
+  const { store, degraded } = await loadHierarchyStoreResilient(options.skipSeed)
   const normalizedInputs = inputs
     .filter((value): value is string => typeof value === "string")
     .map((value) => value.trim())
@@ -916,7 +924,14 @@ export async function resolveUserActivitiesHierarchy(
     return compareCodes(codeA, codeB)
   })
 
-  await persistUnmatchedActivities(unmatched, options.userId)
+  if (!degraded) {
+    try {
+      await persistUnmatchedActivities(unmatched, options.userId)
+    } catch (error) {
+      if (!isActivityHierarchySchemaError(error)) throw error
+      // Base sans tables de nomenclature : on ignore la persistance des non-correspondances.
+    }
+  }
 
   const guaranteedHierarchyLines = buildHierarchyLinesFromSelections(selections)
   const guaranteedActivitiesFlat = buildFlatActivityLabels(selections)
@@ -937,8 +952,7 @@ export async function searchActivityHierarchy(
   const term = rawTerm.trim()
   if (term.length < 2) return []
 
-  await ensureActivityHierarchySeeded()
-  const store = await loadHierarchyStore()
+  const { store } = await loadHierarchyStoreResilient(false)
   const normalizedTerm = normalizeText(term)
   const limit = Math.max(1, Math.min(options.limit ?? 10, 50))
 

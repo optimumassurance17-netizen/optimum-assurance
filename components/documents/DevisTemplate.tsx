@@ -14,6 +14,7 @@ import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { SITE_URL } from "@/lib/site-url"
 import { DEVOIR_CONSEIL_TEXT } from "@/lib/devoir-conseil"
 import { DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSES } from "@/lib/decennale-legal-clauses"
+import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 
 interface DevisTemplateProps {
   numero: string
@@ -68,9 +69,9 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0 text-sm">
       {/* En-tête */}
-      <div className="border-b-2 border-[#2563eb] pb-4 mb-6">
+      <div className="mb-6">
+        <DocumentBrandHeader tagline="PRODUIT RCD" className="border-b-2 border-[#2563eb] pb-4 mb-3" />
         <h1 className="text-xl font-bold text-[#2563eb]">PROPOSITION D&apos;ASSURANCE</h1>
-        <p className="text-sm font-semibold text-[#171717] mt-1">PRODUIT RCD</p>
         <p className="text-xs text-[#171717] mt-0.5">
           (Responsabilité Civile Décennale, Responsabilité Civile Professionnelle)
         </p>

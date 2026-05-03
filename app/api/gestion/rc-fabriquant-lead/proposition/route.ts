@@ -6,6 +6,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
+import { buildDdaNeedSummary, buildDdaSuitabilityStatement } from "@/lib/dda-compliance"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
 import { sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
@@ -197,6 +198,35 @@ export async function POST(request: NextRequest) {
         clientSpaceOpened: createdClientSpace,
         copySent,
         ...(primeAnnuelle != null ? { primeAnnuelle } : {}),
+      },
+    })
+    await logAdminActivity({
+      adminEmail: "dda@system",
+      action: "dda_rc_fabriquant_proposition_checked",
+      targetType: "DevisRcFabriquantLead",
+      targetId: leadId,
+      details: {
+        sourcePage: "gestion_rc_fabriquant_proposition",
+        sourcePath: "/gestion#rc-fabriquant",
+        needsSummary: buildDdaNeedSummary({
+          insuranceProduct: "rc_fabriquant",
+          companyName: raisonSociale,
+        }),
+        recommendedProduct: "rc-fabriquant",
+        suitabilityScore: 0.91,
+        suitability:
+          buildDdaSuitabilityStatement({
+            productType: "rc-fabriquant",
+            sourcePage: "gestion_rc_fabriquant_proposition",
+            exclusions: [],
+            riskReasons: [],
+          }) || "Adéquation RC fabricant validée avant envoi de la proposition.",
+        context: {
+          userId: user.id,
+          to: email,
+          primeAnnuelle: primeAnnuelle ?? null,
+          clientSpaceOpened: createdClientSpace,
+        },
       },
     })
 

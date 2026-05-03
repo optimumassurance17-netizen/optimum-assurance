@@ -1,6 +1,11 @@
 import React from "react"
 import { Document, Image, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
-import { ACCELERANT_LOGO_WIDTH_PT, getAccelerantLogoDataUriSync } from "@/lib/pdf/shared/accelerantLogoDataUri"
+import {
+  ACCELERANT_LOGO_HEIGHT_PT,
+  ACCELERANT_LOGO_WIDTH_PT,
+  getAccelerantLogoDataUriSync,
+} from "@/lib/pdf/shared/accelerantLogoDataUri"
+import { COMPANY_BRAND, INSURER_NAME } from "@/lib/legal-branding"
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10 },
@@ -13,7 +18,7 @@ const styles = StyleSheet.create({
   },
   logoImage: {
     width: ACCELERANT_LOGO_WIDTH_PT,
-    height: 42,
+    height: ACCELERANT_LOGO_HEIGHT_PT,
     marginBottom: 12,
     objectFit: "contain" as const,
   },
@@ -68,7 +73,7 @@ export function AttestationNonSinistralitePDF({
             /* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image : logo marque */
             <Image src={accelerantLogoUri} style={styles.logoImage} />
           ) : null}
-          <Text style={styles.title}>Optimum Assurance</Text>
+          <Text style={styles.title}>{COMPANY_BRAND}</Text>
           <Text style={styles.subtitle}>Assurance décennale professionnelle</Text>
         </View>
 
@@ -78,7 +83,7 @@ export function AttestationNonSinistralitePDF({
 
         <View style={styles.section}>
           <Text style={styles.p}>
-            La société Optimum Assurance atteste que :
+            La société {COMPANY_BRAND} atteste que :
           </Text>
           <Text style={[styles.p, { fontFamily: "Helvetica-Bold" }]}>
             {data.raisonSociale}
@@ -111,7 +116,9 @@ export function AttestationNonSinistralitePDF({
         <Text style={styles.footer}>
           Fait à Paris, le {new Date().toLocaleDateString("fr-FR")}
         </Text>
-        <Text style={[styles.footer, { marginTop: 8 }]}>Pour Optimum Assurance</Text>
+        <Text style={[styles.footer, { marginTop: 8 }]}>
+          Pour {COMPANY_BRAND} — Assureur : {INSURER_NAME}
+        </Text>
       </Page>
     </Document>
   )

@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const nextPath = "/signature/callback?success=1"
+    const nextPath = "/mandat-sepa"
     const signatureLink = `${baseUrl}/sign/${signRequestId}?next=${encodeURIComponent(nextPath)}`
 
     const raison = String(baseContract.raisonSociale || doc.user.raisonSociale || doc.user.email)

@@ -6,6 +6,7 @@ import { DEVOIR_CONSEIL_TEXT_BY_PRODUCT } from "@/lib/devoir-conseil"
 import { DECENNALE_CUSTOM_LEGAL_CLAUSES } from "@/lib/decennale-legal-clauses"
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
+import { INSURER_NAME } from "@/lib/legal-branding"
 
 interface ContratPDFProps {
   numero: string
@@ -46,7 +47,7 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
 
         <View style={pdfTheme.section}>
           <Text style={pdfTheme.h3}>Article 1 - Parties</Text>
-          <Text style={pdfTheme.p}>L&apos;Assureur : Optimum Assurance</Text>
+          <Text style={pdfTheme.p}>L&apos;Assureur : {INSURER_NAME}</Text>
           <Text style={pdfTheme.p}>L&apos;Assuré : {data.raisonSociale}</Text>
           <Text style={pdfTheme.p}>SIRET : {data.siret}</Text>
           {(data.adresse || data.codePostal || data.ville) && (

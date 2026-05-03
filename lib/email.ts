@@ -8,6 +8,7 @@ import {
   appendTransactionalEmailTextFooter,
   wrapTransactionalEmailHtml,
 } from "@/lib/email-layout"
+import { buildReminderUnsubscribeUrl, type ReminderUnsubscribeType } from "@/lib/reminder-unsubscribe"
 
 const FROM = process.env.EMAIL_FROM || "Optimum Assurance <noreply@optimum-assurance.fr>"
 
@@ -17,6 +18,22 @@ function escapeHtmlForEmail(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
+}
+
+function reminderUnsubscribeTextFooter(
+  type: ReminderUnsubscribeType,
+  email: string
+): string {
+  const url = buildReminderUnsubscribeUrl(type, email)
+  return `\n\n—\nSe désabonner de ces relances : ${url}`
+}
+
+function reminderUnsubscribeHtmlFooter(
+  type: ReminderUnsubscribeType,
+  email: string
+): string {
+  const url = buildReminderUnsubscribeUrl(type, email)
+  return `<p style="font-size:12px;color:#64748b;margin-top:16px;">Vous ne souhaitez plus recevoir ces relances ? <a href="${url}" style="color:#2563eb;">Se désabonner</a>.</p>`
 }
 
 export async function sendEmail(params: {
@@ -108,6 +125,7 @@ export const EMAIL_TEMPLATES = {
   rappelSignatureEnAttente: (
     raisonSociale: string,
     signatureLink: string,
+    recipientEmail: string,
     opts?: { produitLabel?: string; reference?: string }
   ) => {
     const produit = opts?.produitLabel?.trim() || "votre document"
@@ -118,8 +136,12 @@ export const EMAIL_TEMPLATES = {
       : ""
     return {
       subject: `Rappel signature électronique — ${produit} - Optimum Assurance`,
-      text: `Bonjour ${raisonSociale},\n\nNous vous rappelons que la signature électronique de ${produit} est toujours en attente.${refText}\n\nLien sécurisé :\n${signatureLink}\n\nAprès signature, votre dossier continue automatiquement son traitement.\n\nCordialement,\nOptimum Assurance`,
-      html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Nous vous rappelons que la <strong>signature électronique</strong> de <strong>${escapeHtmlForEmail(produit)}</strong> est toujours en attente.</p>${refHtml}<p><a href="${signatureLink}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Signer maintenant</a></p><p style="font-size:13px;color:#64748b;">Après signature, votre dossier continue automatiquement son traitement.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+      text:
+        `Bonjour ${raisonSociale},\n\nNous vous rappelons que la signature électronique de ${produit} est toujours en attente.${refText}\n\nLien sécurisé :\n${signatureLink}\n\nAprès signature, votre dossier continue automatiquement son traitement.\n\nCordialement,\nOptimum Assurance` +
+        reminderUnsubscribeTextFooter("signature", recipientEmail),
+      html:
+        `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Nous vous rappelons que la <strong>signature électronique</strong> de <strong>${escapeHtmlForEmail(produit)}</strong> est toujours en attente.</p>${refHtml}<p><a href="${signatureLink}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Signer maintenant</a></p><p style="font-size:13px;color:#64748b;">Après signature, votre dossier continue automatiquement son traitement.</p><p>Cordialement,<br>Optimum Assurance</p>` +
+        reminderUnsubscribeHtmlFooter("signature", recipientEmail),
     }
   },
   rappelPaiementContrat: (
@@ -127,6 +149,7 @@ export const EMAIL_TEMPLATES = {
     produitLabel: string,
     montant: number,
     espaceClientUrl: string,
+    recipientEmail: string,
     opts?: { reference?: string }
   ) => {
     const ref = opts?.reference?.trim()
@@ -136,8 +159,12 @@ export const EMAIL_TEMPLATES = {
       : ""
     return {
       subject: `Rappel paiement ${produitLabel} - Optimum Assurance`,
-      text: `Bonjour ${raisonSociale},\n\nVotre dossier ${produitLabel} est prêt, mais le paiement reste en attente.${refText}\n\nMontant attendu : ${montant.toLocaleString("fr-FR")} €\n\nAccédez à votre espace client pour finaliser le règlement :\n${espaceClientUrl}\n\nCordialement,\nOptimum Assurance`,
-      html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre dossier <strong>${escapeHtmlForEmail(produitLabel)}</strong> est prêt, mais le paiement reste en attente.</p>${refHtml}<p><strong>Montant attendu :</strong> ${montant.toLocaleString("fr-FR")} €</p><p><a href="${espaceClientUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+      text:
+        `Bonjour ${raisonSociale},\n\nVotre dossier ${produitLabel} est prêt, mais le paiement reste en attente.${refText}\n\nMontant attendu : ${montant.toLocaleString("fr-FR")} €\n\nAccédez à votre espace client pour finaliser le règlement :\n${espaceClientUrl}\n\nCordialement,\nOptimum Assurance` +
+        reminderUnsubscribeTextFooter("paiement", recipientEmail),
+      html:
+        `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre dossier <strong>${escapeHtmlForEmail(produitLabel)}</strong> est prêt, mais le paiement reste en attente.</p>${refHtml}<p><strong>Montant attendu :</strong> ${montant.toLocaleString("fr-FR")} €</p><p><a href="${espaceClientUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
+        reminderUnsubscribeHtmlFooter("paiement", recipientEmail),
     }
   },
   motDePasseReinitialisation: (resetUrl: string) => ({
@@ -155,20 +182,42 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nVotre attestation arrive à échéance le ${dateEcheance}.\n\nPensez à renouveler votre contrat pour rester couvert.\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Votre attestation arrive à échéance le <strong>${dateEcheance}</strong>.</p><p>Pensez à renouveler votre contrat pour rester couvert.</p><p><a href="${APP_URL}/devis" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Renouveler mon assurance</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
+  rappelRenouvellementAvecDesabonnement: (
+    raisonSociale: string,
+    dateEcheance: string,
+    recipientEmail: string
+  ) => ({
+    subject: "Rappel : échéance de votre assurance décennale",
+    text:
+      `Bonjour ${raisonSociale},\n\nVotre attestation arrive à échéance le ${dateEcheance}.\n\nPensez à renouveler votre contrat pour rester couvert.\n\nCordialement,\nOptimum Assurance` +
+      reminderUnsubscribeTextFooter("renouvellement", recipientEmail),
+    html:
+      `<p>Bonjour ${raisonSociale},</p><p>Votre attestation arrive à échéance le <strong>${dateEcheance}</strong>.</p><p>Pensez à renouveler votre contrat pour rester couvert.</p><p><a href="${APP_URL}/devis" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Renouveler mon assurance</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
+      reminderUnsubscribeHtmlFooter("renouvellement", recipientEmail),
+  }),
   /** Décennale uniquement (échéances / SEPA). Le DO est réglé en une fois avant l’attestation. */
   alerteImpaye: (raisonSociale: string) => ({
     subject: "Régularisation — assurance décennale - Optimum Assurance",
     text: `Bonjour ${raisonSociale},\n\nVotre attestation d’assurance décennale a été suspendue pour défaut de paiement.\n\nRégularisez en ligne par carte bancaire : ${APP_URL}/espace-client/regularisation\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Votre <strong>attestation d’assurance décennale</strong> a été suspendue pour défaut de paiement.</p><p><a href="${APP_URL}/espace-client/regularisation" style="color:#2563eb;font-weight:bold">Régulariser mon paiement par CB</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
-  rappelDevisAbandonne: (raisonSociale: string, primeAnnuelle?: number) => ({
+  rappelDevisAbandonne: (
+    raisonSociale: string,
+    recipientEmail: string,
+    primeAnnuelle?: number
+  ) => ({
     subject: "Votre devis assurance décennale vous attend - Optimum Assurance",
-    text: `Bonjour ${raisonSociale},\n\nVous avez demandé un devis assurance décennale. La prime annuelle était de ${primeAnnuelle ? primeAnnuelle.toLocaleString("fr-FR") + " €" : "disponible"}.\n\nFinalisez votre souscription en ligne : ${APP_URL}/devis\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour ${raisonSociale},</p><p>Vous avez demandé un devis assurance décennale. La prime annuelle était de <strong>${primeAnnuelle ? primeAnnuelle.toLocaleString("fr-FR") + " €" : "disponible"}</strong>.</p><p><a href="${APP_URL}/devis" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Finaliser mon devis</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+    text:
+      `Bonjour ${raisonSociale},\n\nVous avez demandé un devis assurance décennale. La prime annuelle était de ${primeAnnuelle ? primeAnnuelle.toLocaleString("fr-FR") + " €" : "disponible"}.\n\nFinalisez votre souscription en ligne : ${APP_URL}/devis\n\nCordialement,\nOptimum Assurance` +
+      reminderUnsubscribeTextFooter("devis", recipientEmail),
+    html:
+      `<p>Bonjour ${raisonSociale},</p><p>Vous avez demandé un devis assurance décennale. La prime annuelle était de <strong>${primeAnnuelle ? primeAnnuelle.toLocaleString("fr-FR") + " €" : "disponible"}</strong>.</p><p><a href="${APP_URL}/devis" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Finaliser mon devis</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
+      reminderUnsubscribeHtmlFooter("devis", recipientEmail),
   }),
   rappelDossierIncomplet: (
     raisonSociale: string,
     espaceClientUrl: string,
+    recipientEmail: string,
     opts?: { produitLabel?: string; reference?: string }
   ) => {
     const produit = opts?.produitLabel?.trim() || "votre dossier"
@@ -179,10 +228,42 @@ export const EMAIL_TEMPLATES = {
       : ""
     return {
       subject: `Action requise : dossier incomplet (${produit}) - Optimum Assurance`,
-      text: `Bonjour ${raisonSociale},\n\nVotre dossier ${produit} est en attente car certaines étapes ne sont pas terminées (signature, pièces ou paiement).${refTxt}\n\nFinalisez votre dossier depuis votre espace client :\n${espaceClientUrl}\n\nSi vous avez besoin d’aide, répondez directement à cet e-mail.\n\nCordialement,\nOptimum Assurance`,
-      html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre dossier <strong>${escapeHtmlForEmail(produit)}</strong> est en attente car certaines étapes ne sont pas terminées (signature, pièces ou paiement).</p>${refHtml}<p><a href="${espaceClientUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Finaliser mon dossier</a></p><p style="font-size:13px;color:#64748b;">Besoin d’aide ? Répondez directement à cet e-mail.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+      text:
+        `Bonjour ${raisonSociale},\n\nVotre dossier ${produit} est en attente car certaines étapes ne sont pas terminées (signature, pièces ou paiement).${refTxt}\n\nFinalisez votre dossier depuis votre espace client :\n${espaceClientUrl}\n\nSi vous avez besoin d’aide, répondez directement à cet e-mail.\n\nCordialement,\nOptimum Assurance` +
+        reminderUnsubscribeTextFooter("dossier", recipientEmail),
+      html:
+        `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre dossier <strong>${escapeHtmlForEmail(produit)}</strong> est en attente car certaines étapes ne sont pas terminées (signature, pièces ou paiement).</p>${refHtml}<p><a href="${espaceClientUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Finaliser mon dossier</a></p><p style="font-size:13px;color:#64748b;">Besoin d’aide ? Répondez directement à cet e-mail.</p><p>Cordialement,<br>Optimum Assurance</p>` +
+        reminderUnsubscribeHtmlFooter("dossier", recipientEmail),
     }
   },
+  relanceConformiteDda: (
+    raisonSociale: string,
+    opts: {
+      produitLabel: string
+      ctaUrl: string
+      reference?: string
+      manque?: string
+    }
+  ) => {
+    const reference = opts.reference?.trim()
+    const manque = opts.manque?.trim() || "validation des exigences et besoins"
+    const referenceText = reference ? `\nRéférence : ${reference}` : ""
+    const referenceHtml = reference
+      ? `<p style="font-size:13px;color:#64748b;margin:8px 0 0;">Référence : <strong>${escapeHtmlForEmail(reference)}</strong></p>`
+      : ""
+    return {
+      subject: `Action requise : conformité DDA (${opts.produitLabel}) - Optimum Assurance`,
+      text:
+        `Bonjour ${raisonSociale},\n\nVotre dossier ${opts.produitLabel} nécessite une action de conformité DDA (${manque}).${referenceText}\n\nMerci de vous reconnecter et de confirmer vos exigences/besoins depuis votre espace client :\n${opts.ctaUrl}\n\nCette étape est nécessaire pour poursuivre le traitement de votre dossier.\n\nCordialement,\nOptimum Assurance`,
+      html:
+        `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre dossier <strong>${escapeHtmlForEmail(opts.produitLabel)}</strong> nécessite une action de conformité DDA (<strong>${escapeHtmlForEmail(manque)}</strong>).</p>${referenceHtml}<p><a href="${opts.ctaUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Finaliser ma conformité DDA</a></p><p style="font-size:13px;color:#64748b;">Cette étape est nécessaire pour poursuivre le traitement de votre dossier.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+    }
+  },
+  pieceGedRefusee: (raisonSociale: string, documentLabel: string, reason: string) => ({
+    subject: "Action requise : pièce justificative à remplacer - Optimum Assurance",
+    text: `Bonjour ${raisonSociale},\n\nUne pièce justificative déposée dans votre espace client doit être remplacée.\n\nPièce concernée : ${documentLabel}\nMotif : ${reason}\n\nMerci de vous connecter à votre espace client pour déposer une nouvelle version : ${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Une <strong>pièce justificative</strong> déposée dans votre espace client doit être remplacée.</p><p><strong>Pièce concernée :</strong> ${escapeHtmlForEmail(documentLabel)}<br/><strong>Motif :</strong> ${escapeHtmlForEmail(reason)}</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Déposer une nouvelle pièce</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+  }),
   bienvenue: (raisonSociale: string) => ({
     subject: "Bienvenue chez Optimum Assurance",
     text: `Bonjour ${raisonSociale},\n\nVotre compte a été créé avec succès.\n\nConnectez-vous à votre espace client pour gérer vos documents et votre assurance décennale : ${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,

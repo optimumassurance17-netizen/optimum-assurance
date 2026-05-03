@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
+import { EMAIL_TEMPLATES, sendEmail } from "@/lib/email"
 import { USER_DOCUMENT_REVIEW_ACTION } from "@/lib/user-document-review"
 
 export async function POST(
@@ -48,10 +49,32 @@ export async function POST(
 
     const doc = await prisma.userDocument.findFirst({
       where: { id: documentId, userId },
-      select: { id: true },
+      select: {
+        id: true,
+        filename: true,
+        type: true,
+        user: {
+          select: {
+            email: true,
+            raisonSociale: true,
+          },
+        },
+      },
     })
     if (!doc) {
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
+    }
+
+    let clientEmailSent = false
+    if (status === "invalid" && reason && doc.user?.email) {
+      const raisonSociale = doc.user.raisonSociale?.trim() || doc.user.email
+      const tpl = EMAIL_TEMPLATES.pieceGedRefusee(raisonSociale, doc.filename, reason)
+      clientEmailSent = await sendEmail({
+        to: doc.user.email,
+        subject: tpl.subject,
+        text: tpl.text,
+        html: tpl.html,
+      })
     }
 
     await logAdminActivity({
@@ -59,7 +82,7 @@ export async function POST(
       action: USER_DOCUMENT_REVIEW_ACTION,
       targetType: "user_document",
       targetId: doc.id,
-      details: { status, reason },
+      details: { status, reason, clientEmailSent },
     })
 
     return NextResponse.json({
@@ -67,6 +90,7 @@ export async function POST(
       review: {
         status,
         reason,
+        clientEmailSent,
         updatedAt: new Date().toISOString(),
       },
     })

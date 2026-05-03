@@ -23,6 +23,51 @@ interface DocumentItem {
   createdAt: string
 }
 
+type PendingSignatureItem = {
+  signatureRequestId: string
+  contractNumero: string
+  signatureFlow: "decennale" | "custom_pdf"
+  signatureFlowLabel?: string
+  createdAt: string
+  signatureLink: string
+}
+
+type AutonomyStatusAction = {
+  id: string
+  title: string
+  description: string
+  href: string
+  priority: "high" | "medium" | "low"
+}
+
+type AutonomyStatusPayload = {
+  pendingSignaturesTotal: number
+  pendingSignaturesDecennale: number
+  hasDecennaleContract: boolean
+  firstDecennalePaymentDone: boolean
+  approvedUnpaidContractsCount: number
+  suspendedAttestationsCount: number
+  sepaSubscription: {
+    status: string
+    nextSepaDue: string | null
+    trimestresSepaPayes: number
+    lastError: string | null
+  }
+    | null
+  advisories: string[]
+  actions: AutonomyStatusAction[]
+}
+
+type DecennaleTimelineState = "done" | "current" | "blocked" | "todo"
+
+type DecennaleTimelineStep = {
+  id: string
+  title: string
+  description: string
+  state: DecennaleTimelineState
+  href: string
+}
+
 type SavedDevisDraftItem = {
   id: string
   token: string
@@ -69,12 +114,77 @@ const typeIcons: Record<string, string> = {
   facture_decennale: "🧾",
 }
 
+function getActionPriorityWeight(priority: AutonomyStatusAction["priority"]): number {
+  return priority === "high" ? 3 : priority === "medium" ? 2 : 1
+}
+
+function pickTopAutonomyAction(actions: AutonomyStatusAction[]): AutonomyStatusAction | null {
+  if (!actions.length) return null
+  const sorted = [...actions].sort((a, b) => getActionPriorityWeight(b.priority) - getActionPriorityWeight(a.priority))
+  return sorted.find((action) => action.id !== "autonomy-ok") ?? null
+}
+
+function buildDecennaleTimeline(status: AutonomyStatusPayload): DecennaleTimelineStep[] {
+  const pendingSignature = status.pendingSignaturesDecennale > 0
+  const hasDecennaleJourney = status.hasDecennaleContract || pendingSignature || status.firstDecennalePaymentDone
+  const sepaStatus = status.sepaSubscription?.status ?? null
+  const sepaBlocked = sepaStatus === "pending_mandate" || sepaStatus === "failed"
+  const paymentDone = status.firstDecennalePaymentDone
+  const paymentStepOpen = hasDecennaleJourney && !pendingSignature && !paymentDone
+
+  const hrefFor = (actionId: string, fallback: string) =>
+    status.actions.find((action) => action.id === actionId && action.href.trim().length > 0)?.href ?? fallback
+
+  return [
+    {
+      id: "devis",
+      title: "Devis et souscription",
+      description: "Simulation, validation des informations et création du dossier.",
+      state: hasDecennaleJourney ? "done" : "current",
+      href: "/devis?from=espace-client",
+    },
+    {
+      id: "signature",
+      title: "Signature électronique",
+      description: "Signature du contrat décennale pour passer au mandat SEPA.",
+      state: pendingSignature ? "current" : hasDecennaleJourney ? "done" : "todo",
+      href: hrefFor("resume-signature-decennale", "/signature"),
+    },
+    {
+      id: "sepa",
+      title: "Mandat SEPA",
+      description: "Validation de l’IBAN pour activer les prélèvements trimestriels.",
+      state: paymentDone ? "done" : paymentStepOpen ? (sepaBlocked ? "blocked" : "current") : "todo",
+      href: hrefFor("continue-sepa-and-payment", "/mandat-sepa"),
+    },
+    {
+      id: "payment",
+      title: "Paiement d’activation",
+      description: "Paiement du premier trimestre et des frais de gestion.",
+      state: paymentDone ? "done" : paymentStepOpen ? "current" : "todo",
+      href: hrefFor("pay-approved-contracts", "#contrats-plateforme"),
+    },
+    {
+      id: "attestation",
+      title: "Attestation active",
+      description: "Attestation disponible après validation du paiement.",
+      state: status.suspendedAttestationsCount > 0 ? "blocked" : paymentDone ? "done" : "todo",
+      href:
+        status.suspendedAttestationsCount > 0
+          ? hrefFor("regularize-suspended-attestation", "/espace-client/regularisation")
+          : "/espace-client",
+    },
+  ]
+}
+
 export default function EspaceClientPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [payments, setPayments] = useState<{ id: string; amount: number; status: string; paidAt: string | null; createdAt: string }[]>([])
   const [savedDevisDrafts, setSavedDevisDrafts] = useState<SavedDevisDraftItem[]>([])
+  const [pendingSignatures, setPendingSignatures] = useState<PendingSignatureItem[]>([])
+  const [autonomyStatus, setAutonomyStatus] = useState<AutonomyStatusPayload | null>(null)
   const [profile, setProfile] = useState<{ adresse?: string; codePostal?: string; ville?: string; telephone?: string; siret?: string } | null>(null)
   const [profileEditing, setProfileEditing] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
@@ -109,13 +219,15 @@ export default function EspaceClientPage() {
 
     const fetchData = async () => {
       try {
-        const [docsRes, summaryRes, paymentsRes, insRes, doqRes, draftsRes] = await Promise.all([
+        const [docsRes, summaryRes, paymentsRes, insRes, doqRes, draftsRes, pendingSignaturesRes, autonomyStatusRes] = await Promise.all([
           fetch("/api/documents/list"),
           fetch("/api/client/summary"),
           fetch("/api/client/payments"),
           fetch("/api/client/insurance-contracts"),
           fetch("/api/client/do-questionnaire"),
           fetch("/api/client/devis-drafts"),
+          fetch("/api/client/pending-signatures"),
+          fetch("/api/client/autonomy-status"),
         ])
         if (docsRes.ok) setDocuments(await docsRes.json())
         if (summaryRes.ok) setSummary(await summaryRes.json())
@@ -139,6 +251,27 @@ export default function EspaceClientPage() {
           }
         } else {
           setSavedDevisDrafts([])
+        }
+        if (pendingSignaturesRes.ok) {
+          const pendingPayload = (await pendingSignaturesRes.json()) as {
+            items?: PendingSignatureItem[]
+            pendingSignatures?: PendingSignatureItem[]
+          }
+          setPendingSignatures(
+            Array.isArray(pendingPayload.items)
+              ? pendingPayload.items
+              : Array.isArray(pendingPayload.pendingSignatures)
+                ? pendingPayload.pendingSignatures
+                : []
+          )
+        } else {
+          setPendingSignatures([])
+        }
+        if (autonomyStatusRes.ok) {
+          const autonomyPayload = (await autonomyStatusRes.json()) as AutonomyStatusPayload
+          setAutonomyStatus(autonomyPayload)
+        } else {
+          setAutonomyStatus(null)
         }
         const profileRes = await fetch("/api/client/profile")
         if (profileRes.ok) setProfile(await profileRes.json())
@@ -165,6 +298,9 @@ export default function EspaceClientPage() {
     return null
   }
 
+  const topAutonomyAction = autonomyStatus ? pickTopAutonomyAction(autonomyStatus.actions) : null
+  const decennaleTimeline = autonomyStatus ? buildDecennaleTimeline(autonomyStatus) : []
+
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <Header />
@@ -177,6 +313,146 @@ export default function EspaceClientPage() {
         <p className="text-[#171717] mb-6 text-lg">
           Bienvenue, {session?.user?.name || session?.user?.email}
         </p>
+
+        {!loading && autonomyStatus && (
+          <div className="mb-8 rounded-2xl border border-[#0ea5e9]/35 bg-[#f0f9ff] p-6 text-[#0a0a0a]">
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+              <div>
+                <h2 className="font-bold text-lg">Centre d&apos;autonomie client</h2>
+                <p className="text-sm text-[#171717]">
+                  Pilotez votre dossier de A à Z sans intervention manuelle.
+                </p>
+              </div>
+              <span className="inline-flex rounded-lg bg-white border border-[#7dd3fc] px-3 py-1.5 text-xs font-semibold text-[#0c4a6e]">
+                {autonomyStatus.actions.some((action) => action.priority === "high")
+                  ? "Action requise"
+                  : "Dossier autonome"}
+              </span>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-3 mb-4">
+              <div className="rounded-xl border border-[#bae6fd] bg-white p-3">
+                <p className="text-xs text-[#0c4a6e]">Signatures en attente</p>
+                <p className="text-xl font-bold text-[#082f49]">{autonomyStatus.pendingSignaturesTotal}</p>
+              </div>
+              <div className="rounded-xl border border-[#bae6fd] bg-white p-3">
+                <p className="text-xs text-[#0c4a6e]">Contrats approuvés non payés</p>
+                <p className="text-xl font-bold text-[#082f49]">{autonomyStatus.approvedUnpaidContractsCount}</p>
+              </div>
+              <div className="rounded-xl border border-[#bae6fd] bg-white p-3">
+                <p className="text-xs text-[#0c4a6e]">Attestations à régulariser</p>
+                <p className="text-xl font-bold text-[#082f49]">{autonomyStatus.suspendedAttestationsCount}</p>
+              </div>
+            </div>
+
+            {autonomyStatus.sepaSubscription && (
+              <p className="text-xs text-[#155e75] mb-4">
+                SEPA : <strong>{autonomyStatus.sepaSubscription.status}</strong>
+                {autonomyStatus.sepaSubscription.nextSepaDue
+                  ? ` · prochaine échéance ${new Date(autonomyStatus.sepaSubscription.nextSepaDue).toLocaleDateString("fr-FR")}`
+                  : ""}
+                {autonomyStatus.sepaSubscription.lastError
+                  ? ` · dernier incident : ${autonomyStatus.sepaSubscription.lastError}`
+                  : ""}
+              </p>
+            )}
+
+            {decennaleTimeline.length > 0 && (
+              <div className="mb-4 rounded-xl border border-[#cbd5e1] bg-white p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <h3 className="text-sm font-semibold text-[#0a0a0a]">Timeline dossier décennale</h3>
+                  {topAutonomyAction &&
+                    (topAutonomyAction.href.startsWith("#") ? (
+                      <a
+                        href={topAutonomyAction.href}
+                        className="text-xs font-semibold text-[#0369a1] hover:underline"
+                      >
+                        Continuer mon parcours →
+                      </a>
+                    ) : (
+                      <Link
+                        href={topAutonomyAction.href}
+                        className="text-xs font-semibold text-[#0369a1] hover:underline"
+                      >
+                        Continuer mon parcours →
+                      </Link>
+                    ))}
+                </div>
+                <ol className="space-y-3">
+                  {decennaleTimeline.map((step, index) => {
+                    const badge =
+                      step.state === "done"
+                        ? { label: "Terminé", dot: "bg-emerald-500", text: "text-emerald-700" }
+                        : step.state === "current"
+                          ? { label: "En cours", dot: "bg-sky-500", text: "text-sky-700" }
+                          : step.state === "blocked"
+                            ? { label: "À régulariser", dot: "bg-amber-500", text: "text-amber-700" }
+                            : { label: "À venir", dot: "bg-slate-300", text: "text-slate-500" }
+                    return (
+                      <li key={step.id} className="flex gap-3">
+                        <span className={`mt-1.5 h-2.5 w-2.5 rounded-full ${badge.dot}`} aria-hidden />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[#0a0a0a]">
+                            {index + 1}. {step.title}{" "}
+                            <span className={`text-xs font-medium ${badge.text}`}>({badge.label})</span>
+                          </p>
+                          <p className="text-xs text-[#334155]">{step.description}</p>
+                          {step.state !== "done" &&
+                            (step.href.startsWith("#") ? (
+                              <a href={step.href} className="inline-flex mt-1 text-xs font-medium text-[#0284c7] hover:underline">
+                                Aller à cette étape
+                              </a>
+                            ) : (
+                              <Link href={step.href} className="inline-flex mt-1 text-xs font-medium text-[#0284c7] hover:underline">
+                                Aller à cette étape
+                              </Link>
+                            ))}
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ol>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {autonomyStatus.actions.map((action) => (
+                <div
+                  key={action.id}
+                  className="rounded-xl border border-[#cbd5e1] bg-white p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-[#0a0a0a]">{action.title}</p>
+                    <p className="text-xs text-[#334155]">{action.description}</p>
+                  </div>
+                  {action.href.startsWith("#") ? (
+                    <a
+                      href={action.href}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#0284c7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0369a1]"
+                    >
+                      Continuer
+                    </a>
+                  ) : (
+                    <Link
+                      href={action.href}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#0284c7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0369a1]"
+                    >
+                      Continuer
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {autonomyStatus.advisories.length > 0 && (
+              <ul className="mt-4 list-disc pl-5 text-xs text-[#155e75] space-y-1">
+                {autonomyStatus.advisories.map((advisory, index) => (
+                  <li key={`advisory-${index}`}>{advisory}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {!loading && doEtudeBanner?.show && (
           <div className="mb-8 rounded-2xl border border-[#2563eb]/30 bg-[#eff6ff] p-5 text-[#0a0a0a]">
@@ -193,6 +469,45 @@ export default function EspaceClientPage() {
               {doEtudeBanner.hasSaved ? "Modifier le questionnaire d’étude →" : "Remplir le questionnaire d’étude →"}
             </Link>
           </div>
+        )}
+
+        {!loading && (
+          <section className="mb-8 rounded-2xl border border-[#bfdbfe] bg-white p-5 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#2563eb]">Créer un devis</p>
+                <h2 className="mt-1 text-xl font-bold text-[#0a0a0a]">Nouveau dossier depuis votre espace client</h2>
+                <p className="mt-1 text-sm text-[#171717]">
+                  Lancez un nouveau parcours avec vos informations de compte, sans repasser par la gestion.
+                </p>
+                {savedDevisDrafts.length > 0 && (
+                  <a href="#devis-enregistres" className="mt-2 inline-flex text-sm font-semibold text-[#2563eb] hover:underline">
+                    {savedDevisDrafts.length} devis sauvegardé{savedDevisDrafts.length > 1 ? "s" : ""} à reprendre →
+                  </a>
+                )}
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3 md:min-w-[520px]">
+                <Link
+                  href="/devis?from=espace-client"
+                  className="inline-flex items-center justify-center rounded-xl bg-[#2563eb] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+                >
+                  Décennale
+                </Link>
+                <Link
+                  href="/devis-dommage-ouvrage?from=espace-client"
+                  className="inline-flex items-center justify-center rounded-xl border border-[#2563eb] px-4 py-3 text-sm font-semibold text-[#2563eb] hover:bg-[#eff6ff]"
+                >
+                  Dommage ouvrage
+                </Link>
+                <Link
+                  href="/devis-rc-fabriquant?from=espace-client"
+                  className="inline-flex items-center justify-center rounded-xl border border-[#2563eb] px-4 py-3 text-sm font-semibold text-[#2563eb] hover:bg-[#eff6ff]"
+                >
+                  RC fabricant
+                </Link>
+              </div>
+            </div>
+          </section>
         )}
 
         {/* Onglets */}
@@ -259,7 +574,7 @@ export default function EspaceClientPage() {
         ) : null}
 
         {!loading && insuranceContracts.length > 0 && (
-          <div className="mb-10 p-6 bg-[#eff6ff] border border-[#2563eb]/25 rounded-2xl">
+          <div id="contrats-plateforme" className="mb-10 p-6 bg-[#eff6ff] border border-[#2563eb]/25 rounded-2xl">
             <h2 className="font-bold text-[#0a0a0a] text-lg mb-4">Contrats plateforme (souscription en ligne)</h2>
             <ul className="space-y-4">
               {insuranceContracts.map((c) => (
@@ -665,7 +980,7 @@ export default function EspaceClientPage() {
         )}
 
         {activeTab === "documents" && !loading && (
-          <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-10 shadow-sm">
+          <div id="devis-enregistres" className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-10 shadow-sm scroll-mt-24">
             <h2 className="font-bold text-[#0a0a0a] text-lg mb-3">Reprise de devis enregistrés</h2>
             {savedDevisDrafts.length === 0 ? (
               <p className="text-sm text-[#171717]">
@@ -702,6 +1017,44 @@ export default function EspaceClientPage() {
                     >
                       Reprendre
                     </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "documents" && !loading && (
+          <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-10 shadow-sm">
+            <h2 className="font-bold text-[#0a0a0a] text-lg mb-3">Signature électronique à reprendre</h2>
+            {pendingSignatures.length === 0 ? (
+              <p className="text-sm text-[#171717]">
+                Aucune signature électronique en attente.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {pendingSignatures.map((item) => (
+                  <div
+                    key={item.signatureRequestId}
+                    className="rounded-xl border border-[#d4d4d4] bg-white p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-[#0a0a0a]">
+                        {item.signatureFlow === "custom_pdf"
+                          ? item.signatureFlowLabel || "Dossier personnalisé"
+                          : "Contrat décennale"}
+                      </p>
+                      <p className="text-xs text-[#171717]">
+                        Référence {item.contractNumero} · créé le{" "}
+                        {new Date(item.createdAt).toLocaleDateString("fr-FR")}
+                      </p>
+                    </div>
+                    <a
+                      href={item.signatureLink}
+                      className="inline-flex items-center justify-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+                    >
+                      Reprendre la signature
+                    </a>
                   </div>
                 ))}
               </div>
@@ -826,12 +1179,38 @@ export default function EspaceClientPage() {
 
         <div className="space-y-4">
           <h2 className="font-bold text-[#0a0a0a] mb-2 text-lg">Nouveaux devis</h2>
+          <p className="text-sm text-[#171717]">
+            Lancez un nouveau parcours en conservant vos informations de compte.
+          </p>
+          {topAutonomyAction && (
+            <div className="rounded-xl border border-[#7dd3fc] bg-[#f0f9ff] p-4">
+              <p className="text-sm font-semibold text-[#0c4a6e] mb-1">Parcours en cours détecté</p>
+              <p className="text-xs text-[#155e75] mb-3">
+                Reprenez d&apos;abord votre étape bloquante pour finaliser votre dossier actuel.
+              </p>
+              {topAutonomyAction.href.startsWith("#") ? (
+                <a
+                  href={topAutonomyAction.href}
+                  className="inline-flex items-center justify-center rounded-xl bg-[#0284c7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0369a1]"
+                >
+                  Continuer mon parcours
+                </a>
+              ) : (
+                <Link
+                  href={topAutonomyAction.href}
+                  className="inline-flex items-center justify-center rounded-xl bg-[#0284c7] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0369a1]"
+                >
+                  Continuer mon parcours
+                </Link>
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap gap-4">
             <Link
-              href="/devis"
+              href="/devis?from=espace-client"
               className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-2xl hover:bg-[#1d4ed8] transition-all font-semibold shadow-lg shadow-[#2563eb]/20"
             >
-              Devis décennale BTP
+              Nouveau devis décennale
             </Link>
             <Link
               href="/devis-dommage-ouvrage"

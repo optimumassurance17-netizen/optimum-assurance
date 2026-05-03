@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import { calculerTarif } from "@/lib/tarification"
 import { equivMensuelDepuisAnnuel, formatEurosFR } from "@/lib/decennale-affichage-tarif"
@@ -20,7 +20,10 @@ const CATEGORIES_SIMULATEUR: string[] = (() => {
   return out
 })()
 
+const CATEGORY_ALL = "__all__"
+
 function activitesDansCategorie(categorie: string) {
+  if (categorie === CATEGORY_ALL) return [...ACTIVITES_AVEC_TARIFS]
   return ACTIVITES_AVEC_TARIFS.filter((t) => t.categorie === categorie)
 }
 
@@ -28,16 +31,33 @@ export function SimulateurPrime() {
   const [chiffreAffaires, setChiffreAffaires] = useState<string>("80000")
   const [categorie, setCategorie] = useState<string>(ACTIVITES_AVEC_TARIFS[0].categorie)
   const [activite, setActivite] = useState<string>(ACTIVITES_AVEC_TARIFS[0].activite)
+  const [searchActivite, setSearchActivite] = useState("")
   const [resultat, setResultat] = useState<{ prime: number; economie: number } | null>(null)
+
+  const activitesFiltrees = useMemo(() => {
+    const inCategory = activitesDansCategorie(categorie)
+    const term = searchActivite.trim().toLowerCase()
+    if (!term) return inCategory
+    return inCategory.filter((t) => {
+      return (
+        t.activite.toLowerCase().includes(term) ||
+        t.categorie.toLowerCase().includes(term)
+      )
+    })
+  }, [categorie, searchActivite])
 
   const calculer = () => {
     const ca = Number(chiffreAffaires) || 0
     if (ca < CA_MINIMUM) return
+    const activiteEffective =
+      activitesFiltrees.find((t) => t.activite === activite)?.activite ??
+      activitesFiltrees[0]?.activite
+    if (!activiteEffective) return
     const tarif = calculerTarif({
       chiffreAffaires: ca,
       sinistres: 0,
       jamaisAssure: false,
-      activites: [activite],
+      activites: [activiteEffective],
     })
     const prixConcurrent = Math.round(tarif.primeAnnuelle * 1.3)
     const economie = prixConcurrent - tarif.primeAnnuelle
@@ -78,6 +98,7 @@ export function SimulateurPrime() {
               }}
               className="mt-2 block w-full border border-[#d4d4d4] rounded-xl px-4 py-3.5 text-base focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none transition-all text-[#0a0a0a] font-medium bg-[#e4e4e4] touch-manipulation min-h-[48px]"
             >
+              <option value={CATEGORY_ALL}>Toutes les catégories</option>
               {CATEGORIES_SIMULATEUR.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -88,14 +109,30 @@ export function SimulateurPrime() {
         </div>
         <div>
           <label className="block text-sm font-semibold text-slate-900 mb-2">
+            Recherche activité
+            <input
+              type="search"
+              value={searchActivite}
+              onChange={(e) => {
+                setResultat(null)
+                setSearchActivite(e.target.value)
+              }}
+              placeholder="Ex: maçonnerie, couverture, plomberie..."
+              className="mt-2 block w-full rounded-xl border border-slate-200 bg-[var(--input-bg)] px-4 py-3 font-medium text-slate-900 outline-none transition-all focus:border-blue-600 focus:ring-2 focus:ring-blue-500/30"
+            />
+          </label>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-slate-900 mb-2">
             Activité (taux et prime min du PDF)
             <select
               value={activite}
               onChange={(e) => { setResultat(null); setActivite(e.target.value) }}
               className="mt-2 block w-full border border-[#d4d4d4] rounded-xl px-4 py-3.5 text-base focus:ring-2 focus:ring-[#2563eb]/50 focus:border-[#2563eb] outline-none transition-all text-[#0a0a0a] font-medium bg-[#e4e4e4] touch-manipulation min-h-[48px]"
             >
-              {activitesDansCategorie(categorie).map((t) => (
+              {activitesFiltrees.map((t) => (
                 <option key={t.activite} value={t.activite}>
+                  {categorie === CATEGORY_ALL ? `[${t.categorie}] ` : ""}
                   {t.activite} — {t.activite === "Nettoyage toiture et peinture résine (I3 à I5)"
                     ? "1.7% / 2% au-dessus de 250k€"
                     : t.activite === "Forage micropieux"
@@ -106,6 +143,11 @@ export function SimulateurPrime() {
                 </option>
               ))}
             </select>
+            {activitesFiltrees.length === 0 && (
+              <p className="mt-2 text-xs text-red-600">
+                Aucune activité trouvée avec cette recherche.
+              </p>
+            )}
           </label>
         </div>
         <button

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
 import { Header } from "@/components/Header"
 import { Stepper } from "@/components/Stepper"
 import { Breadcrumb } from "@/components/Breadcrumb"
@@ -28,6 +29,7 @@ const DevisFaq = dynamic(
   { ssr: false },
 )
 
+const ALL_CATEGORIES_DEVIS = "__all__"
 const ACTIVITES_LISTING = ACTIVITES_AVEC_TARIFS.map((item) => item.activite)
 const CATEGORIES_DEVIS = (() => {
   const out: string[] = []
@@ -42,6 +44,7 @@ const CATEGORIES_DEVIS = (() => {
 })()
 
 function activitesDansCategorieDevis(categorie: string) {
+  if (categorie === ALL_CATEGORIES_DEVIS) return ACTIVITES_AVEC_TARIFS
   return ACTIVITES_AVEC_TARIFS.filter((item) => item.categorie === categorie)
 }
 
@@ -64,10 +67,13 @@ function formatActiviteTarifLabel(item: {
 
 function DevisPageContent() {
   const router = useRouter()
+  const { status: sessionStatus } = useSession()
+  const [fromEspaceClient, setFromEspaceClient] = useState(false)
   const [metierParam, setMetierParam] = useState<string | null>(null)
   const [resumeParam, setResumeParam] = useState<string | null>(null)
   const [activites, setActivites] = useState<string[]>([])
   const [categorieSelectionnee, setCategorieSelectionnee] = useState<string>(CATEGORIES_DEVIS[0] ?? "")
+  const [activiteRecherche, setActiviteRecherche] = useState("")
   const [activiteSelectionnee, setActiviteSelectionnee] = useState("")
   const [siret, setSiret] = useState("")
   const [chiffreAffaires, setChiffreAffaires] = useState<string>("")
@@ -88,10 +94,47 @@ function DevisPageContent() {
   const [sendEmailDone, setSendEmailDone] = useState(false)
 
   useEffect(() => {
+    if (sessionStatus !== "authenticated") return
+    let active = true
+    ;(async () => {
+      try {
+        const res = await fetch("/api/client/profile")
+        if (!res.ok || !active) return
+        const profile = (await res.json()) as {
+          email?: string | null
+          siret?: string | null
+          raisonSociale?: string | null
+          adresse?: string | null
+          codePostal?: string | null
+          ville?: string | null
+        }
+        if (!active) return
+        if (profile.email) setEmailDevis((prev) => prev || String(profile.email))
+        if (profile.siret) setSiret((prev) => prev || String(profile.siret).replace(/\D/g, "").slice(0, 14))
+        if (profile.raisonSociale || profile.adresse || profile.codePostal || profile.ville) {
+          setSiretPrefill((prev) => ({
+            raisonSociale: profile.raisonSociale || prev?.raisonSociale,
+            adresse: profile.adresse || prev?.adresse,
+            codePostal: profile.codePostal || prev?.codePostal,
+            ville: profile.ville || prev?.ville,
+            dateCreationSociete: prev?.dateCreationSociete,
+          }))
+        }
+      } catch {
+        // non bloquant
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [sessionStatus])
+
+  useEffect(() => {
     if (typeof window === "undefined") return
     const urlParams = new URLSearchParams(window.location.search)
     setMetierParam(urlParams.get("metier"))
     setResumeParam(urlParams.get("resume"))
+    setFromEspaceClient(urlParams.get("from") === "espace-client")
   }, [])
 
   const nbSinistres = Number(sinistres) || 0
@@ -198,7 +241,9 @@ function DevisPageContent() {
     setActivites(activites.filter((_, i) => i !== index))
   }
 
-  const activitesCategorieSelectionnee = activitesDansCategorieDevis(categorieSelectionnee)
+  const activitesCategorieSelectionnee = activitesDansCategorieDevis(categorieSelectionnee).filter((item) =>
+    item.activite.toLowerCase().includes(activiteRecherche.trim().toLowerCase())
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -250,7 +295,8 @@ function DevisPageContent() {
     if (typeof window !== "undefined") {
       sessionStorage.setItem(STORAGE_KEYS.devis, JSON.stringify(data))
     }
-    router.push("/souscription")
+    const nextSouscriptionPath = fromEspaceClient ? "/souscription?from=espace-client" : "/souscription"
+    router.push(nextSouscriptionPath)
     setLoading(false)
   }
 
@@ -576,12 +622,29 @@ function DevisPageContent() {
                 }}
                 className={`w-full rounded-xl px-4 py-3.5 transition-all ${inputFieldBg} ${inputTextDark}`}
               >
+                <option value={ALL_CATEGORIES_DEVIS}>Toutes les catégories</option>
                 {CATEGORIES_DEVIS.map((categorie) => (
                   <option key={categorie} value={categorie}>
                     {categorie}
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="mb-4">
+              <label htmlFor="activite-recherche" className="block mb-2 text-sm font-medium text-slate-900">
+                Rechercher une activité
+              </label>
+              <input
+                id="activite-recherche"
+                type="search"
+                value={activiteRecherche}
+                onChange={(e) => {
+                  setActiviteRecherche(e.target.value)
+                  setActiviteSelectionnee("")
+                }}
+                placeholder="Ex : électricité, maçonnerie, étanchéité…"
+                className={`w-full rounded-xl px-4 py-3.5 transition-all ${inputFieldBg} ${inputTextDark}`}
+              />
             </div>
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <select
@@ -606,6 +669,9 @@ function DevisPageContent() {
                 Ajouter
               </button>
             </div>
+            <p className="text-xs text-slate-600 mb-3">
+              {activitesCategorieSelectionnee.length} activité(s) trouvée(s)
+            </p>
             <div className="space-y-2">
               {activites.map((act, index) => (
                 <div
