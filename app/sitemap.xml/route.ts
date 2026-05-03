@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { SITE_URL } from "@/lib/site-url"
 
 export const runtime = "nodejs"
 
@@ -44,7 +45,7 @@ ${entries.map(entryToXml).join("\n")}
 function localMinimalEntries(): SitemapEntry[] {
   return [
     {
-      url: "https://www.optimum-assurance.fr",
+      url: SITE_URL,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,

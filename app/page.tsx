@@ -69,30 +69,30 @@ import {
 
 const reviewsUrl = process.env.NEXT_PUBLIC_REVIEWS_URL || "/avis"
 const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
+const HOME_SEO_TITLE = "Assurance décennale BTP en ligne | Devis 3 min et attestation | Optimum Assurance"
 
 export const metadata: Metadata = {
   title: {
-    absolute:
-      "Assurance décennale BTP en ligne | Devis 3 min & attestation | Optimum Assurance",
+    absolute: HOME_SEO_TITLE,
   },
   description: truncateForDescription(
-    `Assurance décennale obligatoire (loi Spinetta) : devis en ligne en quelques minutes, attestation pour artisans et entreprises du BTP. Plomberie, électricité, maçonnerie… Dès ${EQ_MENSUEL_MIN} €/mois équivalent, prélèvement trimestriel. Sans engagement.`,
+    `Assurance décennale BTP obligatoire : devis en ligne en 3 minutes, attestation rapide et paiement trimestriel. Pour artisans, entreprises du bâtiment et bureaux d’études. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
     158
   ),
   alternates: { canonical: SITE_URL },
   openGraph: {
     type: "website",
     url: SITE_URL,
-    title: "Assurance décennale BTP en ligne | Devis et attestation | Optimum Assurance",
-    description: `Devis décennale immédiat, documents conformes, 100 % en ligne. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
+    title: HOME_SEO_TITLE,
+    description: `Devis décennale BTP en 3 minutes, attestation rapide, documents conformes et paiement trimestriel. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
     locale: "fr_FR",
     siteName: "Optimum Assurance",
     images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance — assurance décennale BTP" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Assurance décennale BTP en ligne | Optimum Assurance",
-    description: `Devis en quelques minutes, attestation rapide. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
+    title: HOME_SEO_TITLE,
+    description: `Devis décennale BTP en 3 minutes, attestation rapide et paiement trimestriel. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
     images: [`${SITE_URL}/opengraph-image`],
   },
 }
@@ -115,6 +115,12 @@ export default function Home() {
             className="shrink-0 text-white font-medium text-sm underline underline-offset-2 hover:text-blue-200 transition-colors"
           >
             FAQ
+          </Link>
+          <Link
+            href="/guides/obligation-decennale"
+            className="shrink-0 text-white font-medium text-sm underline underline-offset-2 hover:text-blue-200 transition-colors"
+          >
+            Guide obligation décennale
           </Link>
         </div>
       </section>
@@ -400,7 +406,7 @@ export default function Home() {
             Plus de 100 métiers couverts
           </h2>
           <p className="text-[#171717] text-center mb-10 max-w-xl mx-auto text-sm">
-            Plomberie, électricité, peinture, maçonnerie… Un devis adapté à votre activité.
+            Plomberie, électricité, peinture, maçonnerie… Plus de 100 activités décennale couvertes avec devis adapté.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             {metiersBtp.map((m) => (
@@ -414,6 +420,11 @@ export default function Home() {
               </Link>
             ))}
           </div>
+          <p className="text-center mt-6">
+            <Link href="/assurance-decennale" className="text-blue-600 font-semibold hover:underline">
+              Voir toutes les activités décennale →
+            </Link>
+          </p>
         </div>
       </section>
 

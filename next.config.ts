@@ -8,26 +8,6 @@ const withBundleAnalyzer = bundleAnalyzer({
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["@react-pdf/renderer", "pdf-lib", "@prisma/client"],
-  outputFileTracingExcludes: {
-    "/*": [
-      "./*.md",
-      "./app/**/*",
-      "./components/**/*",
-      "./docs/**/*",
-      "./e2e/**/*",
-      "./scripts/**/*",
-      "./sql/**/*",
-      "./src/**/*",
-      "./supabase/**/*",
-      "./utils/**/*",
-      "./next.config.ts",
-      "./playwright.config.ts",
-      "./tsconfig.json",
-      "./tsconfig.tsbuildinfo",
-      "./prisma/dev.db",
-      "./prisma/migrations/**/*",
-    ],
-  },
   experimental: {
     inlineCss: true,
     optimizePackageImports: ["qrcode.react", "next-auth/react"],

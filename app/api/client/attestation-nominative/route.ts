@@ -42,12 +42,57 @@ function verificationToken(): string {
   return randomBytes(16).toString("hex")
 }
 
+async function assertDecennalePaymentUpToDate(userId: string): Promise<void> {
+  const [suspendedAttestation, validAttestation, paidDecennaleContract] = await Promise.all([
+    prisma.document.findFirst({
+      where: {
+        userId,
+        type: "attestation",
+        status: "suspendu",
+      },
+      select: { id: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.document.findFirst({
+      where: {
+        userId,
+        type: "attestation",
+        status: "valide",
+      },
+      select: { id: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.insuranceContract.findFirst({
+      where: {
+        userId,
+        productType: "decennale",
+        status: { in: ["active", "approved"] },
+        OR: [
+          { paidAt: { not: null } },
+          { lifecyclePayments: { some: { status: "paid" } } },
+        ],
+      },
+      select: { id: true },
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    }),
+  ])
+
+  if (suspendedAttestation) {
+    throw new Error("PAYMENT_OUTDATED_SUSPENDED")
+  }
+  if (!paidDecennaleContract && !validAttestation) {
+    throw new Error("PAYMENT_NOT_UP_TO_DATE")
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
+
+    await assertDecennalePaymentUpToDate(session.user.id)
 
     const rawBody = (await request.json().catch(() => ({}))) as CreateNominativeBody
     const beneficiaireNom = cleanText(rawBody.beneficiaireNom, 140)
@@ -170,8 +215,29 @@ export async function POST(request: NextRequest) {
       select: { id: true, numero: true, verificationToken: true },
     })
 
-    return NextResponse.json(document)
+    return NextResponse.json({
+      ...document,
+      pdfUrl: `/api/documents/${document.id}/pdf`,
+    })
   } catch (error) {
+    if (error instanceof Error && error.message === "PAYMENT_OUTDATED_SUSPENDED") {
+      return NextResponse.json(
+        {
+          error:
+            "Paiement décennale non à jour : attestation suspendue. Régularisez avant de générer une attestation nominative.",
+        },
+        { status: 403 }
+      )
+    }
+    if (error instanceof Error && error.message === "PAYMENT_NOT_UP_TO_DATE") {
+      return NextResponse.json(
+        {
+          error:
+            "Paiement décennale non à jour : attestation nominative indisponible tant qu'aucun paiement valide n'est enregistré.",
+        },
+        { status: 403 }
+      )
+    }
     console.error("Erreur création attestation nominative:", error)
     return NextResponse.json(
       { error: "Impossible de créer l'attestation nominative pour le moment." },

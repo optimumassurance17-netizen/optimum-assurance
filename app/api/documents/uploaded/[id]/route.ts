@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
 import { getLocalGedPathCandidates, resolveGedFileReadTarget, resolveGedFileStorageTarget } from "@/lib/user-documents"
+import { UPLOAD_DOC_TYPES } from "@/lib/user-document-types"
 
 function isSchemaDriftError(error: unknown): boolean {
   return (
@@ -29,7 +30,7 @@ export async function GET(
     const { id } = await params
 
     const doc = await prisma.userDocument.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId: session.user.id, type: { in: [...UPLOAD_DOC_TYPES] } },
     })
 
     if (!doc) {
@@ -106,7 +107,7 @@ export async function DELETE(
     const { id } = await params
 
     const doc = await prisma.userDocument.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId: session.user.id, type: { in: [...UPLOAD_DOC_TYPES] } },
     })
 
     if (!doc) {

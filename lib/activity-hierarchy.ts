@@ -466,18 +466,52 @@ export function buildActivityHierarchyExampleJson(): Record<string, unknown> {
 }
 
 async function loadHierarchyStore(): Promise<HierarchyStore> {
-  const dbGroups = await prisma.activityGroup.findMany({
-    where: { isActive: true },
-    include: {
-      activities: {
-        where: { isActive: true },
-        include: {
-          subActivities: { where: { isActive: true } },
+  type DbSubActivity = {
+    code: string
+    activityCode: string
+    groupCode: string
+    name: string
+    description: string
+    includedWorks: string | null
+    excludedWorks: string | null
+    relatedActivities: string | null
+  }
+  type DbActivity = {
+    code: string
+    groupCode: string
+    name: string
+    definition: string
+    includedWorks: string | null
+    excludedWorks: string | null
+    relatedActivities: string | null
+    isAccessoryAllowed: boolean
+    subActivities: DbSubActivity[]
+  }
+  type DbGroup = {
+    code: string
+    name: string
+    definition: string | null
+    activities: DbActivity[]
+  }
+
+  let dbGroups: DbGroup[] = []
+  try {
+    dbGroups = await prisma.activityGroup.findMany({
+      where: { isActive: true },
+      include: {
+        activities: {
+          where: { isActive: true },
+          include: {
+            subActivities: { where: { isActive: true } },
+          },
         },
       },
-    },
-    orderBy: { code: "asc" },
-  })
+      orderBy: { code: "asc" },
+    })
+  } catch (error) {
+    if (isActivityHierarchySchemaError(error)) return canonicalHierarchy()
+    throw error
+  }
 
   if (!dbGroups.length) return canonicalHierarchy()
 
@@ -789,18 +823,44 @@ async function persistUnmatchedActivities(
   userId?: string
 ): Promise<void> {
   if (!unmatched.length) return
-
-  for (const missing of unmatched) {
-    if (userId) {
-      await prisma.missingSubActivity.upsert({
-        where: {
-          userId_userInput: {
+  try {
+    for (const missing of unmatched) {
+      if (userId) {
+        await prisma.missingSubActivity.upsert({
+          where: {
+            userId_userInput: {
+              userId,
+              userInput: missing.input,
+            },
+          },
+          create: {
             userId,
             userInput: missing.input,
+            suggestedGroupCode: missing.suggestedGroup?.code,
+            suggestedGroupName: missing.suggestedGroup?.name,
+            suggestedActivityCode: missing.suggestedActivity?.code,
+            suggestedActivityName: missing.suggestedActivity?.name,
+            suggestedSubActivityCode: missing.suggestedSubActivity?.code,
+            suggestedSubActivityName: missing.suggestedSubActivity?.name,
+            confidence: missing.confidence || null,
           },
-        },
-        create: {
-          userId,
+          update: {
+            suggestedGroupCode: missing.suggestedGroup?.code,
+            suggestedGroupName: missing.suggestedGroup?.name,
+            suggestedActivityCode: missing.suggestedActivity?.code,
+            suggestedActivityName: missing.suggestedActivity?.name,
+            suggestedSubActivityCode: missing.suggestedSubActivity?.code,
+            suggestedSubActivityName: missing.suggestedSubActivity?.name,
+            confidence: missing.confidence || null,
+            occurrenceCount: { increment: 1 },
+            lastSeenAt: new Date(),
+          },
+        })
+        continue
+      }
+
+      await prisma.missingSubActivity.create({
+        data: {
           userInput: missing.input,
           suggestedGroupCode: missing.suggestedGroup?.code,
           suggestedGroupName: missing.suggestedGroup?.name,
@@ -810,33 +870,11 @@ async function persistUnmatchedActivities(
           suggestedSubActivityName: missing.suggestedSubActivity?.name,
           confidence: missing.confidence || null,
         },
-        update: {
-          suggestedGroupCode: missing.suggestedGroup?.code,
-          suggestedGroupName: missing.suggestedGroup?.name,
-          suggestedActivityCode: missing.suggestedActivity?.code,
-          suggestedActivityName: missing.suggestedActivity?.name,
-          suggestedSubActivityCode: missing.suggestedSubActivity?.code,
-          suggestedSubActivityName: missing.suggestedSubActivity?.name,
-          confidence: missing.confidence || null,
-          occurrenceCount: { increment: 1 },
-          lastSeenAt: new Date(),
-        },
       })
-      continue
     }
-
-    await prisma.missingSubActivity.create({
-      data: {
-        userInput: missing.input,
-        suggestedGroupCode: missing.suggestedGroup?.code,
-        suggestedGroupName: missing.suggestedGroup?.name,
-        suggestedActivityCode: missing.suggestedActivity?.code,
-        suggestedActivityName: missing.suggestedActivity?.name,
-        suggestedSubActivityCode: missing.suggestedSubActivity?.code,
-        suggestedSubActivityName: missing.suggestedSubActivity?.name,
-        confidence: missing.confidence || null,
-      },
-    })
+  } catch (error) {
+    if (isActivityHierarchySchemaError(error)) return
+    throw error
   }
 }
 

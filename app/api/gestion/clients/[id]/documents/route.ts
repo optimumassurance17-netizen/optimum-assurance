@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { fetchUserDocumentReviews } from "@/lib/user-document-review"
+import { UPLOAD_DOC_TYPES } from "@/lib/user-document-types"
 
 /**
  * Liste les documents uploadés (UserDocument) d'un client - pour admin
@@ -21,7 +22,10 @@ export async function GET(
     const { id: userId } = await params
 
     const docs = await prisma.userDocument.findMany({
-      where: { userId },
+      where: {
+        userId,
+        type: { in: [...UPLOAD_DOC_TYPES] },
+      },
       select: { id: true, type: true, filename: true, size: true, createdAt: true },
       orderBy: { type: "asc" },
     })

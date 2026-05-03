@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react"
 import { Header } from "@/components/Header"
 import { Stepper } from "@/components/Stepper"
 import { Breadcrumb } from "@/components/Breadcrumb"
+import { DecennaleDevisJsonLd } from "@/app/devis/DecennaleDevisJsonLd"
 import { calculerTarif, type DevisResult } from "@/lib/tarification"
 import type { DevisData } from "@/lib/types"
 import { STORAGE_KEYS } from "@/lib/types"
@@ -301,6 +302,7 @@ function DevisPageContent() {
 
   return (
     <main className="min-h-screen bg-slate-50/80">
+      <DecennaleDevisJsonLd />
       <Header />
 
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-10 sm:py-14">

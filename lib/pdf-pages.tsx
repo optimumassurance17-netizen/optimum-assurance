@@ -151,6 +151,85 @@ export function AttestationPDFPage({
   )
 }
 
+export function AttestationNominativePDFPage({
+  numero,
+  data,
+}: {
+  numero: string
+  data: Record<string, unknown>
+}) {
+  const d = data as {
+    raisonSociale?: string
+    siret?: string
+    adresse?: string
+    codePostal?: string
+    ville?: string
+    activites?: string[]
+    primeAnnuelle?: number
+    dateEffet?: string
+    dateEcheance?: string
+    verificationUrl?: string
+    verificationQrDataUri?: string
+    beneficiaireNom?: string
+    chantierAdresse?: string
+    objetMission?: string
+  }
+  return (
+    <Page size="A4" style={pdfTheme.page}>
+      <PdfBrandHeader tagline="Attestation décennale nominative" />
+      <Text style={pdfTheme.h2Center}>ATTESTATION D&apos;ASSURANCE NOMINATIVE</Text>
+      <Text style={[pdfTheme.subtitleCenter, { color: "#2563eb", fontFamily: "Helvetica-Bold" }]}>N° {numero}</Text>
+      <View style={pdfTheme.attestCard}>
+        <Text style={pdfTheme.p}>La société Optimum Assurance atteste que :</Text>
+        <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#0f172a" }]}>{d.raisonSociale ?? "—"}</Text>
+        <Text style={pdfTheme.p}>SIRET : {d.siret ?? "—"}</Text>
+        {(d.adresse || d.codePostal || d.ville) && (
+          <Text style={pdfTheme.p}>{[d.adresse, d.codePostal, d.ville].filter(Boolean).join(" ")}</Text>
+        )}
+        <Text style={pdfTheme.p}>
+          est garantie au titre de l&apos;assurance responsabilité civile décennale pour les activités :{" "}
+          {d.activites?.join(", ") ?? "—"}
+        </Text>
+        <Text style={pdfTheme.p}>
+          Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}
+        </Text>
+        <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+      </View>
+
+      <View style={pdfTheme.section}>
+        <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#1e40af" }]}>
+          Bénéficiaire nominatif
+        </Text>
+        <Text style={pdfTheme.p}>Bénéficiaire : {d.beneficiaireNom ?? "—"}</Text>
+        {d.chantierAdresse ? <Text style={pdfTheme.p}>Adresse du chantier : {d.chantierAdresse}</Text> : null}
+        {d.objetMission ? <Text style={pdfTheme.p}>Objet / lot : {d.objetMission}</Text> : null}
+      </View>
+
+      {d.verificationQrDataUri && (
+        <View style={pdfTheme.section}>
+          <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
+            <Image src={d.verificationQrDataUri} style={{ width: 72, height: 72, marginRight: 10 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold", color: "#1e40af" }}>
+                Vérification en ligne
+              </Text>
+              {d.verificationUrl ? (
+                <Text style={{ fontSize: 7, lineHeight: 1.35, color: "#475569" }}>{d.verificationUrl}</Text>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      )}
+
+      <Text style={[pdfTheme.legalText, { marginTop: 14 }]}>{pdfLegalLinksLine()}</Text>
+      <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
+        Optimum Courtage agit par délégation de Accelerant Insurance.
+      </Text>
+    </Page>
+  )
+}
+
 export function AttestationDoPDFPage({
   numero,
   data,

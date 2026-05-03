@@ -1,18 +1,7 @@
 import type { Metadata } from "next"
-import { SITE_URL } from "@/lib/site-url"
+import { noindexMetadata } from "@/lib/seo-noindex"
 
-const baseUrl = SITE_URL
-
-export const metadata: Metadata = {
-  title: "Souscription",
-  alternates: {
-    canonical: `${baseUrl}/souscription`,
-  },
-  robots: {
-    index: false,
-    follow: false,
-  },
-}
+export const metadata: Metadata = noindexMetadata
 
 export default function SouscriptionLayout({ children }: { children: React.ReactNode }) {
   return children

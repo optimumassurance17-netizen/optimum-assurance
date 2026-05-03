@@ -259,6 +259,42 @@ export const EMAIL_TEMPLATES = {
         `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre dossier <strong>${escapeHtmlForEmail(opts.produitLabel)}</strong> nécessite une action de conformité DDA (<strong>${escapeHtmlForEmail(manque)}</strong>).</p>${referenceHtml}<p><a href="${opts.ctaUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Finaliser ma conformité DDA</a></p><p style="font-size:13px;color:#64748b;">Cette étape est nécessaire pour poursuivre le traitement de votre dossier.</p><p>Cordialement,<br>Optimum Assurance</p>`,
     }
   },
+  devoirConseilConfirme: (
+    raisonSociale: string,
+    opts: {
+      produitLabel: string
+      contenu: string
+      acceptedAt: string
+      liens: { label: string; href: string }[]
+      needsSummary?: string
+      recommendedProduct?: string
+    }
+  ) => {
+    const linksText = opts.liens.map((l) => `- ${l.label} : ${l.href}`).join("\n")
+    const linksHtml = opts.liens
+      .map(
+        (l) =>
+          `<li><a href="${escapeHtmlForEmail(l.href)}" style="color:#2563eb;">${escapeHtmlForEmail(l.label)}</a></li>`
+      )
+      .join("")
+    const needsText = opts.needsSummary?.trim()
+      ? `\n\nRésumé des besoins déclarés :\n${opts.needsSummary.trim()}`
+      : ""
+    const needsHtml = opts.needsSummary?.trim()
+      ? `<p><strong>Résumé des besoins déclarés :</strong><br/>${escapeHtmlForEmail(opts.needsSummary.trim())}</p>`
+      : ""
+    const recommendationText = opts.recommendedProduct?.trim()
+      ? `\nProduit recommandé : ${opts.recommendedProduct.trim()}`
+      : ""
+    const recommendationHtml = opts.recommendedProduct?.trim()
+      ? `<p><strong>Produit recommandé :</strong> ${escapeHtmlForEmail(opts.recommendedProduct.trim())}</p>`
+      : ""
+    return {
+      subject: `Devoir de conseil confirmé — ${opts.produitLabel} - Optimum Assurance`,
+      text: `Bonjour ${raisonSociale},\n\nNous vous confirmons l'enregistrement de votre devoir de conseil pour votre dossier ${opts.produitLabel}.\n\nDate de confirmation : ${opts.acceptedAt}\n\nRappel du devoir de conseil :\n${opts.contenu}${needsText}${recommendationText}\n\nRéférences utiles :\n${linksText}\n\nConservez cet email avec vos documents contractuels.\n\nCordialement,\nOptimum Assurance`,
+      html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Nous vous confirmons l'enregistrement de votre <strong>devoir de conseil</strong> pour votre dossier <strong>${escapeHtmlForEmail(opts.produitLabel)}</strong>.</p><p><strong>Date de confirmation :</strong> ${escapeHtmlForEmail(opts.acceptedAt)}</p><p><strong>Rappel du devoir de conseil :</strong><br/>${escapeHtmlForEmail(opts.contenu)}</p>${needsHtml}${recommendationHtml}<p><strong>Références utiles :</strong></p><ul>${linksHtml}</ul><p style="font-size:13px;color:#64748b;">Conservez cet email avec vos documents contractuels.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+    }
+  },
   pieceGedRefusee: (raisonSociale: string, documentLabel: string, reason: string) => ({
     subject: "Action requise : pièce justificative à remplacer - Optimum Assurance",
     text: `Bonjour ${raisonSociale},\n\nUne pièce justificative déposée dans votre espace client doit être remplacée.\n\nPièce concernée : ${documentLabel}\nMotif : ${reason}\n\nMerci de vous connecter à votre espace client pour déposer une nouvelle version : ${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,

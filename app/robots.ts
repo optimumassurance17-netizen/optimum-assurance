@@ -8,15 +8,16 @@ import { SITE_URL } from "@/lib/site-url"
  */
 export default function robots(): MetadataRoute.Robots {
   const baseUrl = SITE_URL
+  const host = new URL(baseUrl).host
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/espace-client", "/gestion", "/confirmation", "/paiement", "/souscription", "/signature", "/api/"],
+        disallow: ["/api/"],
       },
     ],
-    host: baseUrl,
+    host,
     sitemap: `${baseUrl}/sitemap.xml`,
   }
 }

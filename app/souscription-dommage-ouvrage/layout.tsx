@@ -1,19 +1,14 @@
-import type { Metadata } from "next"
-import { SITE_URL } from "@/lib/site-url"
+import { buildNoindexMetadata } from "@/lib/seo-noindex"
 
-const baseUrl = SITE_URL
+export const metadata = buildNoindexMetadata(
+  "Souscription dommage ouvrage",
+  "Parcours de souscription dommage ouvrage réservé au dossier en cours."
+)
 
-export const metadata: Metadata = {
-  title: "Souscription dommage ouvrage",
-  alternates: {
-    canonical: `${baseUrl}/souscription-dommage-ouvrage`,
-  },
-  robots: {
-    index: false,
-    follow: false,
-  },
-}
-
-export default function SouscriptionDommageOuvrageLayout({ children }: { children: React.ReactNode }) {
+export default function SouscriptionDommageOuvrageLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return children
 }

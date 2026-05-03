@@ -59,6 +59,8 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
       changeFrequency: "weekly",
       priority: 1,
     },
+    { url: `${baseUrl}/assurance-decennale`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.92 },
+    { url: `${baseUrl}/dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.88 },
     {
       url: `${baseUrl}/devis-assurance-decennale-en-ligne`,
       lastModified: new Date(),
@@ -68,6 +70,7 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
     { url: `${baseUrl}/devis`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.95 },
     { url: `${baseUrl}/devis-dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/devis-rc-fabriquant`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.85 },
+    { url: `${baseUrl}/devis/rcpro`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.65 },
     { url: `${baseUrl}/faq`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.85 },
     { url: `${baseUrl}/guides`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.82 },
     ...guides,

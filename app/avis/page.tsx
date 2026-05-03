@@ -7,15 +7,15 @@ import { SITE_URL } from "@/lib/site-url"
 const baseUrl = SITE_URL
 
 export const metadata = {
-  title: "Avis Clients Assurance Décennale — Note 4,9/5 | Optimum",
+  title: "Avis clients Optimum Assurance | Décennale BTP & dommage ouvrage",
   description:
-    "Avis clients Optimum Assurance : plombiers, électriciens, peintres. Attestation immédiate, tarifs compétitifs. Note 4,9/5. Témoignages vérifiés.",
+    "Découvrez les avis clients Optimum Assurance sur la décennale BTP et le dommage ouvrage : attestation rapide, parcours simple, tarifs compétitifs et accompagnement réactif.",
   keywords: ["avis assurance décennale", "témoignages décennale", "Optimum Assurance avis"],
   alternates: { canonical: `${baseUrl}/avis` },
   openGraph: {
     url: `${baseUrl}/avis`,
-    title: "Avis Clients | Optimum Assurance",
-    description: "Note 4,9/5. Témoignages de plombiers, électriciens, peintres.",
+    title: "Avis clients Optimum Assurance | Décennale BTP & dommage ouvrage",
+    description: "Retours d'expérience sur la décennale BTP, la DO et la qualité d'accompagnement Optimum Assurance.",
     locale: "fr_FR",
     siteName: "Optimum Assurance",
     type: "website",
@@ -23,7 +23,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Avis Clients | Optimum Assurance",
+    title: "Avis clients Optimum Assurance",
+    description: "Témoignages sur la décennale BTP, le dommage ouvrage et le parcours client.",
     images: [`${baseUrl}/opengraph-image`],
   },
 }

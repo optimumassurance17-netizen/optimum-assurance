@@ -6,19 +6,23 @@ import { DevisDommageOuvrageClientGate } from "@/components/DevisDommageOuvrageC
 import { FormulaireDevisDommageOuvrage } from "@/components/FormulaireDevisDommageOuvrage"
 import { seoBreadcrumbListNode, seoJsonLdGraph, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
 import { SITE_URL } from "@/lib/site-url"
+import { truncateForDescription } from "@/lib/seo-metadata-utils"
 
 const baseUrl = SITE_URL
 
 export const metadata = {
-  title: "Devis Dommage Ouvrage en Ligne — Auto-construction | Optimum",
-  description:
-    "Devis assurance dommage ouvrage : obligatoire pour constructeurs et promoteurs. Auto-construction acceptée. Garantie clos et couvert. Devis sous 24h.",
+  title: "Devis dommage ouvrage en ligne | Réponse sous 24 h | Optimum Assurance",
+  description: truncateForDescription(
+    "Devis assurance dommage ouvrage pour particuliers, constructeurs et promoteurs : auto-construction acceptée, garantie clos et couvert possible, étude personnalisée sous 24 h.",
+    158
+  ),
   keywords: ["devis dommage ouvrage", "assurance dommage ouvrage", "dommage ouvrage auto-construction", "garantie clos et couvert"],
   alternates: { canonical: `${baseUrl}/devis-dommage-ouvrage` },
   openGraph: {
     url: `${baseUrl}/devis-dommage-ouvrage`,
-    title: "Devis Dommage Ouvrage | Optimum Assurance",
-    description: "Assurance obligatoire maîtres d'ouvrage. Auto-construction, clos et couvert. Devis sous 24h.",
+    title: "Devis dommage ouvrage en ligne | Optimum Assurance",
+    description:
+      "Particulier, constructeur ou promoteur : demande DO avec étude personnalisée sous 24 h.",
     locale: "fr_FR",
     siteName: "Optimum Assurance",
     type: "website",
@@ -26,8 +30,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Devis Dommage Ouvrage | Optimum Assurance",
-    description: "Devis dommage ouvrage en ligne pour maîtres d'ouvrage, auto-construction et clos et couvert.",
+    title: "Devis dommage ouvrage | Optimum Assurance",
+    description: "Étude DO sous 24 h pour particuliers, constructeurs et promoteurs.",
     images: [`${baseUrl}/opengraph-image`],
   },
 }

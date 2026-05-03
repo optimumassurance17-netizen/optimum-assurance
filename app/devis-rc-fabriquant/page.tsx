@@ -9,18 +9,18 @@ import { truncateForDescription } from "@/lib/seo-metadata-utils"
 const canonical = `${SITE_URL}/devis-rc-fabriquant`
 
 export const metadata: Metadata = {
-  title: "Devis RC Fabriquant | Responsabilité civile fabricant",
+  title: "Devis RC Fabriquant | Etude sous 24 a 48 h | Optimum Assurance",
   description: truncateForDescription(
-    "Demande de devis assurance Responsabilité Civile Fabriquant (RC Fabriquant) pour industriels et fabricants. Étude personnalisée sous 24 à 48 h.",
+    "Devis RC Fabriquant pour fabricants, industriels et distributeurs : demande en ligne, analyse du risque et retour sous 24 a 48 h ouvrées.",
     158
   ),
   alternates: { canonical },
   openGraph: {
     type: "website",
     url: canonical,
-    title: "Devis RC Fabriquant | Optimum Assurance",
+    title: "Devis RC Fabriquant | Etude rapide | Optimum Assurance",
     description:
-      "Assurance responsabilité civile du fabricant : décrivez votre activité, un conseiller vous répond sous 24 à 48 h.",
+      "Responsabilite civile du fabricant : decrivez votre activite, vos produits et recevez un retour sous 24 a 48 h.",
     locale: "fr_FR",
     siteName: "Optimum Assurance",
   },
