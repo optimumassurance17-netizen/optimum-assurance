@@ -1,36 +1,16 @@
 import { METIERS_SEO } from "@/lib/metiers-seo"
 import { DO_SEO } from "@/lib/dommage-ouvrage-seo"
 import { GUIDES_SEO } from "@/lib/guides-seo"
-import { fetchProgrammaticSitemapUrls } from "@/lib/seo-programmatic/queries"
 import { SITE_URL } from "@/lib/site-url"
-
-export type SitemapEntry = {
-  url: string
-  lastModified: Date
-  changeFrequency?: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never"
-  priority?: number
-}
+import type { SitemapEntry } from "@/lib/sitemap/xml"
 
 const baseUrl = SITE_URL
 
 /**
- * Construit la liste des URLs pour sitemap.xml (logique unique : metadata ou route handler).
+ * Construit la liste statique des URLs SEO.
+ * Le programmatique géolocalisé est servi dans /sitemap-programmatic.xml pour éviter un sitemap unique lourd.
  */
-export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
-  let programmatic: Awaited<ReturnType<typeof fetchProgrammaticSitemapUrls>> = []
-  try {
-    programmatic = await fetchProgrammaticSitemapUrls()
-  } catch (e) {
-    console.error("[sitemap] fetchProgrammaticSitemapUrls:", e)
-  }
-
-  const programmaticEntries: SitemapEntry[] = programmatic.map((p) => ({
-    url: `${baseUrl}${p.path}`,
-    lastModified: new Date(),
-    changeFrequency: p.changeFrequency,
-    priority: p.priority,
-  }))
-
+export function buildStaticSitemapEntries(): SitemapEntry[] {
   const metiers: SitemapEntry[] = METIERS_SEO.map((m) => ({
     url: `${baseUrl}/assurance-decennale/${m.slug}`,
     lastModified: new Date(),
@@ -77,7 +57,6 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
     { url: `${baseUrl}/avis`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
     ...metiers,
     ...doPages,
-    ...programmaticEntries,
     { url: `${baseUrl}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.75 },
     { url: `${baseUrl}/cgv`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
     {
@@ -93,6 +72,11 @@ export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
     { url: `${baseUrl}/etude/domaine`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.45 },
     { url: `${baseUrl}/droits-personnes`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.25 },
   ]
+}
+
+/** Compat ancien import. */
+export async function buildSitemapEntries(): Promise<SitemapEntry[]> {
+  return buildStaticSitemapEntries()
 }
 
 export function minimalSitemapEntries(): SitemapEntry[] {
