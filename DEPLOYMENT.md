@@ -22,7 +22,6 @@ Renseigner toutes les variables dans `.env` (ou les secrets de la plateforme) :
 | `NEXT_PUBLIC_EMAIL` | Email de contact | `contact@optimum-assurance.fr` |
 | `NEXT_PUBLIC_WHATSAPP` | Numéro WhatsApp (sans espaces) | `33612345678` |
 | `INSEE_API_KEY_INTEGRATION` | Optionnel — pré-remplissage SIRET (gratuit, portail-api.insee.fr) | — |
-| `PAPPERS_API_KEY` | Optionnel — pré-remplissage SIRET (Pappers, payant) | — |
 | `CRON_SECRET` | **Obligatoire en production** pour que les appels `/api/cron/*` fonctionnent (sinon **503**). Vercel envoie `Authorization: Bearer <CRON_SECRET>` sur les crons planifiés si la variable est définie. | `npm run generate-secret` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Optionnel — usage client navigateur (futur) | — |
 

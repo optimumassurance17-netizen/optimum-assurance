@@ -1,6 +1,5 @@
 /**
- * Client API Sirene - INSEE (gratuit) ou Pappers (payant)
- * Priorité : INSEE si configuré, sinon Pappers
+ * Client API Sirene - INSEE (gratuit)
  */
 
 const INSEE_BASE = "https://api.insee.fr/api-sirene/3.11"
@@ -140,39 +139,6 @@ function parseInseeResponse(data: Record<string, unknown>): SireneResult | null 
   }
 }
 
-/** Recherche par SIRET via Pappers */
-export async function fetchSirenePappers(siret: string): Promise<SireneResult | null> {
-  const apiKey = process.env.PAPPERS_API_KEY
-  if (!apiKey) return null
-
-  try {
-    const res = await fetch(
-      `https://api.pappers.fr/v2/entreprise?siret=${siret}&api_token=${apiKey}`,
-      { headers: { Accept: "application/json" } }
-    )
-
-    if (!res.ok) return null
-
-    const data = (await res.json()) as {
-      nom_entreprise?: string
-      siege?: { adresse?: string; code_postal?: string; ville?: string }
-      date_creation?: string
-    }
-
-    const dateCreationSociete = safeString(data.date_creation) || undefined
-
-    return {
-      raisonSociale: safeString(data.nom_entreprise),
-      adresse: safeString(data.siege?.adresse),
-      codePostal: safeString(data.siege?.code_postal),
-      ville: safeString(data.siege?.ville),
-      ...(dateCreationSociete && { dateCreationSociete }),
-    }
-  } catch {
-    return null
-  }
-}
-
 /** Vérifie si l'API INSEE est configurée */
 function hasInseeConfig(): boolean {
   return !!(
@@ -185,28 +151,19 @@ function hasInseeConfig(): boolean {
 /** Pour health / monitoring : présence des clés (aucun appel réseau). */
 export function getSireneEnvStatus(): {
   insee: "configured" | "missing"
-  pappers: "configured" | "missing"
 } {
   return {
     insee: hasInseeConfig() ? "configured" : "missing",
-    pappers: process.env.PAPPERS_API_KEY?.trim() ? "configured" : "missing",
   }
 }
 
-/** Recherche entreprise par SIRET - INSEE en priorité, puis Pappers */
+/** Recherche entreprise par SIRET via INSEE. */
 export async function fetchEntrepriseBySiret(siret: string): Promise<SireneResult | null> {
   const normalized = siret.replace(/\s/g, "")
   if (normalized.length !== 14 || !/^\d+$/.test(normalized)) return null
 
-  // Essayer INSEE en premier si configuré
   if (hasInseeConfig()) {
-    const result = await fetchSireneInsee(normalized)
-    if (result) return result
-  }
-
-  // Fallback sur Pappers si configuré
-  if (process.env.PAPPERS_API_KEY) {
-    return fetchSirenePappers(normalized)
+    return fetchSireneInsee(normalized)
   }
 
   return null

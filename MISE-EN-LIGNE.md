@@ -70,7 +70,6 @@ Ajouter ces variables (Production) :
 
 **Optionnelles :**
 - `INSEE_API_KEY_INTEGRATION` — [portail-api.insee.fr](https://portail-api.insee.fr) (pré-remplissage SIRET)
-- `PAPPERS_API_KEY` — [pappers.fr](https://pappers.fr) (pré-remplissage SIRET)
 
 ---
 

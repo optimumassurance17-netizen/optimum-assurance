@@ -28,9 +28,9 @@ async function check(pathname) {
           "   ⚠️  esign.ready = false → signature électronique indisponible (NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY sur Vercel)."
         )
       }
-      if (j.sirene && j.sirene.insee === "missing" && j.sirene.pappers === "missing") {
+      if (j.sirene && j.sirene.insee === "missing") {
         console.log(
-          "   ⚠️  sirene : aucune clé INSEE / Pappers → préremplissage SIRET (/api/siret) non configuré sur ce déploiement."
+          "   ⚠️  sirene.insee = missing → préremplissage SIRET (/api/siret) non configuré sur ce déploiement."
         )
       }
     }

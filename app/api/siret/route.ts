@@ -3,7 +3,7 @@ import { fetchEntrepriseBySiret } from "@/lib/sirene"
 
 /**
  * Recherche entreprise par SIRET
- * Utilise l'API Sirene INSEE (gratuite) en priorité, sinon Pappers
+ * Utilise l'API Sirene INSEE (gratuite)
  * Voir .env.example pour les variables à configurer
  */
 export async function GET(request: NextRequest) {
@@ -22,12 +22,11 @@ export async function GET(request: NextRequest) {
         process.env.INSEE_SIRENE_API_KEY ||
         process.env.INSEE_API_KEY_INTEGRATION ||
         (process.env.INSEE_CONSUMER_KEY && process.env.INSEE_CONSUMER_SECRET)
-      const hasPappers = process.env.PAPPERS_API_KEY
       return NextResponse.json(
         {
-          error: hasInsee || hasPappers ? "Entreprise introuvable" : "API SIRET non configurée",
+          error: hasInsee ? "Entreprise introuvable" : "API SIRET INSEE non configurée",
         },
-        { status: hasInsee || hasPappers ? 404 : 503 }
+        { status: hasInsee ? 404 : 503 }
       )
     }
 
