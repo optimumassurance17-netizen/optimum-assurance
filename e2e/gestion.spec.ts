@@ -24,13 +24,12 @@ test.describe("Gestion CRM — accès et API", () => {
     expect(res.ok()).toBeTruthy()
     const j = (await res.json()) as {
       esign?: { supabaseUrl?: string; serviceRole?: string; ready?: boolean }
-      sirene?: { insee?: string; pappers?: string }
+      sirene?: { insee?: string }
     }
     expect(j.esign).toBeDefined()
     expect(typeof j.esign?.ready).toBe("boolean")
     expect(j.sirene).toBeDefined()
     expect(j.sirene?.insee).toMatch(/configured|missing/)
-    expect(j.sirene?.pappers).toMatch(/configured|missing/)
   })
 })
 

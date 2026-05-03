@@ -20,7 +20,7 @@ Ci-dessous : **état actuel** + ce qui reste **manuel** (dashboards externes).
 
 - **Vercel** : dernier déploiement **Production** **Ready** ; alias `https://www.optimum-assurance.fr`.
 
-- **Santé prod** : `https://www.optimum-assurance.fr/api/health` → base **connected**, email Resend **configured** (`RESEND_API_KEY` + `EMAIL_FROM` côté serveur), **`sirene.insee` / `sirene.pappers`** (`configured` ou `missing` — clés pour le préremplissage SIRET `/api/siret`, sans appel INSEE dans le health).
+- **Santé prod** : `https://www.optimum-assurance.fr/api/health` → base **connected**, email Resend **configured** (`RESEND_API_KEY` + `EMAIL_FROM` côté serveur), **`sirene.insee`** (`configured` ou `missing` — clé INSEE pour le préremplissage SIRET `/api/siret`, sans appel INSEE dans le health).
 
 - **Smoke test prod (sans secrets)** : **`npm run verify:prod`** — `/api/health`, `/robots.txt`, **`/sitemap.xml`** en **200** (sitemap : route handler dynamique + proxy qui **n’applique pas** Supabase session sur `sitemap.xml` / `robots.txt`).
 
@@ -122,7 +122,7 @@ Commandes locales (nécessitent **`SUPABASE_DATABASE_URL`** dans `.env.local`) :
 
 ### Optionnel
 
-- [ ] Variables optionnelles : téléphone/WhatsApp, **Upstash**, Pappers, etc. selon besoins.
+- [ ] Variables optionnelles : téléphone/WhatsApp, **Upstash**, etc. selon besoins.
 
 - [ ] SEO programmatique : enrichir `seo_decennale_ville` / `seo_do_ville` dans Supabase si tu veux plus de pages localement (voir `lib/seo-programmatic/`).
 

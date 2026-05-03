@@ -47,7 +47,6 @@ const vars = [
   { key: "NEXT_PUBLIC_PHONE", required: false, hint: "Téléphone affiché" },
   { key: "NEXT_PUBLIC_EMAIL", required: false, hint: "Email de contact" },
   { key: "NEXT_PUBLIC_WHATSAPP", required: false, hint: "WhatsApp (sans espaces)" },
-  { key: "PAPPERS_API_KEY", required: false, hint: "Optionnel - pré-remplissage SIRET (Pappers)" },
   { key: "INSEE_API_KEY_INTEGRATION", required: false, hint: "Optionnel - pré-remplissage SIRET (INSEE gratuit)" },
   { key: "CRON_SECRET", required: false, hint: "Recommandé - sécurise les crons Vercel (rappels)" },
   { key: "UPSTASH_REDIS_REST_URL", required: false, hint: "Optionnel - rate limit distribué (chat / contact) sur Vercel" },
