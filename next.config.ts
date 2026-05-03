@@ -11,8 +11,6 @@ const nextConfig: NextConfig = {
   outputFileTracingExcludes: {
     "/*": [
       "./*.md",
-      "./app/**/*",
-      "./components/**/*",
       "./docs/**/*",
       "./e2e/**/*",
       "./scripts/**/*",
