@@ -26,6 +26,7 @@ const CRON_ROUTES = [
   "/api/cron/rappel-dossiers-incomplets",
   "/api/cron/rappel-signatures-en-attente",
   "/api/cron/rappel-paiements-contrats",
+  "/api/cron/repair-signatures-bloquees",
   "/api/cron/sepa-trimestriel",
 ] as const
 
