@@ -48,6 +48,7 @@ export function checkRateLimitMemory(
 export const RATE_LIMITS = {
   chat: { max: 24, windowMs: 60_000 },
   contact: { max: 8, windowMs: 60_000 },
+  ddaEmail: { max: 6, windowMs: 60_000 },
 } as const
 
 let sharedRedis: Redis | null | undefined
@@ -66,6 +67,7 @@ function getSharedRedis(): Redis | null {
 
 let chatLimiter: Ratelimit | null | undefined
 let contactLimiter: Ratelimit | null | undefined
+let ddaEmailLimiter: Ratelimit | null | undefined
 
 function getChatLimiter(): Ratelimit | null {
   if (chatLimiter !== undefined) return chatLimiter
@@ -97,6 +99,21 @@ function getContactLimiter(): Ratelimit | null {
   return contactLimiter
 }
 
+function getDdaEmailLimiter(): Ratelimit | null {
+  if (ddaEmailLimiter !== undefined) return ddaEmailLimiter
+  const redis = getSharedRedis()
+  if (!redis) {
+    ddaEmailLimiter = null
+    return null
+  }
+  ddaEmailLimiter = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(RATE_LIMITS.ddaEmail.max, "1 m"),
+    prefix: "rl-dda-email",
+  })
+  return ddaEmailLimiter
+}
+
 /**
  * Retourne une réponse 429 si la limite est dépassée, sinon `null`.
  * Upstash Redis si `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`, sinon mémoire.
@@ -107,7 +124,12 @@ export async function rateLimitResponse(
 ): Promise<NextResponse | null> {
   const ip = getClientIp(req)
   const { max, windowMs } = RATE_LIMITS[kind]
-  const limiter = kind === "chat" ? getChatLimiter() : getContactLimiter()
+  const limiter =
+    kind === "chat"
+      ? getChatLimiter()
+      : kind === "contact"
+        ? getContactLimiter()
+        : getDdaEmailLimiter()
 
   if (limiter) {
     const { success, reset } = await limiter.limit(ip)
