@@ -195,6 +195,13 @@ export const ACTIVITE_TO_NOMENCLATURE: Record<string, NomenclatureItem[]> = {
   Architecte: [
     { code: "PI-ARCH", libelleOfficiel: "Maîtrise d'œuvre de conception et de réalisation", categorie: "professions-intellectuelles" },
   ],
+  "Architecte intérieur": [
+    {
+      code: "PI-ARCH-INT",
+      libelleOfficiel: "Architecte d'intérieur (conception et aménagement intérieur)",
+      categorie: "professions-intellectuelles",
+    },
+  ],
   "Maître d'œuvre": [
     { code: "PI-MOE", libelleOfficiel: "Maîtrise d'œuvre de conception et de réalisation", categorie: "professions-intellectuelles" },
   ],
@@ -409,6 +416,10 @@ export const ACTIVITE_EXCLUSIONS: Record<string, string[]> = {
 
   // Professions intellectuelles
   Architecte: ["Mission limitée à la décoration sans intervention technique"],
+  "Architecte intérieur": [
+    "Mission limitée à la décoration pure sans intervention technique sur le bâti",
+    "Travaux structurels, porteurs ou atteinte à la solidité de l'ouvrage",
+  ],
   "Maître d'œuvre": ["Substitution contractuelle au maître d'ouvrage"],
   "Économiste de la construction": ["Exécution des plans d'architecte ou études techniques"],
   Métreur: ["Devis descriptifs"],
