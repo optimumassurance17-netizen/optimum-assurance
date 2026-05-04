@@ -162,6 +162,8 @@ function docRow(
   return (
     <div
       key={type}
+      id={`ged-doc-${type}`}
+      data-ged-doc-type={type}
       className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-[#e4e4e4] rounded-xl border border-[#d4d4d4]"
     >
       <div className="flex items-center gap-3 min-w-0">
@@ -211,6 +213,7 @@ function docRow(
         )}
         <label className="cursor-pointer">
           <input
+            id={`ged-upload-${type}`}
             type="file"
             accept=".pdf,image/jpeg,image/jpg,image/png,image/webp"
             className="sr-only"

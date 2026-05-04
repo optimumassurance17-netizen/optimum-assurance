@@ -970,6 +970,43 @@ export default function EspaceClientPage() {
           </div>
         )}
 
+        {activeTab === "documents" && !loading && (
+          <div className="mb-8 rounded-2xl border border-[#f59e0b]/30 bg-[#fff7ed] p-6">
+            <h2 className="text-lg font-bold text-[#0a0a0a] mb-2">Relevé de sinistralité</h2>
+            <p className="text-sm text-[#171717] mb-4">
+              Déposez votre relevé de sinistralité pour accélérer l’étude de dossier et les demandes de reprise du
+              passé.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById("upload-input-releve-sinistralite") as HTMLInputElement | null
+                  if (input) {
+                    input.click()
+                    return
+                  }
+                  const target = document.getElementById("ged-releve-sinistralite")
+                  if (target) target.scrollIntoView({ behavior: "smooth", block: "center" })
+                }}
+                className="rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+              >
+                Déposer mon relevé de sinistralité
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = document.getElementById("ged-releve-sinistralite")
+                  if (target) target.scrollIntoView({ behavior: "smooth", block: "center" })
+                }}
+                className="rounded-xl border border-[#d4d4d4] bg-white px-4 py-2.5 text-sm font-semibold text-[#171717] hover:border-[#2563eb]"
+              >
+                Voir dans ma GED
+              </button>
+            </div>
+          </div>
+        )}
+
         {activeTab === "documents" && (
         <div className="mb-10">
           <GedUpload />

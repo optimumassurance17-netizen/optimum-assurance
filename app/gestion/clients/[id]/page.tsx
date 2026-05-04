@@ -210,6 +210,7 @@ export default function ClientDetailPage() {
   const [noteLoading, setNoteLoading] = useState(false)
   const [emailSubject, setEmailSubject] = useState("")
   const [emailBody, setEmailBody] = useState("")
+  const [emailPresetLabel, setEmailPresetLabel] = useState<string | null>(null)
   const [emailModal, setEmailModal] = useState(false)
   const [emailLoading, setEmailLoading] = useState(false)
   const [sinistreModal, setSinistreModal] = useState(false)
@@ -368,6 +369,7 @@ export default function ClientDetailPage() {
               <button
                 type="button"
                 onClick={() => {
+                  setEmailPresetLabel(null)
                   setSinistreForm({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
                   setSinistreModal(true)
                 }}
@@ -377,7 +379,32 @@ export default function ClientDetailPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setEmailModal(true)}
+                onClick={() => {
+                  const subject = "Demande de relevé de sinistralité"
+                  const body = [
+                    `Bonjour ${user.raisonSociale || user.email},`,
+                    "",
+                    "Merci de déposer votre relevé de sinistralité à jour dans votre espace client (rubrique GED).",
+                    "Ce document est nécessaire pour finaliser l'analyse de votre dossier.",
+                    "",
+                    "Cordialement,",
+                    "Service Gestion Optimum Assurance",
+                  ].join("\n")
+                  setEmailSubject(subject)
+                  setEmailBody(body)
+                  setEmailPresetLabel("Demande relevé de sinistralité")
+                  setEmailModal(true)
+                }}
+                className="text-sm text-amber-300 hover:text-amber-200 font-medium"
+              >
+                Demander relevé sinistralité
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailPresetLabel(null)
+                  setEmailModal(true)
+                }}
                 className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium"
               >
                 Envoyer un email
@@ -1299,6 +1326,11 @@ export default function ClientDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setEmailModal(false)}>
           <div className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-white mb-4">Envoyer un email à {data.user.email}</h3>
+            {emailPresetLabel ? (
+              <p className="mb-3 inline-flex rounded border border-amber-700/60 bg-amber-950/30 px-2 py-1 text-xs text-amber-200">
+                Modèle: {emailPresetLabel}
+              </p>
+            ) : null}
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm text-gray-200 mb-1">Objet</label>
@@ -1322,7 +1354,10 @@ export default function ClientDetailPage() {
               </div>
             </div>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setEmailModal(false)} className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
+              <button onClick={() => {
+                setEmailPresetLabel(null)
+                setEmailModal(false)
+              }} className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
               >
                 Annuler
               </button>
@@ -1345,6 +1380,7 @@ export default function ClientDetailPage() {
                       setEmailModal(false)
                       setEmailSubject("")
                       setEmailBody("")
+                      setEmailPresetLabel(null)
                       setToast({
                         message: `Email envoyé à ${json.sentTo ?? data.user.email}`,
                         type: "success",
