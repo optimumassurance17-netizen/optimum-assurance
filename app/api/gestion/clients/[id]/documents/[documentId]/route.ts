@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
-import { resolveGedFileReadTarget } from "@/lib/user-documents"
+import { getLocalGedPathCandidates, resolveGedFileReadTarget } from "@/lib/user-documents"
 
 function buildReadableGedFilename(raw: string): string {
   const safe = raw.replace(/"/g, "")
@@ -56,10 +56,20 @@ export async function GET(
     let fileBytes: Uint8Array
     if (resolved.kind === "supabase") {
       const fromSupabase = await downloadFromSupabaseWithFallback(resolved.candidates)
-      if (!fromSupabase) {
-        return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
+      if (fromSupabase) {
+        fileBytes = fromSupabase
+      } else {
+        // Fallback legacy: certains enregistrements gardent un chemin type Supabase
+        // alors que le binaire est resté local (uploads antérieurs / migration partielle).
+        const localFallback = getLocalGedPathCandidates(doc.filepath).find((candidate) =>
+          existsSync(candidate)
+        )
+        if (!localFallback) {
+          return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
+        }
+        const buffer = await readFile(localFallback)
+        fileBytes = new Uint8Array(buffer)
       }
-      fileBytes = fromSupabase
     } else {
       if (!existsSync(resolved.path)) {
         return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })

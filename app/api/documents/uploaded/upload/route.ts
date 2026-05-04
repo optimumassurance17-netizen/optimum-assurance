@@ -11,7 +11,7 @@ import {
   ALLOWED_TYPES,
   MAX_FILE_SIZE,
   GED_SUPABASE_BUCKET,
-  normalizeGedSupabaseObjectPath,
+  resolveGedFileStorageTarget,
   buildGedStoragePath,
   detectUploadMimeAndExt,
   ensureUploadDir,
@@ -25,6 +25,41 @@ function isSchemaDriftError(error: unknown): boolean {
     "code" in error &&
     (((error as { code?: string }).code === "P2021") || ((error as { code?: string }).code === "P2022"))
   )
+}
+
+const GED_BUCKET_FALLBACKS = [
+  GED_SUPABASE_BUCKET,
+  "client_documents",
+  "documents",
+  "client-documents",
+  "user_documents",
+  "uploads",
+]
+
+function allowLocalGedFallback(): boolean {
+  if (process.env.GED_ALLOW_LOCAL_FALLBACK === "1") return true
+  const vercelEnv = (process.env.VERCEL_ENV || "").toLowerCase()
+  // En prod/preview serverless, le /tmp n'est pas durable entre invocations.
+  if (vercelEnv === "production" || vercelEnv === "preview") return false
+  return process.env.NODE_ENV !== "production"
+}
+
+async function resolveUploadBuckets(
+  supabase: NonNullable<ReturnType<typeof createSupabaseServiceClient>>
+): Promise<string[]> {
+  const defaults = [...new Set(GED_BUCKET_FALLBACKS.map((b) => b.trim()).filter(Boolean))]
+  try {
+    const { data, error } = await supabase.storage.listBuckets()
+    if (error || !data) return defaults
+    const available = new Set(
+      data.map((bucket) => bucket?.name?.trim()).filter((name): name is string => Boolean(name))
+    )
+    const presentDefaults = defaults.filter((name) => available.has(name))
+    if (presentDefaults.length > 0) return presentDefaults
+    return [...available]
+  } catch {
+    return defaults
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -72,24 +107,40 @@ export async function POST(request: NextRequest) {
       extension
     )
 
-    // Fallback local si Supabase indisponible.
+    // En production, on n'accepte plus de fallback local durablement cassant.
     let persistedPath = storagePath
     let persistedInSupabase = false
+    const uploadErrors: string[] = []
     const supabase = createSupabaseServiceClient()
     if (supabase) {
-      const { error: uploadError } = await supabase.storage
-        .from(GED_SUPABASE_BUCKET)
-        .upload(storagePath, buffer, {
-          contentType: mimeType,
-          upsert: true,
-        })
-      if (!uploadError) {
-        persistedInSupabase = true
-      } else {
-        console.error("[ged-upload] Supabase upload error:", uploadError)
+      const buckets = await resolveUploadBuckets(supabase)
+      for (const bucket of buckets) {
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(storagePath, buffer, {
+            contentType: mimeType,
+            upsert: true,
+          })
+        if (!uploadError) {
+          persistedInSupabase = true
+          // On conserve le bucket dans le filepath pour fiabiliser la lecture future.
+          persistedPath = `${bucket}/${storagePath}`
+          break
+        }
+        uploadErrors.push(`${bucket}: ${uploadError.message}`)
       }
     }
     if (!persistedInSupabase) {
+      if (!allowLocalGedFallback()) {
+        console.error("[ged-upload] Aucun bucket GED Supabase utilisable:", uploadErrors.join(" | "))
+        return NextResponse.json(
+          {
+            error:
+              "Stockage GED indisponible (bucket Supabase absent/inaccessible). Merci de contacter la gestion.",
+          },
+          { status: 503 }
+        )
+      }
       await ensureUploadDir()
       const localFilename = `${session.user.id}_${type}_${now}.${extension}`
       const filepath = join(UPLOAD_DIR, localFilename)
@@ -104,11 +155,19 @@ export async function POST(request: NextRequest) {
     })
 
     if (existing) {
-      const existingSupabasePath = normalizeGedSupabaseObjectPath(existing.filepath)
-      if (existingSupabasePath) {
+      const storageTarget = resolveGedFileStorageTarget(existing.filepath)
+      if (storageTarget.kind === "supabase") {
         if (supabase) {
           try {
-            await supabase.storage.from(GED_SUPABASE_BUCKET).remove([existingSupabasePath])
+            const byBucket = new Map<string, string[]>()
+            for (const candidate of storageTarget.candidates) {
+              const list = byBucket.get(candidate.bucket) ?? []
+              list.push(candidate.path)
+              byBucket.set(candidate.bucket, list)
+            }
+            for (const [bucket, paths] of byBucket.entries()) {
+              await supabase.storage.from(bucket).remove(paths)
+            }
           } catch {
             // Suppression best-effort
           }

@@ -60,7 +60,13 @@ export async function GET(
         const localCandidates = getLocalGedPathCandidates(doc.filepath)
         const existingLocalPath = localCandidates.find((candidate) => existsSync(candidate))
         if (!existingLocalPath) {
-          return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
+          return NextResponse.json(
+            {
+              error:
+                "Fichier introuvable. Ce document GED semble provenir d'un ancien stockage local et n'est plus disponible sur le serveur actuel.",
+            },
+            { status: 404 }
+          )
         }
         buffer = await readFile(existingLocalPath)
       }
