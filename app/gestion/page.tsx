@@ -277,6 +277,21 @@ interface DashboardData {
     ageHours?: number
     repairEligible?: boolean
   }[]
+  sepaSubscriptions?: {
+    id: string
+    userId: string
+    user: { id: string; email: string; raisonSociale: string | null } | null
+    status: string
+    mollieCustomerId: string
+    mollieMandateId: string | null
+    primeAnnuelle: number
+    trimestresSepaPayes: number
+    firstTrimesterPaidAt: string | null
+    nextSepaDue: string | null
+    lastError: string | null
+    sepaPendingPaymentId: string | null
+    updatedAt: string
+  }[]
   insuranceContractsCount?: number
   insuranceContracts?: {
     id: string
@@ -335,6 +350,8 @@ interface DashboardData {
 
 type RcFabLeadRow = NonNullable<DashboardData["devisRcFabriquantLeads"]>[number]
 type PendingSignatureRow = NonNullable<DashboardData["pendingSignatures"]>[number]
+type SepaSubscriptionRow = NonNullable<DashboardData["sepaSubscriptions"]>[number]
+type InsuranceContractRow = NonNullable<DashboardData["insuranceContracts"]>[number]
 
 export default function GestionPage() {
   const { status } = useSession()
@@ -804,6 +821,161 @@ export default function GestionPage() {
           toHandle: doEtudeLeads.filter((lead) => lead.statut === "pending").length,
         },
       ],
+    }
+  }, [data])
+
+  const comptabiliteV2 = useMemo(() => {
+    if (!data) return null
+
+    const DAY_MS = 24 * 60 * 60 * 1000
+    const now = Date.now()
+    const payments = data.payments ?? []
+    const contracts: InsuranceContractRow[] = data.insuranceContracts ?? []
+    const sepaSubscriptions: SepaSubscriptionRow[] = data.sepaSubscriptions ?? []
+
+    const paidPayments = payments.filter((p) => p.status.toLowerCase() === "paid")
+    const pendingPayments = payments.filter((p) =>
+      ["pending", "open", "authorized"].includes(p.status.toLowerCase())
+    )
+    const failedPayments = payments.filter((p) =>
+      ["failed", "expired", "canceled", "cancelled", "charged_back"].includes(p.status.toLowerCase())
+    )
+
+    const paidAmount = paidPayments.reduce((acc, payment) => acc + payment.amount, 0)
+    const pendingAmount = pendingPayments.reduce((acc, payment) => acc + payment.amount, 0)
+    const failedAmount = failedPayments.reduce((acc, payment) => acc + payment.amount, 0)
+
+    type ReceivableRow = {
+      id: string
+      contractNumber: string
+      productType: string
+      clientLabel: string
+      amount: number
+      ageDays: number
+      status: string
+    }
+
+    const contractsWithLifecycleDue = new Set<string>()
+    const receivables: ReceivableRow[] = []
+
+    for (const contract of contracts) {
+      const clientLabel =
+        contract.clientName || contract.user?.raisonSociale || contract.user?.email || "Client non renseigné"
+      for (const lifecyclePayment of contract.lifecyclePayments) {
+        if (lifecyclePayment.status.toLowerCase() === "paid") continue
+        const dueDateMs = Date.parse(lifecyclePayment.createdAt)
+        const ageDays = Number.isFinite(dueDateMs)
+          ? Math.max(0, Math.floor((now - dueDateMs) / DAY_MS))
+          : 0
+        receivables.push({
+          id: lifecyclePayment.id,
+          contractNumber: contract.contractNumber,
+          productType: contract.productType,
+          clientLabel,
+          amount: Math.max(0, lifecyclePayment.amount),
+          ageDays,
+          status: lifecyclePayment.status,
+        })
+        contractsWithLifecycleDue.add(contract.id)
+      }
+    }
+
+    for (const contract of contracts) {
+      const isSignedAndUnpaid =
+        (contract.status === "approved" || contract.status === "active") && !contract.paidAt
+      if (!isSignedAndUnpaid || contractsWithLifecycleDue.has(contract.id)) continue
+      const createdAtMs = Date.parse(contract.createdAt)
+      const ageDays = Number.isFinite(createdAtMs)
+        ? Math.max(0, Math.floor((now - createdAtMs) / DAY_MS))
+        : 0
+      receivables.push({
+        id: contract.id,
+        contractNumber: contract.contractNumber,
+        productType: contract.productType,
+        clientLabel:
+          contract.clientName || contract.user?.raisonSociale || contract.user?.email || "Client non renseigné",
+        amount: Math.max(0, contract.premium),
+        ageDays,
+        status: "approved_unpaid",
+      })
+    }
+
+    const receivableTotal = receivables.reduce((acc, row) => acc + row.amount, 0)
+    const totalAEncaisser = paidAmount + receivableTotal
+    const recouvrementTauxMontant = toPercent(paidAmount, totalAEncaisser)
+    const recouvrementTauxVolume = toPercent(paidPayments.length, paidPayments.length + receivables.length)
+    const delaiMoyenImpayes =
+      receivables.length > 0
+        ? Math.round(receivables.reduce((acc, row) => acc + row.ageDays, 0) / receivables.length)
+        : 0
+
+    const receivablesByBucket = {
+      d0_30: 0,
+      d31_60: 0,
+      d61_90: 0,
+      d90p: 0,
+    }
+    for (const row of receivables) {
+      if (row.ageDays <= 30) receivablesByBucket.d0_30 += row.amount
+      else if (row.ageDays <= 60) receivablesByBucket.d31_60 += row.amount
+      else if (row.ageDays <= 90) receivablesByBucket.d61_90 += row.amount
+      else receivablesByBucket.d90p += row.amount
+    }
+
+    const sepaDueRows = sepaSubscriptions
+      .map((sub) => {
+        if (!sub.nextSepaDue) return null
+        const dueMs = Date.parse(sub.nextSepaDue)
+        if (!Number.isFinite(dueMs)) return null
+        const estimatedAmount = Math.max(0, sub.primeAnnuelle / 4)
+        const daysUntil = Math.floor((dueMs - now) / DAY_MS)
+        return {
+          id: sub.id,
+          status: sub.status,
+          clientLabel: sub.user?.raisonSociale || sub.user?.email || "Client non renseigné",
+          daysUntil,
+          estimatedAmount,
+          date: sub.nextSepaDue,
+        }
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null)
+
+    const sepaOverdue = sepaDueRows.filter((row) => row.daysUntil < 0)
+    const sepaDueIn7Days = sepaDueRows.filter((row) => row.daysUntil >= 0 && row.daysUntil <= 7)
+    const sepaDueIn30Days = sepaDueRows.filter((row) => row.daysUntil >= 0 && row.daysUntil <= 30)
+    const sepaDueAmount30 = sepaDueIn30Days.reduce((acc, row) => acc + row.estimatedAmount, 0)
+    const sepaOverdueAmount = sepaOverdue.reduce((acc, row) => acc + row.estimatedAmount, 0)
+    const sepaMandateMissing = sepaSubscriptions.filter(
+      (sub) => !sub.mollieMandateId || sub.status === "pending_mandate"
+    ).length
+    const sepaFailed = sepaSubscriptions.filter((sub) => sub.status === "failed").length
+
+    const topImpayes = [...receivables]
+      .sort((a, b) => b.ageDays - a.ageDays || b.amount - a.amount)
+      .slice(0, 6)
+
+    return {
+      paidAmount,
+      pendingAmount,
+      failedAmount,
+      receivableTotal,
+      totalAEncaisser,
+      recouvrementTauxMontant,
+      recouvrementTauxVolume,
+      delaiMoyenImpayes,
+      receivablesByBucket,
+      impayes72h: receivables.filter((row) => row.ageDays >= 3).length,
+      sepaDueIn7Days: sepaDueIn7Days.length,
+      sepaDueIn30Days: sepaDueIn30Days.length,
+      sepaDueAmount30,
+      sepaOverdueCount: sepaOverdue.length,
+      sepaOverdueAmount,
+      sepaMandateMissing,
+      sepaFailed,
+      topImpayes,
+      recentSepaDueRows: [...sepaDueRows]
+        .sort((a, b) => a.daysUntil - b.daysUntil)
+        .slice(0, 6),
     }
   }, [data])
 
@@ -1360,6 +1532,12 @@ export default function GestionPage() {
               >
                 Pilotage commercial V2
               </a>
+              <a
+                href="#comptabilite-v2"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#312e81] text-indigo-100 border border-indigo-700/80 hover:bg-[#3730a3]"
+              >
+                Comptabilité & impayés V2
+              </a>
               {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
                 <a
                   href="#actions-du-jour"
@@ -1821,6 +1999,202 @@ export default function GestionPage() {
                       )}
                     </div>
                   </div>
+                </div>
+              </section>
+            )}
+
+            {comptabiliteV2 && (
+              <section
+                id="comptabilite-v2"
+                className="scroll-mt-24 bg-[#1f2230] rounded-xl p-5 border border-indigo-800/70"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Comptabilité & impayés V2</h2>
+                    <p className="text-xs text-indigo-200/90">
+                      Balance âgée, recouvrement et échéancier SEPA en vue opérationnelle.
+                    </p>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded border border-indigo-700/70 bg-indigo-950/40 text-indigo-200">
+                    Temps réel
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+                  <div className="rounded-lg border border-indigo-700/40 bg-indigo-950/20 px-3 py-2">
+                    <p className="text-[11px] text-indigo-200">CA encaissé</p>
+                    <p className="text-xl font-semibold text-white">
+                      {comptabiliteV2.paidAmount.toLocaleString("fr-FR")} €
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-amber-700/40 bg-amber-950/20 px-3 py-2">
+                    <p className="text-[11px] text-amber-200">Reste à encaisser</p>
+                    <p className="text-xl font-semibold text-amber-100">
+                      {comptabiliteV2.receivableTotal.toLocaleString("fr-FR")} €
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/20 px-3 py-2">
+                    <p className="text-[11px] text-emerald-200">Recouvrement (montant)</p>
+                    <p className="text-xl font-semibold text-emerald-100">
+                      {comptabiliteV2.recouvrementTauxMontant}%
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-cyan-700/40 bg-cyan-950/20 px-3 py-2">
+                    <p className="text-[11px] text-cyan-200">Recouvrement (volume)</p>
+                    <p className="text-xl font-semibold text-cyan-100">
+                      {comptabiliteV2.recouvrementTauxVolume}%
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-red-700/40 bg-red-950/20 px-3 py-2">
+                    <p className="text-[11px] text-red-200">Impayés 72h+</p>
+                    <p className="text-xl font-semibold text-red-100">{comptabiliteV2.impayes72h}</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-700 bg-[#232637] px-3 py-2">
+                    <p className="text-[11px] text-gray-300">SEPA échéances 30j</p>
+                    <p className="text-xl font-semibold text-white">{comptabiliteV2.sepaDueIn30Days}</p>
+                  </div>
+                  <div className="rounded-lg border border-orange-700/40 bg-orange-950/20 px-3 py-2">
+                    <p className="text-[11px] text-orange-200">SEPA en retard</p>
+                    <p className="text-xl font-semibold text-orange-100">{comptabiliteV2.sepaOverdueCount}</p>
+                  </div>
+                  <div className="rounded-lg border border-fuchsia-700/40 bg-fuchsia-950/20 px-3 py-2">
+                    <p className="text-[11px] text-fuchsia-200">Mandats manquants</p>
+                    <p className="text-xl font-semibold text-fuchsia-100">{comptabiliteV2.sepaMandateMissing}</p>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid lg:grid-cols-2 gap-4">
+                  <div className="rounded-lg border border-gray-700 bg-[#232637] p-3">
+                    <h3 className="text-sm font-semibold text-white mb-2">Balance âgée (reste à encaisser)</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                      <div className="rounded border border-gray-700 bg-[#1a1e2b] px-2.5 py-2">
+                        <p className="text-gray-300">0-30j</p>
+                        <p className="text-white font-semibold">
+                          {comptabiliteV2.receivablesByBucket.d0_30.toLocaleString("fr-FR")} €
+                        </p>
+                      </div>
+                      <div className="rounded border border-amber-700/50 bg-amber-950/20 px-2.5 py-2">
+                        <p className="text-amber-200">31-60j</p>
+                        <p className="text-amber-100 font-semibold">
+                          {comptabiliteV2.receivablesByBucket.d31_60.toLocaleString("fr-FR")} €
+                        </p>
+                      </div>
+                      <div className="rounded border border-orange-700/50 bg-orange-950/20 px-2.5 py-2">
+                        <p className="text-orange-200">61-90j</p>
+                        <p className="text-orange-100 font-semibold">
+                          {comptabiliteV2.receivablesByBucket.d61_90.toLocaleString("fr-FR")} €
+                        </p>
+                      </div>
+                      <div className="rounded border border-red-700/50 bg-red-950/20 px-2.5 py-2">
+                        <p className="text-red-200">90j+</p>
+                        <p className="text-red-100 font-semibold">
+                          {comptabiliteV2.receivablesByBucket.d90p.toLocaleString("fr-FR")} €
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid md:grid-cols-2 gap-2 text-xs">
+                      <div className="rounded border border-gray-700 bg-[#1a1e2b] px-2.5 py-2 text-gray-200">
+                        Total à encaisser :{" "}
+                        <span className="font-semibold text-white">
+                          {comptabiliteV2.totalAEncaisser.toLocaleString("fr-FR")} €
+                        </span>
+                      </div>
+                      <div className="rounded border border-gray-700 bg-[#1a1e2b] px-2.5 py-2 text-gray-200">
+                        Délai moyen impayé :{" "}
+                        <span className="font-semibold text-white">{comptabiliteV2.delaiMoyenImpayes} jour(s)</span>
+                      </div>
+                      <div className="rounded border border-gray-700 bg-[#1a1e2b] px-2.5 py-2 text-gray-200">
+                        Paiements en attente :{" "}
+                        <span className="font-semibold text-sky-200">
+                          {comptabiliteV2.pendingAmount.toLocaleString("fr-FR")} €
+                        </span>
+                      </div>
+                      <div className="rounded border border-gray-700 bg-[#1a1e2b] px-2.5 py-2 text-gray-200">
+                        Paiements échoués :{" "}
+                        <span className="font-semibold text-red-200">
+                          {comptabiliteV2.failedAmount.toLocaleString("fr-FR")} €
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-gray-700 bg-[#232637] p-3">
+                    <h3 className="text-sm font-semibold text-white mb-2">Priorités recouvrement</h3>
+                    {comptabiliteV2.topImpayes.length === 0 ? (
+                      <p className="text-xs text-gray-300">Aucun impayé prioritaire détecté.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {comptabiliteV2.topImpayes.map((row) => (
+                          <a
+                            key={row.id}
+                            href="#contrats-plateforme"
+                            className="block rounded border border-gray-700 bg-[#1a1e2b] px-2.5 py-2 hover:border-indigo-500/70"
+                          >
+                            <p className="text-xs text-white">
+                              {row.contractNumber} · {row.clientLabel}
+                            </p>
+                            <p className="text-[11px] text-gray-300 mt-0.5">
+                              {row.amount.toLocaleString("fr-FR")} € · {row.ageDays}j · {row.status}
+                            </p>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-3 border-t border-gray-700 pt-3">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-300 mb-2">
+                        Échéancier SEPA (prochaines échéances)
+                      </h4>
+                      {comptabiliteV2.recentSepaDueRows.length === 0 ? (
+                        <p className="text-xs text-gray-300">Aucune échéance SEPA à afficher.</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {comptabiliteV2.recentSepaDueRows.map((row) => (
+                            <div
+                              key={row.id}
+                              className="rounded border border-gray-700 bg-[#1a1e2b] px-2.5 py-2"
+                            >
+                              <p className="text-xs text-white">{row.clientLabel}</p>
+                              <p className="text-[11px] text-gray-300">
+                                {new Date(row.date).toLocaleDateString("fr-FR")} · {row.estimatedAmount.toLocaleString("fr-FR")} € ·{" "}
+                                {row.daysUntil < 0 ? `${Math.abs(row.daysUntil)}j de retard` : `J-${row.daysUntil}`}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="mt-2 text-[11px] text-gray-300">
+                        Échéances 7j : <span className="text-white">{comptabiliteV2.sepaDueIn7Days}</span> · 30j :{" "}
+                        <span className="text-white">{comptabiliteV2.sepaDueIn30Days}</span> (
+                        {comptabiliteV2.sepaDueAmount30.toLocaleString("fr-FR")} €) · Retard :{" "}
+                        <span className="text-orange-200">{comptabiliteV2.sepaOverdueCount}</span> (
+                        {comptabiliteV2.sepaOverdueAmount.toLocaleString("fr-FR")} €) · Échecs :{" "}
+                        <span className="text-red-200">{comptabiliteV2.sepaFailed}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <a
+                    href="#paiements"
+                    className="text-xs px-2.5 py-1.5 rounded border border-indigo-700/70 text-indigo-100 hover:bg-indigo-900/30"
+                  >
+                    Ouvrir le suivi paiements
+                  </a>
+                  <a
+                    href="#contrats-plateforme"
+                    className="text-xs px-2.5 py-1.5 rounded border border-indigo-700/70 text-indigo-100 hover:bg-indigo-900/30"
+                  >
+                    Ouvrir les contrats plateforme
+                  </a>
+                  {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 ? (
+                    <a
+                      href="#actions-du-jour"
+                      className="text-xs px-2.5 py-1.5 rounded border border-amber-700/70 text-amber-100 hover:bg-amber-900/30"
+                    >
+                      Ouvrir les actions du jour
+                    </a>
+                  ) : null}
                 </div>
               </section>
             )}
