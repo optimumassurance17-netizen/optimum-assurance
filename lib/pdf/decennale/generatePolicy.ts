@@ -11,6 +11,7 @@ import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../
 import { getDevoirConseilText, getDevoirConseilLinksLine } from "@/lib/devoir-conseil"
 import { DECENNALE_LEGAL_CLAUSES } from "@/lib/decennale-legal-clauses"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
+import { appendDecennaleActivityDetailsAnnex } from "./activityDetailsAnnex"
 
 /**
  * Conditions particulières — contrat décennale (pdf-lib).
@@ -93,6 +94,15 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
     y = drawWrappedText(page, c, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 9, 12)
     y -= 8
   }
+
+  appendDecennaleActivityDetailsAnnex({
+    pdfDoc,
+    font,
+    fontBold,
+    accelerantLogo,
+    activities,
+    documentLabel: "contrat",
+  })
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }

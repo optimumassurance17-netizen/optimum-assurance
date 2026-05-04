@@ -10,6 +10,7 @@ import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { appendDecennaleActivityDetailsAnnex } from "./activityDetailsAnnex"
 
 const QUOTE_VALIDITY_DAYS = 30
 
@@ -236,6 +237,15 @@ export async function generateDecennaleQuotePolicyBundle(
       y -= 12
     }
   }
+
+  appendDecennaleActivityDetailsAnnex({
+    pdfDoc,
+    font,
+    fontBold,
+    accelerantLogo,
+    activities: data.activities ?? [],
+    documentLabel: mode === "contrat" ? "Contrat" : "Devis",
+  })
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }

@@ -5,6 +5,7 @@ import { SITE_URL } from "@/lib/site-url"
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
+import { ActivityDetailsBlock } from "@/components/documents/ActivityDetailsBlock"
 import { COMPANY_BRAND } from "@/lib/legal-branding"
 
 interface AttestationTemplateProps {
@@ -64,6 +65,10 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
         <p className="mb-2 text-sm text-[#171717]">Renouvelable automatiquement du 01/01 au 31/12 des années suivantes.</p>
         <p>Prime annuelle : {data.primeAnnuelle.toLocaleString("fr-FR")} € TTC</p>
       </div>
+      <ActivityDetailsBlock
+        activities={activities}
+        title="Definition et exclusions par activite assuree"
+      />
 
       <p className="text-sm text-[#171717] mb-6">
         La présente attestation est délivrée pour justifier de l&apos;assurance obligatoire prévue à l&apos;article L. 241-1 du Code des assurances.

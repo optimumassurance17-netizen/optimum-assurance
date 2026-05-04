@@ -11,6 +11,7 @@ import { drawAttestationStampBottomRight, loadAttestationStampImage } from "../s
 import { embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
+import { appendDecennaleActivityDetailsAnnex } from "./activityDetailsAnnex"
 
 /**
  * Attestation décennale — RC décennale, articles 1792, QR vérification.
@@ -186,6 +187,15 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
 
   const stamp = await loadAttestationStampImage(pdfDoc)
   if (stamp) drawAttestationStampBottomRight(page, stamp)
+
+  appendDecennaleActivityDetailsAnnex({
+    pdfDoc,
+    font,
+    fontBold,
+    accelerantLogo,
+    activities,
+    documentLabel: "attestation",
+  })
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }

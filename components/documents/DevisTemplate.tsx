@@ -15,6 +15,7 @@ import { SITE_URL } from "@/lib/site-url"
 import { DEVOIR_CONSEIL_TEXT } from "@/lib/devoir-conseil"
 import { DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSES } from "@/lib/decennale-legal-clauses"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
+import { ActivityDetailsBlock } from "@/components/documents/ActivityDetailsBlock"
 
 interface DevisTemplateProps {
   numero: string
@@ -150,6 +151,7 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
         <h3 className="font-bold text-black mb-2 uppercase text-xs">Activités professionnelles exercées</h3>
         <p className="whitespace-pre-line">{activities.join("\n")}</p>
       </div>
+      <ActivityDetailsBlock activities={activities} />
 
       {/* Garanties proposées */}
       <div className="mb-6">

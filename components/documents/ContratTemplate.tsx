@@ -6,6 +6,7 @@ import { DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSE_TEXT } from "@/lib/decennale-
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
+import { ActivityDetailsBlock } from "@/components/documents/ActivityDetailsBlock"
 import { INSURER_NAME } from "@/lib/legal-branding"
 
 interface ContratTemplateProps {
@@ -62,6 +63,13 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
             Le présent contrat garantit la responsabilité civile décennale de l&apos;assuré pour les activités suivantes :{" "}
             {activities.join("\n")}.
           </p>
+        </section>
+
+        <section>
+          <ActivityDetailsBlock
+            activities={activities}
+            title="Article 2 bis - Definition et exclusions par activite declaree"
+          />
         </section>
 
         <section>
