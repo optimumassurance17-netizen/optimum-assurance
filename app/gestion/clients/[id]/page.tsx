@@ -26,6 +26,13 @@ type ProfileForm = {
   telephone: string
 }
 
+type DevisAutonomyForm = {
+  allowDevisEdition: boolean
+  allowForcedActivities: boolean
+  forcedActivitiesText: string
+  note: string
+}
+
 type QuestionnaireProfilePrefill = ProfileForm & {
   sources: string[]
 }
@@ -120,6 +127,14 @@ interface ClientData {
     string,
     { status: "valid" | "invalid"; reason: string | null; updatedAt: string }
   >
+  devisAutonomy?: {
+    allowDevisEdition: boolean
+    allowForcedActivities: boolean
+    forcedActivities: string[]
+    note: string | null
+    updatedAt: string | null
+    updatedBy: string | null
+  }
   dda?: {
     consents: {
       id: string
@@ -198,6 +213,19 @@ const gedTypeLabels: Record<string, string> = {
   rapport_etude_sol: "Rapport étude de sol",
 }
 
+function toDevisAutonomyForm(
+  config: ClientData["devisAutonomy"] | null | undefined
+): DevisAutonomyForm {
+  return {
+    allowDevisEdition: config?.allowDevisEdition === true,
+    allowForcedActivities: config?.allowForcedActivities === true,
+    forcedActivitiesText: Array.isArray(config?.forcedActivities)
+      ? config!.forcedActivities.join("\n")
+      : "",
+    note: config?.note ?? "",
+  }
+}
+
 export default function ClientDetailPage() {
   const params = useParams()
   const safeParams = params ?? {}
@@ -241,6 +269,13 @@ export default function ClientDetailPage() {
     telephone: "",
   })
   const [profileSaving, setProfileSaving] = useState(false)
+  const [devisAutonomySaving, setDevisAutonomySaving] = useState(false)
+  const [devisAutonomyForm, setDevisAutonomyForm] = useState<DevisAutonomyForm>({
+    allowDevisEdition: false,
+    allowForcedActivities: false,
+    forcedActivitiesText: "",
+    note: "",
+  })
   const [clientAccessLoading, setClientAccessLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
   const [deleteModal, setDeleteModal] = useState(false)
@@ -283,6 +318,7 @@ export default function ClientDetailPage() {
         setSinistres(json.sinistres ?? [])
         setUserDocuments(json.userDocuments ?? [])
         setUserDocumentReviews(json.userDocumentReviews ?? {})
+        setDevisAutonomyForm(toDevisAutonomyForm(json.devisAutonomy))
       } catch {
         setError("Client introuvable")
       } finally {
@@ -631,6 +667,162 @@ export default function ClientDetailPage() {
               </button>
             </div>
           </form>
+        </section>
+
+        <section className="bg-[#252525] rounded-xl p-6 border border-gray-700">
+          <h2 className="text-lg font-semibold text-white mb-2">
+            Auto-autorisation devis & forçage activités
+          </h2>
+          <p className="text-xs text-gray-300 mb-4">
+            Paramétrage par client: autoriser la modification devis/contrat en espace client et
+            imposer des activités lors des sauvegardes du devis.
+          </p>
+          <div className="space-y-4">
+            <label className="flex items-start gap-3 text-sm text-gray-200">
+              <input
+                type="checkbox"
+                checked={devisAutonomyForm.allowDevisEdition}
+                onChange={(e) =>
+                  setDevisAutonomyForm((prev) => ({
+                    ...prev,
+                    allowDevisEdition: e.target.checked,
+                  }))
+                }
+                className="mt-1 h-4 w-4 rounded border-gray-500 bg-[#1a1a1a]"
+              />
+              <span>
+                <span className="font-medium text-white">
+                  Autoriser la modification devis/contrat côté client
+                </span>
+                <br />
+                <span className="text-xs text-gray-400">
+                  Active le déverrouillage des modifications de couverture pour ce client.
+                </span>
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 text-sm text-gray-200">
+              <input
+                type="checkbox"
+                checked={devisAutonomyForm.allowForcedActivities}
+                onChange={(e) =>
+                  setDevisAutonomyForm((prev) => ({
+                    ...prev,
+                    allowForcedActivities: e.target.checked,
+                  }))
+                }
+                className="mt-1 h-4 w-4 rounded border-gray-500 bg-[#1a1a1a]"
+              />
+              <span>
+                <span className="font-medium text-white">Activer le forçage d&apos;activités</span>
+                <br />
+                <span className="text-xs text-gray-400">
+                  Les activités ci-dessous sont automatiquement ajoutées à la sauvegarde du devis.
+                </span>
+              </span>
+            </label>
+
+            <div>
+              <label className="block text-gray-200 mb-1 text-sm">
+                Activités forcées (une par ligne ou séparées par virgule)
+              </label>
+              <textarea
+                rows={4}
+                value={devisAutonomyForm.forcedActivitiesText}
+                onChange={(e) =>
+                  setDevisAutonomyForm((prev) => ({
+                    ...prev,
+                    forcedActivitiesText: e.target.value,
+                  }))
+                }
+                disabled={!devisAutonomyForm.allowForcedActivities}
+                placeholder="Ex: Maçonnerie&#10;Étanchéité"
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white disabled:opacity-60"
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-200 mb-1 text-sm">Note interne (optionnelle)</label>
+              <input
+                type="text"
+                value={devisAutonomyForm.note}
+                onChange={(e) =>
+                  setDevisAutonomyForm((prev) => ({ ...prev, note: e.target.value }))
+                }
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white"
+                placeholder="Motif de l'autoautorisation / forçage"
+              />
+            </div>
+
+            {data.devisAutonomy?.updatedAt ? (
+              <p className="text-xs text-gray-400">
+                Dernière mise à jour: {new Date(data.devisAutonomy.updatedAt).toLocaleString("fr-FR")}
+                {data.devisAutonomy.updatedBy ? ` par ${data.devisAutonomy.updatedBy}` : ""}
+              </p>
+            ) : (
+              <p className="text-xs text-gray-400">Aucune règle personnalisée enregistrée.</p>
+            )}
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                disabled={devisAutonomySaving}
+                onClick={async () => {
+                  setDevisAutonomySaving(true)
+                  try {
+                    const payload = {
+                      devisAutonomy: {
+                        allowDevisEdition: devisAutonomyForm.allowDevisEdition,
+                        allowForcedActivities: devisAutonomyForm.allowForcedActivities,
+                        forcedActivities: devisAutonomyForm.forcedActivitiesText,
+                        note: devisAutonomyForm.note,
+                      },
+                    }
+                    const res = await fetch(`/api/gestion/clients/${clientId}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload),
+                    })
+                    const json = await readResponseJson<{
+                      error?: string
+                      devisAutonomy?: ClientData["devisAutonomy"]
+                    }>(res)
+                    if (!res.ok) {
+                      throw new Error(json.error || "Erreur mise à jour autonomie devis")
+                    }
+                    if (json.devisAutonomy) {
+                      setData((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              devisAutonomy: json.devisAutonomy,
+                            }
+                          : prev
+                      )
+                      setDevisAutonomyForm(toDevisAutonomyForm(json.devisAutonomy))
+                    }
+                    setToast({
+                      message: "Paramétrage autonomie devis enregistré pour ce client.",
+                      type: "success",
+                    })
+                  } catch (err) {
+                    setToast({
+                      message:
+                        err instanceof Error
+                          ? err.message
+                          : "Erreur enregistrement autonomie devis",
+                      type: "error",
+                    })
+                  } finally {
+                    setDevisAutonomySaving(false)
+                  }
+                }}
+                className="bg-[#2563eb] text-white px-5 py-2 rounded-lg hover:bg-[#1d4ed8] disabled:opacity-50 font-medium text-sm"
+              >
+                {devisAutonomySaving ? "Enregistrement..." : "Enregistrer autonomie devis"}
+              </button>
+            </div>
+          </div>
         </section>
 
         {(user.doInitialQuestionnaireJson?.trim() || user.doEtudeQuestionnaireJson?.trim()) && (

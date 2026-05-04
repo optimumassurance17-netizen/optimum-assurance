@@ -13,6 +13,11 @@ import { createSupabaseServiceClient } from "@/lib/supabase"
 import { GED_SUPABASE_BUCKET } from "@/lib/user-documents"
 import { asJsonObject } from "@/lib/json-object"
 import { fetchUserDocumentReviews } from "@/lib/user-document-review"
+import {
+  CLIENT_DEVIS_AUTONOMY_ACTION,
+  getClientDevisAutonomyConfig,
+  normalizeForcedActivitiesInput,
+} from "@/lib/client-devis-autonomy"
 
 function parseLogDetails(raw: string | null | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null
@@ -58,7 +63,7 @@ export async function GET(
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
     }
 
-    const [documents, payments, avenantFees, notes, sinistres, userDocuments, insuranceContracts, devoirConseilLogs] =
+    const [documents, payments, avenantFees, notes, sinistres, userDocuments, insuranceContracts, devoirConseilLogs, devisAutonomy] =
       await Promise.all([
       prisma.document.findMany({
         where: { userId: id },
@@ -102,6 +107,7 @@ export async function GET(
         orderBy: { acceptedAt: "desc" },
         take: 60,
       }),
+      getClientDevisAutonomyConfig(id),
     ])
 
     const contractById = new Map(insuranceContracts.map((c) => [c.id, c] as const))
@@ -160,6 +166,7 @@ export async function GET(
 
     return NextResponse.json({
       user,
+      devisAutonomy,
       documents,
       payments,
       avenantFees,
@@ -213,7 +220,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /**
  * PATCH — Mise à jour des coordonnées compte client (admin uniquement)
- * Body partiel : { raisonSociale?, email?, siret?, adresse?, codePostal?, ville?, telephone? }
+ * Body partiel :
+ * - coordonnées: { raisonSociale?, email?, siret?, adresse?, codePostal?, ville?, telephone? }
+ * - autonomie devis: { devisAutonomy?: { allowDevisEdition?, allowForcedActivities?, forcedActivities?, note? } }
  */
 export async function PATCH(
   request: NextRequest,
@@ -281,39 +290,92 @@ export async function PATCH(
       data.email = raw
     }
 
-    if (Object.keys(data).length === 0) {
+    const autonomyRaw =
+      "devisAutonomy" in payload &&
+      payload.devisAutonomy &&
+      typeof payload.devisAutonomy === "object" &&
+      !Array.isArray(payload.devisAutonomy)
+        ? (payload.devisAutonomy as Record<string, unknown>)
+        : null
+
+    const hasAutonomyUpdate = autonomyRaw !== null
+
+    if (Object.keys(data).length === 0 && !hasAutonomyUpdate) {
       return NextResponse.json({ error: "Aucun champ à mettre à jour" }, { status: 400 })
     }
 
-    const updated = await prisma.user.update({
-      where: { id },
-      data,
-      select: {
-        id: true,
-        email: true,
-        raisonSociale: true,
-        siret: true,
-        adresse: true,
-        codePostal: true,
-        ville: true,
-        telephone: true,
-        createdAt: true,
-        doInitialQuestionnaireJson: true,
-        doEtudeQuestionnaireJson: true,
-      },
-    })
+    const updated =
+      Object.keys(data).length > 0
+        ? await prisma.user.update({
+            where: { id },
+            data,
+            select: {
+              id: true,
+              email: true,
+              raisonSociale: true,
+              siret: true,
+              adresse: true,
+              codePostal: true,
+              ville: true,
+              telephone: true,
+              createdAt: true,
+              doInitialQuestionnaireJson: true,
+              doEtudeQuestionnaireJson: true,
+            },
+          })
+        : {
+            id: current.id,
+            email: current.email,
+            raisonSociale: current.raisonSociale,
+            siret: current.siret,
+            adresse: current.adresse,
+            codePostal: current.codePostal,
+            ville: current.ville,
+            telephone: current.telephone,
+            createdAt: current.createdAt,
+            doInitialQuestionnaireJson: current.doInitialQuestionnaireJson,
+            doEtudeQuestionnaireJson: current.doEtudeQuestionnaireJson,
+          }
 
-    const syncedDocuments = await syncContratAvenantDocumentsFromUser(id)
+    const syncedDocuments =
+      Object.keys(data).length > 0 ? await syncContratAvenantDocumentsFromUser(id) : 0
 
-    await logAdminActivity({
-      adminEmail: session.user.email || "admin",
-      action: "user_update",
-      targetType: "user",
-      targetId: id,
-      details: { keys: Object.keys(data), syncedDocuments },
-    })
+    if (Object.keys(data).length > 0) {
+      await logAdminActivity({
+        adminEmail: session.user.email || "admin",
+        action: "user_update",
+        targetType: "user",
+        targetId: id,
+        details: { keys: Object.keys(data), syncedDocuments },
+      })
+    }
 
-    return NextResponse.json({ user: updated, syncedDocuments })
+    if (hasAutonomyUpdate && autonomyRaw) {
+      const allowDevisEdition = Boolean(autonomyRaw.allowDevisEdition)
+      const forcedActivities = normalizeForcedActivitiesInput(autonomyRaw.forcedActivities)
+      const allowForcedActivities = Boolean(autonomyRaw.allowForcedActivities) && forcedActivities.length > 0
+      const noteValue =
+        typeof autonomyRaw.note === "string" && autonomyRaw.note.trim().length > 0
+          ? autonomyRaw.note.trim()
+          : null
+
+      await logAdminActivity({
+        adminEmail: session.user.email || "admin",
+        action: CLIENT_DEVIS_AUTONOMY_ACTION,
+        targetType: "user",
+        targetId: id,
+        details: {
+          allowDevisEdition,
+          allowForcedActivities,
+          forcedActivities: allowForcedActivities ? forcedActivities : [],
+          note: noteValue,
+        },
+      })
+    }
+
+    const devisAutonomy = await getClientDevisAutonomyConfig(id)
+
+    return NextResponse.json({ user: updated, syncedDocuments, devisAutonomy })
   } catch (error) {
     console.error("Erreur PATCH client:", error)
     return NextResponse.json({ error: "Erreur lors de la mise à jour" }, { status: 500 })

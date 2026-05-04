@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
+import { getClientDevisAutonomyConfig } from "@/lib/client-devis-autonomy"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
   try {
@@ -97,9 +98,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
+    const devisAutonomy = await getClientDevisAutonomyConfig(session.user.id)
     const currentData = parseDocumentData(document.data)
     const contractCoverageLocked =
-      document.type === "contrat" && ["valide", "suspendu"].includes((document.status || "").toLowerCase())
+      document.type === "contrat" &&
+      ["valide", "suspendu"].includes((document.status || "").toLowerCase()) &&
+      !devisAutonomy.allowDevisEdition
     const editableKeys = [
       "raisonSociale",
       "siret",
@@ -158,15 +162,32 @@ export async function PATCH(
     }
 
     const mergedData: Record<string, unknown> = { ...currentData, ...filtered }
-    if ("activites" in filtered) {
-      const rawActivities = Array.isArray(filtered.activites)
-        ? filtered.activites
-        : typeof filtered.activites === "string"
+    const forcedActivities =
+      devisAutonomy.allowForcedActivities && devisAutonomy.forcedActivities.length > 0
+        ? devisAutonomy.forcedActivities
+        : []
+    const shouldRebuildActivities = "activites" in filtered || forcedActivities.length > 0
+    if (shouldRebuildActivities) {
+      const baseActivities =
+        "activites" in filtered
           ? filtered.activites
+          : Array.isArray(currentData.activites)
+            ? currentData.activites
+            : typeof currentData.activites === "string"
+              ? currentData.activites
+                  .split(/[,\n;]/)
+                  .map((item) => item.trim())
+                  .filter(Boolean)
+              : []
+      const rawActivitiesFromInput = Array.isArray(baseActivities)
+        ? baseActivities
+        : typeof baseActivities === "string"
+          ? baseActivities
               .split(/[,\n;]/)
               .map((item) => item.trim())
               .filter(Boolean)
           : []
+      const rawActivities = [...new Set([...rawActivitiesFromInput, ...forcedActivities])]
       const hierarchy = await resolveUserActivitiesHierarchy(
         rawActivities.filter((item): item is string => typeof item === "string"),
         { userId: session.user.id }
@@ -203,6 +224,7 @@ export async function PATCH(
       mergedData.exclusionScore = exclusions.score
       mergedData.activityExclusions = exclusions.lines
       mergedData.exclusions = exclusions.lines
+      mergedData.activitesForcees = forcedActivities
     }
     await prisma.document.update({
       where: { id: document.id },
@@ -237,6 +259,8 @@ export async function PATCH(
           documentType: document.type,
           changedKeys: Object.keys(filtered),
           lockedCoverage: contractCoverageLocked,
+          allowDevisEditionOverride: devisAutonomy.allowDevisEdition,
+          forcedActivitiesApplied: forcedActivities,
         }),
       },
     })
