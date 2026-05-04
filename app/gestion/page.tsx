@@ -427,6 +427,7 @@ export default function GestionPage() {
   const [dismissingActionId, setDismissingActionId] = useState<string | null>(null)
   const [remediatingActionId, setRemediatingActionId] = useState<string | null>(null)
   const [bulkRemediatingDda, setBulkRemediatingDda] = useState(false)
+  const [sendingComptaRelanceId, setSendingComptaRelanceId] = useState<string | null>(null)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
   const [creatingLeadAccountId, setCreatingLeadAccountId] = useState<string | null>(null)
   const [sendingClientAccessId, setSendingClientAccessId] = useState<string | null>(null)
@@ -845,14 +846,24 @@ export default function GestionPage() {
     const pendingAmount = pendingPayments.reduce((acc, payment) => acc + payment.amount, 0)
     const failedAmount = failedPayments.reduce((acc, payment) => acc + payment.amount, 0)
 
+    const suspendedAttestationByUserId = new Map<string, string>()
+    for (const doc of data.documents) {
+      if (doc.type !== "attestation" || doc.status !== "suspendu" || !doc.userId) continue
+      if (!suspendedAttestationByUserId.has(doc.userId)) {
+        suspendedAttestationByUserId.set(doc.userId, doc.id)
+      }
+    }
+
     type ReceivableRow = {
       id: string
       contractNumber: string
       productType: string
       clientLabel: string
+      userId: string | null
       amount: number
       ageDays: number
       status: string
+      impayeDocumentId: string | null
     }
 
     const contractsWithLifecycleDue = new Set<string>()
@@ -861,6 +872,8 @@ export default function GestionPage() {
     for (const contract of contracts) {
       const clientLabel =
         contract.clientName || contract.user?.raisonSociale || contract.user?.email || "Client non renseigné"
+      const impayeDocumentId =
+        contract.userId != null ? suspendedAttestationByUserId.get(contract.userId) ?? null : null
       for (const lifecyclePayment of contract.lifecyclePayments) {
         if (lifecyclePayment.status.toLowerCase() === "paid") continue
         const dueDateMs = Date.parse(lifecyclePayment.createdAt)
@@ -872,9 +885,11 @@ export default function GestionPage() {
           contractNumber: contract.contractNumber,
           productType: contract.productType,
           clientLabel,
+          userId: contract.userId,
           amount: Math.max(0, lifecyclePayment.amount),
           ageDays,
           status: lifecyclePayment.status,
+          impayeDocumentId,
         })
         contractsWithLifecycleDue.add(contract.id)
       }
@@ -894,9 +909,12 @@ export default function GestionPage() {
         productType: contract.productType,
         clientLabel:
           contract.clientName || contract.user?.raisonSociale || contract.user?.email || "Client non renseigné",
+        userId: contract.userId,
         amount: Math.max(0, contract.premium),
         ageDays,
         status: "approved_unpaid",
+        impayeDocumentId:
+          contract.userId != null ? suspendedAttestationByUserId.get(contract.userId) ?? null : null,
       })
     }
 
@@ -931,6 +949,8 @@ export default function GestionPage() {
         const daysUntil = Math.floor((dueMs - now) / DAY_MS)
         return {
           id: sub.id,
+          userId: sub.userId,
+          userEmail: sub.user?.email ?? null,
           status: sub.status,
           clientLabel: sub.user?.raisonSociale || sub.user?.email || "Client non renseigné",
           daysUntil,
@@ -972,6 +992,7 @@ export default function GestionPage() {
       sepaOverdueAmount,
       sepaMandateMissing,
       sepaFailed,
+      impayesRelancables: receivables.filter((row) => row.impayeDocumentId != null).length,
       topImpayes,
       recentSepaDueRows: [...sepaDueRows]
         .sort((a, b) => a.daysUntil - b.daysUntil)
@@ -2116,6 +2137,10 @@ export default function GestionPage() {
                         </span>
                       </div>
                     </div>
+                    <p className="mt-2 text-[11px] text-indigo-200/90">
+                      Relances impayé e-mail disponibles :{" "}
+                      <span className="font-semibold text-white">{comptabiliteV2.impayesRelancables}</span>
+                    </p>
                   </div>
 
                   <div className="rounded-lg border border-gray-700 bg-[#232637] p-3">
@@ -2125,10 +2150,9 @@ export default function GestionPage() {
                     ) : (
                       <div className="space-y-1.5">
                         {comptabiliteV2.topImpayes.map((row) => (
-                          <a
+                          <div
                             key={row.id}
-                            href="#contrats-plateforme"
-                            className="block rounded border border-gray-700 bg-[#1a1e2b] px-2.5 py-2 hover:border-indigo-500/70"
+                            className="rounded border border-gray-700 bg-[#1a1e2b] px-2.5 py-2"
                           >
                             <p className="text-xs text-white">
                               {row.contractNumber} · {row.clientLabel}
@@ -2136,7 +2160,43 @@ export default function GestionPage() {
                             <p className="text-[11px] text-gray-300 mt-0.5">
                               {row.amount.toLocaleString("fr-FR")} € · {row.ageDays}j · {row.status}
                             </p>
-                          </a>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setSearchQuery(row.contractNumber)}
+                                className="text-[11px] px-2 py-1 rounded border border-indigo-700/70 text-indigo-100 hover:bg-indigo-900/30"
+                              >
+                                Filtrer contrat
+                              </button>
+                              {row.userId ? (
+                                <Link
+                                  href={`/gestion/clients/${row.userId}`}
+                                  className="text-[11px] px-2 py-1 rounded border border-gray-600 text-gray-100 hover:border-indigo-500/80"
+                                >
+                                  Fiche client
+                                </Link>
+                              ) : null}
+                              {row.impayeDocumentId ? (
+                                <button
+                                  type="button"
+                                  disabled={sendingComptaRelanceId === row.id}
+                                  onClick={async () => {
+                                    setSendingComptaRelanceId(row.id)
+                                    try {
+                                      const impayeDocId = row.impayeDocumentId
+                                      if (!impayeDocId) return
+                                      await handleResendImpayeEmail(impayeDocId)
+                                    } finally {
+                                      setSendingComptaRelanceId(null)
+                                    }
+                                  }}
+                                  className="text-[11px] px-2 py-1 rounded border border-amber-700/70 text-amber-100 hover:bg-amber-900/30 disabled:opacity-50"
+                                >
+                                  {sendingComptaRelanceId === row.id ? "Envoi..." : "Relance impayé"}
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -2158,6 +2218,29 @@ export default function GestionPage() {
                                 {new Date(row.date).toLocaleDateString("fr-FR")} · {row.estimatedAmount.toLocaleString("fr-FR")} € ·{" "}
                                 {row.daysUntil < 0 ? `${Math.abs(row.daysUntil)}j de retard` : `J-${row.daysUntil}`}
                               </p>
+                              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                {row.userId ? (
+                                  <Link
+                                    href={`/gestion/clients/${row.userId}`}
+                                    className="text-[11px] px-2 py-1 rounded border border-gray-600 text-gray-100 hover:border-indigo-500/80"
+                                  >
+                                    Fiche client
+                                  </Link>
+                                ) : null}
+                                {row.userEmail ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const email = row.userEmail
+                                      if (!email) return
+                                      setSearchQuery(email)
+                                    }}
+                                    className="text-[11px] px-2 py-1 rounded border border-indigo-700/70 text-indigo-100 hover:bg-indigo-900/30"
+                                  >
+                                    Filtrer email
+                                  </button>
+                                ) : null}
+                              </div>
                             </div>
                           ))}
                         </div>
