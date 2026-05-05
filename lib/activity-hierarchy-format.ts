@@ -121,11 +121,19 @@ export function formatActivitiesForDocuments(
 }
 
 function toStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-  return value
-    .filter((item): item is string => typeof item === "string")
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+  }
+  if (typeof value === "string") {
+    return value
+      .split(/[\n;,]/)
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+  }
+  return []
 }
 
 type StructuredDataCandidate = {
@@ -149,10 +157,10 @@ export function extractStructuredActivities(
     toStringArray(value.activitesHierarchie),
     toStringArray(value.activitiesStructured),
     toStringArray(value.activitiesHierarchy),
-    toStringArray(value.matchedHierarchy),
-    toStringArray(value.matchedActivities),
     toStringArray(value.activites),
     toStringArray(value.activities),
+    toStringArray(value.matchedHierarchy),
+    toStringArray(value.matchedActivities),
   ]
   return candidates.find((items) => items.length > 0) ?? []
 }
