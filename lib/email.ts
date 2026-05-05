@@ -414,6 +414,11 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nVos coordonnées ont été mises à jour. Votre attestation décennale ${numero} a été modifiée en conséquence.\n\nConsultez votre attestation à jour : ${documentUrl}\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Vos coordonnées ont été mises à jour. Votre attestation décennale <strong>${numero}</strong> a été modifiée en conséquence.</p><p><a href="${documentUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Voir mon attestation</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
+  attestationDecennaleDisponible: (raisonSociale: string, numero: string) => ({
+    subject: `Votre attestation décennale ${numero} est disponible - Optimum Assurance`,
+    text: `Bonjour ${raisonSociale},\n\nVotre attestation décennale ${numero} est maintenant disponible dans votre espace client.\n\nAccès direct : ${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${raisonSociale},</p><p>Votre <strong>attestation décennale ${numero}</strong> est maintenant disponible dans votre espace client.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+  }),
   confirmationResiliation: (raisonSociale: string, numero: string, typeDoc: string) => ({
     subject: `Résiliation confirmée - ${numero} - Optimum Assurance`,
     text: `Bonjour ${raisonSociale},\n\nVotre ${typeDoc} ${numero} a été résilié(e) conformément à votre demande.\n\nPour toute nouvelle souscription : ${APP_URL}/devis\n\nCordialement,\nOptimum Assurance`,

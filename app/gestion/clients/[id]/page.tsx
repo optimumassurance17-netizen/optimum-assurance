@@ -276,6 +276,7 @@ export default function ClientDetailPage() {
     forcedActivitiesText: "",
     note: "",
   })
+  const [attestationGenerating, setAttestationGenerating] = useState(false)
   const [clientAccessLoading, setClientAccessLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
   const [deleteModal, setDeleteModal] = useState(false)
@@ -412,6 +413,70 @@ export default function ClientDetailPage() {
                 className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium"
               >
                 Sinistre
+              </button>
+              <button
+                type="button"
+                disabled={attestationGenerating}
+                onClick={async () => {
+                  setAttestationGenerating(true)
+                  try {
+                    const res = await fetch(
+                      `/api/gestion/clients/${clientId}/attestation-decennale`,
+                      { method: "POST" }
+                    )
+                    const json = await readResponseJson<{
+                      ok?: boolean
+                      error?: string
+                      warning?: string
+                      emailSent?: boolean
+                      document?: {
+                        id: string
+                        type: string
+                        numero: string
+                        status: string
+                        createdAt: string
+                      }
+                    }>(res)
+                    if (!res.ok || !json.ok || !json.document) {
+                      throw new Error(
+                        json.error ||
+                          "Impossible de générer l'attestation décennale."
+                      )
+                    }
+                    setData((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            documents: [json.document!, ...prev.documents],
+                          }
+                        : prev
+                    )
+                    const emailInfo = json.emailSent
+                      ? "Email client envoyé."
+                      : "Attestation créée, mais email client non envoyé."
+                    setToast({
+                      message: json.warning
+                        ? `${emailInfo} ${json.warning}`
+                        : `Attestation ${json.document.numero} générée. ${emailInfo}`,
+                      type: json.emailSent ? "success" : "error",
+                    })
+                  } catch (err) {
+                    setToast({
+                      message:
+                        err instanceof Error
+                          ? err.message
+                          : "Erreur génération attestation décennale",
+                      type: "error",
+                    })
+                  } finally {
+                    setAttestationGenerating(false)
+                  }
+                }}
+                className="text-sm text-cyan-300 hover:text-cyan-200 font-medium disabled:opacity-50"
+              >
+                {attestationGenerating
+                  ? "Génération attestation..."
+                  : "Générer attestation décennale"}
               </button>
               <button
                 type="button"
