@@ -73,7 +73,8 @@ export default function AvisPage() {
       <div className="max-w-2xl mx-auto px-6 py-14">
         <h1 className="text-3xl font-bold text-[#0a0a0a] mb-2">Avis clients</h1>
         <p className="text-[#171717] mb-10">
-          Une assurance simple, rapide et sans surprise. Attestation immédiate — pas d&apos;attente 24h.
+          Une assurance simple, rapide et sans surprise. Attestation après validation du dossier — pas d&apos;attente
+          inutile.
         </p>
 
         <div className="text-center mb-12 p-6 bg-white rounded-2xl border border-[#e5e5e5] shadow-sm">

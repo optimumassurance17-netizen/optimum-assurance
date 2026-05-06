@@ -21,7 +21,7 @@ export const INVOICE_PAYMENT_METHOD_PRIMARY = "Prélèvement SEPA"
 
 /** Précision pour la prime initiale réglée via la plateforme (Mollie) */
 export const INVOICE_FIRST_SETTLEMENT_NOTE =
-  "Règlement de la prime initiale : virement bancaire sécurisé (Mollie)."
+  "Règlement de la prime initiale : paiement sécurisé via Mollie selon le parcours contractuel."
 
 /**
  * Mentions complémentaires sur le PDF unique « devis + conditions particulières »

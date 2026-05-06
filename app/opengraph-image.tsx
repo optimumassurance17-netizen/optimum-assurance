@@ -54,7 +54,7 @@ export default function Image() {
           Assurance décennale BTP en ligne
         </p>
         <p style={{ fontSize: 24, color: "#404040", marginTop: 16 }}>
-          Devis en 3 minutes • Attestation immédiate
+          Devis en 3 minutes • Attestation après validation
         </p>
       </div>
     ),

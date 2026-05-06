@@ -25,7 +25,7 @@ export const SITE_KNOWLEDGE = `
 4. **/signature** — Signature électronique du contrat (puis **/sign/[id]** pour apposer la signature sur le PDF).
 5. **/mandat-sepa** — IBAN et mandat ; **prélèvement trimestriel uniquement** (pas d’option mensuelle).
 6. **/paiement** — **Premier trimestre + 60 € de frais de gestion** payés par **carte bancaire (Mollie)** ; les trimestres suivants sont prévus en **prélèvement SEPA** sur l’IBAN du mandat.
-7. **/confirmation** — Après validation du paiement, **attestation** disponible rapidement dans l’espace client (PDF, QR de vérification).
+7. **/confirmation** — Après paiement, contrôle du dossier et acceptation du risque, **attestation** disponible dans l’espace client (PDF, QR de vérification).
 
 ## Parcours RC fabriquant
 1. **/devis-rc-fabriquant** — Formulaire en **4 étapes** : entreprise (e-mail, raison sociale, **SIRET 14 chiffres** avec bouton **Remplir** via API Sirene INSEE si configurée — préremplit raison sociale et année de création ; téléphone, activité) ; fabricant (type de produit, zone France/Europe/Monde, sous-traitance, contrôle qualité, questions certification/tests pour batterie/électronique) ; CA total (obligatoire), export, effectifs ; sinistralité et message. Envoi → lead + **indicatifs internes** (score / prime indicative) pour la gestion uniquement — **aucun tarif affiché** au prospect.
@@ -40,7 +40,7 @@ export const SITE_KNOWLEDGE = `
 6. **Attestation** après **réception des fonds** (pas immédiate comme la décennale carte).
 
 ## Différences décennale vs DO (résumé)
-- **Décennale** : tarif tout de suite (affichage **équivalent mensuel** sur le site, **prélèvement réel trimestriel**) ; **1er trimestre + frais en CB** puis **SEPA trimestriel** ; attestation peu après paiement en ligne.
+- **Décennale** : tarif tout de suite (affichage **équivalent mensuel** sur le site, **prélèvement réel trimestriel**) ; **1er trimestre + frais en CB** puis **SEPA trimestriel** ; attestation après paiement, contrôle du dossier et acceptation du risque.
 - **DO** : tarif après étude ; **virement** ; attestation après encaissement.
 
 ## Outils techniques (information générale)
