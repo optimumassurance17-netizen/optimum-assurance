@@ -50,7 +50,7 @@ export async function GET() {
     }
 
     const userId = session.user.id
-    const [pendingRows, latestDecennaleContract, paidPayments, sepa, approvedUnpaidContracts, docs] =
+    const [pendingRows, latestDecennaleContract, activeDecennaleContract, paidPayments, sepa, approvedUnpaidContracts, docs] =
       await Promise.all([
         prisma.pendingSignature.findMany({
           where: { userId },
@@ -64,6 +64,17 @@ export async function GET() {
         prisma.document.findFirst({
           where: { userId, type: "contrat" },
           orderBy: { createdAt: "desc" },
+          select: { id: true },
+        }),
+        prisma.insuranceContract.findFirst({
+          where: {
+            userId,
+            productType: "decennale",
+            status: "active",
+            paidAt: { not: null },
+            insurerValidatedAt: { not: null },
+          },
+          orderBy: { updatedAt: "desc" },
           select: { id: true },
         }),
         prisma.payment.findMany({
@@ -117,8 +128,12 @@ export async function GET() {
     const suspendedDecennaleAttestationsCount = docs.filter(
       (doc) => isDecennaleAttestationType(doc.type) && doc.status === "suspendu"
     ).length
+    const validLegacyDecennaleAttestation = docs.some(
+      (doc) => isDecennaleAttestationType(doc.type) && doc.status !== "suspendu"
+    )
 
     const hasDecennaleContract = Boolean(latestDecennaleContract)
+    const decennaleCertificateAvailable = Boolean(activeDecennaleContract || validLegacyDecennaleAttestation)
     const actions: AutonomyAction[] = []
     const advisories: string[] = []
 
@@ -171,6 +186,11 @@ export async function GET() {
         "Votre premier paiement est enregistré. L’activation SEPA est en cours ; en cas de blocage persistant, un suivi dédié peut être déclenché côté gestion."
       )
     }
+    if (decennaleFirstPaymentDone && !decennaleCertificateAvailable) {
+      advisories.push(
+        "Votre paiement est enregistré. L’attestation sera disponible après contrôle du dossier et acceptation du risque."
+      )
+    }
 
     if (actions.length === 0) {
       actions.push({
@@ -188,6 +208,7 @@ export async function GET() {
       pendingSignaturesDecennale: pendingDecennale.length,
       hasDecennaleContract,
       firstDecennalePaymentDone: decennaleFirstPaymentDone,
+      decennaleCertificateAvailable,
       approvedUnpaidContractsCount: approvedUnpaidContracts,
       suspendedAttestationsCount: suspendedDecennaleAttestationsCount,
       sepaSubscription: sepa
