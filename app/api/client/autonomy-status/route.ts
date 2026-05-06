@@ -50,7 +50,15 @@ export async function GET() {
     }
 
     const userId = session.user.id
-    const [pendingRows, latestDecennaleContract, paidPayments, sepa, approvedUnpaidContracts, docs] =
+    const [
+      pendingRows,
+      latestDecennaleContractDocument,
+      latestDecennaleInsuranceContract,
+      paidPayments,
+      sepa,
+      approvedUnpaidContracts,
+      docs,
+    ] =
       await Promise.all([
         prisma.pendingSignature.findMany({
           where: { userId },
@@ -65,6 +73,11 @@ export async function GET() {
           where: { userId, type: "contrat" },
           orderBy: { createdAt: "desc" },
           select: { id: true },
+        }),
+        prisma.insuranceContract.findFirst({
+          where: { userId, productType: "decennale" },
+          orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+          select: { id: true, status: true, paidAt: true },
         }),
         prisma.payment.findMany({
           where: { userId, status: "paid" },
@@ -105,7 +118,7 @@ export async function GET() {
       })
       .filter((row): row is { signatureRequestId: string; signatureLink: string } => Boolean(row))
 
-    const decennaleFirstPaymentDone = paidPayments.some((payment) => {
+    const decennaleFirstPaymentLogged = paidPayments.some((payment) => {
       const m = parseJsonObject(payment.metadata)
       return (
         m.premierPaiementCarte === true ||
@@ -114,11 +127,24 @@ export async function GET() {
       )
     })
 
+    const hasValidDecennaleAttestation = docs.some(
+      (doc) => isDecennaleAttestationType(doc.type) && doc.status === "valide"
+    )
+    const hasPaidDecennaleInsuranceContract =
+      latestDecennaleInsuranceContract?.status === "active" ||
+      latestDecennaleInsuranceContract?.paidAt != null
+    const decennaleFirstPaymentDone =
+      decennaleFirstPaymentLogged ||
+      hasValidDecennaleAttestation ||
+      hasPaidDecennaleInsuranceContract
+
     const suspendedDecennaleAttestationsCount = docs.filter(
       (doc) => isDecennaleAttestationType(doc.type) && doc.status === "suspendu"
     ).length
 
-    const hasDecennaleContract = Boolean(latestDecennaleContract)
+    const hasDecennaleContract = Boolean(
+      latestDecennaleContractDocument || latestDecennaleInsuranceContract
+    )
     const actions: AutonomyAction[] = []
     const advisories: string[] = []
 
