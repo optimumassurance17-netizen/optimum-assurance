@@ -52,8 +52,8 @@ export async function GET() {
     const userId = session.user.id
     const [
       pendingRows,
-      latestDecennaleContractDocument,
-      latestDecennaleInsuranceContract,
+      latestDecennaleContract,
+      activeDecennaleContract,
       paidPayments,
       sepa,
       approvedUnpaidContracts,
@@ -75,9 +75,15 @@ export async function GET() {
           select: { id: true },
         }),
         prisma.insuranceContract.findFirst({
-          where: { userId, productType: "decennale" },
-          orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-          select: { id: true, status: true, paidAt: true },
+          where: {
+            userId,
+            productType: "decennale",
+            status: "active",
+            paidAt: { not: null },
+            insurerValidatedAt: { not: null },
+          },
+          orderBy: { updatedAt: "desc" },
+          select: { id: true },
         }),
         prisma.payment.findMany({
           where: { userId, status: "paid" },
@@ -127,23 +133,18 @@ export async function GET() {
       )
     })
 
-    const hasValidDecennaleAttestation = docs.some(
-      (doc) => isDecennaleAttestationType(doc.type) && doc.status === "valide"
-    )
-    const hasPaidDecennaleInsuranceContract =
-      latestDecennaleInsuranceContract?.status === "active" ||
-      latestDecennaleInsuranceContract?.paidAt != null
-    const decennaleFirstPaymentDone =
-      decennaleFirstPaymentLogged ||
-      hasValidDecennaleAttestation ||
-      hasPaidDecennaleInsuranceContract
-
     const suspendedDecennaleAttestationsCount = docs.filter(
       (doc) => isDecennaleAttestationType(doc.type) && doc.status === "suspendu"
     ).length
+    const validLegacyDecennaleAttestation = docs.some(
+      (doc) => isDecennaleAttestationType(doc.type) && doc.status !== "suspendu"
+    )
+    const decennaleCertificateAvailable = Boolean(activeDecennaleContract || validLegacyDecennaleAttestation)
+    const decennaleFirstPaymentDone =
+      decennaleFirstPaymentLogged || decennaleCertificateAvailable
 
     const hasDecennaleContract = Boolean(
-      latestDecennaleContractDocument || latestDecennaleInsuranceContract
+      latestDecennaleContract || activeDecennaleContract || approvedUnpaidContracts > 0
     )
     const actions: AutonomyAction[] = []
     const advisories: string[] = []
@@ -197,6 +198,11 @@ export async function GET() {
         "Votre premier paiement est enregistré. L’activation SEPA est en cours ; en cas de blocage persistant, un suivi dédié peut être déclenché côté gestion."
       )
     }
+    if (decennaleFirstPaymentDone && !decennaleCertificateAvailable) {
+      advisories.push(
+        "Votre paiement est enregistré. L’attestation sera disponible après contrôle du dossier et acceptation du risque."
+      )
+    }
 
     if (actions.length === 0) {
       actions.push({
@@ -214,6 +220,7 @@ export async function GET() {
       pendingSignaturesDecennale: pendingDecennale.length,
       hasDecennaleContract,
       firstDecennalePaymentDone: decennaleFirstPaymentDone,
+      decennaleCertificateAvailable,
       approvedUnpaidContractsCount: approvedUnpaidContracts,
       suspendedAttestationsCount: suspendedDecennaleAttestationsCount,
       sepaSubscription: sepa

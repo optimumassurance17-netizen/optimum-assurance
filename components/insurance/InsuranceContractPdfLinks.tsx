@@ -26,6 +26,7 @@ export function InsuranceContractPdfLinks({
 }: Props) {
   const base = `/api/contracts/${contractId}/pdf`
   const isActive = status === CONTRACT_STATUS.active
+  const certificateAvailable = isActive
   const showQuarterlySchedule =
     (productType === "decennale" || productType === "rc_fabriquant") &&
     (status === CONTRACT_STATUS.active || status === CONTRACT_STATUS.approved)
@@ -55,7 +56,7 @@ export function InsuranceContractPdfLinks({
           Échéancier (trimestriel)
         </a>
       ) : null}
-      {isActive ? (
+      {certificateAvailable ? (
         <>
           <a href={`${base}/certificate`} target="_blank" rel="noreferrer" className={linkClass}>
             Attestation

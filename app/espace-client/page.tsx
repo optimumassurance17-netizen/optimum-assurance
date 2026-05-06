@@ -44,6 +44,7 @@ type AutonomyStatusPayload = {
   pendingSignaturesTotal: number
   pendingSignaturesDecennale: number
   hasDecennaleContract: boolean
+  decennaleCertificateAvailable: boolean
   firstDecennalePaymentDone: boolean
   approvedUnpaidContractsCount: number
   suspendedAttestationsCount: number
@@ -130,6 +131,7 @@ function buildDecennaleTimeline(status: AutonomyStatusPayload): DecennaleTimelin
   const sepaStatus = status.sepaSubscription?.status ?? null
   const sepaBlocked = sepaStatus === "pending_mandate" || sepaStatus === "failed"
   const paymentDone = status.firstDecennalePaymentDone
+  const certificateAvailable = status.decennaleCertificateAvailable
   const paymentStepOpen = hasDecennaleJourney && !pendingSignature && !paymentDone
 
   const hrefFor = (actionId: string, fallback: string) =>
@@ -167,8 +169,8 @@ function buildDecennaleTimeline(status: AutonomyStatusPayload): DecennaleTimelin
     {
       id: "attestation",
       title: "Attestation active",
-      description: "Attestation disponible après validation du paiement.",
-      state: status.suspendedAttestationsCount > 0 ? "blocked" : paymentDone ? "done" : "todo",
+      description: "Attestation disponible après paiement, contrôle du dossier et acceptation du risque.",
+      state: status.suspendedAttestationsCount > 0 ? "blocked" : certificateAvailable ? "done" : "todo",
       href:
         status.suspendedAttestationsCount > 0
           ? hrefFor("regularize-suspended-attestation", "/espace-client/regularisation")
@@ -598,7 +600,7 @@ export default function EspaceClientPage() {
                         </>
                       ) : c.productType === "decennale" ? (
                         <>
-                          {c.premium.toLocaleString("fr-FR")} € / an — virement Mollie ≈{" "}
+                          {c.premium.toLocaleString("fr-FR")} € / an — 1er trimestre CB puis SEPA ≈{" "}
                           {primeTrimestrielle(c.premium).toLocaleString("fr-FR")} € / trimestre ·{" "}
                         </>
                       ) : (
@@ -617,7 +619,15 @@ export default function EspaceClientPage() {
                       status={c.status}
                       productType={c.productType}
                     />
-                    {(c.status === CONTRACT_STATUS.approved ||
+                    {c.status === CONTRACT_STATUS.approved && c.productType === "decennale" && (
+                      <Link
+                        href="/mandat-sepa"
+                        className="inline-flex items-center justify-center bg-[#2563eb] text-white px-5 py-2.5 rounded-xl hover:bg-[#1d4ed8] font-medium text-sm transition-colors"
+                      >
+                        Continuer mandat SEPA + paiement CB
+                      </Link>
+                    )}
+                    {((c.status === CONTRACT_STATUS.approved && c.productType !== "decennale") ||
                       (c.status === CONTRACT_STATUS.active && c.productType === "rc_fabriquant")) && (
                       <PayInsuranceContractButton
                         contractId={c.id}
