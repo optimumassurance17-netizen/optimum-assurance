@@ -178,7 +178,7 @@ export default function Home() {
               <SimulateurPrime />
               <div className="rounded-3xl border border-slate-200/90 bg-white p-8 shadow-xl shadow-slate-900/5">
                 <span className="mb-4 inline-block rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
-                  Attestation immédiate
+                  Attestation après validation
                 </span>
                 <p className="mb-1 text-sm font-medium text-slate-700">À partir de</p>
                 <p className="mb-1 text-4xl font-bold text-slate-900 md:text-5xl tabular-nums min-h-[1.2em]">
@@ -186,7 +186,7 @@ export default function Home() {
                 </p>
                 <p className="mb-2 text-xs text-slate-700">Équivalent (min. 600 €/an)</p>
                 <p className="mb-6 text-sm text-slate-700">
-                  Plomberie, électricité — attestation dès validation du dossier.
+                  Plomberie, électricité — attestation après validation du dossier et du paiement.
                   <span className="mt-2 block text-xs text-slate-600">{LEGENDE_PAIEMENT_TRIMESTRIEL_COURT}</span>
                 </p>
                 <Link
@@ -310,9 +310,9 @@ export default function Home() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5] shadow-sm hover:shadow-md hover:border-[#d4d4d4] transition-all">
               <span className="text-2xl mb-2 block">⚡</span>
-              <h3 className="font-semibold text-slate-900 mb-2">Attestation en 3 min</h3>
+              <h3 className="font-semibold text-slate-900 mb-2">Attestation après validation</h3>
               <p className="text-[#171717] text-sm leading-relaxed">
-                Dès validation du paiement. Pas 24h comme ailleurs — immédiat, avec QR code de vérification.
+                Après paiement, contrôle du dossier et acceptation du risque — disponible avec QR code de vérification.
               </p>
             </div>
             <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5] shadow-sm hover:shadow-md hover:border-[#d4d4d4] transition-all">
@@ -578,7 +578,7 @@ export default function Home() {
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 text-center">Ils nous font confiance</h2>
           <p className="text-[#171717] text-center mb-10 max-w-2xl mx-auto">
-            Une assurance simple, rapide et sans surprise. Attestation immédiate — pas d&apos;attente 24h.
+            Une assurance simple, rapide et sans surprise. Attestation après validation — parcours digital sans friction.
           </p>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5] shadow-sm hover:shadow-md transition-all">

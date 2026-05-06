@@ -55,7 +55,7 @@ function categoryBenefits(categorie: string): string[] {
       return [
         "Métiers de toiture et d'étanchéité pris en compte dans le parcours décennale",
         "Devis selon activité déclarée, chiffre d'affaires et sinistralité",
-        "Attestation rapide pour sécuriser les chantiers et les maîtres d'ouvrage",
+        "Attestation après validation du dossier pour sécuriser les chantiers et les maîtres d'ouvrage",
       ]
     case "Technique":
       return [
@@ -97,7 +97,7 @@ function categoryBenefits(categorie: string): string[] {
       return [
         "Activité du bâtiment couverte selon le profil déclaré",
         "Devis en ligne avec tarification adaptée au chiffre d'affaires",
-        "Attestation rapide après validation du dossier",
+        "Attestation disponible après validation du dossier",
       ]
   }
 }
