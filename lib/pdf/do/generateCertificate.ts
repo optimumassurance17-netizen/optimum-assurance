@@ -7,7 +7,6 @@ import { loadAccelerantLogoImage } from "../shared/accelerantLogo"
 import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
-import { drawAttestationStampBottomRight, loadAttestationStampImage } from "../shared/attestationStamp"
 import { embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 
@@ -189,9 +188,6 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
     10,
     PDF_COLORS.muted
   )
-
-  const stamp = await loadAttestationStampImage(pdfDoc)
-  if (stamp) drawAttestationStampBottomRight(page, stamp)
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }
