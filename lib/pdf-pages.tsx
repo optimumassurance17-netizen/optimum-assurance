@@ -103,6 +103,7 @@ export function AttestationPDFPage({
   }
   const activities = extractStructuredActivities(d)
   const optimizedExclusions = extractOptimizedExclusionLines(d)
+  const activityLines = activities.length > 0 ? activities : ["Activité déclarée au contrat"]
   return (
     <Page size="A4" style={pdfTheme.page}>
       <PdfBrandHeader tagline="Assurance décennale professionnelle" />
@@ -116,9 +117,13 @@ export function AttestationPDFPage({
           <Text style={pdfTheme.p}>{[d.adresse, d.codePostal, d.ville].filter(Boolean).join(" ")}</Text>
         )}
         <Text style={pdfTheme.p}>
-          est garantie au titre de l&apos;assurance responsabilité civile décennale pour les activités :{" "}
-          {activities.length ? activities.join("\n") : "—"}
+          est garantie au titre de l&apos;assurance responsabilité civile décennale pour les activités :
         </Text>
+        {activityLines.map((line, index) => (
+          <Text key={`attestation-activity-${index}`} style={pdfTheme.p}>
+            • {line}
+          </Text>
+        ))}
         {optimizedExclusions.length > 0 && (
           <Text style={pdfTheme.p}>
             Ne sont pas couverts : {optimizedExclusions.join(" ; ")}
@@ -142,6 +147,34 @@ export function AttestationPDFPage({
             </View>
           </View>
         )}
+      </View>
+      <View style={{ flexDirection: "row", marginTop: 14 }}>
+        <View
+          style={{
+            width: "46%",
+            borderWidth: 1.3,
+            borderColor: "#1e40af",
+            borderRadius: 8,
+            padding: 8,
+            marginRight: "8%",
+          }}
+        >
+          <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: "#1e40af", marginBottom: 2 }}>
+            TAMPON ASSUREUR
+          </Text>
+          <Text style={{ fontSize: 8, color: "#0f172a", lineHeight: 1.35 }}>
+            OPTIMUM COURTAGE{"\n"}Par délégation{"\n"}ACCELERANT INSURANCE
+          </Text>
+        </View>
+        <View style={{ width: "46%", justifyContent: "flex-end" }}>
+          <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", color: "#0f172a", marginBottom: 8 }}>
+            Signature autorisée
+          </Text>
+          <View style={{ borderTopWidth: 1, borderTopColor: "#64748b", paddingTop: 5 }}>
+            <Text style={{ fontSize: 8, color: "#334155" }}>Service émission attestations</Text>
+            <Text style={{ fontSize: 8, color: "#334155" }}>Optimum Assurance</Text>
+          </View>
+        </View>
       </View>
       <Text style={[pdfTheme.legalText, { marginTop: 14 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>

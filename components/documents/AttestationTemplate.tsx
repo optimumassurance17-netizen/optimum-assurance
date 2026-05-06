@@ -26,6 +26,7 @@ interface AttestationTemplateProps {
 
 export function AttestationTemplate({ numero, verificationUrl, data }: AttestationTemplateProps) {
   const activities = extractStructuredActivities(data)
+  const activityLines = activities.length > 0 ? activities : ["Activité déclarée au contrat"]
   const optimizedExclusions = extractOptimizedExclusionLines(data)
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0">
@@ -50,7 +51,13 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
         <p className="mb-4">
           est garantie au titre de l&apos;<strong>assurance responsabilité civile décennale</strong> pour les activités de :
         </p>
-        <p className="font-medium mb-4 whitespace-pre-line">{activities.join("\n")}</p>
+        <ul className="mb-4 list-disc list-inside space-y-1">
+          {activityLines.map((activity, index) => (
+            <li key={`attestation-activity-${index}`} className="font-medium">
+              {activity}
+            </li>
+          ))}
+        </ul>
         {optimizedExclusions.length > 0 && (
           <>
             <p className="mb-2 font-medium">Ne sont pas couverts :</p>
@@ -66,7 +73,7 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
         <p>Prime annuelle : {data.primeAnnuelle.toLocaleString("fr-FR")} € TTC</p>
       </div>
       <ActivityDetailsBlock
-        activities={activities}
+        activities={activityLines}
         title="Definition et exclusions par activite assuree"
       />
 
@@ -78,6 +85,28 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
           Conditions d&apos;émission et de validité des attestations
         </a>
       </p>
+
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="rounded-full border-2 border-[#1e40af] p-4 text-center">
+          <p className="text-[10px] font-bold tracking-wide text-[#1e40af]">
+            TAMPON ASSUREUR
+          </p>
+          <p className="text-[10px] text-[#171717]">
+            OPTIMUM COURTAGE
+            <br />
+            Par délégation
+            <br />
+            ACCELERANT INSURANCE
+          </p>
+        </div>
+        <div className="flex flex-col justify-end">
+          <p className="text-xs font-semibold text-[#171717]">Signature autorisée</p>
+          <div className="mt-3 border-t border-[#171717] pt-2">
+            <p className="text-xs text-[#171717]">Service émission attestations</p>
+            <p className="text-xs text-[#171717]">Optimum Assurance</p>
+          </div>
+        </div>
+      </div>
 
       {verificationUrl && (
         <div className="flex items-center gap-4 mb-8 print:flex">

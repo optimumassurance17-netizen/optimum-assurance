@@ -25,6 +25,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     data.activitiesHierarchy && data.activitiesHierarchy.length > 0
       ? data.activitiesHierarchy
       : (data.activities ?? [])
+  const activityLines = activities.length > 0 ? activities : ["Activité déclarée au contrat"]
   const optimizedExclusions = extractOptimizedExclusionLines({
     activityExclusions: data.activityExclusions,
   })
@@ -94,17 +95,28 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     color: PDF_COLORS.text,
   })
   y -= 14
-  y = drawWrappedText(
-    page,
-    `Activité(s) assurée(s) : ${activities.join("\n")}.`,
-    PDF_PAGE.marginX,
+  drawTextPdf(page, "Activités assurées :", {
+    x: PDF_PAGE.marginX,
     y,
-    PDF_PAGE.contentWidth,
-    font,
-    10,
-    13
-  )
+    size: 10,
+    font: fontBold,
+    color: PDF_COLORS.text,
+  })
   y -= 14
+  for (const activity of activityLines) {
+    y = drawWrappedText(
+      page,
+      `• ${activity}`,
+      PDF_PAGE.marginX,
+      y,
+      PDF_PAGE.contentWidth,
+      font,
+      10,
+      13
+    )
+    y -= 4
+  }
+  y -= 10
   if (optimizedExclusions.length > 0) {
     y = drawWrappedText(
       page,
@@ -185,8 +197,53 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     PDF_COLORS.muted
   )
 
+  const signatureTopY = Math.max(y + 26, 152)
+  const signatureX = PDF_PAGE.width - PDF_PAGE.marginX - 180
+  drawTextPdf(page, "Signature autorisée", {
+    x: signatureX,
+    y: signatureTopY,
+    size: 9,
+    font: fontBold,
+    color: PDF_COLORS.text,
+  })
+  drawTextPdf(page, "Service émission attestations", {
+    x: signatureX,
+    y: signatureTopY - 14,
+    size: 8,
+    font,
+    color: PDF_COLORS.muted,
+  })
+  drawTextPdf(page, "Optimum Assurance", {
+    x: signatureX,
+    y: signatureTopY - 25,
+    size: 8,
+    font,
+    color: PDF_COLORS.muted,
+  })
+
   const stamp = await loadAttestationStampImage(pdfDoc)
-  if (stamp) drawAttestationStampBottomRight(page, stamp)
+  if (stamp) {
+    drawAttestationStampBottomRight(page, stamp)
+  } else {
+    drawTextPdf(page, "TAMPON ASSUREUR", {
+      x: signatureX,
+      y: 112,
+      size: 8,
+      font: fontBold,
+      color: PDF_COLORS.primary,
+    })
+    drawWrappedText(
+      page,
+      "OPTIMUM COURTAGE — Par délégation ACCELERANT INSURANCE",
+      signatureX,
+      102,
+      180,
+      font,
+      7,
+      10,
+      PDF_COLORS.muted
+    )
+  }
 
   appendDecennaleActivityDetailsAnnex({
     pdfDoc,
