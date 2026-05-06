@@ -47,7 +47,7 @@ function esignEnv() {
  * Ne teste pas l’API Resend (pas d’email envoyé) — indique seulement si les variables sont présentes.
  * Les crons `/api/cron/*` refusent les appels en prod sans `CRON_SECRET` (503) ; Vercel envoie `Authorization: Bearer …` si la variable est définie.
  * `esign` : présence de NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (signature électronique).
- * `sirene` : clés INSEE et/ou Pappers pour `/api/siret` (préremplissage SIRET) — pas d’appel API ici.
+ * `sirene` : présence des clés INSEE pour `/api/siret` (préremplissage SIRET) — pas d’appel API ici.
  */
 export async function GET() {
   const crons = {

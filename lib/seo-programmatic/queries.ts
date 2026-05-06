@@ -514,6 +514,39 @@ const PROGRAMMATIC_SITEMAP_MAX = 5000
 /** Si Supabase est lent, on préfère un sitemap partiel (pages statiques inchangées) qu’un 504. */
 const PROGRAMMATIC_SITEMAP_FETCH_MS = 12_000
 
+function fallbackProgrammaticSitemapUrls(): {
+  path: string
+  changeFrequency: "weekly" | "monthly"
+  priority: number
+}[] {
+  const out: { path: string; changeFrequency: "weekly" | "monthly"; priority: number }[] = []
+  const villeSlugs = Object.keys(FALLBACK_VILLE_BY_SLUG)
+
+  for (const metier of METIERS_SEO) {
+    for (const ville of villeSlugs) {
+      if (out.length >= PROGRAMMATIC_SITEMAP_MAX) return out
+      out.push({
+        path: `/assurance-decennale/${metier.slug}/${ville}`,
+        changeFrequency: "monthly",
+        priority: metier.kind === "headterm" ? 0.74 : 0.7,
+      })
+    }
+  }
+
+  for (const doPage of DO_SEO) {
+    for (const ville of villeSlugs) {
+      if (out.length >= PROGRAMMATIC_SITEMAP_MAX) return out
+      out.push({
+        path: `/dommage-ouvrage/${doPage.slug}/${ville}`,
+        changeFrequency: "monthly",
+        priority: 0.72,
+      })
+    }
+  }
+
+  return out
+}
+
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   let id: ReturnType<typeof setTimeout> | undefined
   const timeout = new Promise<never>((_, reject) => {
@@ -549,9 +582,9 @@ export async function fetchProgrammaticSitemapUrls(): Promise<
         priority: 0.72,
       })
     }
-    return out
+    return out.length ? out : fallbackProgrammaticSitemapUrls()
   } catch (e) {
     console.error("[seo-programmatic] fetchProgrammaticSitemapUrls:", e)
-    return []
+    return fallbackProgrammaticSitemapUrls()
   }
 }
