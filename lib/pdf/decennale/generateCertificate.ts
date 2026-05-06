@@ -219,6 +219,24 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     font,
     color: PDF_COLORS.muted,
   })
+  drawTextPdf(page, "TAMPON ASSUREUR", {
+    x: signatureX,
+    y: signatureTopY - 40,
+    size: 8,
+    font: fontBold,
+    color: PDF_COLORS.primary,
+  })
+  drawWrappedText(
+    page,
+    "OPTIMUM COURTAGE — Par délégation ACCELERANT INSURANCE",
+    signatureX,
+    signatureTopY - 48,
+    180,
+    font,
+    7,
+    10,
+    PDF_COLORS.muted
+  )
 
   appendDecennaleActivityDetailsAnnex({
     pdfDoc,
