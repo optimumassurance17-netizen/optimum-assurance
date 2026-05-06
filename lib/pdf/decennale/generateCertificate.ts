@@ -7,7 +7,6 @@ import { loadAccelerantLogoImage } from "../shared/accelerantLogo"
 import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
-import { drawAttestationStampBottomRight, loadAttestationStampImage } from "../shared/attestationStamp"
 import { embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
@@ -220,30 +219,6 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     font,
     color: PDF_COLORS.muted,
   })
-
-  const stamp = await loadAttestationStampImage(pdfDoc)
-  if (stamp) {
-    drawAttestationStampBottomRight(page, stamp)
-  } else {
-    drawTextPdf(page, "TAMPON ASSUREUR", {
-      x: signatureX,
-      y: 112,
-      size: 8,
-      font: fontBold,
-      color: PDF_COLORS.primary,
-    })
-    drawWrappedText(
-      page,
-      "OPTIMUM COURTAGE — Par délégation ACCELERANT INSURANCE",
-      signatureX,
-      102,
-      180,
-      font,
-      7,
-      10,
-      PDF_COLORS.muted
-    )
-  }
 
   appendDecennaleActivityDetailsAnnex({
     pdfDoc,

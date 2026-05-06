@@ -148,31 +148,15 @@ export function AttestationPDFPage({
           </View>
         )}
       </View>
-      <View style={{ flexDirection: "row", marginTop: 14 }}>
-        <View
-          style={{
-            width: "46%",
-            borderWidth: 1.3,
-            borderColor: "#1e40af",
-            borderRadius: 8,
-            padding: 8,
-            marginRight: "8%",
-          }}
-        >
-          <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: "#1e40af", marginBottom: 2 }}>
-            TAMPON ASSUREUR
-          </Text>
-          <Text style={{ fontSize: 8, color: "#0f172a", lineHeight: 1.35 }}>
-            OPTIMUM COURTAGE{"\n"}Par délégation{"\n"}ACCELERANT INSURANCE
-          </Text>
-        </View>
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 14 }}>
         <View style={{ width: "46%", justifyContent: "flex-end" }}>
           <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", color: "#0f172a", marginBottom: 8 }}>
-            Signature autorisée
+            Émission autorisée
           </Text>
           <View style={{ borderTopWidth: 1, borderTopColor: "#64748b", paddingTop: 5 }}>
             <Text style={{ fontSize: 8, color: "#334155" }}>Service émission attestations</Text>
-            <Text style={{ fontSize: 8, color: "#334155" }}>Optimum Assurance</Text>
+            <Text style={{ fontSize: 8, color: "#334155" }}>Optimum Courtage</Text>
+            <Text style={{ fontSize: 8, color: "#334155" }}>Par délégation Accelerant Insurance</Text>
           </View>
         </View>
       </View>

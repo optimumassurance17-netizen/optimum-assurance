@@ -86,20 +86,8 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
         </a>
       </p>
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-full border-2 border-[#1e40af] p-4 text-center">
-          <p className="text-[10px] font-bold tracking-wide text-[#1e40af]">
-            TAMPON ASSUREUR
-          </p>
-          <p className="text-[10px] text-[#171717]">
-            OPTIMUM COURTAGE
-            <br />
-            Par délégation
-            <br />
-            ACCELERANT INSURANCE
-          </p>
-        </div>
-        <div className="flex flex-col justify-end">
+      <div className="mb-8 flex justify-end">
+        <div className="w-full max-w-xs">
           <p className="text-xs font-semibold text-[#171717]">Signature autorisée</p>
           <div className="mt-3 border-t border-[#171717] pt-2">
             <p className="text-xs text-[#171717]">Service émission attestations</p>
