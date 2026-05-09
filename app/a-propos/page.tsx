@@ -53,16 +53,16 @@ export default function AProposPage() {
         </nav>
 
         <h1 className="mb-4 text-3xl font-bold text-[#0a0a0a] md:text-4xl">
-          À propos d'Optimum Assurance
+          À propos d&apos;Optimum Assurance
         </h1>
         <p className="mb-8 text-lg leading-relaxed text-[#171717]">
-          Optimum Assurance est une plateforme de courtage spécialisée dans l'assurance construction :
+          Optimum Assurance est une plateforme de courtage spécialisée dans l&apos;assurance construction :
           décennale BTP, dommage ouvrage et RC fabricant. Notre objectif est de rendre les parcours plus
           lisibles, plus rapides et mieux documentés, tout en conservant les étapes de validation nécessaires.
         </p>
 
         <section className="mb-10 rounded-2xl border border-[#e5e5e5] bg-white p-6">
-          <h2 className="mb-3 text-xl font-bold text-[#0a0a0a]">Identité et cadre d'intervention</h2>
+          <h2 className="mb-3 text-xl font-bold text-[#0a0a0a]">Identité et cadre d&apos;intervention</h2>
           <ul className="space-y-2 text-[#171717]">
             <li>
               Marque commerciale : <strong>Optimum Assurance</strong>
@@ -104,8 +104,8 @@ export default function AProposPage() {
           <div className="rounded-2xl border border-[#e5e5e5] bg-[#fafafa] p-5">
             <h2 className="mb-2 text-lg font-bold text-[#0a0a0a]">RC fabricant</h2>
             <p className="text-sm leading-relaxed text-[#171717]">
-              Dossiers étudiés par l'équipe de gestion : qualification du risque, proposition, signature PDF
-              personnalisée et échéances pilotées depuis l'espace client.
+              Dossiers étudiés par l&apos;équipe de gestion : qualification du risque, proposition, signature PDF
+              personnalisée et échéances pilotées depuis l&apos;espace client.
             </p>
           </div>
         </section>
@@ -120,7 +120,7 @@ export default function AProposPage() {
               Guide obligation dommage ouvrage
             </Link>
             <Link href="/conditions-attestations" className="font-medium text-blue-700 hover:underline">
-              Conditions d'émission des attestations
+              Conditions d&apos;émission des attestations
             </Link>
             <Link href="/cgv" className="font-medium text-blue-700 hover:underline">
               Conditions générales de vente
