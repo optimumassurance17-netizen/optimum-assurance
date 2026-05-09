@@ -13,6 +13,7 @@ import {
   fetchDoStaticParams,
   getDoLocalPage,
 } from "@/lib/seo-programmatic/queries"
+import { buildDoLocalEnrichment } from "@/lib/seo-programmatic/local-enrichment"
 import {
   seoBreadcrumbListNode,
   seoFaqPageNode,
@@ -87,6 +88,11 @@ export default async function DoVillePage({
   const staticDo = DO_SEO.find((d) => d.slug === data.slug)
   const baseFaq = staticDo?.faq ?? []
   const faq = buildFaqDoLocal(data.nom, data.villeNom, baseFaq)
+  const localEnrichment = buildDoLocalEnrichment({
+    profilNom: data.nom,
+    villeNom: data.villeNom,
+    villeSlug: data.villeSlug,
+  })
 
   const path = `/dommage-ouvrage/${data.slug}/${data.villeSlug}`
   const parentPath = `/dommage-ouvrage/${data.slug}`
@@ -161,6 +167,20 @@ export default async function DoVillePage({
           </SeoTextBlock>
         ) : null}
 
+        <SeoTextBlock title={`Contexte chantier à ${data.villeNom}`}>
+          {localEnrichment.context.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+        </SeoTextBlock>
+
+        <SeoTextBlock title="Pièces et informations à préparer">
+          <ul className="list-disc pl-5 space-y-2">
+            {localEnrichment.checklist.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </SeoTextBlock>
+
         <SeoTextBlock title="Obligations">
           <p>
             L’assurance dommage ouvrage est obligatoire pour les maîtres d’ouvrage concernés avant le début des
@@ -182,6 +202,7 @@ export default async function DoVillePage({
         </div>
 
         <InternalLinkSection title="Autres villes pour ce profil" links={siblingVilles} />
+        <InternalLinkSection title="Ressources utiles pour ce projet" links={localEnrichment.links} />
 
         <FaqSEO items={faq} />
       </div>
