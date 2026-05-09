@@ -5,7 +5,6 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { getNextNumero } from "@/lib/documents"
-import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 
@@ -14,9 +13,9 @@ function generateVerificationToken(): string {
 }
 
 /**
- * Création manuelle d'un document par l'admin (ex: devis dommage ouvrage).
+ * Création manuelle d'un document par l'admin.
  * Le document est ajouté à l'espace client du client cible.
- * Ensuite : signature électronique + paiement par virement (Mollie).
+ * Les contrats DO doivent être créés via /api/gestion/contracts/do/create.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -51,10 +50,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const allowedTypes = ["devis", "devis_do", "contrat", "attestation"]
+    const allowedTypes = ["devis", "contrat", "attestation"]
     if (!allowedTypes.includes(type)) {
       return NextResponse.json(
-        { error: "Type invalide. Autorisés : devis, devis_do, contrat, attestation" },
+        { error: "Type invalide. Autorisés : devis, contrat, attestation" },
         { status: 400 }
       )
     }
@@ -111,29 +110,6 @@ export async function POST(request: NextRequest) {
       targetId: document.id,
       details: { type, numero: document.numero, userId },
     })
-
-    // Notification email pour devis dommage ouvrage
-    if (type === "devis_do" && user.email) {
-      const docData = (data || {}) as { primeAnnuelle?: number }
-      const primeAnnuelle = docData.primeAnnuelle || 0
-      const template = EMAIL_TEMPLATES.devisDoAjoute(
-        user.raisonSociale || user.email,
-        numero,
-        primeAnnuelle
-      )
-      const sent = await sendEmail({
-        to: user.email,
-        subject: template.subject,
-        text: template.text,
-        html: (template as { html?: string }).html,
-      })
-      if (!sent) {
-        return NextResponse.json(
-          { error: "Email client non envoyé (RESEND_API_KEY / domaine expéditeur)." },
-          { status: 503 }
-        )
-      }
-    }
 
     return NextResponse.json({
       id: document.id,

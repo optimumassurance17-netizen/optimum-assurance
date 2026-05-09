@@ -1209,38 +1209,32 @@ export default function GestionPage() {
     e.preventDefault()
     setDevisDoSubmitting(true)
     try {
-      const selectedUser = data?.users.find((u) => u.id === devisDoForm.userId)
-      const res = await fetch("/api/gestion/documents/create", {
+      const res = await fetch("/api/gestion/contracts/do/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: devisDoForm.userId,
-          type: "devis_do",
-          data: (() => {
-            const cout = Number(devisDoForm.coutConstruction) || 0
-            const tarif = cout > 0 ? calculerTarifDommageOuvrage(cout) : null
-            return {
-              raisonSociale: selectedUser?.raisonSociale || undefined,
-              email: selectedUser?.email || undefined,
-              primeAnnuelle: Number(devisDoForm.primeAnnuelle),
-              coutConstruction: cout || undefined,
-              tranche: tarif?.tranche,
-              produit: "dommage_ouvrage",
-              telephone: devisDoForm.telephone || undefined,
-              adresseOperation: devisDoForm.adresseOperation || undefined,
-              typeConstruction: devisDoForm.typeConstruction || undefined,
-              destination: devisDoForm.destination || undefined,
-              closCouvert: devisDoForm.closCouvert === "oui" ? true : devisDoForm.closCouvert === "non" ? false : undefined,
-              fraisGestion: Number(devisDoForm.fraisGestion) || undefined,
-              fraisCourtage: Number(devisDoForm.fraisCourtage) || undefined,
-              dateCreation: new Date().toLocaleDateString("fr-FR"),
-            }
-          })(),
+          primeAnnuelle: Number(devisDoForm.primeAnnuelle),
+          coutConstruction: Number(devisDoForm.coutConstruction) || undefined,
+          telephone: devisDoForm.telephone || undefined,
+          adresseOperation: devisDoForm.adresseOperation || undefined,
+          typeConstruction: devisDoForm.typeConstruction || undefined,
+          destination: devisDoForm.destination || undefined,
+          closCouvert: devisDoForm.closCouvert || undefined,
+          fraisGestion: Number(devisDoForm.fraisGestion) || undefined,
+          fraisCourtage: Number(devisDoForm.fraisCourtage) || undefined,
         }),
       })
-      const result = await readResponseJson<{ error?: string; numero?: string }>(res)
+      const result = await readResponseJson<{
+        error?: string
+        contract?: { contractNumber: string; status: string }
+        emailSent?: boolean | null
+      }>(res)
       if (!res.ok) throw new Error(result.error || "Erreur")
-      setToast({ message: `Devis DO ${result.numero} créé. Email envoyé au client.`, type: "success" })
+      setToast({
+        message: `Contrat DO ${result.contract?.contractNumber ?? ""} créé (${result.contract?.status ?? "statut inconnu"}). Devis + CP disponibles dans l’espace client.${result.emailSent === false ? " Email client non envoyé." : ""}`,
+        type: "success",
+      })
       setDevisDoForm({ leadId: "", userId: "", primeAnnuelle: "", coutConstruction: "", telephone: "", adresseOperation: "", typeConstruction: "", destination: "", closCouvert: "", fraisGestion: "", fraisCourtage: "" })
       const dashRes = await fetch("/api/gestion/dashboard")
       if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
@@ -3505,12 +3499,14 @@ export default function GestionPage() {
           </form>
         </section>
 
-        {/* Devis dommage ouvrage - ajout manuel */}
+        {/* Contrat dommage ouvrage - création depuis gestion */}
         <section id="devis-do-manuel" className="scroll-mt-24">
-          <h2 className="text-lg font-semibold text-white mb-4">Ajouter un devis dommage ouvrage</h2>
+          <h2 className="text-lg font-semibold text-white mb-4">Créer un contrat dommage ouvrage</h2>
           <p className="text-sm text-gray-200 mb-4 max-w-2xl">
-            Le devis est ajouté à l&apos;espace client. Paiement :{" "}
-            <strong className="text-white">uniquement virement bancaire via Mollie</strong> (aucune carte sur ce produit).
+            Crée un <strong className="text-white">contrat plateforme DO</strong> rattaché au client. Le client retrouve
+            le PDF <strong className="text-white">Devis et conditions</strong> dans son espace client, puis paie par{" "}
+            <strong className="text-white">virement bancaire via Mollie</strong>. L’attestation/facture deviennent
+            disponibles après paiement et activation.
           </p>
           <form onSubmit={handleCreateDevisDo} className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 max-w-xl mb-10">
             {data.devisDoLeads && data.devisDoLeads.length > 0 && (
@@ -3709,7 +3705,7 @@ export default function GestionPage() {
               disabled={devisDoSubmitting}
               className="bg-[#2563eb] text-white px-6 py-2 rounded-xl hover:bg-[#1d4ed8] disabled:opacity-50 font-medium"
             >
-              {devisDoSubmitting ? "Création..." : "Ajouter le devis à l'espace client"}
+              {devisDoSubmitting ? "Création..." : "Créer le contrat DO"}
             </button>
           </form>
         </section>
