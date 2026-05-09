@@ -99,6 +99,13 @@ export default async function GuidePage({
           {data.h1}
         </h1>
 
+        {"shortAnswer" in data && typeof data.shortAnswer === "string" ? (
+          <aside className="mb-8 rounded-2xl border border-blue-100 bg-blue-50 p-5">
+            <p className="mb-2 text-sm font-bold uppercase tracking-wide text-blue-700">Réponse courte</p>
+            <p className="text-base leading-relaxed text-[#0a0a0a]">{data.shortAnswer}</p>
+          </aside>
+        ) : null}
+
         <div className="prose prose-[#171717] max-w-none">
           {data.content.map((block, i) => {
             if (block.type === "h2") {
