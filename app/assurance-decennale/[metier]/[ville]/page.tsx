@@ -15,6 +15,7 @@ import {
   fetchDecennaleStaticParams,
   getDecennaleLocalPage,
 } from "@/lib/seo-programmatic/queries"
+import { buildDecennaleLocalEnrichment } from "@/lib/seo-programmatic/local-enrichment"
 import {
   seoBreadcrumbListNode,
   seoFaqPageNode,
@@ -89,6 +90,13 @@ export default async function MetierVillePage({
   const staticMetier = METIERS_SEO.find((m) => m.slug === data.metierSlug)
   const baseFaq = staticMetier?.faq ?? []
   const faq = buildFaqDecennaleLocal(data.metierNom, data.villeNom, baseFaq)
+  const localEnrichment = buildDecennaleLocalEnrichment({
+    metierNom: data.metierNom,
+    villeNom: data.villeNom,
+    villeSlug: data.villeSlug,
+    riskFocus: staticMetier?.riskFocus,
+    preparationHint: staticMetier?.preparationHint,
+  })
 
   const path = `/assurance-decennale/${data.metierSlug}/${data.villeSlug}`
   const parentPath = `/assurance-decennale/${data.metierSlug}`
@@ -171,6 +179,20 @@ export default async function MetierVillePage({
           </SeoTextBlock>
         ) : null}
 
+        <SeoTextBlock title={`Contexte chantier à ${data.villeNom}`}>
+          {localEnrichment.context.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+        </SeoTextBlock>
+
+        <SeoTextBlock title="Préparer votre devis local">
+          <ul className="list-disc pl-5 space-y-2">
+            {localEnrichment.checklist.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </SeoTextBlock>
+
         <SeoTextBlock title="Obligations légales (rappel)">
           <p>
             L’assurance décennale est obligatoire pour les constructeurs et travaux couverts par la loi Spinetta.
@@ -201,6 +223,7 @@ export default async function MetierVillePage({
 
         <InternalLinkSection title="Autres villes pour ce métier" links={siblingVilles} />
         <InternalLinkSection title="Autres métiers dans cette ville" links={siblingMetiers} />
+        <InternalLinkSection title="Ressources utiles pour ce secteur" links={localEnrichment.links} />
 
         <FaqSEO items={faq} />
       </div>
