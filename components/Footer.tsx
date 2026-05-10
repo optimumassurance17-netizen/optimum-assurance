@@ -57,6 +57,9 @@ export function Footer() {
             <Link href="/a-propos" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
               À propos
             </Link>
+            <Link href="/comparatifs/decennale-vs-rc-pro" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
+              Comparatifs
+            </Link>
             <Link href="/faq" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
               FAQ
             </Link>

@@ -53,6 +53,8 @@ export function buildStaticSitemapEntries(): SitemapEntry[] {
     { url: `${baseUrl}/devis/rcpro`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.65 },
     { url: `${baseUrl}/faq`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.85 },
     { url: `${baseUrl}/a-propos`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.78 },
+    { url: `${baseUrl}/comparatifs/decennale-vs-rc-pro`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.76 },
+    { url: `${baseUrl}/comparatifs/dommage-ouvrage-vs-decennale`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.76 },
     { url: `${baseUrl}/guides`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.82 },
     ...guides,
     { url: `${baseUrl}/avis`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
