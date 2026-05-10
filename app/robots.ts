@@ -13,7 +13,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        // Les pages publiques chargent NextAuth côté client pour connaître la session.
+        // Googlebot doit pouvoir récupérer ces endpoints, sinon GSC signale une ressource bloquée.
+        allow: ["/", "/api/auth/"],
         disallow: ["/api/"],
       },
     ],
