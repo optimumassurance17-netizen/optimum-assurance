@@ -23,6 +23,7 @@
     "vercel-build": "prisma generate && node scripts/patch-prisma-turbopack.mjs && next build",
     "preflight": "node scripts/preflight.mjs",
     "verify:prod": "node scripts/verify-prod-remote.mjs",
+    "watchdog:prod": "node scripts/prod-watchdog.mjs",
     "print:webhooks": "node scripts/print-webhook-urls.mjs",
     "print:crons": "node scripts/print-crons.mjs",
     "print:post-launch": "node scripts/print-post-launch.mjs",
