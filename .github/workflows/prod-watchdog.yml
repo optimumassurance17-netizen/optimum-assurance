@@ -1,0 +1,97 @@
+name: Production Watchdog
+
+on:
+  schedule:
+    # Toutes les 30 minutes.
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+
+      - name: Run production watchdog
+        id: watchdog
+        continue-on-error: true
+        env:
+          PROD_WATCHDOG_URL: https://www.optimum-assurance.fr
+        run: |
+          node scripts/prod-watchdog.mjs 2>&1 | tee watchdog.log
+          status=${PIPESTATUS[0]}
+          {
+            echo "status=$status"
+            echo "log<<'EOF'"
+            cat watchdog.log
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Create or update incident issue
+        if: steps.watchdog.outputs.status != '0'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const marker = '<!-- optimum-prod-watchdog -->'
+            const title = '🚨 Production watchdog failed'
+            const log = `${{ steps.watchdog.outputs.log }}`
+            const clipped = log.length > 50000 ? log.slice(-50000) : log
+            const body = `${marker}
+            ## Production watchdog failed
+
+            Date UTC: ${new Date().toISOString()}
+            Workflow: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+
+            ### À donner à un agent IA
+
+            1. Lire le rapport ci-dessous.
+            2. Créer une branche dédiée.
+            3. Corriger uniquement la cause de l'échec.
+            4. Lancer CI complète.
+            5. Ouvrir une PR.
+            6. Ne jamais pousser directement en production sans CI verte.
+
+            ### Rapport
+
+            \`\`\`text
+            ${clipped}
+            \`\`\`
+            `
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'production-watchdog',
+              per_page: 20,
+            })
+            const existing = issues.find((issue) => issue.title === title && issue.body?.includes(marker))
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              })
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['production-watchdog', 'bug'],
+              })
+            }
+
+      - name: Fail workflow on watchdog error
+        if: steps.watchdog.outputs.status != '0'
+        run: exit 1
