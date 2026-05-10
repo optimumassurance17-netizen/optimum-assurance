@@ -28,7 +28,7 @@ const checks = [
     name: "robots",
     path: "/robots.txt",
     contentType: /text\/plain/i,
-    mustContain: ["Sitemap: https://www.optimum-assurance.fr/sitemap.xml"],
+    mustContain: ["Allow: /api/auth/", "Disallow: /api/", "Sitemap: https://www.optimum-assurance.fr/sitemap.xml"],
   },
   {
     name: "gsc-sitemap",
