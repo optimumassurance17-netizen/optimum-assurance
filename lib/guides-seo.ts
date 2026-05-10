@@ -5,6 +5,8 @@ export const GUIDES_SEO = [
     description:
       "Tout savoir sur l'obligation d'assurance décennale : loi Spinetta, sanctions, qui doit souscrire, attestation obligatoire sur devis et facture.",
     h1: "L'assurance décennale est-elle obligatoire ?",
+    shortAnswer:
+      "Oui. Tout professionnel du BTP lié directement au maître d'ouvrage doit disposer d'une assurance décennale avant d'intervenir. Elle couvre pendant 10 ans les dommages graves affectant la solidité ou l'usage de l'ouvrage.",
     content: [
       {
         type: "p",
@@ -58,6 +60,8 @@ export const GUIDES_SEO = [
     description:
       "Guide pratique : résilier son assurance décennale à l'échéance, délais, lettre recommandée, changement d'assureur. Tout ce qu'il faut savoir.",
     h1: "Comment résilier son assurance décennale ?",
+    shortAnswer:
+      "La résiliation décennale se prépare avant l'échéance, en général avec un préavis de 2 mois par lettre recommandée. Il faut éviter toute période sans couverture, surtout si des chantiers sont en cours.",
     content: [
       {
         type: "p",
@@ -111,6 +115,8 @@ export const GUIDES_SEO = [
     description:
       "Comment déclarer un sinistre décennale ? Délais, documents, procédure. Guide complet pour les professionnels du BTP.",
     h1: "Comment déclarer un sinistre décennale ?",
+    shortAnswer:
+      "Un sinistre décennale doit être signalé rapidement à l'assureur avec les pièces utiles : avis du maître d'ouvrage, description des dommages, photos, devis, factures et références du chantier.",
     content: [
       {
         type: "p",
@@ -164,6 +170,8 @@ export const GUIDES_SEO = [
     description:
       "Tout savoir sur l'obligation d'assurance dommage ouvrage : qui doit souscrire, quand, sanctions. Constructeurs, promoteurs, particuliers en auto-construction.",
     h1: "L'assurance dommage ouvrage est-elle obligatoire ?",
+    shortAnswer:
+      "Oui. La dommage ouvrage doit être souscrite par le maître d'ouvrage avant le début des travaux. Elle sert à préfinancer rapidement les réparations relevant de la garantie décennale.",
     content: [
       { type: "p", text: "Oui. L'assurance dommage ouvrage (DO) est obligatoire pour tout maître d'ouvrage qui fait réaliser des travaux de construction. Elle couvre les dommages matériels affectant la solidité de l'ouvrage, pendant la construction et jusqu'à 10 ans après réception." },
       { type: "h2", text: "Qui est concerné ?" },
@@ -184,6 +192,8 @@ export const GUIDES_SEO = [
     description:
       "Particulier qui fait construire sa maison : obligation dommage ouvrage, garantie clos et couvert, devis. Tout savoir sur la DO en auto-construction.",
     h1: "Dommage ouvrage pour auto-construction : ce qu'il faut savoir",
+    shortAnswer:
+      "En auto-construction, le particulier reste maître d'ouvrage et doit préparer son dossier DO avant travaux. Les pièces techniques, le coût du chantier et les intervenants déterminent l'étude du risque.",
     content: [
       { type: "p", text: "Si vous faites construire votre maison en tant que particulier (auto-construction), vous êtes maître d'ouvrage. Vous devez souscrire une assurance dommage ouvrage avant le début des travaux." },
       { type: "h2", text: "Garantie clos et couvert" },
@@ -202,6 +212,8 @@ export const GUIDES_SEO = [
     description:
       "Qu'est-ce que la garantie clos et couvert en dommage ouvrage ? Lots couverts, réduction de prime, pour qui ? Guide Optimum Assurance.",
     h1: "Qu'est-ce que la garantie clos et couvert ?",
+    shortAnswer:
+      "La garantie clos et couvert concentre la couverture sur les lots structurels : terrassement, VRD, fondations, gros œuvre, charpente, couverture et menuiseries extérieures.",
     content: [
       { type: "p", text: "La garantie clos et couvert limite la couverture aux lots affectant la structure de l'ouvrage. Elle exclut les lots second œuvre (plomberie, électricité, chauffage, carrelage, peinture, etc.)." },
       { type: "h2", text: "Lots couverts" },

@@ -1,0 +1,54 @@
+# Optimum Assurance
+
+Optimum Assurance est un courtier specialise en assurance construction pour les professionnels du BTP et les maitres d'ouvrage.
+
+## Positionnement
+
+- Assurance decennale BTP pour artisans, entreprises, bureaux d'etudes, architectes et maitres d'oeuvre.
+- Assurance dommage ouvrage pour particuliers, auto-construction, clos et couvert, constructeurs et promoteurs.
+- RC fabricant pour dossiers etudes par l'equipe de gestion.
+- Parcours en ligne : devis, devoir de conseil, signature electronique, paiement, espace client, documents PDF.
+
+## Pages sources prioritaires
+
+- https://www.optimum-assurance.fr/
+- https://www.optimum-assurance.fr/a-propos
+- https://www.optimum-assurance.fr/devis
+- https://www.optimum-assurance.fr/assurance-decennale
+- https://www.optimum-assurance.fr/guides/obligation-decennale
+- https://www.optimum-assurance.fr/guides/declaration-sinistre
+- https://www.optimum-assurance.fr/devis-dommage-ouvrage
+- https://www.optimum-assurance.fr/dommage-ouvrage
+- https://www.optimum-assurance.fr/guides/obligation-dommage-ouvrage
+- https://www.optimum-assurance.fr/guides/dommage-ouvrage-auto-construction
+- https://www.optimum-assurance.fr/conditions-attestations
+- https://www.optimum-assurance.fr/mentions-legales
+
+## Informations fiables a reprendre
+
+- La decennale est obligatoire pour les professionnels du BTP intervenant directement sur un ouvrage, selon la loi Spinetta, l'article L.241-1 du Code des assurances et les articles 1792 et suivants du Code civil.
+- La dommage ouvrage est souscrite par le maitre d'ouvrage avant travaux, selon l'article L.242-1 du Code des assurances.
+- Les prix affiches sur le site sont indicatifs et dependent du chiffre d'affaires, des activites, du dossier et de l'acceptation du risque.
+- Pour la decennale, le paiement reel est trimestriel : premier trimestre par carte bancaire via Mollie, puis prelevements SEPA.
+- Pour la dommage ouvrage, le paiement se fait par virement bancaire via Mollie apres validation du dossier.
+- Les attestations sont disponibles apres paiement, controle du dossier, pieces conformes et acceptation du risque.
+
+## Sources internes de verification
+
+- Conditions attestations : https://www.optimum-assurance.fr/conditions-attestations
+- CGV : https://www.optimum-assurance.fr/cgv
+- Conditions generales DO : https://www.optimum-assurance.fr/conditions-generales-dommage-ouvrage
+- Mentions legales : https://www.optimum-assurance.fr/mentions-legales
+
+## Ne pas utiliser pour reponse publique
+
+- /api/*
+- /gestion
+- /admin
+- /espace-client
+- pages de signature ou paiement authentifiees
+
+## Contact
+
+- Site : https://www.optimum-assurance.fr
+- Email : contact@optimum-assurance.fr

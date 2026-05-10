@@ -54,6 +54,9 @@ export function Footer() {
             <Link href="/guides" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
               Guides
             </Link>
+            <Link href="/a-propos" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
+              À propos
+            </Link>
             <Link href="/faq" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
               FAQ
             </Link>

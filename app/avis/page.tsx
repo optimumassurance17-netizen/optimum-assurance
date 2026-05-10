@@ -33,7 +33,7 @@ const temoignages = [
   { texte: "Attestation reçue en 5 minutes. Tarif imbattable par rapport à mon ancien assureur.", auteur: "P. M., Plombier", ville: "Lyon" },
   { texte: "Société résiliée pour impayé, Optimum m'a accepté. Souscription simple et rapide.", auteur: "J. L., Électricien", ville: "Toulouse" },
   { texte: "BET structure : 600 €/an contre 900 € ailleurs. Le QR code sur l'attestation rassure mes clients.", auteur: "M. D., Bureau d'études", ville: "Paris" },
-  { texte: "Devis en 3 minutes, paiement par SEPA, attestation immédiate. Parfait pour un artisan pressé.", auteur: "L. B., Peintre", ville: "Bordeaux" },
+  { texte: "Devis rapide, parcours clair et attestation disponible après validation du dossier. Parfait pour un artisan pressé.", auteur: "L. B., Peintre", ville: "Bordeaux" },
   { texte: "Équipe réactive pour mes questions. Je recommande à tous les plombiers de ma région.", auteur: "S. T., Plombier-chauffagiste", ville: "Lille" },
 ]
 
