@@ -60,6 +60,12 @@ export function Footer() {
             <Link href="/comparatifs/decennale-vs-rc-pro" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
               Comparatifs
             </Link>
+            <Link href="/prix-assurance-decennale" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
+              Prix décennale
+            </Link>
+            <Link href="/documents-assurance-decennale" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
+              Documents décennale
+            </Link>
             <Link href="/faq" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
               FAQ
             </Link>

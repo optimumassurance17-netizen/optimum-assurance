@@ -48,6 +48,8 @@ export function buildStaticSitemapEntries(): SitemapEntry[] {
       priority: 0.95,
     },
     { url: `${baseUrl}/devis`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.95 },
+    { url: `${baseUrl}/prix-assurance-decennale`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.86 },
+    { url: `${baseUrl}/documents-assurance-decennale`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.84 },
     { url: `${baseUrl}/devis-dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/devis-rc-fabriquant`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.85 },
     { url: `${baseUrl}/devis/rcpro`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.65 },
