@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const [documents, payments, activeContractsWithCertificate] = await Promise.all([
+    const [documents, payments, activeContractsWithCertificate, generatedDocumentsCount] = await Promise.all([
       prisma.document.findMany({
         where: { userId: session.user.id },
         select: { type: true, status: true },
@@ -31,6 +31,11 @@ export async function GET() {
           },
         },
       }),
+      prisma.contractStoredDocument.count({
+        where: {
+          contract: { userId: session.user.id },
+        },
+      }),
     ])
 
     const attestations = documents.filter(
@@ -46,7 +51,7 @@ export async function GET() {
     const paidTotal = payments.filter((p) => p.status === "paid").reduce((acc, p) => acc + p.amount, 0)
 
     return NextResponse.json({
-      documentsCount: documents.length,
+      documentsCount: documents.length + generatedDocumentsCount,
       attestationsCount: attestations.length + activeContractsWithCertificate,
       suspendedCount,
       paymentsCount: payments.length,
