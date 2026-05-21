@@ -21,6 +21,8 @@ interface DocumentItem {
   numero: string
   status?: string
   createdAt: string
+  href?: string
+  generated?: boolean
 }
 
 type PendingSignatureItem = {
@@ -100,6 +102,11 @@ const typeLabels: Record<string, string> = {
   avenant: "Avenant",
   facture_do: "Facture acquittée DO",
   facture_decennale: "Facture acquittée décennale",
+  devis_cp: "Devis et conditions",
+  conditions_particulieres: "Conditions particulières",
+  facture: "Facture",
+  echeancier: "Échéancier",
+  fic: "FIC",
 }
 
 const typeIcons: Record<string, string> = {
@@ -113,6 +120,11 @@ const typeIcons: Record<string, string> = {
   avenant: "📝",
   facture_do: "🧾",
   facture_decennale: "🧾",
+  devis_cp: "📋",
+  conditions_particulieres: "📄",
+  facture: "🧾",
+  echeancier: "📆",
+  fic: "🧾",
 }
 
 function getActionPriorityWeight(priority: AutonomyStatusAction["priority"]): number {
@@ -1204,10 +1216,15 @@ export default function EspaceClientPage() {
             </p>
           ) : (
             <div className="space-y-3">
-              {documents.map((doc) => (
+              {documents.map((doc) => {
+                const href = doc.href || `/espace-client/documents/${doc.id}`
+                const externalPdf = Boolean(doc.href)
+                return (
                 <Link
                   key={doc.id}
-                  href={`/espace-client/documents/${doc.id}`}
+                  href={href}
+                  target={externalPdf ? "_blank" : undefined}
+                  rel={externalPdf ? "noreferrer" : undefined}
                   className="flex items-center justify-between p-4 bg-[#e4e4e4] rounded-xl hover:bg-[#eff6ff] border border-[#d4d4d4] hover:border-[#2563eb]/30 transition-all"
                 >
                   <div className="flex items-center gap-3">
@@ -1215,11 +1232,15 @@ export default function EspaceClientPage() {
                     <div>
                       <p className="font-medium text-black">{typeLabels[doc.type] || doc.type}</p>
                       <p className="text-sm text-[#171717]">{doc.numero}</p>
+                      {doc.generated ? (
+                        <p className="text-xs text-[#2563eb]">Document généré automatiquement</p>
+                      ) : null}
                     </div>
                   </div>
-                  <span className="text-[#2563eb] font-medium">Voir →</span>
+                  <span className="text-[#2563eb] font-medium">{externalPdf ? "PDF →" : "Voir →"}</span>
                 </Link>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
