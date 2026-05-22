@@ -18,6 +18,7 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
     throw new Error("generateDOCertificate : productType doit être do")
   }
   validateCertificateData(data)
+  const certificateActive = data.paymentConfirmed && data.insurerValidated
 
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
@@ -31,10 +32,24 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
     page,
     font,
     fontBold,
-    "ATTESTATION D’ASSURANCE — Dommages-ouvrage",
-    "Document officiel",
+    certificateActive ? "ATTESTATION D’ASSURANCE — Dommages-ouvrage" : "DOCUMENT DE SUIVI — Dommages-ouvrage",
+    certificateActive ? "Document officiel" : "Non payé / non actif",
     accelerantLogo
   )
+  if (!certificateActive) {
+    y = drawWrappedText(
+      page,
+      "STATUT : NON PAYE / NON ACTIF — ce document ne vaut pas attestation définitive. L’attestation DO devient valable uniquement après encaissement, contrôle du dossier et acceptation du risque.",
+      PDF_PAGE.marginX,
+      y,
+      PDF_PAGE.contentWidth,
+      fontBold,
+      10,
+      13,
+      PDF_COLORS.primary
+    )
+    y -= 8
+  }
 
   drawTextPdf(page, `N° ${data.contractNumber}`, {
     x: PDF_PAGE.marginX,
@@ -155,7 +170,9 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
   y -= 14
   y = drawWrappedText(
     page,
-    "Paiement reçu — risque accepté par l’assureur — dossier technique conforme.",
+    certificateActive
+      ? "Paiement reçu — risque accepté par l’assureur — dossier technique conforme."
+      : "Paiement non reçu ou validation non finalisée — document non actif.",
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,

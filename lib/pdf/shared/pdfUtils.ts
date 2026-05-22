@@ -102,12 +102,6 @@ export function validateDoQuote(data: InsuranceData): void {
 
 export function validateCertificateData(data: InsuranceCertificateData): void {
   validateBaseInsuranceData(data, data.productType)
-  if (!data.paymentConfirmed || !data.insurerValidated) {
-    throw new PdfValidationError(
-      "Attestation refusée : paiement non confirmé ou risque non validé par l’assureur.",
-      "CERTIFICATE_BLOCKED"
-    )
-  }
   if (data.productType === "decennale" && (!data.activities || data.activities.length === 0)) {
     throw new PdfValidationError("activities requis pour l’attestation décennale", "MISSING_FIELD")
   }

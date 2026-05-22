@@ -20,6 +20,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     throw new Error("generateDecennaleCertificate : productType doit être decennale")
   }
   validateCertificateData(data)
+  const certificateActive = data.paymentConfirmed && data.insurerValidated
   const activities =
     data.activitiesHierarchy && data.activitiesHierarchy.length > 0
       ? data.activitiesHierarchy
@@ -41,10 +42,26 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     page,
     font,
     fontBold,
-    "ATTESTATION D’ASSURANCE — Responsabilité civile décennale",
-    "Document officiel",
+    certificateActive
+      ? "ATTESTATION D’ASSURANCE — Responsabilité civile décennale"
+      : "DOCUMENT DE SUIVI — Responsabilité civile décennale",
+    certificateActive ? "Document officiel" : "Non payé / non actif",
     accelerantLogo
   )
+  if (!certificateActive) {
+    y = drawWrappedText(
+      page,
+      "STATUT : NON PAYE / NON ACTIF — ce document ne vaut pas attestation définitive. L’attestation décennale devient valable uniquement après paiement, contrôle du dossier et acceptation du risque.",
+      PDF_PAGE.marginX,
+      y,
+      PDF_PAGE.contentWidth,
+      fontBold,
+      10,
+      13,
+      PDF_COLORS.primary
+    )
+    y -= 8
+  }
 
   drawTextPdf(page, `N° ${data.contractNumber}`, {
     x: PDF_PAGE.marginX,
@@ -162,7 +179,9 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
   y -= 14
   y = drawWrappedText(
     page,
-    "Paiement reçu — risque accepté par l’assureur — pièces conformes.",
+    certificateActive
+      ? "Paiement reçu — risque accepté par l’assureur — pièces conformes."
+      : "Paiement non reçu ou validation non finalisée — document non actif.",
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,

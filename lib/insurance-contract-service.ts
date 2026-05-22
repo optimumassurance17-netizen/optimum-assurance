@@ -82,7 +82,11 @@ export async function createInsuranceContract(input: CreateContractInput) {
   })
 
   const baseUrl = `${SITE_URL}/api/contracts/${c.id}/pdf`
-  for (const type of ["quote", "policy"] as const) {
+  const initialTypes =
+    input.productType === "do"
+      ? (["quote", "policy", "certificate", "invoice"] as const)
+      : (["quote", "policy"] as const)
+  for (const type of initialTypes) {
     await prisma.contractStoredDocument.upsert({
       where: {
         contractId_type: { contractId: c.id, type },

@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const [documents, payments, activeContractsWithCertificate, generatedDocumentsCount] = await Promise.all([
+    const [documents, payments, activeContractsWithCertificate, generatedDocumentsCount, doContractsForVirtualDocs] = await Promise.all([
       prisma.document.findMany({
         where: { userId: session.user.id },
         select: { type: true, status: true },
@@ -36,6 +36,15 @@ export async function GET() {
           contract: { userId: session.user.id },
         },
       }),
+      prisma.insuranceContract.findMany({
+        where: {
+          userId: session.user.id,
+          productType: "do",
+        },
+        select: {
+          storedDocuments: { select: { type: true } },
+        },
+      }),
     ])
 
     const attestations = documents.filter(
@@ -49,9 +58,13 @@ export async function GET() {
       (d) => isDecennaleAttestationType(d.type) && d.status === "suspendu"
     ).length
     const paidTotal = payments.filter((p) => p.status === "paid").reduce((acc, p) => acc + p.amount, 0)
+    const virtualGeneratedDocsCount = doContractsForVirtualDocs.reduce((total, contract) => {
+      const existing = new Set(contract.storedDocuments.map((doc) => doc.type))
+      return total + ["quote", "policy", "certificate", "invoice"].filter((type) => !existing.has(type)).length
+    }, 0)
 
     return NextResponse.json({
-      documentsCount: documents.length + generatedDocumentsCount,
+      documentsCount: documents.length + generatedDocumentsCount + virtualGeneratedDocsCount,
       attestationsCount: attestations.length + activeContractsWithCertificate,
       suspendedCount,
       paymentsCount: payments.length,
