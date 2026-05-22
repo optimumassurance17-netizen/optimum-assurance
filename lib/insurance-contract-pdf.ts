@@ -98,6 +98,12 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
   y -= 28
   page.drawText(sanitizeForPdfLib(`Contrat ${c.contractNumber}`), { x: 50, y, size: 10, font })
   y -= 16
+  const invoicePaid = Boolean(c.paidAt)
+  page.drawText(
+    sanitizeForPdfLib(invoicePaid ? "Statut : PAYÉ / ACQUITTÉ" : "Statut : NON PAYÉ / À RÉGLER"),
+    { x: 50, y, size: 11, font: bold, maxWidth: 500 }
+  )
+  y -= 18
   const produitLib =
     c.productType === "do"
       ? "Dommages-ouvrage"
@@ -142,6 +148,12 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
     page.drawText(
       sanitizeForPdfLib(`Date de règlement : ${c.paidAt.toLocaleString("fr-FR")}`),
       { x: 50, y, size: 9, font }
+    )
+    y -= 14
+  } else {
+    page.drawText(
+      sanitizeForPdfLib("Cette facture n’est pas acquittée tant que le règlement n’est pas confirmé."),
+      { x: 50, y, size: 9, font: bold, maxWidth: 500 }
     )
     y -= 14
   }
@@ -235,9 +247,6 @@ export async function renderContractPdf(c: InsuranceContract, docType: DocPdfTyp
     throw new Error("UNKNOWN_PRODUCT_TYPE")
   }
   if (docType === "certificate") {
-    if (!c.paidAt || !c.insurerValidatedAt) {
-      throw new Error("CERTIFICATE_NOT_ALLOWED")
-    }
     if (c.productType === "rc_fabriquant") {
       return generateRcFabBatteriesCertificatePdf(toRcFabDossierData(c))
     }

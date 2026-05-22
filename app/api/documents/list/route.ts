@@ -23,6 +23,7 @@ export async function GET() {
           contractNumber: true,
           productType: true,
           status: true,
+          createdAt: true,
           storedDocuments: {
             select: { id: true, type: true, url: true, createdAt: true },
             orderBy: { createdAt: "desc" },
@@ -33,8 +34,11 @@ export async function GET() {
       }),
     ])
 
-    const generatedDocuments = contracts.flatMap((contract) =>
-      contract.storedDocuments.map((doc) => ({
+    const generatedDocuments = contracts.flatMap((contract) => {
+      const baseUrl = `/api/contracts/${contract.id}/pdf`
+      const existingByType = new Map(contract.storedDocuments.map((doc) => [doc.type, doc] as const))
+      const requiredTypes = requiredGeneratedDocTypes(contract.productType)
+      const materialized = contract.storedDocuments.map((doc) => ({
         id: `contract:${doc.id}`,
         type: toClientDocumentType(contract.productType, doc.type),
         numero: `${contract.contractNumber} — ${labelContractDoc(doc.type)}`,
@@ -45,7 +49,21 @@ export async function GET() {
         contractId: contract.id,
         productType: contract.productType,
       }))
-    )
+      const virtual = requiredTypes
+        .filter((type) => !existingByType.has(type))
+        .map((type) => ({
+          id: `contract-virtual:${contract.id}:${type}`,
+          type: toClientDocumentType(contract.productType, type),
+          numero: `${contract.contractNumber} — ${labelContractDoc(type)}`,
+          status: contract.status,
+          createdAt: contract.createdAt,
+          href: `${baseUrl}/${type}`,
+          generated: true,
+          contractId: contract.id,
+          productType: contract.productType,
+        }))
+      return [...materialized, ...virtual]
+    })
 
     const merged = [...documents, ...generatedDocuments].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -59,6 +77,11 @@ export async function GET() {
       { status: 500 }
     )
   }
+}
+
+function requiredGeneratedDocTypes(productType: string): string[] {
+  if (productType === "do") return ["quote", "policy", "certificate", "invoice"]
+  return []
 }
 
 function toClientDocumentType(productType: string, docType: string): string {
