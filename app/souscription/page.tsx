@@ -14,6 +14,7 @@ import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { runInsuranceContractStepAfterSouscription } from "@/lib/souscription-insurance-contract"
 import { readResponseJson } from "@/lib/read-response-json"
+import { trackConversion } from "@/lib/conversion-tracking"
 
 export default function SouscriptionPage() {
   const router = useRouter()
@@ -39,6 +40,10 @@ export default function SouscriptionPage() {
     if (typeof window === "undefined") return
     const params = new URLSearchParams(window.location.search)
     setFromEspaceClient(params.get("from") === "espace-client")
+    trackConversion("souscription_started", {
+      product: "decennale",
+      source: params.get("from") || "public",
+    })
   }, [])
 
   useEffect(() => {
@@ -141,6 +146,14 @@ export default function SouscriptionPage() {
       civilite: (form.civilite as "M" | "Mme" | "Mlle") || "M",
     }
     sessionStorage.setItem(STORAGE_KEYS.souscription, JSON.stringify(souscription))
+    trackConversion("souscription_completed", {
+      product: "decennale",
+      source: fromEspaceClient ? "espace-client" : "public",
+      metadata: {
+        activitiesCount: devis.activites?.length ?? 0,
+        primeAnnuelle: devis.tarif?.primeAnnuelle ?? 0,
+      },
+    })
 
     if (sessionStatus === "authenticated") {
       setInsuranceLoading(true)

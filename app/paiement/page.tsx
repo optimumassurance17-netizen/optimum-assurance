@@ -11,6 +11,7 @@ import type { SouscriptionData } from "@/lib/types"
 import { STORAGE_KEYS, FRAIS_GESTION_PRELEVEMENT } from "@/lib/types"
 import type { PeriodicitePrelevement } from "@/lib/types"
 import { readResponseJson } from "@/lib/read-response-json"
+import { trackConversion } from "@/lib/conversion-tracking"
 
 /** Échéancier trimestriel : 1er trimestre + frais (CB), puis prélèvements SEPA trimestriels en reconduction automatique. */
 function calculerEcheancierTrimestriel(primeAnnuelle: number) {
@@ -53,6 +54,7 @@ export default function PaiementPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    trackConversion("payment_started", { product: "decennale", source: "payment-page" })
 
     const mandatStored = sessionStorage.getItem(STORAGE_KEYS.mandatSepa)
     let stored = sessionStorage.getItem(STORAGE_KEYS.signature)
@@ -196,6 +198,11 @@ export default function PaiementPage() {
 
       if (result.checkoutUrl) {
         sessionStorage.setItem("mollie_payment_id", result.id ?? "")
+        trackConversion("payment_redirected", {
+          product: "decennale",
+          source: "mollie-creditcard",
+          metadata: { amount },
+        })
         window.location.href = result.checkoutUrl
       } else {
         setError("Pas d'URL de paiement reçue")

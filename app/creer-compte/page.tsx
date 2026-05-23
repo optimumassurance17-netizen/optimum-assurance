@@ -11,6 +11,7 @@ import { STORAGE_KEYS } from "@/lib/types"
 import { doPayloadToSouscriptionShim } from "@/lib/build-do-souscription-payload"
 import { isDoSouscriptionPayload, runInsuranceContractStepAfterSouscription } from "@/lib/souscription-insurance-contract"
 import { readResponseJson } from "@/lib/read-response-json"
+import { trackConversion } from "@/lib/conversion-tracking"
 
 export default function CreerComptePage() {
   const router = useRouter()
@@ -98,6 +99,10 @@ export default function CreerComptePage() {
       if (signInResult?.error) {
         throw new Error("Compte créé mais connexion échouée")
       }
+      trackConversion("account_created", {
+        product: isDoSouscriptionPayload(data) ? "do" : "decennale",
+        source: "create-account",
+      })
 
       // Sauvegarder le devis dans l'espace client (modèle type Optimum) — parcours décennale uniquement
       if (!isDoSouscriptionPayload(data) && data.tarif) {

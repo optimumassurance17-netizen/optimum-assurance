@@ -13,6 +13,7 @@ import { STORAGE_KEYS } from "@/lib/types"
 import { InsuranceContractParcoursBanner } from "@/components/insurance/InsuranceContractParcoursBanner"
 import type { InsuranceContractSnapshot } from "@/lib/insurance-contract-types"
 import { readResponseJson } from "@/lib/read-response-json"
+import { trackConversion } from "@/lib/conversion-tracking"
 
 export default function SignaturePage() {
   const router = useRouter()
@@ -32,6 +33,7 @@ export default function SignaturePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    trackConversion("signature_started", { product: "decennale", source: "signature-page" })
     try {
       const insRaw = sessionStorage.getItem(STORAGE_KEYS.insuranceContract)
       if (insRaw) {
@@ -119,6 +121,11 @@ export default function SignaturePage() {
         dateSignature: new Date().toISOString(),
       }
       sessionStorage.setItem(STORAGE_KEYS.signature, JSON.stringify(dataWithSignature))
+      trackConversion("signature_completed", {
+        product: "decennale",
+        source: "signature-request-created",
+        metadata: { contractNumero: result.contractNumero || "" },
+      })
 
       if (result.signatureLink) {
         window.location.href = result.signatureLink
