@@ -23,6 +23,7 @@ interface DocumentItem {
   createdAt: string
   href?: string
   generated?: boolean
+  paymentStatus?: string
 }
 
 type PendingSignatureItem = {
@@ -125,6 +126,33 @@ const typeIcons: Record<string, string> = {
   facture: "🧾",
   echeancier: "📆",
   fic: "🧾",
+}
+
+function getDocumentStatusBadge(doc: DocumentItem): { label: string; className: string } | null {
+  const status = doc.paymentStatus || doc.status
+  if (!status) return null
+  if (status === "paid") {
+    return { label: "Payé", className: "bg-emerald-50 text-emerald-700 border-emerald-200" }
+  }
+  if (status === "active") {
+    return { label: "Actif", className: "bg-emerald-50 text-emerald-700 border-emerald-200" }
+  }
+  if (status === "unpaid") {
+    return { label: "À régler", className: "bg-amber-50 text-amber-800 border-amber-200" }
+  }
+  if (status === "inactive") {
+    return { label: "Non actif", className: "bg-amber-50 text-amber-800 border-amber-200" }
+  }
+  if (status === "ready" || status === "approved" || status === "valide") {
+    return { label: "Disponible", className: "bg-blue-50 text-blue-700 border-blue-200" }
+  }
+  if (status === "pending_validation") {
+    return { label: "En validation", className: "bg-slate-50 text-slate-700 border-slate-200" }
+  }
+  if (status === "suspendu" || status === "failed" || status === "rejected") {
+    return { label: status === "rejected" ? "Refusé" : "Suspendu", className: "bg-red-50 text-red-700 border-red-200" }
+  }
+  return { label: status, className: "bg-slate-50 text-slate-700 border-slate-200" }
 }
 
 function getActionPriorityWeight(priority: AutonomyStatusAction["priority"]): number {
@@ -1219,6 +1247,7 @@ export default function EspaceClientPage() {
               {documents.map((doc) => {
                 const href = doc.href || `/espace-client/documents/${doc.id}`
                 const externalPdf = Boolean(doc.href)
+                const badge = getDocumentStatusBadge(doc)
                 return (
                 <Link
                   key={doc.id}
@@ -1231,7 +1260,14 @@ export default function EspaceClientPage() {
                     <span className="text-2xl">{typeIcons[doc.type] || "📄"}</span>
                     <div>
                       <p className="font-medium text-black">{typeLabels[doc.type] || doc.type}</p>
-                      <p className="text-sm text-[#171717]">{doc.numero}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <p className="text-sm text-[#171717]">{doc.numero}</p>
+                        {badge ? (
+                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                        ) : null}
+                      </div>
                       {doc.generated ? (
                         <p className="text-xs text-[#2563eb]">Document généré automatiquement</p>
                       ) : null}
