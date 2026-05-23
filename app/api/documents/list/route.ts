@@ -24,6 +24,8 @@ export async function GET() {
           productType: true,
           status: true,
           createdAt: true,
+          paidAt: true,
+          insurerValidatedAt: true,
           storedDocuments: {
             select: { id: true, type: true, url: true, createdAt: true },
             orderBy: { createdAt: "desc" },
@@ -48,6 +50,7 @@ export async function GET() {
         generated: true,
         contractId: contract.id,
         productType: contract.productType,
+        paymentStatus: buildGeneratedPaymentStatus(contract.productType, doc.type, contract.status, contract.paidAt, contract.insurerValidatedAt),
       }))
       const virtual = requiredTypes
         .filter((type) => !existingByType.has(type))
@@ -61,6 +64,7 @@ export async function GET() {
           generated: true,
           contractId: contract.id,
           productType: contract.productType,
+          paymentStatus: buildGeneratedPaymentStatus(contract.productType, type, contract.status, contract.paidAt, contract.insurerValidatedAt),
         }))
       return [...materialized, ...virtual]
     })
@@ -82,6 +86,24 @@ export async function GET() {
 function requiredGeneratedDocTypes(productType: string): string[] {
   if (productType === "do") return ["quote", "policy", "certificate", "invoice"]
   return []
+}
+
+function buildGeneratedPaymentStatus(
+  productType: string,
+  docType: string,
+  contractStatus: string,
+  paidAt: Date | null,
+  insurerValidatedAt: Date | null
+): string {
+  if (docType === "invoice") return paidAt ? "paid" : "unpaid"
+  if (docType === "certificate") {
+    if (paidAt && insurerValidatedAt && contractStatus === "active") return "active"
+    return "inactive"
+  }
+  if (productType === "do" && (docType === "quote" || docType === "policy")) {
+    return contractStatus === "approved" || contractStatus === "active" ? "ready" : "pending_validation"
+  }
+  return contractStatus
 }
 
 function toClientDocumentType(productType: string, docType: string): string {
