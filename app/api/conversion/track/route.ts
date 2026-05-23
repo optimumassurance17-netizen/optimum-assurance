@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       adminEmail: "conversion@system",
       action: `conversion_${event}`,
       targetType: session?.user?.id ? "user" : "visitor",
-      targetId: session?.user?.id || visitorId || null,
+      targetId: session?.user?.id || visitorId,
       details: {
         event,
         visitorId: visitorId || null,
