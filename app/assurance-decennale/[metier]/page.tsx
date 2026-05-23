@@ -1,6 +1,9 @@
 import Link from "next/link"
 import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
+import { InternalLinkSection } from "@/components/seo-programmatic/InternalLinkSection"
+import { SeoTextBlock } from "@/components/seo-programmatic/SeoTextBlock"
+import { buildActivityExpertContent } from "@/lib/decennale-activity-expert-content"
 import { METIERS_SEO } from "@/lib/metiers-seo"
 import {
   seoBreadcrumbListNode,
@@ -77,6 +80,7 @@ export default async function MetierPage({
         entry != null && entry.slug !== data.slug
     )
   const isHeadtermPage = data.kind === "headterm"
+  const expert = buildActivityExpertContent(data)
 
   const path = `/assurance-decennale/${data.slug}`
   const metierJsonLd = seoJsonLdGraph([
@@ -208,6 +212,28 @@ export default async function MetierPage({
           </ul>
         </div>
 
+        <SeoTextBlock title={`Analyse du risque ${data.nom}`}>
+          {expert.riskLines.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </SeoTextBlock>
+
+        <SeoTextBlock title="Documents et informations à préparer">
+          <ul className="list-disc pl-5 space-y-2">
+            {expert.documentLines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </SeoTextBlock>
+
+        <SeoTextBlock title="Points à déclarer avant signature">
+          <ul className="list-disc pl-5 space-y-2">
+            {expert.declarationTips.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </SeoTextBlock>
+
         <div className="bg-white rounded-2xl border border-[#e5e5e5] p-6 mb-10">
           <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Bien préparer votre demande</h2>
           <p className="text-[#171717] text-sm leading-relaxed mb-4">
@@ -266,6 +292,8 @@ export default async function MetierPage({
             </Link>
           </div>
         </div>
+
+        <InternalLinkSection title={`Villes prioritaires pour ${data.nom}`} links={expert.cityLinks} />
 
         <div className="text-center space-y-4">
           <Link
