@@ -18,6 +18,7 @@ import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { getMetierPrefillActivites } from "@/lib/metier-devis-prefill"
 import { readResponseJson } from "@/lib/read-response-json"
 import { buildOptimizedExclusionSummary } from "@/lib/optimized-exclusions"
+import { trackConversion } from "@/lib/conversion-tracking"
 
 const AdresseAutocomplete = dynamic(
   () => import("@/components/AdresseAutocomplete").then((m) => m.AdresseAutocomplete),
@@ -135,6 +136,10 @@ function DevisPageContent() {
     setMetierParam(urlParams.get("metier"))
     setResumeParam(urlParams.get("resume"))
     setFromEspaceClient(urlParams.get("from") === "espace-client")
+    trackConversion("devis_started", {
+      product: "decennale",
+      source: urlParams.get("from") || urlParams.get("metier") || "direct",
+    })
   }, [])
 
   const nbSinistres = Number(sinistres) || 0
@@ -261,6 +266,15 @@ function DevisPageContent() {
       if (typeof window !== "undefined") {
         sessionStorage.setItem("optimum-etude", JSON.stringify(dataEtude))
       }
+      trackConversion("devis_completed", {
+        product: "decennale",
+        source: "manual_review",
+        metadata: {
+          activitiesCount: activites.length,
+          chiffreAffaires: Number(chiffreAffaires) || 0,
+          sinistres: Number(sinistres) || 0,
+        },
+      })
       router.push("/etude")
       return
     }
@@ -295,6 +309,15 @@ function DevisPageContent() {
     if (typeof window !== "undefined") {
       sessionStorage.setItem(STORAGE_KEYS.devis, JSON.stringify(data))
     }
+    trackConversion("devis_completed", {
+      product: "decennale",
+      source: fromEspaceClient ? "espace-client" : "public",
+      metadata: {
+        activitiesCount: activites.length,
+        chiffreAffaires: Number(chiffreAffaires) || 0,
+        primeAnnuelle: tarif.primeAnnuelle,
+      },
+    })
     const nextSouscriptionPath = fromEspaceClient ? "/souscription?from=espace-client" : "/souscription"
     router.push(nextSouscriptionPath)
     setLoading(false)

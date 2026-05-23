@@ -20,6 +20,7 @@ import { DevoirConseil } from "@/components/DevoirConseil"
 import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { readResponseJson } from "@/lib/read-response-json"
+import { trackConversion } from "@/lib/conversion-tracking"
 
 const STEPS = [
   { id: 1, label: "Souscripteur" },
@@ -88,6 +89,7 @@ export function FormulaireDevisDommageOuvrage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    trackConversion("do_devis_started", { product: "do" })
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
       if (saved) {
@@ -188,6 +190,14 @@ export function FormulaireDevisDommageOuvrage() {
           sessionStorage.removeItem(STORAGE_KEYS.doSouscription)
         }
       }
+      trackConversion("do_devis_completed", {
+        product: "do",
+        source: "public",
+        metadata: {
+          coutTotal,
+          eligibleOnlineDo: Boolean(buildDoSouscriptionInsurancePayload(data as DevisDommageOuvrageData, coutTotal)),
+        },
+      })
       setSubmitted(true)
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Erreur lors de l'envoi")

@@ -13,6 +13,7 @@ import { STORAGE_KEYS } from "@/lib/types"
 import { doPayloadToSouscriptionShim } from "@/lib/build-do-souscription-payload"
 import { runInsuranceContractStepAfterSouscription } from "@/lib/souscription-insurance-contract"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
+import { trackConversion } from "@/lib/conversion-tracking"
 
 export default function SouscriptionDommageOuvragePage() {
   const router = useRouter()
@@ -26,6 +27,7 @@ export default function SouscriptionDommageOuvragePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    trackConversion("souscription_started", { product: "do", source: "do-online" })
     const raw = sessionStorage.getItem(STORAGE_KEYS.doSouscription)
     if (!raw) {
       router.replace("/devis-dommage-ouvrage")
@@ -88,6 +90,11 @@ export default function SouscriptionDommageOuvragePage() {
     }
     sessionStorage.setItem(STORAGE_KEYS.doSouscription, JSON.stringify(merged))
     sessionStorage.setItem(STORAGE_KEYS.souscription, JSON.stringify(doPayloadToSouscriptionShim(merged)))
+    trackConversion("souscription_completed", {
+      product: "do",
+      source: "do-online",
+      metadata: { primeAnnuelle: merged.premium, projectName: merged.projectName },
+    })
 
     if (sessionStatus === "authenticated") {
       setInsuranceLoading(true)

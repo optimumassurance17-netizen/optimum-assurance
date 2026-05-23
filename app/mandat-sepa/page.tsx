@@ -13,6 +13,7 @@ import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import type { PeriodicitePrelevement } from "@/lib/types"
 import { getIbanValidationMessage, normalizeIban } from "@/lib/iban"
 import { readResponseJson } from "@/lib/read-response-json"
+import { trackConversion } from "@/lib/conversion-tracking"
 
 /** Unique mode : trimestriel — 1er trimestre + frais en CB, puis prélèvements SEPA trimestriels automatiques. */
 const PERIODICITE: PeriodicitePrelevement = "trimestriel"
@@ -34,6 +35,7 @@ export default function MandatSepaPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    trackConversion("mandat_sepa_started", { product: "decennale", source: "mandat-sepa" })
 
     const mandatStored = sessionStorage.getItem(STORAGE_KEYS.mandatSepa)
     const stored = sessionStorage.getItem(STORAGE_KEYS.signature)
@@ -118,6 +120,11 @@ export default function MandatSepaPage() {
     }
 
     setError(null)
+    trackConversion("mandat_sepa_completed", {
+      product: "decennale",
+      source: "mandat-sepa",
+      metadata: { primeAnnuelle: data.tarif.primeAnnuelle },
+    })
     const mandatData = {
       iban: ibanClean,
       titulaireCompte: titulaireTrim,
