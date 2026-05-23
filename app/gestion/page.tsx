@@ -346,6 +346,14 @@ interface DashboardData {
     overdue72h: number
     dismissedToday?: number
   }
+  conversionFunnel?: {
+    windowDays: number
+    total: number
+    lastEventAt: string | null
+    counts: Record<string, number>
+    byProduct: Record<string, number>
+    rates: Record<string, number | null>
+  }
 }
 
 type RcFabLeadRow = NonNullable<DashboardData["devisRcFabriquantLeads"]>[number]
@@ -703,6 +711,49 @@ export default function GestionPage() {
   const filteredPayments = useMemo(() => (data ? filterBySearch(data.payments, searchQuery) : []), [data, searchQuery])
   const filteredAttestations = useMemo(() => filterBySearch(attestations, searchQuery), [attestations, searchQuery])
   const filteredContrats = useMemo(() => filterBySearch(contrats, searchQuery), [contrats, searchQuery])
+
+  const conversionSteps = useMemo(() => {
+    const counts = data?.conversionFunnel?.counts ?? {}
+    const rates = data?.conversionFunnel?.rates ?? {}
+    return [
+      {
+        label: "Devis décennale",
+        started: counts.devis_started ?? 0,
+        completed: counts.devis_completed ?? 0,
+        rate: rates.devisCompletion,
+      },
+      {
+        label: "Devis DO",
+        started: counts.do_devis_started ?? 0,
+        completed: counts.do_devis_completed ?? 0,
+        rate: rates.doDevisCompletion,
+      },
+      {
+        label: "Souscription",
+        started: counts.souscription_started ?? 0,
+        completed: counts.souscription_completed ?? 0,
+        rate: rates.souscriptionCompletion,
+      },
+      {
+        label: "Signature",
+        started: counts.signature_started ?? 0,
+        completed: counts.signature_completed ?? 0,
+        rate: rates.signatureCompletion,
+      },
+      {
+        label: "Mandat SEPA",
+        started: counts.mandat_sepa_started ?? 0,
+        completed: counts.mandat_sepa_completed ?? 0,
+        rate: rates.mandatCompletion,
+      },
+      {
+        label: "Paiement",
+        started: counts.payment_started ?? 0,
+        completed: counts.payment_redirected ?? 0,
+        rate: rates.paymentRedirect,
+      },
+    ]
+  }, [data?.conversionFunnel])
 
   const filteredPendingSignatures = useMemo(() => {
     if (!data?.pendingSignatures) return []
@@ -1548,6 +1599,12 @@ export default function GestionPage() {
                 Pilotage commercial V2
               </a>
               <a
+                href="#funnel-conversion"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#123524] text-emerald-100 border border-emerald-700/70 hover:bg-[#17452e]"
+              >
+                Funnel conversion
+              </a>
+              <a
                 href="#comptabilite-v2"
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#312e81] text-indigo-100 border border-indigo-700/80 hover:bg-[#3730a3]"
               >
@@ -1889,6 +1946,61 @@ export default function GestionPage() {
                 <p className="text-xs text-gray-200 mt-1">Tableau manuel + lien admin</p>
               </div>
             </section>
+
+            {data.conversionFunnel && (
+              <section
+                id="funnel-conversion"
+                className="scroll-mt-24 rounded-xl border border-emerald-800/60 bg-[#17251f] p-5"
+              >
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Funnel conversion réel (30 jours)</h2>
+                    <p className="text-xs text-emerald-200/90">
+                      Événements trackés côté client : devis, souscription, compte, signature, mandat SEPA et paiement.
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-emerald-700/60 bg-emerald-950/30 px-3 py-2 text-right">
+                    <p className="text-[11px] text-emerald-200">Événements</p>
+                    <p className="text-xl font-semibold text-white">{data.conversionFunnel.total}</p>
+                    {data.conversionFunnel.lastEventAt ? (
+                      <p className="text-[11px] text-emerald-200/80">
+                        Dernier : {new Date(data.conversionFunnel.lastEventAt).toLocaleString("fr-FR")}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  {conversionSteps.map((step) => {
+                    const rateLabel = step.rate == null ? "—" : `${step.rate.toLocaleString("fr-FR")} %`
+                    const width = step.rate == null ? 0 : Math.max(0, Math.min(100, step.rate))
+                    return (
+                      <div key={step.label} className="rounded-lg border border-gray-700 bg-[#202a25] p-3">
+                        <div className="mb-2 flex items-center justify-between gap-3 text-xs text-gray-200">
+                          <span className="font-semibold text-white">{step.label}</span>
+                          <span>{rateLabel}</span>
+                        </div>
+                        <p className="text-xs text-gray-300">
+                          {step.completed} terminés / {step.started} commencés
+                        </p>
+                        <div className="mt-2 h-2 rounded-full bg-gray-800">
+                          <div className="h-2 rounded-full bg-emerald-400" style={{ width: `${width}%` }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                  {Object.entries(data.conversionFunnel.byProduct).map(([product, count]) => (
+                    <div key={product} className="rounded-lg border border-gray-700 bg-[#202a25] px-3 py-2">
+                      <p className="text-[11px] text-gray-300">{product}</p>
+                      <p className="text-lg font-semibold text-white">{count}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {pilotageV2 && (
               <section

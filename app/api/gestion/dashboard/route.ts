@@ -51,6 +51,21 @@ export const maxDuration = 60
 const DASH_LIST_LIMIT = 3000
 /** Pour le calcul des stats DO (sommes JSON) — plafond pour ne pas charger 100k lignes. */
 const DO_STATS_ATTESTATIONS_CAP = 10_000
+const CONVERSION_EVENTS = [
+  "devis_started",
+  "devis_completed",
+  "do_devis_started",
+  "do_devis_completed",
+  "souscription_started",
+  "souscription_completed",
+  "account_created",
+  "signature_started",
+  "signature_completed",
+  "mandat_sepa_started",
+  "mandat_sepa_completed",
+  "payment_started",
+  "payment_redirected",
+] as const
 
 function startOfUtcDay(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
@@ -64,6 +79,56 @@ function parseAdminLogDetails(raw: string | null | undefined): Record<string, un
     return parsed as Record<string, unknown>
   } catch {
     return {}
+  }
+}
+
+function ratio(numerator: number, denominator: number): number | null {
+  if (denominator <= 0) return null
+  return Math.round((numerator / denominator) * 1000) / 10
+}
+
+function conversionProductFromDetails(details: Record<string, unknown>): "decennale" | "do" | "rc_fabriquant" | "unknown" {
+  const product = details.product
+  if (product === "decennale" || product === "do" || product === "rc_fabriquant") return product
+  return "unknown"
+}
+
+function buildConversionFunnel(logs: { action: string; details: string | null; createdAt: Date }[]) {
+  const counts = Object.fromEntries(CONVERSION_EVENTS.map((event) => [event, 0])) as Record<
+    (typeof CONVERSION_EVENTS)[number],
+    number
+  >
+  const byProduct = {
+    decennale: 0,
+    do: 0,
+    rc_fabriquant: 0,
+    unknown: 0,
+  }
+  let lastEventAt: Date | null = null
+
+  for (const log of logs) {
+    const event = log.action.replace(/^conversion_/, "") as (typeof CONVERSION_EVENTS)[number]
+    if (event in counts) counts[event] += 1
+    const product = conversionProductFromDetails(parseAdminLogDetails(log.details))
+    byProduct[product] += 1
+    if (!lastEventAt || log.createdAt > lastEventAt) lastEventAt = log.createdAt
+  }
+
+  return {
+    windowDays: 30,
+    total: logs.length,
+    lastEventAt: lastEventAt?.toISOString() ?? null,
+    counts,
+    byProduct,
+    rates: {
+      devisCompletion: ratio(counts.devis_completed, counts.devis_started),
+      doDevisCompletion: ratio(counts.do_devis_completed, counts.do_devis_started),
+      souscriptionCompletion: ratio(counts.souscription_completed, counts.souscription_started),
+      accountFromSouscription: ratio(counts.account_created, counts.souscription_completed),
+      signatureCompletion: ratio(counts.signature_completed, counts.signature_started),
+      mandatCompletion: ratio(counts.mandat_sepa_completed, counts.mandat_sepa_started),
+      paymentRedirect: ratio(counts.payment_redirected, counts.payment_started),
+    },
   }
 }
 
@@ -216,6 +281,7 @@ export async function GET() {
     const now = new Date()
     const ddaConsentWindowStart = new Date(now.getTime() - 72 * 60 * 60 * 1000)
     const ddaEventWindowStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const conversionWindowStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
     const [
       users,
@@ -238,6 +304,7 @@ export async function GET() {
       usersDoQuestionnaireRows,
       recentDdaConsents,
       recentDdaEvents,
+      conversionLogs,
     ] = await Promise.all([
       prisma.user.findMany({
         select: {
@@ -436,6 +503,15 @@ export async function GET() {
           details: true,
           createdAt: true,
         },
+        orderBy: { createdAt: "desc" },
+        take: DASH_LIST_LIMIT,
+      }),
+      prisma.adminActivityLog.findMany({
+        where: {
+          createdAt: { gte: conversionWindowStart },
+          action: { startsWith: "conversion_" },
+        },
+        select: { action: true, details: true, createdAt: true },
         orderBy: { createdAt: "desc" },
         take: DASH_LIST_LIMIT,
       }),
@@ -886,6 +962,7 @@ export async function GET() {
       overdue72h: dashboardActionsLimited.filter((a) => a.ageHours >= 72).length,
       dismissedToday: dismissedActionIds.size,
     }
+    const conversionFunnel = buildConversionFunnel(conversionLogs)
 
     const devisLeadsWithSla = devisLeads.map((lead) => {
       const slaHours = Math.max(0, Math.floor((Date.now() - lead.createdAt.getTime()) / (60 * 60 * 1000)))
@@ -916,6 +993,7 @@ export async function GET() {
       insuranceContracts: insuranceContractsList,
       dashboardActions: dashboardActionsLimited,
       dashboardActionsSummary,
+      conversionFunnel,
     })
   } catch (error) {
     console.error("Erreur dashboard gestion:", error)
