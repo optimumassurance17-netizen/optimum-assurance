@@ -32,6 +32,7 @@ import Link from "next/link"
 import { Toast } from "@/components/Toast"
 import { InsuranceContractsGestionBlock } from "@/components/gestion/InsuranceContractsGestionBlock"
 import { readResponseJson } from "@/lib/read-response-json"
+import { extractClientIdentityFromRecord } from "@/lib/client-identity-extract"
 import {
   RC_FABRIQUANT_LEAD_STATUT_LABELS,
   RC_FABRIQUANT_LEAD_STATUT_VALUES,
@@ -3641,17 +3642,14 @@ export default function GestionPage() {
                       let destination = ""
                       let closCouvert = ""
                       try {
-                        const leadData = JSON.parse(lead.data || "{}") as {
-                          adresseConstruction?: string
-                          codePostalConstruction?: string
-                          villeConstruction?: string
-                          telephone?: string
+                        const leadData = JSON.parse(lead.data || "{}") as Record<string, unknown> & {
                           typeOuvrage?: string
                           destinationConstruction?: string
                           operationClosCouvert?: boolean
                         }
-                        adresseOp = [leadData.adresseConstruction, leadData.codePostalConstruction, leadData.villeConstruction].filter(Boolean).join(" ") || ""
-                        tel = leadData.telephone || ""
+                        const identity = extractClientIdentityFromRecord(leadData)
+                        adresseOp = identity.adresse || ""
+                        tel = identity.telephone || ""
                         typeConstruction = mapTypeOuvrageToConstruction(leadData.typeOuvrage)
                         destination = mapDestinationConstruction(leadData.destinationConstruction)
                         closCouvert = leadData.operationClosCouvert === true ? "oui" : leadData.operationClosCouvert === false ? "non" : ""

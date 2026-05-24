@@ -8,6 +8,7 @@ import { sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { SITE_URL } from "@/lib/site-url"
 import { sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
+import { extractClientIdentityFromRecord, mergeClientIdentity } from "@/lib/client-identity-extract"
 
 function generateTempPassword(): string {
   const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
@@ -114,13 +115,20 @@ export async function POST(request: NextRequest) {
     const passwordHash = await hash(tempPassword, 12)
 
     const leadData = "data" in lead ? parseLeadData(lead.data) : {}
-    const raisonSociale = optionalString("raisonSociale" in lead ? lead.raisonSociale : null) || optionalString(leadData.raisonSociale)
-    const siretRaw = optionalString("siret" in lead ? lead.siret : null) || optionalString(leadData.siret)
-    const siret = siretRaw ? siretRaw.replace(/\s/g, "").trim() : null
-    const telephone = optionalString(leadData.telephone)
-    const adresse = optionalString(leadData.adresse)
-    const codePostal = optionalString(leadData.codePostal)
-    const ville = optionalString(leadData.ville)
+    const leadIdentity = mergeClientIdentity(
+      extractClientIdentityFromRecord(leadData),
+      extractClientIdentityFromRecord({
+        raisonSociale: "raisonSociale" in lead ? lead.raisonSociale : null,
+        siret: "siret" in lead ? lead.siret : null,
+        email: lead.email,
+      })
+    )
+    const raisonSociale = leadIdentity.raisonSociale
+    const siret = leadIdentity.siret ?? null
+    const telephone = leadIdentity.telephone ?? null
+    const adresse = leadIdentity.adresse ?? null
+    const codePostal = leadIdentity.codePostal ?? null
+    const ville = leadIdentity.ville ?? null
 
     const user = await prisma.user.create({
       data: {
