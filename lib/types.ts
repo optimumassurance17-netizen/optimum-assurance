@@ -51,7 +51,9 @@ export interface SouscriptionData extends DevisData {
 /** Souscription plateforme — dommage ouvrage (sessionStorage → création contrat + Paiement). */
 export interface DoSouscriptionInsurancePayload {
   productType: "do"
-  siret: string
+  /** Optionnel pour les particuliers maîtres d’ouvrage sans société. */
+  siret?: string
+  qualiteMaitreOuvrage?: string
   raisonSociale: string
   adresse: string
   codePostal: string

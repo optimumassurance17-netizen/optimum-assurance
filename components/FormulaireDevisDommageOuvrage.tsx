@@ -231,8 +231,9 @@ export function FormulaireDevisDommageOuvrage() {
           </ol>
           {!eligibleOnlineDo ? (
             <p className="text-sm text-black mt-3">
-              La souscription en ligne avec paiement immédiat nécessite un <strong>SIRET à 14 chiffres</strong> et un coût
-              de travaux renseigné. Sinon, notre équipe vous recontacte sous 24h.
+              La souscription en ligne nécessite des coordonnées complètes et un coût de travaux renseigné. Le{" "}
+              <strong>SIRET est requis pour les sociétés / promoteurs / mandataires</strong>, mais reste optionnel pour
+              un particulier maître d&apos;ouvrage sans société. Sinon, notre équipe vous recontacte sous 24h.
             </p>
           ) : null}
         </div>
