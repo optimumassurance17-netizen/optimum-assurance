@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { extractClientIdentityFromRecord } from "@/lib/client-identity-extract"
 import { syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
@@ -39,6 +40,15 @@ export async function GET(
     }
 
     const data = parseDocumentData(document.data)
+    const identity = extractClientIdentityFromRecord(data)
+    data.raisonSociale = identity.raisonSociale ?? data.raisonSociale
+    data.email = identity.email ?? data.email
+    data.telephone = identity.telephone ?? data.telephone
+    data.siret = identity.siret ?? data.siret
+    data.adresse = identity.adresse ?? data.adresse
+    data.codePostal = identity.codePostal ?? data.codePostal
+    data.ville = identity.ville ?? data.ville
+
     // Pour devis_do : enrichir avec les infos du user
     if (document.type === "devis_do" && document.user) {
       data.raisonSociale = document.user.raisonSociale ?? data.raisonSociale

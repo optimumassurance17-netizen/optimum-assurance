@@ -99,10 +99,12 @@ function parseInseeResponse(data: Record<string, unknown>): SireneResult | null 
   if (adresseObj) {
     const fields = [
       adresseObj.numeroVoieEtablissement,
+      adresseObj.indiceRepetitionEtablissement,
       adresseObj.typeVoieEtablissement,
       adresseObj.libelleVoieEtablissement,
+      adresseObj.complementAdresseEtablissement,
     ]
-    adresseParts.push(...fields.filter(Boolean).map(String))
+    adresseParts.push(...fields.map(safeString).filter(Boolean))
   }
   
   const adresse = adresseParts.join(" ").trim()
@@ -110,21 +112,31 @@ function parseInseeResponse(data: Record<string, unknown>): SireneResult | null 
     etab.codePostalEtablissement || adresseObj?.codePostalEtablissement
   )
   const ville = safeString(
-    etab.libelleCommuneEtablissement || adresseObj?.libelleCommuneEtablissement
+    etab.libelleCommuneEtablissement ||
+      adresseObj?.libelleCommuneEtablissement ||
+      adresseObj?.libelleCommuneEtrangerEtablissement
   )
 
   // Construire la raison sociale
+  const nomCompletPersonnePhysique = [
+    ul?.prenom1UniteLegale || ul?.prenomUsuelUniteLegale,
+    ul?.nomUsageUniteLegale || ul?.nomUniteLegale,
+  ]
+    .map(safeString)
+    .filter(Boolean)
+    .join(" ")
+    .trim()
+
   const raisonSociale =
     safeString(ul?.denominationUniteLegale) ||
+    safeString(ul?.denominationUsuelle1UniteLegale) ||
+    safeString(ul?.denominationUsuelle2UniteLegale) ||
+    safeString(ul?.denominationUsuelle3UniteLegale) ||
+    safeString(etab.enseigne1Etablissement) ||
+    safeString(etab.enseigne2Etablissement) ||
+    safeString(etab.enseigne3Etablissement) ||
     safeString(ul?.nomUsageUniteLegale) ||
-    [
-      ul?.prenomUsuelUniteLegale,
-      ul?.nomUsageUniteLegale,
-    ]
-      .filter(Boolean)
-      .map(String)
-      .join(" ")
-      .trim() ||
+    nomCompletPersonnePhysique ||
     ""
 
   // dateCreationUniteLegale : format AAAA-MM-JJ
