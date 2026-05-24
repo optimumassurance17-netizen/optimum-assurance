@@ -150,7 +150,8 @@ export default function SouscriptionDommageOuvragePage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="p-4 bg-[#f5f5f5] rounded-2xl border border-[#d4d4d4] space-y-4">
             <p className="text-sm text-black">
-              <strong>{payload.raisonSociale}</strong> — SIRET {payload.siret}
+              <strong>{payload.raisonSociale}</strong>
+              {payload.siret ? <> — SIRET {payload.siret}</> : <> — particulier sans SIRET</>}
             </p>
             <div>
               <label htmlFor="do-rep" className="block mb-2 font-medium text-black">

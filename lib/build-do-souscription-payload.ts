@@ -1,10 +1,22 @@
-import type { DevisDommageOuvrageData } from "@/lib/dommage-ouvrage-types"
+import type { DevisDommageOuvrageData, QualiteMaitreOuvrage } from "@/lib/dommage-ouvrage-types"
 import { TYPES_OUVRAGE } from "@/lib/dommage-ouvrage-types"
 import { calculerTarifDommageOuvrage, FRANCHISE_DOMMAGE_OUVRAGE_EUR } from "@/lib/tarification-dommage-ouvrage"
 import type { DevisResult } from "@/lib/tarification"
 import type { DoSouscriptionInsurancePayload, SouscriptionData } from "@/lib/types"
 
-/** Construit le payload API contrat DO + session (SIRET 14 ch. requis pour le scoring). */
+const QUALITES_PARTICULIERES: QualiteMaitreOuvrage[] = [
+  "particulier_habitation",
+  "particulier_locatif",
+  "particulier_revente",
+]
+
+function isParticulierMaitreOuvrage(value: unknown): boolean {
+  return QUALITES_PARTICULIERES.includes(value as QualiteMaitreOuvrage)
+}
+
+/** Construit le payload API contrat DO + session.
+ * SIRET requis pour promoteur/mandataire/pro, optionnel pour particulier sans société.
+ */
 export function buildDoSouscriptionInsurancePayload(
   data: Partial<DevisDommageOuvrageData>,
   coutTotal: number
@@ -15,7 +27,8 @@ export function buildDoSouscriptionInsurancePayload(
   if (!tarif || tarif.primeAnnuelle <= 0) return null
 
   const siret = (data.siret || "").replace(/\D/g, "")
-  if (siret.length !== 14) return null
+  const particulier = isParticulierMaitreOuvrage(data.qualiteMaitreOuvrage)
+  if (!particulier && siret.length !== 14) return null
 
   if (!data.raisonSociale?.trim() || !data.email?.trim()) return null
 
@@ -36,7 +49,8 @@ export function buildDoSouscriptionInsurancePayload(
 
   return {
     productType: "do",
-    siret,
+    ...(siret.length === 14 ? { siret } : {}),
+    qualiteMaitreOuvrage: data.qualiteMaitreOuvrage,
     raisonSociale: data.raisonSociale.trim(),
     adresse: (data.adresse || "").trim(),
     codePostal: (data.codePostal || "").trim(),
@@ -72,7 +86,7 @@ function tarifShimFromDoPremium(premium: number): DevisResult {
 export function doPayloadToSouscriptionShim(d: DoSouscriptionInsurancePayload): SouscriptionData {
   const nat = d.constructionNature?.trim() || "Dommage ouvrage"
   return {
-    siret: d.siret,
+    siret: d.siret ?? "",
     chiffreAffaires: 0,
     sinistres: 0,
     jamaisAssure: true,

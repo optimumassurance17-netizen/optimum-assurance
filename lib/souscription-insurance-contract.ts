@@ -113,9 +113,6 @@ export async function createInsuranceContractFromDoPayload(
     return { ok: false, error: "Prime manquante ou invalide" }
   }
   const siret = (data.siret || "").replace(/\D/g, "")
-  if (siret.length !== 14) {
-    return { ok: false, error: "SIRET invalide (14 chiffres requis)" }
-  }
   const address = buildAddressLine(data)
   if (!address.trim()) {
     return { ok: false, error: "Adresse complète requise" }
@@ -130,7 +127,7 @@ export async function createInsuranceContractFromDoPayload(
     body: JSON.stringify({
       productType: "do",
       clientName: data.raisonSociale.trim(),
-      siret,
+      ...(siret.length === 14 ? { siret } : {}),
       address,
       premium,
       projectName: data.projectName.trim(),
