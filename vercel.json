@@ -30,6 +30,30 @@
     {
       "path": "/api/cron/sepa-trimestriel",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/geo-competitors",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/geo-visibility",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/geo-content-generation",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/geo-seo-optimizer",
+      "schedule": "30 4 * * *"
+    },
+    {
+      "path": "/api/cron/geo-alerts",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/geo-daily-snapshot",
+      "schedule": "30 5 * * *"
     }
   ]
 }
