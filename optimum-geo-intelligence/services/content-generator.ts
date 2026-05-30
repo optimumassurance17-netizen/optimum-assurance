@@ -204,33 +204,48 @@ export async function generateSeoContent(input: {
     })) ??
     fallbackDraft(input)
 
-  const status = input.autoPublish ? "published" : "draft"
   const pathPrefix =
     input.type === "local-city" || input.type === "local-metier-city" ? "/assurance-decennale-" : "/guides/"
+  const computedPath = `${pathPrefix}${generated.slug}`
+  const { data: existing } = await sb
+    .from("generated_content")
+    .select("id,status")
+    .eq("path", computedPath)
+    .maybeSingle()
+  const status = input.autoPublish
+    ? "published"
+    : existing?.status === "published"
+      ? "published"
+      : existing?.status === "approved"
+        ? "approved"
+        : "draft"
 
   const { data, error } = await sb
     .from("generated_content")
-    .insert({
-      content_type: input.type,
-      keyword: input.keyword,
-      city_name: input.city ?? null,
-      profession_name: input.profession ?? null,
-      title: generated.title,
-      slug: generated.slug,
-      path: `${pathPrefix}${generated.slug}`,
-      seo_title: generated.seoTitle,
-      meta_description: generated.metaDescription,
-      h1: generated.h1,
-      body_json: generated.sections,
-      faq_json: generated.faq,
-      faq_schema_json: generated.faqSchemaJson,
-      json_ld: generated.jsonLd,
-      internal_links: generated.internalLinks,
-      cta_label: generated.ctaLabel,
-      cta_href: generated.ctaHref,
-      status,
-      generated_by: "openai",
-    })
+    .upsert(
+      {
+        content_type: input.type,
+        keyword: input.keyword,
+        city_name: input.city ?? null,
+        profession_name: input.profession ?? null,
+        title: generated.title,
+        slug: generated.slug,
+        path: computedPath,
+        seo_title: generated.seoTitle,
+        meta_description: generated.metaDescription,
+        h1: generated.h1,
+        body_json: generated.sections,
+        faq_json: generated.faq,
+        faq_schema_json: generated.faqSchemaJson,
+        json_ld: generated.jsonLd,
+        internal_links: generated.internalLinks,
+        cta_label: generated.ctaLabel,
+        cta_href: generated.ctaHref,
+        status,
+        generated_by: "openai",
+      },
+      { onConflict: "path" }
+    )
     .select("id")
     .single()
 
@@ -238,7 +253,7 @@ export async function generateSeoContent(input: {
 
   await sb.from("content_history").insert({
     generated_content_id: data.id,
-    change_type: "created",
+    change_type: existing ? "updated" : "created",
     old_payload: {},
     new_payload: generated,
     actor: "system",
@@ -249,8 +264,8 @@ export async function generateSeoContent(input: {
     status: "success",
     title: "Contenu SEO généré",
     summary: `${generated.title} (${status})`,
-    payload: { id: data.id, type: input.type, keyword: input.keyword },
+    payload: { id: data.id, type: input.type, keyword: input.keyword, updated: Boolean(existing) },
   })
 
-  return { id: data.id, status, path: `${pathPrefix}${generated.slug}` }
+  return { id: data.id, status, path: computedPath }
 }

@@ -10,12 +10,15 @@ export async function runDailySnapshot() {
   const sb = getSupabaseAdminClient()
   const [global, seoScan] = await Promise.all([computeGlobalGeoScore(), scanAndScoreSeoPages()])
   await computeScopedGeoScores()
-  await sb.from("daily_snapshots").insert({
-    snapshot_date: new Date().toISOString().slice(0, 10),
-    geo_score: global.score,
-    seo_score: global.breakdown.seoScore,
-    payload: { seoScan },
-  })
+  await sb.from("daily_snapshots").upsert(
+    {
+      snapshot_date: new Date().toISOString().slice(0, 10),
+      geo_score: global.score,
+      seo_score: global.breakdown.seoScore,
+      payload: { seoScan },
+    },
+    { onConflict: "snapshot_date" }
+  )
   return { global, seoScan }
 }
 
