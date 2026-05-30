@@ -120,6 +120,14 @@ function parseLeadCompanyName(rawData: string | null | undefined): string | null
   return null
 }
 
+type DecennaleLeadProgression = {
+  hasUserAccount: boolean
+  hasPendingSignature: boolean
+  hasPaidPayment: boolean
+  hasDecennaleContract: boolean
+  status: "abandon_potential" | "en_parcours" | "converti"
+}
+
 function buildSchemaDriftFallbackDashboard() {
   return {
     users: [],
@@ -600,6 +608,98 @@ export async function GET() {
       }
     })
 
+    const decennaleLeadEmails = [
+      ...new Set(
+        devisLeads
+          .map((lead) => lead.email.trim().toLowerCase())
+          .filter((email) => email.length > 0)
+      ),
+    ]
+    const decennaleLeadProgressionByEmail = new Map<string, DecennaleLeadProgression>()
+    for (const email of decennaleLeadEmails) {
+      decennaleLeadProgressionByEmail.set(email, {
+        hasUserAccount: false,
+        hasPendingSignature: false,
+        hasPaidPayment: false,
+        hasDecennaleContract: false,
+        status: "abandon_potential",
+      })
+    }
+
+    if (decennaleLeadEmails.length > 0) {
+      const decennaleLeadUsers = await prisma.user.findMany({
+        where: { email: { in: decennaleLeadEmails } },
+        select: { id: true, email: true },
+      })
+      const userByEmail = new Map(
+        decennaleLeadUsers.map((user) => [user.email.trim().toLowerCase(), user] as const)
+      )
+      const userIds = decennaleLeadUsers.map((user) => user.id)
+
+      for (const email of decennaleLeadEmails) {
+        const user = userByEmail.get(email)
+        const current = decennaleLeadProgressionByEmail.get(email)
+        if (!current) continue
+        current.hasUserAccount = Boolean(user)
+      }
+
+      if (userIds.length > 0) {
+        const [pendingSignaturesRows, paidPaymentRows, contractDocumentRows, contractRows] = await Promise.all([
+          prisma.pendingSignature.findMany({
+            where: { userId: { in: userIds } },
+            select: { userId: true },
+            distinct: ["userId"],
+          }),
+          prisma.payment.findMany({
+            where: { userId: { in: userIds }, status: "paid" },
+            select: { userId: true },
+            distinct: ["userId"],
+          }),
+          prisma.document.findMany({
+            where: { userId: { in: userIds }, type: "contrat" },
+            select: { userId: true },
+            distinct: ["userId"],
+          }),
+          prisma.insuranceContract.findMany({
+            where: { userId: { in: userIds }, productType: "decennale" },
+            select: { userId: true },
+            distinct: ["userId"],
+          }),
+        ])
+
+        const pendingSignatureUserIds = new Set(pendingSignaturesRows.map((row) => row.userId))
+        const paidPaymentUserIds = new Set(paidPaymentRows.map((row) => row.userId))
+        const contractDocumentUserIds = new Set(contractDocumentRows.map((row) => row.userId))
+        const insuranceContractUserIds = new Set(
+          contractRows
+            .map((row) => row.userId)
+            .filter((userId): userId is string => typeof userId === "string" && userId.length > 0)
+        )
+
+        for (const [email, user] of userByEmail.entries()) {
+          const current = decennaleLeadProgressionByEmail.get(email)
+          if (!current) continue
+          current.hasPendingSignature = pendingSignatureUserIds.has(user.id)
+          current.hasPaidPayment = paidPaymentUserIds.has(user.id)
+          current.hasDecennaleContract =
+            contractDocumentUserIds.has(user.id) || insuranceContractUserIds.has(user.id)
+        }
+      }
+
+      for (const [email, progress] of decennaleLeadProgressionByEmail.entries()) {
+        const status: DecennaleLeadProgression["status"] =
+          progress.hasPaidPayment || progress.hasDecennaleContract
+            ? "converti"
+            : progress.hasPendingSignature || progress.hasUserAccount
+              ? "en_parcours"
+              : "abandon_potential"
+        decennaleLeadProgressionByEmail.set(email, {
+          ...progress,
+          status,
+        })
+      }
+    }
+
     const todayStart = startOfUtcDay(now)
     const reminder24hMs = 24 * 60 * 60 * 1000
     const overdue72hMs = 72 * 60 * 60 * 1000
@@ -717,6 +817,9 @@ export async function GET() {
       if (d.rappelSentAt) continue
       const ageMs = now.getTime() - d.createdAt.getTime()
       if (ageMs < reminder24hMs) continue
+      const progress =
+        decennaleLeadProgressionByEmail.get(d.email.trim().toLowerCase()) ?? null
+      if (progress && progress.status !== "abandon_potential") continue
       const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
       dashboardActions.push({
         id: `lead-dec-${d.id}`,
@@ -889,10 +992,22 @@ export async function GET() {
 
     const devisLeadsWithSla = devisLeads.map((lead) => {
       const slaHours = Math.max(0, Math.floor((Date.now() - lead.createdAt.getTime()) / (60 * 60 * 1000)))
+      const progression =
+        decennaleLeadProgressionByEmail.get(lead.email.trim().toLowerCase()) ?? null
+      const progressionStatus = progression?.status ?? "abandon_potential"
       return {
         ...lead,
         slaHours,
         slaLevel: slaHours >= 72 ? "critical" : slaHours >= 24 ? "warning" : "ok",
+        progressionStatus,
+        hasUserAccount: progression?.hasUserAccount ?? false,
+        hasPendingSignature: progression?.hasPendingSignature ?? false,
+        hasPaidPayment: progression?.hasPaidPayment ?? false,
+        hasDecennaleContract: progression?.hasDecennaleContract ?? false,
+        isAbandonedCandidate:
+          !lead.rappelSentAt &&
+          slaHours >= 24 &&
+          progressionStatus === "abandon_potential",
       }
     })
 
