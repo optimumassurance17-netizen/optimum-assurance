@@ -23,6 +23,11 @@ export default function SignaturePage() {
   const [error, setError] = useState<string | null>(null)
   const [devoirConseilAccepte, setDevoirConseilAccepte] = useState(false)
 
+  const getFallbackFromSnapshot = (snapshot: InsuranceContractSnapshot | null): string => {
+    if (snapshot?.productType === "do") return "/espace-client"
+    return "/devis"
+  }
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/connexion?from=signature")
@@ -32,12 +37,14 @@ export default function SignaturePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    let currentSnapshot: InsuranceContractSnapshot | null = null
     try {
       const insRaw = sessionStorage.getItem(STORAGE_KEYS.insuranceContract)
       if (insRaw) {
         const parsed = JSON.parse(insRaw) as InsuranceContractSnapshot
         if (parsed?.contractId && parsed?.contractNumber && parsed?.status) {
           setInsuranceSnapshot(parsed)
+          currentSnapshot = parsed
         }
       }
     } catch {
@@ -45,14 +52,14 @@ export default function SignaturePage() {
     }
     const stored = sessionStorage.getItem(STORAGE_KEYS.signature) || sessionStorage.getItem(STORAGE_KEYS.souscription)
     if (!stored) {
-      router.replace("/devis")
+      router.replace(getFallbackFromSnapshot(currentSnapshot))
       return
     }
     try {
       const data = JSON.parse(stored) as SouscriptionData
       setSouscription(data)
     } catch {
-      router.replace("/devis")
+      router.replace(getFallbackFromSnapshot(currentSnapshot))
     }
   }, [router])
 
@@ -144,7 +151,23 @@ export default function SignaturePage() {
       <Header />
 
       <div className="max-w-2xl mx-auto px-6 py-12">
-        <Breadcrumb items={[{ label: "Accueil", href: "/" }, { label: "Devis", href: "/devis" }, { label: "Souscription", href: "/souscription" }, { label: "Signature" }]} />
+        <Breadcrumb
+          items={
+            souscription.insuranceProduct === "do"
+              ? [
+                  { label: "Accueil", href: "/" },
+                  { label: "Devis DO", href: "/devis-dommage-ouvrage" },
+                  { label: "Souscription", href: "/souscription-dommage-ouvrage" },
+                  { label: "Signature" },
+                ]
+              : [
+                  { label: "Accueil", href: "/" },
+                  { label: "Devis", href: "/devis" },
+                  { label: "Souscription", href: "/souscription" },
+                  { label: "Signature" },
+                ]
+          }
+        />
         <Stepper currentStep="signature" />
         <h1 className="text-3xl font-semibold mb-2 text-black">
           {souscription.insuranceProduct === "do" ? "Prochaine étape" : "Signature numérique"}

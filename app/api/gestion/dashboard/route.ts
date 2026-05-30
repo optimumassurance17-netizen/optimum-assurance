@@ -128,6 +128,14 @@ type DecennaleLeadProgression = {
   status: "abandon_potential" | "en_parcours" | "converti"
 }
 
+type DoLeadProgression = {
+  hasUserAccount: boolean
+  hasDoEtudeQuestionnaire: boolean
+  hasDoContract: boolean
+  hasDoPaidContract: boolean
+  status: "abandon_potential" | "en_parcours" | "converti"
+}
+
 function buildSchemaDriftFallbackDashboard() {
   return {
     users: [],
@@ -700,6 +708,79 @@ export async function GET() {
       }
     }
 
+    const doLeadEmails = [
+      ...new Set(
+        devisDoLeads
+          .map((lead) => lead.email.trim().toLowerCase())
+          .filter((email) => email.length > 0)
+      ),
+    ]
+    const doLeadProgressionByEmail = new Map<string, DoLeadProgression>()
+    for (const email of doLeadEmails) {
+      doLeadProgressionByEmail.set(email, {
+        hasUserAccount: false,
+        hasDoEtudeQuestionnaire: false,
+        hasDoContract: false,
+        hasDoPaidContract: false,
+        status: "abandon_potential",
+      })
+    }
+    if (doLeadEmails.length > 0) {
+      const doLeadUsers = await prisma.user.findMany({
+        where: { email: { in: doLeadEmails } },
+        select: { id: true, email: true },
+      })
+      const doQuestionnaireFlagsByUserId = new Map(
+        usersWithDoFlags.map((user) => [user.id, user.doQuestionnaireEtude === true] as const)
+      )
+      const userByEmail = new Map(
+        doLeadUsers.map((user) => [user.email.trim().toLowerCase(), user] as const)
+      )
+      const doContractByUserId = new Map<
+        string,
+        { hasDoContract: boolean; hasDoPaidContract: boolean }
+      >()
+      for (const contract of insuranceContractsList) {
+        if (contract.productType !== "do") continue
+        const ownerId = contract.user?.id ?? contract.userId
+        if (!ownerId) continue
+        const prev = doContractByUserId.get(ownerId) ?? {
+          hasDoContract: false,
+          hasDoPaidContract: false,
+        }
+        prev.hasDoContract = true
+        prev.hasDoPaidContract = prev.hasDoPaidContract || Boolean(contract.paidAt)
+        doContractByUserId.set(ownerId, prev)
+      }
+
+      for (const email of doLeadEmails) {
+        const current = doLeadProgressionByEmail.get(email)
+        if (!current) continue
+        const user = userByEmail.get(email)
+        if (!user) continue
+        current.hasUserAccount = true
+        current.hasDoEtudeQuestionnaire = doQuestionnaireFlagsByUserId.get(user.id) === true
+        const contractProgress = doContractByUserId.get(user.id)
+        if (contractProgress) {
+          current.hasDoContract = contractProgress.hasDoContract
+          current.hasDoPaidContract = contractProgress.hasDoPaidContract
+        }
+      }
+
+      for (const [email, progress] of doLeadProgressionByEmail.entries()) {
+        const status: DoLeadProgression["status"] =
+          progress.hasDoPaidContract || progress.hasDoContract
+            ? "converti"
+            : progress.hasDoEtudeQuestionnaire || progress.hasUserAccount
+              ? "en_parcours"
+              : "abandon_potential"
+        doLeadProgressionByEmail.set(email, {
+          ...progress,
+          status,
+        })
+      }
+    }
+
     const todayStart = startOfUtcDay(now)
     const reminder24hMs = 24 * 60 * 60 * 1000
     const overdue72hMs = 72 * 60 * 60 * 1000
@@ -748,6 +829,7 @@ export async function GET() {
         | "signature_pending"
         | "approved_unpaid_contract"
         | "decennale_lead_followup"
+        | "do_lead_followup"
         | "do_etude_pending"
         | "rc_fabriquant_pending"
         | "dda_proof_missing"
@@ -828,6 +910,24 @@ export async function GET() {
         title: "Lead devis décennale à relancer",
         description: `${d.email} — ${ageHours}h`,
         href: "#leads-decennale",
+        ageHours,
+      })
+    }
+
+    for (const d of devisDoLeads) {
+      const ageMs = now.getTime() - d.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const progress =
+        doLeadProgressionByEmail.get(d.email.trim().toLowerCase()) ?? null
+      if (progress && progress.status !== "abandon_potential") continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `lead-do-${d.id}`,
+        kind: "do_lead_followup",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Lead devis DO à relancer",
+        description: `${d.email} — ${ageHours}h`,
+        href: "#leads-do",
         ageHours,
       })
     }
@@ -1011,12 +1111,30 @@ export async function GET() {
       }
     })
 
+    const devisDoLeadsWithSla = devisDoLeads.map((lead) => {
+      const slaHours = Math.max(0, Math.floor((Date.now() - lead.createdAt.getTime()) / (60 * 60 * 1000)))
+      const progression =
+        doLeadProgressionByEmail.get(lead.email.trim().toLowerCase()) ?? null
+      const progressionStatus = progression?.status ?? "abandon_potential"
+      return {
+        ...lead,
+        slaHours,
+        slaLevel: slaHours >= 72 ? "critical" : slaHours >= 24 ? "warning" : "ok",
+        progressionStatus,
+        hasUserAccount: progression?.hasUserAccount ?? false,
+        hasDoEtudeQuestionnaire: progression?.hasDoEtudeQuestionnaire ?? false,
+        hasDoContract: progression?.hasDoContract ?? false,
+        hasDoPaidContract: progression?.hasDoPaidContract ?? false,
+        isAbandonedCandidate: slaHours >= 24 && progressionStatus === "abandon_potential",
+      }
+    })
+
     return NextResponse.json({
       users: usersWithDoFlags,
       documents,
       payments,
       avenantFees,
-      devisDoLeads,
+      devisDoLeads: devisDoLeadsWithSla,
       devisRcFabriquantLeads: devisRcFabriquantLeadsWithUser,
       devisEtudeLeads,
       resiliationLogs,

@@ -160,7 +160,21 @@ interface DashboardData {
     doQuestionnaireInitial?: boolean
     doQuestionnaireEtude?: boolean
   }[]
-  devisDoLeads?: { id: string; email: string; data?: string; coutTotal: number | null; createdAt: string }[]
+  devisDoLeads?: {
+    id: string
+    email: string
+    data?: string
+    coutTotal: number | null
+    createdAt: string
+    slaHours?: number
+    slaLevel?: "ok" | "warning" | "critical"
+    progressionStatus?: "abandon_potential" | "en_parcours" | "converti"
+    hasUserAccount?: boolean
+    hasDoEtudeQuestionnaire?: boolean
+    hasDoContract?: boolean
+    hasDoPaidContract?: boolean
+    isAbandonedCandidate?: boolean
+  }[]
   devisRcFabriquantLeads?: {
     id: string
     email: string
@@ -325,6 +339,7 @@ interface DashboardData {
       | "signature_pending"
       | "approved_unpaid_contract"
       | "decennale_lead_followup"
+      | "do_lead_followup"
       | "do_etude_pending"
       | "rc_fabriquant_pending"
       | "dda_proof_missing"
@@ -457,6 +472,28 @@ export default function GestionPage() {
   }
 
   const leadProgressBadge = (lead: NonNullable<DashboardData["devisLeads"]>[number]) => {
+    if (lead.progressionStatus === "converti") {
+      return (
+        <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-200 border border-emerald-700/60">
+          Converti
+        </span>
+      )
+    }
+    if (lead.progressionStatus === "en_parcours") {
+      return (
+        <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-sky-900/40 text-sky-200 border border-sky-700/60">
+          En parcours
+        </span>
+      )
+    }
+    return (
+      <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-amber-900/40 text-amber-200 border border-amber-700/60">
+        Abandon potentiel
+      </span>
+    )
+  }
+
+  const doLeadProgressBadge = (lead: NonNullable<DashboardData["devisDoLeads"]>[number]) => {
     if (lead.progressionStatus === "converti") {
       return (
         <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-200 border border-emerald-700/60">
@@ -773,14 +810,16 @@ export default function GestionPage() {
     if (!data) return null
 
     const decennaleLeads = data.devisLeads ?? []
+    const doLeads = data.devisDoLeads ?? []
     const rcFabriquantLeads = data.devisRcFabriquantLeads ?? []
     const doEtudeLeads = data.devisEtudeLeads ?? []
     const pendingSignatures = data.pendingSignatures ?? []
     const contracts = data.insuranceContracts ?? []
 
-    const totalLeads = decennaleLeads.length + rcFabriquantLeads.length + doEtudeLeads.length
+    const totalLeads = decennaleLeads.length + doLeads.length + rcFabriquantLeads.length + doEtudeLeads.length
     const hotLeads =
       decennaleLeads.filter((lead) => lead.isAbandonedCandidate === true).length +
+      doLeads.filter((lead) => lead.isAbandonedCandidate === true).length +
       rcFabriquantLeads.filter((lead) => normalizeRcFabriquantLeadStatut(lead.statut) === "a_traiter").length +
       doEtudeLeads.filter((lead) => lead.statut === "pending").length
 
@@ -809,6 +848,7 @@ export default function GestionPage() {
       .filter((action) =>
         [
           "decennale_lead_followup",
+          "do_lead_followup",
           "rc_fabriquant_pending",
           "do_etude_pending",
           "approved_unpaid_contract",
@@ -845,9 +885,11 @@ export default function GestionPage() {
         },
         {
           key: "do-etude",
-          label: "DO (étude)",
-          leads: doEtudeLeads.length,
-          toHandle: doEtudeLeads.filter((lead) => lead.statut === "pending").length,
+          label: "DO (devis + étude)",
+          leads: doLeads.length + doEtudeLeads.length,
+          toHandle:
+            doLeads.filter((lead) => lead.isAbandonedCandidate === true).length +
+            doEtudeLeads.filter((lead) => lead.statut === "pending").length,
         },
       ],
     }
@@ -4070,14 +4112,14 @@ export default function GestionPage() {
         )}
 
         {data.devisDoLeads && data.devisDoLeads.length > 0 && (
-          <section>
-            <h2 className="text-lg font-semibold text-white mb-4">Demandes devis dommage ouvrage (en attente)</h2>
+          <section id="leads-do" className="scroll-mt-24">
+            <h2 className="text-lg font-semibold text-white mb-4">Demandes devis dommage ouvrage</h2>
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[400px]">
                 <thead>
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-3 sm:p-4 font-medium">Email</th>
-                    <th className="text-left p-3 sm:p-4 font-medium">Coût</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Coût / suivi</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">Date</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Client</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Actions</th>
@@ -4086,10 +4128,29 @@ export default function GestionPage() {
                 <tbody>
                   {data.devisDoLeads.map((d) => {
                     const matchingUser = data.users.find((u) => u.email.toLowerCase() === d.email.toLowerCase())
+                    const progressHint =
+                      d.progressionStatus === "converti"
+                        ? d.hasDoPaidContract
+                          ? "Paiement DO reçu"
+                          : "Contrat DO créé"
+                        : d.progressionStatus === "en_parcours"
+                          ? d.hasDoEtudeQuestionnaire
+                            ? "Questionnaire étude rempli"
+                            : d.hasUserAccount
+                              ? "Compte client créé"
+                              : "Dossier en cours"
+                          : "Aucune progression détectée"
                     return (
                       <tr key={d.id} className="border-b border-gray-700/50">
                         <td className="p-3 sm:p-4">{d.email}</td>
-                        <td className="p-3 sm:p-4">{d.coutTotal ? `${d.coutTotal.toLocaleString("fr-FR")} €` : "—"}</td>
+                        <td className="p-3 sm:p-4">
+                          <div className="flex flex-col items-start gap-1">
+                            <span>{d.coutTotal ? `${d.coutTotal.toLocaleString("fr-FR")} €` : "—"}</span>
+                            {typeof d.slaHours === "number" ? leadSlaBadge(d.slaHours) : null}
+                            {doLeadProgressBadge(d)}
+                            <span className="text-[11px] text-gray-300">{progressHint}</span>
+                          </div>
+                        </td>
                         <td className="p-3 sm:p-4 hidden sm:table-cell">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
                         <td className="p-3 sm:p-4">
                           {matchingUser ? (

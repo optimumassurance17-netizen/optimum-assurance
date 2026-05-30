@@ -23,6 +23,7 @@ export default function SouscriptionDommageOuvragePage() {
   const [dateCreationSociete, setDateCreationSociete] = useState("")
   const [devoirConseilAccepte, setDevoirConseilAccepte] = useState(false)
   const [insuranceLoading, setInsuranceLoading] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -49,6 +50,7 @@ export default function SouscriptionDommageOuvragePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!payload || !representantLegal.trim() || !devoirConseilAccepte) return
+    setSubmitError(null)
 
     try {
       await fetch("/api/devoir-conseil/log", {
@@ -97,10 +99,24 @@ export default function SouscriptionDommageOuvragePage() {
           window.location.href = ins.checkoutUrl
           return
         }
+        const rawSnapshot = sessionStorage.getItem(STORAGE_KEYS.insuranceContract)
+        if (rawSnapshot) {
+          try {
+            const parsed = JSON.parse(rawSnapshot) as { contractId?: string; productType?: string }
+            if (parsed.contractId && parsed.productType === "do") {
+              router.push("/signature")
+              return
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+        setSubmitError(
+          "Le dossier DO n’a pas pu être initialisé correctement. Réessayez ou continuez depuis votre espace client."
+        )
       } finally {
         setInsuranceLoading(false)
       }
-      router.push("/signature")
       return
     }
 
@@ -203,6 +219,11 @@ export default function SouscriptionDommageOuvragePage() {
           >
             {insuranceLoading ? "Traitement…" : sessionStatus === "authenticated" ? "Valider et continuer" : "Créer mon compte et continuer"}
           </button>
+          {submitError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {submitError}
+            </div>
+          ) : null}
         </form>
 
         <p className="text-center text-sm text-[#171717] mt-8">
