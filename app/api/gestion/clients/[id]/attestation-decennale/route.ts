@@ -13,6 +13,10 @@ import {
   parseActivitiesJson,
   parseExclusionsJson,
 } from "@/lib/insurance-contract-activities"
+import {
+  isDecennaleContractData,
+  parseJsonObject as parseContractJsonObject,
+} from "@/lib/decennale-contract-data"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -77,8 +81,8 @@ export async function POST(
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
     }
 
-    const [latestContractDocument, latestDecennaleContract] = await Promise.all([
-      prisma.document.findFirst({
+    const [latestContractDocuments, latestDecennaleContract] = await Promise.all([
+      prisma.document.findMany({
         where: {
           userId: id,
           type: "contrat",
@@ -91,6 +95,7 @@ export async function POST(
           createdAt: true,
         },
         orderBy: { createdAt: "desc" },
+        take: 25,
       }),
       prisma.insuranceContract.findFirst({
         where: {
@@ -111,6 +116,10 @@ export async function POST(
         orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
       }),
     ])
+
+    const latestContractDocument = latestContractDocuments.find((doc) =>
+      isDecennaleContractData(parseContractJsonObject(doc.data))
+    )
 
     if (!latestContractDocument && !latestDecennaleContract) {
       return NextResponse.json(

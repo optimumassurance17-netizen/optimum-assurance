@@ -32,6 +32,23 @@ interface MandatSepaStored {
   primeAnnuelle: number
 }
 
+type DecennaleSessionReason =
+  | "sepa_deja_configure"
+  | "deja_paye"
+  | "pas_de_contrat"
+  | "pas_de_contrat_decennale"
+  | "donnees_invalides"
+  | "utilisateur_introuvable"
+
+function getDecennaleSessionFallback(reason?: string): string {
+  const normalized = (reason || "").trim() as DecennaleSessionReason
+  if (normalized === "pas_de_contrat") return "/devis?from=espace-client"
+  if (normalized === "utilisateur_introuvable") {
+    return `/connexion?callbackUrl=${encodeURIComponent("/espace-client")}`
+  }
+  return "/espace-client"
+}
+
 function normalizeMandat(raw: unknown): MandatSepaStored | null {
   if (!raw || typeof raw !== "object") return null
   const m = raw as Record<string, unknown>
@@ -87,9 +104,13 @@ export default function PaiementPage() {
       const res = await fetch("/api/client/decennale-paiement-session")
       const json = await readResponseJson<{
         available?: boolean
+        reason?: string
         signaturePayload?: Record<string, unknown>
       }>(res)
-      if (!res.ok || !json.available || !json.signaturePayload) return false
+      if (!res.ok || !json.available || !json.signaturePayload) {
+        router.replace(getDecennaleSessionFallback(json.reason))
+        return false
+      }
       sessionStorage.setItem(STORAGE_KEYS.signature, JSON.stringify(json.signaturePayload))
       return true
     }

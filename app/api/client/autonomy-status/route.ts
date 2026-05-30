@@ -3,6 +3,10 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isDecennaleAttestationType } from "@/lib/decennale-impaye"
 import { prisma } from "@/lib/prisma"
+import {
+  isDecennaleContractData,
+  parseJsonObject as parseContractJsonObject,
+} from "@/lib/decennale-contract-data"
 
 type PendingContractData = {
   customUploadedDevisFlow?: unknown
@@ -52,11 +56,12 @@ export async function GET() {
     const userId = session.user.id
     const [
       pendingRows,
-      latestDecennaleContract,
+      decennaleContractDocuments,
       activeDecennaleContract,
       paidPayments,
       sepa,
       approvedUnpaidContracts,
+      approvedUnpaidDecennaleContracts,
       docs,
     ] =
       await Promise.all([
@@ -69,10 +74,11 @@ export async function GET() {
             contractData: true,
           },
         }),
-        prisma.document.findFirst({
+        prisma.document.findMany({
           where: { userId, type: "contrat" },
           orderBy: { createdAt: "desc" },
-          select: { id: true },
+          take: 25,
+          select: { id: true, data: true },
         }),
         prisma.insuranceContract.findFirst({
           where: {
@@ -103,6 +109,9 @@ export async function GET() {
         prisma.insuranceContract.count({
           where: { userId, status: "approved", paidAt: null },
         }),
+        prisma.insuranceContract.count({
+          where: { userId, productType: "decennale", status: "approved", paidAt: null },
+        }),
         prisma.document.findMany({
           where: { userId },
           select: { type: true, status: true },
@@ -110,6 +119,10 @@ export async function GET() {
           orderBy: { createdAt: "desc" },
         }),
       ])
+
+    const latestDecennaleContract = decennaleContractDocuments.find((doc) =>
+      isDecennaleContractData(parseContractJsonObject(doc.data))
+    )
 
     const pendingDecennale = pendingRows
       .map((row) => {
@@ -144,7 +157,7 @@ export async function GET() {
       decennaleFirstPaymentLogged || decennaleCertificateAvailable
 
     const hasDecennaleContract = Boolean(
-      latestDecennaleContract || activeDecennaleContract || approvedUnpaidContracts > 0
+      latestDecennaleContract || activeDecennaleContract || approvedUnpaidDecennaleContracts > 0
     )
     const actions: AutonomyAction[] = []
     const advisories: string[] = []

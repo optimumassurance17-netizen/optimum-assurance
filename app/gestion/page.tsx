@@ -257,6 +257,12 @@ interface DashboardData {
     createdAt: string
     slaHours?: number
     slaLevel?: "ok" | "warning" | "critical"
+    progressionStatus?: "abandon_potential" | "en_parcours" | "converti"
+    hasUserAccount?: boolean
+    hasPendingSignature?: boolean
+    hasPaidPayment?: boolean
+    hasDecennaleContract?: boolean
+    isAbandonedCandidate?: boolean
   }[]
   devisDrafts?: {
     id: string
@@ -455,6 +461,28 @@ export default function GestionPage() {
     return (
       <span className={`inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${badge.className}`}>
         {badge.label} ({ageHours}h)
+      </span>
+    )
+  }
+
+  const leadProgressBadge = (lead: NonNullable<DashboardData["devisLeads"]>[number]) => {
+    if (lead.progressionStatus === "converti") {
+      return (
+        <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-200 border border-emerald-700/60">
+          Converti
+        </span>
+      )
+    }
+    if (lead.progressionStatus === "en_parcours") {
+      return (
+        <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-sky-900/40 text-sky-200 border border-sky-700/60">
+          En parcours
+        </span>
+      )
+    }
+    return (
+      <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-amber-900/40 text-amber-200 border border-amber-700/60">
+        Abandon potentiel
       </span>
     )
   }
@@ -804,7 +832,7 @@ export default function GestionPage() {
 
     const totalLeads = decennaleLeads.length + rcFabriquantLeads.length + doEtudeLeads.length
     const hotLeads =
-      decennaleLeads.filter((lead) => !lead.rappelSentAt && (lead.slaHours ?? 0) >= 24).length +
+      decennaleLeads.filter((lead) => lead.isAbandonedCandidate === true).length +
       rcFabriquantLeads.filter((lead) => normalizeRcFabriquantLeadStatut(lead.statut) === "a_traiter").length +
       doEtudeLeads.filter((lead) => lead.statut === "pending").length
 
@@ -857,7 +885,7 @@ export default function GestionPage() {
           key: "decennale",
           label: "Décennale",
           leads: decennaleLeads.length,
-          toHandle: decennaleLeads.filter((lead) => !lead.rappelSentAt && (lead.slaHours ?? 0) >= 24).length,
+          toHandle: decennaleLeads.filter((lead) => lead.isAbandonedCandidate === true).length,
         },
         {
           key: "rc-fabriquant",
@@ -2702,12 +2730,24 @@ export default function GestionPage() {
                     <th className="text-left p-3 sm:p-4 font-medium hidden md:table-cell">Raison sociale</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden lg:table-cell">SIRET</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Client</th>
-                    <th className="text-right p-3 sm:p-4 font-medium">Prime / SLA</th>
+                    <th className="text-right p-3 sm:p-4 font-medium">Prime / suivi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.devisLeads!.map((l) => {
                     const matchingUser = data.users.find((u) => u.email.toLowerCase() === l.email.toLowerCase())
+                    const progressHint =
+                      l.progressionStatus === "converti"
+                        ? l.hasPaidPayment
+                          ? "Paiement reçu"
+                          : "Contrat généré"
+                        : l.progressionStatus === "en_parcours"
+                          ? l.hasPendingSignature
+                            ? "Signature en attente"
+                            : l.hasUserAccount
+                              ? "Compte client créé"
+                              : "Dossier en cours"
+                          : "Aucune progression détectée"
                     return (
                       <tr key={l.id} className="border-b border-gray-700/50">
                         <td className="p-3 sm:p-4 whitespace-nowrap">{new Date(l.createdAt).toLocaleString("fr-FR")}</td>
@@ -2734,6 +2774,8 @@ export default function GestionPage() {
                           <div className="flex flex-col items-end gap-1">
                             <span>{l.primeAnnuelle != null ? `${l.primeAnnuelle.toLocaleString("fr-FR")} €` : "—"}</span>
                             {typeof l.slaHours === "number" ? leadSlaBadge(l.slaHours) : null}
+                            {leadProgressBadge(l)}
+                            <span className="text-[11px] text-gray-300">{progressHint}</span>
                           </div>
                         </td>
                       </tr>
