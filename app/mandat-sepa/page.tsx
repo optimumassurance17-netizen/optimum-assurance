@@ -17,6 +17,23 @@ import { readResponseJson } from "@/lib/read-response-json"
 /** Unique mode : trimestriel — 1er trimestre + frais en CB, puis prélèvements SEPA trimestriels automatiques. */
 const PERIODICITE: PeriodicitePrelevement = "trimestriel"
 
+type DecennaleSessionReason =
+  | "sepa_deja_configure"
+  | "deja_paye"
+  | "pas_de_contrat"
+  | "pas_de_contrat_decennale"
+  | "donnees_invalides"
+  | "utilisateur_introuvable"
+
+function getDecennaleSessionFallback(reason?: string): string {
+  const normalized = (reason || "").trim() as DecennaleSessionReason
+  if (normalized === "pas_de_contrat") return "/devis?from=espace-client"
+  if (normalized === "utilisateur_introuvable") {
+    return `/connexion?callbackUrl=${encodeURIComponent("/espace-client")}`
+  }
+  return "/espace-client"
+}
+
 function calculerPremierMontant(primeAnnuelle: number): number {
   const frais = FRAIS_GESTION_PRELEVEMENT
   const trimestriel = Math.round((primeAnnuelle / 4) * 100) / 100
@@ -73,6 +90,7 @@ export default function MandatSepaPage() {
         const res = await fetch("/api/client/decennale-paiement-session")
         const json = await readResponseJson<{
           available?: boolean
+          reason?: string
           signaturePayload?: SouscriptionData & {
             signedContractNumero?: string
             signedContractData?: Record<string, unknown>
@@ -82,7 +100,7 @@ export default function MandatSepaPage() {
         }>(res)
         if (cancelled) return
         if (!res.ok || !json.available || !json.signaturePayload) {
-          router.replace("/devis")
+          router.replace(getDecennaleSessionFallback(json.reason))
           return
         }
         sessionStorage.setItem(STORAGE_KEYS.signature, JSON.stringify(json.signaturePayload))

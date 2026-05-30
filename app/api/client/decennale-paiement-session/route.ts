@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { buildSignatureSessionFromContrat } from "@/lib/decennale-session-from-contrat"
+import { isDecennaleContractData, parseJsonObject } from "@/lib/decennale-contract-data"
 
 /**
  * Indique si le client connecté peut poursuivre mandat SEPA + 1er paiement CB (décennale)
@@ -25,18 +26,26 @@ export async function GET() {
       return NextResponse.json({ available: false, reason: "sepa_deja_configure" })
     }
 
-    const contrat = await prisma.document.findFirst({
+    const contrats = await prisma.document.findMany({
       where: { userId, type: "contrat" },
       orderBy: { createdAt: "desc" },
+      take: 25,
+      select: { numero: true, data: true },
     })
-    if (!contrat) {
+    if (contrats.length === 0) {
       return NextResponse.json({ available: false, reason: "pas_de_contrat" })
     }
 
-    let contratData: Record<string, unknown>
-    try {
-      contratData = JSON.parse(contrat.data || "{}") as Record<string, unknown>
-    } catch {
+    const contratsDecennale = contrats
+      .map((contrat) => ({ numero: contrat.numero, data: parseJsonObject(contrat.data) }))
+      .filter((contrat) => isDecennaleContractData(contrat.data))
+    if (contratsDecennale.length === 0) {
+      return NextResponse.json({ available: false, reason: "pas_de_contrat_decennale" })
+    }
+    const contratDecennale = contratsDecennale.find(
+      (contrat) => Object.keys(contrat.data).length > 0
+    )
+    if (!contratDecennale) {
       return NextResponse.json({ available: false, reason: "donnees_invalides" })
     }
 
@@ -73,12 +82,16 @@ export async function GET() {
       return NextResponse.json({ available: false, reason: "utilisateur_introuvable" })
     }
 
-    const signaturePayload = buildSignatureSessionFromContrat(contratData, contrat.numero, user)
+    const signaturePayload = buildSignatureSessionFromContrat(
+      contratDecennale.data,
+      contratDecennale.numero,
+      user
+    )
 
     return NextResponse.json({
       available: true,
       signaturePayload,
-      contratNumero: contrat.numero,
+      contratNumero: contratDecennale.numero,
     })
   } catch (e) {
     console.error("[decennale-paiement-session]", e)
