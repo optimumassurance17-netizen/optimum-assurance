@@ -4,6 +4,7 @@ type Props = {
   href: string
   label?: string
   variant?: "primary" | "secondary"
+  showDecennaleAcceptanceHint?: boolean
   /** Paramètres UTM pour le suivi des pages SEO locales */
   utm?: { source?: string; medium?: string; campaign?: string }
 }
@@ -25,6 +26,7 @@ export function CtaDevis({
   href,
   label = "Obtenir un devis en ligne",
   variant = "primary",
+  showDecennaleAcceptanceHint = false,
   utm = { source: "seo", medium: "programmatic" },
 }: Props) {
   const finalHref = buildHref(href, utm)
@@ -38,6 +40,12 @@ export function CtaDevis({
       <p className="text-[#171717] mb-5 text-base leading-relaxed">
         Devis personnalisé, réponse rapide — sans engagement.
       </p>
+      {showDecennaleAcceptanceHint ? (
+        <p className="text-sm text-[#0f172a] mb-4">
+          Profils pris en charge : <strong>résilié non-paiement</strong>,{" "}
+          <strong>sinistralité élevée</strong> et <strong>sans assurance depuis plus de 2 ans</strong>.
+        </p>
+      ) : null}
       <Link href={finalHref} className={cls}>
         {label}
       </Link>

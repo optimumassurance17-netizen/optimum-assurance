@@ -23,6 +23,67 @@ const FALLBACK_VILLE_BY_SLUG: Record<string, { nom: string; population: number }
   grenoble: { nom: "Grenoble", population: 160_000 },
 }
 
+const MAX_PROGRAMMATIC_VILLES_PER_METIER = 10
+const MAX_PROGRAMMATIC_VILLES_PER_DO_PROFILE = 8
+const MIN_BODY_EXTRA_CHARS_FOR_UNIQUENESS = 80
+const FALLBACK_PROGRAMMATIC_CITY_SLUGS = ["paris", "lyon", "marseille", "toulouse"]
+
+type ProgrammaticCandidate = {
+  groupKey: string
+  cityPopulation: number
+  bodyExtra: string
+  contentHash: string
+}
+
+function normalizeText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : ""
+}
+
+function programmaticQualityScore(candidate: ProgrammaticCandidate): number {
+  const hasBodyExtra = candidate.bodyExtra.length >= MIN_BODY_EXTRA_CHARS_FOR_UNIQUENESS
+  const hasContentHash = candidate.contentHash.length > 0
+  return (hasBodyExtra ? 2_000_000 : 0) + (hasContentHash ? 1_000_000 : 0) + Math.max(candidate.cityPopulation, 0)
+}
+
+function rankProgrammaticCandidates<T extends ProgrammaticCandidate>(
+  rows: T[],
+  maxPerGroup: number
+): T[] {
+  const grouped = new Map<string, T[]>()
+  for (const row of rows) {
+    const list = grouped.get(row.groupKey)
+    if (list) {
+      list.push(row)
+    } else {
+      grouped.set(row.groupKey, [row])
+    }
+  }
+
+  const picked: T[] = []
+  for (const [, list] of grouped) {
+    const sorted = [...list].sort((a, b) => {
+      const scoreDiff = programmaticQualityScore(b) - programmaticQualityScore(a)
+      if (scoreDiff !== 0) return scoreDiff
+      return b.cityPopulation - a.cityPopulation
+    })
+
+    const seenHashes = new Set<string>()
+    let kept = 0
+    for (const candidate of sorted) {
+      if (kept >= maxPerGroup) break
+      if (candidate.contentHash && seenHashes.has(candidate.contentHash)) continue
+      picked.push(candidate)
+      if (candidate.contentHash) seenHashes.add(candidate.contentHash)
+      kept++
+    }
+
+    if (kept === 0 && sorted[0]) {
+      picked.push(sorted[0])
+    }
+  }
+  return picked
+}
+
 function metierFromStatic(slug: string) {
   return METIERS_SEO.find((m) => m.slug === slug) ?? null
 }
@@ -100,8 +161,10 @@ export async function fetchDecennaleStaticParams(): Promise<{ metier: string; vi
     .select(
       `
       indexable,
+      body_extra,
+      content_hash,
       metiers!inner ( slug ),
-      villes!inner ( slug )
+      villes!inner ( slug, population )
     `
     )
     .eq("indexable", true)
@@ -115,19 +178,51 @@ export async function fetchDecennaleStaticParams(): Promise<{ metier: string; vi
   }
   if (!data?.length) return []
 
-  return data
-    .filter((row) => row.indexable !== false)
-    .map((row) => {
-      const metier = embedSlug(
-        row.metiers as { slug: string } | { slug: string }[] | null | undefined
-      )
-      const ville = embedSlug(
-        row.villes as { slug: string } | { slug: string }[] | null | undefined
-      )
-      if (!metier || !ville) return null
-      return { metier, ville }
-    })
-    .filter((p): p is { metier: string; ville: string } => p != null)
+  const dedupByPair = new Map<
+    string,
+    {
+      metier: string
+      ville: string
+      groupKey: string
+      cityPopulation: number
+      bodyExtra: string
+      contentHash: string
+    }
+  >()
+
+  for (const row of data) {
+    if (row.indexable === false) continue
+    const metier = embedSlug(
+      row.metiers as { slug: string } | { slug: string }[] | null | undefined
+    )
+    const villeRel = embedOne(
+      row.villes as { slug: string; population: number | null } | { slug: string; population: number | null }[] | null | undefined
+    )
+    const ville = villeRel?.slug ?? null
+    if (!metier || !ville) continue
+
+    const candidate = {
+      metier,
+      ville,
+      groupKey: metier,
+      cityPopulation:
+        typeof villeRel?.population === "number" && Number.isFinite(villeRel.population)
+          ? villeRel.population
+          : 0,
+      bodyExtra: normalizeText((row as { body_extra?: unknown }).body_extra),
+      contentHash: normalizeText((row as { content_hash?: unknown }).content_hash),
+    }
+    const key = `${metier}|${ville}`
+    const existing = dedupByPair.get(key)
+    if (!existing || programmaticQualityScore(candidate) > programmaticQualityScore(existing)) {
+      dedupByPair.set(key, candidate)
+    }
+  }
+
+  return rankProgrammaticCandidates(
+    [...dedupByPair.values()],
+    MAX_PROGRAMMATIC_VILLES_PER_METIER
+  ).map((candidate) => ({ metier: candidate.metier, ville: candidate.ville }))
   } catch (e) {
     console.error("[seo-programmatic] fetchDecennaleStaticParams:", e)
     return METIERS_SEO.map((m) => ({ metier: m.slug, ville: "paris" }))
@@ -146,8 +241,10 @@ export async function fetchDoStaticParams(): Promise<{ slug: string; ville: stri
     .select(
       `
       indexable,
+      body_extra,
+      content_hash,
       types_projets!inner ( slug ),
-      villes!inner ( slug )
+      villes!inner ( slug, population )
     `
     )
     .eq("indexable", true)
@@ -161,19 +258,51 @@ export async function fetchDoStaticParams(): Promise<{ slug: string; ville: stri
   }
   if (!data?.length) return []
 
-  return data
-    .filter((row) => row.indexable !== false)
-    .map((row) => {
-      const slug = embedSlug(
-        row.types_projets as { slug: string } | { slug: string }[] | null | undefined
-      )
-      const ville = embedSlug(
-        row.villes as { slug: string } | { slug: string }[] | null | undefined
-      )
-      if (!slug || !ville) return null
-      return { slug, ville }
-    })
-    .filter((p): p is { slug: string; ville: string } => p != null)
+  const dedupByPair = new Map<
+    string,
+    {
+      slug: string
+      ville: string
+      groupKey: string
+      cityPopulation: number
+      bodyExtra: string
+      contentHash: string
+    }
+  >()
+
+  for (const row of data) {
+    if (row.indexable === false) continue
+    const slug = embedSlug(
+      row.types_projets as { slug: string } | { slug: string }[] | null | undefined
+    )
+    const villeRel = embedOne(
+      row.villes as { slug: string; population: number | null } | { slug: string; population: number | null }[] | null | undefined
+    )
+    const ville = villeRel?.slug ?? null
+    if (!slug || !ville) continue
+
+    const candidate = {
+      slug,
+      ville,
+      groupKey: slug,
+      cityPopulation:
+        typeof villeRel?.population === "number" && Number.isFinite(villeRel.population)
+          ? villeRel.population
+          : 0,
+      bodyExtra: normalizeText((row as { body_extra?: unknown }).body_extra),
+      contentHash: normalizeText((row as { content_hash?: unknown }).content_hash),
+    }
+    const key = `${slug}|${ville}`
+    const existing = dedupByPair.get(key)
+    if (!existing || programmaticQualityScore(candidate) > programmaticQualityScore(existing)) {
+      dedupByPair.set(key, candidate)
+    }
+  }
+
+  return rankProgrammaticCandidates(
+    [...dedupByPair.values()],
+    MAX_PROGRAMMATIC_VILLES_PER_DO_PROFILE
+  ).map((candidate) => ({ slug: candidate.slug, ville: candidate.ville }))
   } catch (e) {
     console.error("[seo-programmatic] fetchDoStaticParams:", e)
     return DO_SEO.map((d) => ({ slug: d.slug, ville: "paris" }))
@@ -520,7 +649,7 @@ function fallbackProgrammaticSitemapUrls(): {
   priority: number
 }[] {
   const out: { path: string; changeFrequency: "weekly" | "monthly"; priority: number }[] = []
-  const villeSlugs = Object.keys(FALLBACK_VILLE_BY_SLUG)
+  const villeSlugs = FALLBACK_PROGRAMMATIC_CITY_SLUGS.filter((slug) => FALLBACK_VILLE_BY_SLUG[slug])
 
   for (const metier of METIERS_SEO) {
     for (const ville of villeSlugs) {

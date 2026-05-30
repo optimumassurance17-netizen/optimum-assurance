@@ -278,6 +278,10 @@ export default async function MetierPage({
             Tarif selon votre CA et vos activités — devis en ligne, sans engagement. Dès {data.prixMin} €/mois
             (équivalent) • Paiement trimestriel • Attestation après validation du dossier
           </p>
+          <p className="text-sm text-[#171717] max-w-lg mx-auto">
+            Profils pris en charge : résilié non-paiement, sinistralité élevée et entreprise sans assurance
+            depuis plus de 2 ans.
+          </p>
           {isHeadtermPage && relatedActivities.length > 0 && (
             <p className="text-sm text-[#171717] max-w-lg mx-auto">
               Depuis cette page métier, vous pourrez ensuite affiner votre déclaration avec l&apos;activité exacte la plus

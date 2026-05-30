@@ -53,12 +53,16 @@ export async function generateMetadata({
     data.description,
     158
   )
+  const thinProgrammaticPage = !data.bodyExtra?.trim() && !data.contentHash
 
   return {
     title,
     description,
     alternates: { canonical: `${baseUrl}${path}` },
-    robots: data.indexable ? { index: true, follow: true } : { index: false, follow: true },
+    robots:
+      data.indexable && !thinProgrammaticPage
+        ? { index: true, follow: true }
+        : { index: false, follow: true },
     openGraph: {
       type: "website",
       locale: "fr_FR",
@@ -187,6 +191,15 @@ export default async function MetierVillePage({
           </p>
         </SeoTextBlock>
 
+        <SeoTextBlock title="Profils également étudiés">
+          <p>
+            Notre parcours de devis prend aussi en charge des situations plus sensibles, notamment les entreprises{" "}
+            <strong>résiliées pour non-paiement</strong>, avec <strong>sinistralité élevée</strong> ou{" "}
+            <strong>sans assurance depuis plus de 2 ans</strong>. Le chiffrage reste personnalisé selon votre
+            activité, votre historique et vos justificatifs.
+          </p>
+        </SeoTextBlock>
+
         <PriceBlock
           amountLabel={data.prixIndicatif}
           hint="Montant indicatif : sur le site principal, affichage souvent en équivalent mensuel ; paiement trimestriel. Prime selon chiffre d’affaires et sinistralité."
@@ -195,6 +208,7 @@ export default async function MetierVillePage({
         <div className="mb-12">
           <CtaDevis
             href="/devis"
+            showDecennaleAcceptanceHint
             utm={{ source: "seo", medium: "programmatic", campaign: `decennale-${data.metierSlug}-${data.villeSlug}` }}
           />
         </div>
