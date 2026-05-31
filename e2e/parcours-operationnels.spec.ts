@@ -47,6 +47,13 @@ test.describe("Parcours opérationnels décennale et dommage ouvrage", () => {
         body: JSON.stringify({ ok: true }),
       })
     })
+    await page.route("**/api/devoir-conseil/log", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      })
+    })
 
     await page.goto("/devis-dommage-ouvrage")
     await dismissCookieBanner(page)
@@ -57,10 +64,12 @@ test.describe("Parcours opérationnels décennale et dommage ouvrage", () => {
     ).toBeVisible()
 
     const stepOne = page.locator("form")
-    await stepOne.locator('input[type="text"]').nth(0).fill("SCI Test Optimum")
-    await stepOne.locator('input[type="text"]').nth(1).fill("10 rue de Paris")
-    await stepOne.locator('input[type="text"]').nth(2).fill("75001")
-    await stepOne.locator('input[type="text"]').nth(3).fill("Paris")
+    await page.locator("#do-qualite").selectOption("promoteur")
+    await page.getByPlaceholder("12345678900012").fill("73282932000074")
+    await page.getByPlaceholder("Ex: SCI Dupont").fill("SCI Test Optimum")
+    await stepOne.locator('input[type="text"]').nth(2).fill("10 rue de Paris")
+    await stepOne.locator('input[type="text"]').nth(3).fill("75001")
+    await stepOne.locator('input[type="text"]').nth(4).fill("Paris")
     await stepOne.locator('input[type="tel"]').fill("0601020304")
     await stepOne.locator('input[type="email"]').fill("prospect@example.com")
 
