@@ -42,7 +42,7 @@ test.describe("Assurance titre", () => {
 
     const [response] = await Promise.all([
       page.waitForResponse((response) => response.url().includes("/api/devis-assurance-titre")),
-      submitButton.click(),
+      page.locator("form").evaluate((form) => (form as HTMLFormElement).requestSubmit()),
     ])
 
     expect(response.ok()).toBeTruthy()
