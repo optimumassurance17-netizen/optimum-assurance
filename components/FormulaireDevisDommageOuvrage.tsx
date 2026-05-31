@@ -20,6 +20,11 @@ import { DevoirConseil } from "@/components/DevoirConseil"
 import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { readResponseJson } from "@/lib/read-response-json"
+import {
+  hasConversionTrackingContext,
+  readConversionTrackingContext,
+  type ConversionTrackingContext,
+} from "@/lib/conversion-tracking"
 
 const STEPS = [
   { id: 1, label: "Souscripteur" },
@@ -76,6 +81,63 @@ const STORAGE_KEY = "optimum-devis-do-brouillon"
 
 const QUALITES_PROFESSIONNELLES: QualiteMaitreOuvrage[] = ["promoteur", "mandataire"]
 
+function isBlank(value?: string | null): boolean {
+  return !value?.trim()
+}
+
+function isValidEmail(value?: string | null): boolean {
+  const email = value?.trim() || ""
+  return email.includes("@") && email.includes(".")
+}
+
+function getStepValidationError(
+  step: number,
+  data: Partial<DevisDommageOuvrageData>,
+  coutTotal: number
+): string | null {
+  switch (step) {
+    case 1:
+      if (isBlank(data.raisonSociale)) return "Renseignez le nom ou la raison sociale du maître d'ouvrage."
+      if (isBlank(data.adresse)) return "Renseignez l'adresse du maître d'ouvrage."
+      if (isBlank(data.codePostal)) return "Renseignez le code postal du maître d'ouvrage."
+      if (isBlank(data.ville)) return "Renseignez la ville du maître d'ouvrage."
+      if (isBlank(data.telephone)) return "Renseignez un téléphone de contact."
+      if (!isValidEmail(data.email)) return "Renseignez une adresse email valide."
+      return null
+    case 2:
+      if (isBlank(data.adresseConstruction)) return "Renseignez l'adresse précise du chantier."
+      if (isBlank(data.codePostalConstruction)) return "Renseignez le code postal du chantier."
+      if (isBlank(data.villeConstruction)) return "Renseignez la ville du chantier."
+      if ((Number(data.surfaceConstruction) || 0) <= 0) return "Renseignez la surface de la construction."
+      return null
+    case 3:
+      if (!data.typeOuvrage) return "Sélectionnez le type d'ouvrage."
+      if ((Number(data.superficieOuvrage) || 0) <= 0) return "Renseignez la superficie de l'ouvrage."
+      if (coutTotal <= 0) return "Renseignez le coût prévisionnel de la construction pour obtenir un devis exploitable."
+      return null
+    case 5:
+      if (((data.garanties as GarantieSouhaitee[] | undefined) ?? []).length === 0) {
+        return "Sélectionnez au moins une garantie souhaitée."
+      }
+      return null
+    default:
+      return null
+  }
+}
+
+function getFirstStepValidationError(
+  data: Partial<DevisDommageOuvrageData>,
+  coutTotal: number
+): { step: number; error: string } | null {
+  for (const step of STEPS) {
+    const error = getStepValidationError(step.id, data, coutTotal)
+    if (error) {
+      return { step: step.id, error }
+    }
+  }
+  return null
+}
+
 export function FormulaireDevisDommageOuvrage() {
   const [step, setStep] = useState(1)
   const [data, setData] = useState<Partial<DevisDommageOuvrageData>>(initialData)
@@ -85,25 +147,50 @@ export function FormulaireDevisDommageOuvrage() {
   const [siretLoading, setSiretLoading] = useState(false)
   const [siretError, setSiretError] = useState<string | null>(null)
   const [eligibleOnlineDo, setEligibleOnlineDo] = useState(false)
+  const [trackingContext, setTrackingContext] = useState<ConversionTrackingContext | null>(null)
 
   useEffect(() => {
     if (typeof window === "undefined") return
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
       if (saved) {
-        const parsed = JSON.parse(saved) as { data?: Partial<DevisDommageOuvrageData>; step?: number }
+        const parsed = JSON.parse(saved) as {
+          data?: Partial<DevisDommageOuvrageData>
+          step?: number
+          tracking?: ConversionTrackingContext
+        }
         if (parsed.data) setData((d) => ({ ...d, ...parsed.data }))
         if (typeof parsed.step === "number" && parsed.step >= 1 && parsed.step <= 5) setStep(parsed.step)
+        if (parsed.tracking && typeof parsed.tracking === "object") {
+          setTrackingContext(parsed.tracking)
+        }
       }
     } catch {
       /* ignore */
     }
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const tracking = readConversionTrackingContext(urlParams, document.referrer)
+    if (hasConversionTrackingContext(tracking)) {
+      setTrackingContext(tracking)
+    }
   }, [])
 
-  const saveBrouillon = useCallback((d: Partial<DevisDommageOuvrageData>, s?: number) => {
+  const saveBrouillon = useCallback((
+    d: Partial<DevisDommageOuvrageData>,
+    s?: number,
+    tracking?: ConversionTrackingContext | null
+  ) => {
     if (typeof window === "undefined") return
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: d, step: s }))
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          data: d,
+          step: s,
+          ...(hasConversionTrackingContext(tracking) ? { tracking } : {}),
+        })
+      )
     } catch {
       /* ignore */
     }
@@ -111,8 +198,8 @@ export function FormulaireDevisDommageOuvrage() {
 
   useEffect(() => {
     if (submitted) return
-    saveBrouillon(data, step)
-  }, [data, step, submitted, saveBrouillon])
+    saveBrouillon(data, step, trackingContext)
+  }, [data, step, submitted, saveBrouillon, trackingContext])
 
   const update = (key: keyof DevisDommageOuvrageData, value: unknown) => {
     setData((d) => ({ ...d, [key]: value }))
@@ -131,8 +218,24 @@ export function FormulaireDevisDommageOuvrage() {
     (Number(data.coutEtudeSol) || 0) +
     (Number(data.coutMaitriseOeuvre) || 0)
 
+  const goToNextStep = () => {
+    const validationError = getStepValidationError(step, data, coutTotal)
+    if (validationError) {
+      setSubmitError(validationError)
+      return
+    }
+    setSubmitError(null)
+    setStep((s) => Math.min(STEPS.length, s + 1))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const stepError = getFirstStepValidationError(data, coutTotal)
+    if (stepError) {
+      setStep(stepError.step)
+      setSubmitError(stepError.error)
+      return
+    }
     if (!devoirConseilAccepte) {
       setSubmitError("Veuillez accepter le devoir de conseil avant d'envoyer votre demande.")
       return
@@ -155,6 +258,7 @@ export function FormulaireDevisDommageOuvrage() {
           email: data.email,
           data,
           coutTotal,
+          ...(hasConversionTrackingContext(trackingContext) ? { tracking: trackingContext } : {}),
         }),
       })
       const json = await readResponseJson<{ error?: string }>(res)
@@ -254,6 +358,9 @@ export function FormulaireDevisDommageOuvrage() {
         <p className="text-sm font-semibold text-[#171717]" aria-live="polite">
           Étape {step} sur {STEPS.length}
         </p>
+        <p className="text-xs text-[#171717]">
+          Brouillon auto-sauvegardé sur cet appareil pendant la saisie.
+        </p>
         <div className="flex gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Étapes du formulaire">
           {STEPS.map((s) => (
             <button
@@ -262,7 +369,14 @@ export function FormulaireDevisDommageOuvrage() {
               role="tab"
               aria-selected={step === s.id}
               aria-label={`Étape ${s.id}: ${s.label}`}
-              onClick={() => setStep(s.id)}
+              onClick={() => {
+                if (s.id <= step) {
+                  setSubmitError(null)
+                  setStep(s.id)
+                  return
+                }
+                goToNextStep()
+              }}
               className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition ${
                 step === s.id ? "bg-[#2563eb] text-white" : "bg-[#e4e4e4] border border-[#d4d4d4] text-black font-medium hover:border-[#2563eb]/50"
               }`}
@@ -1234,7 +1348,7 @@ export function FormulaireDevisDommageOuvrage() {
         {step < 5 ? (
           <button
             type="button"
-            onClick={() => setStep((s) => Math.min(5, s + 1))}
+            onClick={goToNextStep}
             className="px-6 py-3 bg-[#2563eb] text-white rounded-xl hover:bg-[#1d4ed8] font-semibold transition"
           >
             Suivant →

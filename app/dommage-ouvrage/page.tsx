@@ -10,6 +10,7 @@ import {
 } from "@/lib/seo-jsonld-helpers"
 import { SITE_URL } from "@/lib/site-url"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
+import { buildTrackedHref } from "@/lib/conversion-tracking"
 
 const baseUrl = SITE_URL
 
@@ -50,6 +51,13 @@ const dommageOuvrageHubJsonLd = seoJsonLdGraph([
       "Hub dommage ouvrage : profils couverts, explications et accès au devis en ligne.",
   }),
 ])
+
+const DOMMAGE_OUVRAGE_HUB_QUOTE_HREF = buildTrackedHref("/devis-dommage-ouvrage", {
+  utmSource: "site",
+  utmMedium: "do-hub",
+  utmCampaign: "dommage-ouvrage",
+  entryPath: "/dommage-ouvrage",
+})
 
 export default function DommageOuvrageHubPage() {
   return (
@@ -117,9 +125,17 @@ export default function DommageOuvrageHubPage() {
             de devis dommage ouvrage. Si vous hésitez entre plusieurs profils, commencez par la page
             la plus proche de votre projet puis revenez au devis.
           </p>
+          <div className="mb-5 rounded-xl border border-[#2563eb]/20 bg-white p-4 text-sm text-[#171717]">
+            <p className="font-semibold text-[#0a0a0a] mb-2">Avant de commencer</p>
+            <ul className="space-y-1">
+              <li>• Prévoyez l&apos;adresse du chantier, le coût prévisionnel et le profil du maître d&apos;ouvrage.</li>
+              <li>• Le brouillon reste enregistré sur votre appareil pendant la saisie.</li>
+              <li>• Notre équipe revient vers vous sous 24 h avec le prix définitif.</li>
+            </ul>
+          </div>
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/devis-dommage-ouvrage"
+              href={DOMMAGE_OUVRAGE_HUB_QUOTE_HREF}
               className="inline-flex items-center justify-center rounded-2xl bg-[#2563eb] px-6 py-3 font-semibold text-white transition-all hover:bg-[#1d4ed8]"
             >
               Demander un devis dommage ouvrage

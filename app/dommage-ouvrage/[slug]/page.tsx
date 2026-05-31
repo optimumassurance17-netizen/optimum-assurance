@@ -11,6 +11,7 @@ import {
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
 import { SITE_URL } from "@/lib/site-url"
 import { notFound } from "next/navigation"
+import { buildTrackedHref } from "@/lib/conversion-tracking"
 
 const baseUrl = SITE_URL
 const defaultOgImage = { url: `${baseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance" }
@@ -67,6 +68,12 @@ export default async function DommageOuvragePage({
   const otherDoPages = DO_SEO.filter((m) => m.slug !== data.slug)
 
   const path = `/dommage-ouvrage/${data.slug}`
+  const trackedQuoteHref = buildTrackedHref("/devis-dommage-ouvrage", {
+    utmSource: "seo",
+    utmMedium: "do-profile-page",
+    utmCampaign: `do-${data.slug}`,
+    entryPath: path,
+  })
   const jsonLd = seoJsonLdGraph([
     seoBreadcrumbListNode([
       { name: "Accueil", path: "/" },
@@ -174,7 +181,7 @@ export default async function DommageOuvragePage({
 
         <div className="text-center space-y-4">
           <Link
-            href="/devis-dommage-ouvrage"
+            href={trackedQuoteHref}
             className="inline-block bg-[#2563eb] text-white px-10 py-4 rounded-2xl hover:bg-[#1d4ed8] font-semibold shadow-lg shadow-[#2563eb]/25 transition-all"
           >
             Devis dommage ouvrage

@@ -5,6 +5,7 @@ import { Breadcrumb } from "@/components/Breadcrumb"
 import { METIERS_SEO } from "@/lib/metiers-seo"
 import { seoBreadcrumbListNode, seoJsonLdGraph, seoWebPageNode, seoBaseUrl } from "@/lib/seo-jsonld-helpers"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
+import { buildTrackedHref } from "@/lib/conversion-tracking"
 
 const pageDescription = truncateForDescription(
   "Assurance décennale par activité : plomberie, électricité, maçonnerie, couverture, menuiserie, BET, rénovation énergétique et plus de 100 activités du BTP. Accédez à la page adaptée à votre métier et demandez votre devis en ligne.",
@@ -33,6 +34,13 @@ const decennaleIndexJsonLd = seoJsonLdGraph([
     })),
   },
 ])
+
+const DECENNALE_HUB_QUOTE_HREF = buildTrackedHref("/devis", {
+  utmSource: "site",
+  utmMedium: "decennale-hub",
+  utmCampaign: "decennale",
+  entryPath: "/assurance-decennale",
+})
 
 export const metadata = {
   title: "Assurance décennale par métier | Plus de 100 activités BTP",
@@ -84,10 +92,31 @@ export default function AssuranceDecennaleIndexPage() {
 
         <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6 mb-10">
           <h2 className="text-xl font-bold text-[#0a0a0a] mb-3">Trouver votre activite</h2>
-          <p className="text-sm text-[#171717] leading-relaxed">
-            Choisissez la page la plus proche de votre metier pour acceder a un contenu adapte, aux liens utiles et au
-            devis en ligne pre-rempli selon votre activite.
-          </p>
+          <div className="grid gap-5 lg:grid-cols-[1.4fr_0.9fr] lg:items-center">
+            <div>
+              <p className="text-sm text-[#171717] leading-relaxed">
+                Choisissez la page la plus proche de votre metier pour acceder a un contenu adapte, aux liens utiles et
+                au devis en ligne pre-rempli selon votre activite.
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-[#171717]">
+                <li>• SIRET, CA et activite principale suffisent pour lancer une premiere estimation.</li>
+                <li>• Tarif indicatif immediat pour les profils eligibles.</li>
+                <li>• Sauvegarde du devis par email disponible apres calcul du tarif.</li>
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+              <p className="text-sm font-semibold text-[#0a0a0a] mb-2">Pret a demander votre tarif ?</p>
+              <p className="text-sm text-[#171717] mb-4">
+                Lancez directement le devis si vous connaissez deja votre activite principale.
+              </p>
+              <Link
+                href={DECENNALE_HUB_QUOTE_HREF}
+                className="inline-flex items-center justify-center rounded-2xl bg-[#2563eb] px-5 py-3 font-semibold text-white transition-all hover:bg-[#1d4ed8]"
+              >
+                Lancer mon devis decennale
+              </Link>
+            </div>
+          </div>
         </div>
 
         <section className="mb-10">
@@ -147,7 +176,7 @@ export default function AssuranceDecennaleIndexPage() {
 
         <div className="flex flex-wrap justify-center gap-4">
           <Link
-            href="/devis"
+            href={DECENNALE_HUB_QUOTE_HREF}
             className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-2xl hover:bg-[#1d4ed8] font-semibold transition-all"
           >
             Devis decennale

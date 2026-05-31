@@ -93,6 +93,19 @@ export default function DevisDommageOuvragePage() {
           </div>
         </div>
 
+        <div className="grid gap-3 sm:grid-cols-3 mb-8">
+          {[
+            ["5 étapes guidées", "Le formulaire est découpé pour avancer sans tout remplir d'un coup."],
+            ["Brouillon auto-sauvegardé", "Votre progression reste enregistrée sur cet appareil pendant la saisie."],
+            ["Étude sous 24 h", "Prix définitif communiqué après analyse du dossier et des pièces."],
+          ].map(([title, body]) => (
+            <div key={title} className="rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-sm">
+              <p className="text-sm font-semibold text-black mb-1">{title}</p>
+              <p className="text-sm text-[#171717] leading-relaxed">{body}</p>
+            </div>
+          ))}
+        </div>
+
         <DevisDommageOuvrageClientGate>
           <FormulaireDevisDommageOuvrage />
         </DevisDommageOuvrageClientGate>

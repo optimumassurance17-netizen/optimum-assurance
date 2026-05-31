@@ -7,6 +7,7 @@ import { garantiesDecennale, metiersBtp } from "@/lib/garanties-data"
 import { OpenChatbotButton } from "@/components/OpenChatbotButton"
 import { buildHomePageJsonLdGraph } from "@/lib/seo-home-jsonld"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
+import { buildTrackedHref } from "@/lib/conversion-tracking"
 
 /** Simulateur en chunk séparé : moins de JS critique sur le fil d’hydratation du hero / LCP (H1). */
 const SimulateurPrime = dynamic(
@@ -70,6 +71,30 @@ import {
 const reviewsUrl = process.env.NEXT_PUBLIC_REVIEWS_URL || "/avis"
 const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
 const HOME_SEO_TITLE = "Assurance décennale BTP en ligne | Devis 3 min et attestation | Optimum Assurance"
+const HOME_DECENNALE_HERO_HREF = buildTrackedHref("/devis", {
+  utmSource: "site",
+  utmMedium: "home-hero",
+  utmCampaign: "decennale",
+  entryPath: "/",
+})
+const HOME_DECENNALE_PRICE_HREF = buildTrackedHref("/devis", {
+  utmSource: "site",
+  utmMedium: "home-price-card",
+  utmCampaign: "decennale",
+  entryPath: "/",
+})
+const HOME_DO_HERO_HREF = buildTrackedHref("/devis-dommage-ouvrage", {
+  utmSource: "site",
+  utmMedium: "home-do-hero",
+  utmCampaign: "dommage-ouvrage",
+  entryPath: "/",
+})
+const HOME_DECENNALE_FINAL_HREF = buildTrackedHref("/devis", {
+  utmSource: "site",
+  utmMedium: "home-final-cta",
+  utmCampaign: "decennale",
+  entryPath: "/",
+})
 
 export const metadata: Metadata = {
   title: {
@@ -158,7 +183,7 @@ export default function Home() {
               <p className="mb-10 text-sm text-slate-700 max-w-lg">{LEGENDE_PAIEMENT_TRIMESTRIEL}</p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  href="/devis"
+                  href={HOME_DECENNALE_HERO_HREF}
                   className="inline-flex justify-center items-center rounded-2xl bg-blue-600 px-8 py-4 text-center text-base font-semibold text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5"
                 >
                   Obtenir mon tarif
@@ -190,7 +215,7 @@ export default function Home() {
                   <span className="mt-2 block text-xs text-slate-600">{LEGENDE_PAIEMENT_TRIMESTRIEL_COURT}</span>
                 </p>
                 <Link
-                  href="/devis"
+                  href={HOME_DECENNALE_PRICE_HREF}
                   className="block w-full rounded-2xl bg-blue-600 py-4 text-center font-semibold text-white shadow-md shadow-blue-600/20 transition-all hover:bg-blue-700"
                 >
                   Obtenir ce tarif
@@ -260,7 +285,7 @@ export default function Home() {
                 </ul>
                 <div className="flex flex-wrap gap-3 mb-6">
                   <Link
-                    href="/devis-dommage-ouvrage"
+                    href={HOME_DO_HERO_HREF}
                     className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-2xl hover:bg-white/95 transition-all font-bold shadow-xl"
                   >
                     Demander mon devis DO
@@ -286,7 +311,7 @@ export default function Home() {
                   <p className="text-4xl md:text-5xl font-bold mb-2">Sous 24h</p>
                   <p className="text-white/90 text-sm mb-6">Prix indicatif immédiat selon le coût de construction</p>
                   <Link
-                    href="/devis-dommage-ouvrage"
+                    href={HOME_DO_HERO_HREF}
                     className="block w-full bg-white text-blue-600 py-4 rounded-xl hover:bg-white/95 font-semibold transition-all"
                   >
                     Commencer ma demande
@@ -698,7 +723,7 @@ export default function Home() {
             Conformité légale et meilleur prix — protégez votre activité dès aujourd&apos;hui
           </h2>
           <Link
-            href="/devis"
+            href={HOME_DECENNALE_FINAL_HREF}
             className="inline-block bg-blue-600 text-white px-10 py-4 rounded-2xl hover:bg-blue-700 transition-all font-semibold shadow-lg shadow-blue-600/25 hover:-translate-y-0.5"
           >
             Mon devis en 3 minutes

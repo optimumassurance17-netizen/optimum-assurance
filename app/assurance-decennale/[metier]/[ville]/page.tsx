@@ -196,6 +196,7 @@ export default async function MetierVillePage({
           <CtaDevis
             href="/devis"
             utm={{ source: "seo", medium: "programmatic", campaign: `decennale-${data.metierSlug}-${data.villeSlug}` }}
+            entryPath={`/assurance-decennale/${data.metierSlug}/${data.villeSlug}`}
           />
         </div>
 

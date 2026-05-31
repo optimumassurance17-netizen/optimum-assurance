@@ -178,6 +178,7 @@ export default async function DoVillePage({
             href="/devis-dommage-ouvrage"
             label="Demander un devis dommage ouvrage"
             utm={{ source: "seo", medium: "programmatic", campaign: `do-${data.slug}-${data.villeSlug}` }}
+            entryPath={`/dommage-ouvrage/${data.slug}/${data.villeSlug}`}
           />
         </div>
 
