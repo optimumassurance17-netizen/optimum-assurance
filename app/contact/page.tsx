@@ -17,7 +17,7 @@ export default function ContactPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const presetSujet = searchParams.get("sujet")?.trim()
+    const presetSujet = searchParams?.get("sujet")?.trim()
     if (!presetSujet || sujet) return
     setSujet(presetSujet.slice(0, 120))
   }, [searchParams, sujet])
