@@ -478,6 +478,15 @@ export default function Home() {
               <p className="text-blue-600 font-semibold mb-4">Devis en ligne</p>
               <Link href="/devis-dommage-ouvrage" className="text-blue-600 font-medium hover:underline group-hover:underline">Mon devis →</Link>
             </div>
+            <div className="bg-white rounded-2xl p-6 border border-indigo-200 shadow-sm hover:shadow-lg hover:border-indigo-400/60 transition-all group">
+              <span className="inline-block bg-indigo-50 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">Nouveau</span>
+              <h3 className="font-semibold text-slate-900 mb-2">Assurance titre</h3>
+              <p className="text-[#171717] text-sm mb-3">
+                Protection des titres de propriété et sécurisation des transactions immobilières (sur étude).
+              </p>
+              <p className="text-indigo-700 font-semibold mb-4">Étude personnalisée</p>
+              <Link href="/assurance-titre" className="text-indigo-700 font-medium hover:underline group-hover:underline">Découvrir →</Link>
+            </div>
           </div>
         </div>
       </section>

@@ -1,11 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/Header"
 import { readResponseJson } from "@/lib/read-response-json"
 
 export default function ContactPage() {
+  const searchParams = useSearchParams()
   const [nom, setNom] = useState("")
   const [email, setEmail] = useState("")
   const [sujet, setSujet] = useState("")
@@ -13,6 +15,12 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const presetSujet = searchParams.get("sujet")?.trim()
+    if (!presetSujet || sujet) return
+    setSujet(presetSujet.slice(0, 120))
+  }, [searchParams, sujet])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -104,6 +112,7 @@ export default function ContactPage() {
                 <option value="">Sélectionnez un sujet</option>
                 <option value="Devis décennale">Devis décennale</option>
                 <option value="Devis dommage ouvrage">Devis dommage ouvrage</option>
+                <option value="Assurance titre">Assurance titre</option>
                 <option value="Sinistre">Déclaration de sinistre</option>
                 <option value="Question générale">Question générale</option>
                 <option value="Partenariat">Partenariat</option>

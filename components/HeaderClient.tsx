@@ -78,6 +78,9 @@ export function HeaderClient() {
           <Link href="/devis-dommage-ouvrage" className="-my-2 flex min-h-[44px] items-center justify-center px-2 py-2 text-sm font-medium text-slate-700 transition-colors hover:text-slate-900 sm:px-0 sm:py-0">
             Dommage ouvrage
           </Link>
+          <Link href="/assurance-titre" className="-my-2 flex min-h-[44px] items-center justify-center px-2 py-2 text-sm font-medium text-slate-700 transition-colors hover:text-slate-900 sm:px-0 sm:py-0">
+            Assurance titre
+          </Link>
           <Link href="/faq" className="text-[#171717] hover:text-[#0a0a0a] font-medium text-sm sm:text-base px-2 py-2 -my-2 sm:px-0 sm:py-0 min-h-[44px] min-w-[44px] sm:min-w-0 flex items-center justify-center transition-colors">
             FAQ
           </Link>
@@ -152,6 +155,17 @@ export function HeaderClient() {
               >
                 Devis dommage ouvrage — 24h
               </Link>
+              <div className="border-b border-slate-200 px-4 py-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Assurance titre</p>
+              </div>
+              <Link
+                href="/assurance-titre"
+                role="menuitem"
+                onClick={() => setDevisOpen(false)}
+                className="flex min-h-[44px] items-center whitespace-nowrap px-4 py-3.5 font-medium text-slate-900 hover:bg-blue-50 active:bg-blue-50"
+              >
+                Demande assurance titre — sur étude
+              </Link>
             </div>
           </div>
         </nav>
@@ -202,6 +216,13 @@ export function HeaderClient() {
               onClick={() => setMobileOpen(false)}
             >
               Dommage ouvrage
+            </Link>
+            <Link
+              href="/assurance-titre"
+              className="rounded-xl bg-indigo-50 px-4 py-3.5 text-center text-base font-semibold text-indigo-700 active:bg-indigo-100"
+              onClick={() => setMobileOpen(false)}
+            >
+              Assurance titre
             </Link>
             <Link
               href="/faq"
