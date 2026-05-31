@@ -1451,10 +1451,10 @@ export default function GestionPage() {
                   const coverageYears =
                     customDevisProductType === "assurance_titre"
                       ? Number(customDevisCoverageYears.replace(",", "."))
-                      : undefined
+                      : null
                   if (
                     customDevisProductType === "assurance_titre" &&
-                    (!Number.isFinite(coverageYears) || coverageYears <= 0)
+                    (coverageYears == null || !Number.isFinite(coverageYears) || coverageYears <= 0)
                   ) {
                     setError("Indiquez une durée de validité initiale en années.")
                     return

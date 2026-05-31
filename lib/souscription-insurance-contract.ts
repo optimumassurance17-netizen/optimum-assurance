@@ -289,7 +289,7 @@ export function persistInsuranceContractSnapshot(payload: {
   contractNumber: string
   status: string
   rejectedReason?: string | null
-  productType?: "decennale" | "do" | "rc_fabriquant"
+  productType?: "decennale" | "do" | "rc_fabriquant" | "assurance_titre"
 }) {
   if (typeof sessionStorage === "undefined") return
   sessionStorage.setItem(STORAGE_KEYS.insuranceContract, JSON.stringify(payload))
