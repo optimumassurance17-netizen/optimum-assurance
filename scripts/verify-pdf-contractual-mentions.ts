@@ -31,6 +31,17 @@ const ASSURANCE_TITRE_MENTIONS: MentionCheck[] = [
   { label: "mention devoir de conseil", regex: /devoir\s+de\s+conseil/i },
 ]
 
+const ASSURANCE_TITRE_CERTIFICATE_MENTIONS: MentionCheck[] = [
+  ...ASSURANCE_TITRE_MENTIONS,
+  { label: "ligne de vérification", regex: /v[ée]rification\s*:/i },
+  { label: "route de vérification publique", regex: /\/verify\//i },
+]
+
+const ASSURANCE_TITRE_INVOICE_MENTIONS: MentionCheck[] = [
+  { label: "mention Assurance titre", regex: /assurance\s+titre/i },
+  { label: "statut facture à régler", regex: /statut\s*:\s*non\s+pay[ée]\s*\/\s*[àa]\s+r[èe]gler/i },
+]
+
 function normalizeExtractedPdfText(input: string): string {
   return input
     .replace(/\r/g, "\n")
@@ -169,6 +180,17 @@ function sampleAssuranceTitreContract(): InsuranceContract {
   } as unknown as InsuranceContract
 }
 
+function sampleAssuranceTitreApprovedContract(): InsuranceContract {
+  return {
+    ...sampleAssuranceTitreContract(),
+    status: "approved",
+    validFrom: null,
+    validUntil: null,
+    paidAt: null,
+    paymentStatus: null,
+  } as unknown as InsuranceContract
+}
+
 async function main(): Promise<void> {
   const decQuotePolicyPdf = await generateDecennaleQuotePolicyBundle(sampleDecennaleData(), "proposition")
   const doQuotePolicyPdf = await generateDOQuotePolicyBundle(sampleDoData(), "proposition")
@@ -179,6 +201,10 @@ async function main(): Promise<void> {
     sampleAssuranceTitreContract(),
     "certificate"
   )
+  const assuranceTitreInvoicePdf = await renderContractPdf(
+    sampleAssuranceTitreApprovedContract(),
+    "invoice"
+  )
 
   const decText = await extractPdfText(decQuotePolicyPdf)
   const doText = await extractPdfText(doQuotePolicyPdf)
@@ -186,6 +212,7 @@ async function main(): Promise<void> {
   const rcFabFicText = await extractPdfText(rcFabFicPdf)
   const assuranceTitrePolicyText = await extractPdfText(assuranceTitrePolicyPdf)
   const assuranceTitreCertificateText = await extractPdfText(assuranceTitreCertificatePdf)
+  const assuranceTitreInvoiceText = await extractPdfText(assuranceTitreInvoicePdf)
 
   assertMentions(decText, "devis+conditions particulières décennale", DEVOIR_CONSEIL_ONLY)
   assertMentions(doText, "devis+conditions particulières dommage-ouvrage", DEVOIR_CONSEIL_ONLY)
@@ -199,7 +226,12 @@ async function main(): Promise<void> {
   assertMentions(
     assuranceTitreCertificateText,
     "attestation Assurance titre",
-    ASSURANCE_TITRE_MENTIONS
+    ASSURANCE_TITRE_CERTIFICATE_MENTIONS
+  )
+  assertMentions(
+    assuranceTitreInvoiceText,
+    "facture Assurance titre avant paiement",
+    ASSURANCE_TITRE_INVOICE_MENTIONS
   )
 
   console.log(
