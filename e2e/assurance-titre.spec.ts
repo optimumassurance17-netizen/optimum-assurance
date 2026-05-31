@@ -39,15 +39,32 @@ test.describe("Assurance titre", () => {
 
     const submitButton = page.getByRole("button", { name: "Envoyer ma demande" })
     await expect(submitButton).toBeEnabled()
+    const formValidity = await submitButton.evaluate((button) => {
+      const form = button.closest("form") as HTMLFormElement | null
+      if (!form) return { hasForm: false, isValid: false, invalid: [] as string[] }
+      const invalid = Array.from(form.elements)
+        .filter((element): element is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement =>
+          "validity" in element && "validationMessage" in element
+        )
+        .filter((element) => !element.validity.valid)
+        .map((element) => `${element.getAttribute("id") || element.getAttribute("name") || element.tagName}:${element.validationMessage}`)
+      return { hasForm: true, isValid: form.checkValidity(), invalid }
+    })
+
+    expect(formValidity.hasForm).toBeTruthy()
+    expect(formValidity.isValid, JSON.stringify(formValidity.invalid)).toBeTruthy()
 
     const [response] = await Promise.all([
       page.waitForResponse((response) => response.url().includes("/api/devis-assurance-titre")),
-      page.locator("form").evaluate((form) => (form as HTMLFormElement).requestSubmit()),
+      submitButton.evaluate((button) => {
+        const form = button.closest("form") as HTMLFormElement | null
+        form?.requestSubmit()
+      }),
     ])
 
     expect(response.ok()).toBeTruthy()
 
     await expect(page.getByText("Demande envoyée")).toBeVisible()
-    await expect(page.getByText(/24 à 48 h ouvrées/i)).toBeVisible()
+    await expect(page.getByText(/Nous avons bien reçu votre demande d'étude/i)).toBeVisible()
   })
 })

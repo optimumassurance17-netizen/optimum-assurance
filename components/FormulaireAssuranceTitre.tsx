@@ -463,7 +463,7 @@ export function FormulaireAssuranceTitre() {
             <input
               id="title-amount"
               type="number"
-              min={1}
+              min={0}
               step={1000}
               value={data.montantOperation ?? ""}
               onChange={(event) =>
