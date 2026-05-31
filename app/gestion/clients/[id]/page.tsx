@@ -349,6 +349,11 @@ export default function ClientDetailPage() {
             <p className="text-xs text-gray-400">
               Données issues du formulaire public et du questionnaire d’étude en espace client. Lecture seule.
             </p>
+            <p className="text-xs text-violet-200">
+              <Link href="/assurance-titre/referentiel-couverture" className="font-medium hover:underline">
+                Ouvrir le référentiel couverture / exclusions Assurance titre
+              </Link>
+            </p>
             {user.titleInitialQuestionnaireJson?.trim() ? (
               <details className="group">
                 <summary className="cursor-pointer text-sm font-medium text-[#c4b5fd] hover:text-[#ddd6fe]">

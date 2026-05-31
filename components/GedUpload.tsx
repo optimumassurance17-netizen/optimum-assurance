@@ -148,6 +148,26 @@ export function GedUpload() {
           <div className="space-y-4">
             {DOC_TYPES_TITRE.map((type) => docRow(type, uploaded, uploading, handleUpload, handleDelete))}
           </div>
+          <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50 p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl" aria-hidden="true">
+                📘
+              </span>
+              <div>
+                <p className="font-medium text-[#0a0a0a]">Référentiel couverture / exclusions Assurance titre</p>
+                <p className="mt-1 text-sm text-[#171717]">
+                  Rapport de synthèse sur les garanties de couverture, exclusions standard, exceptions particulières,
+                  polices propriétaire / prêteur, variantes renforcées et références ALTA.
+                </p>
+                <a
+                  href="/assurance-titre/referentiel-couverture"
+                  className="mt-3 inline-flex rounded-xl border border-violet-300 bg-white px-4 py-2 text-sm font-medium text-violet-900 hover:bg-violet-100"
+                >
+                  Consulter le référentiel
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

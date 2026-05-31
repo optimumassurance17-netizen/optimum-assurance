@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { FormulaireAssuranceTitreEspaceClient } from "@/components/FormulaireAssuranceTitreEspaceClient"
@@ -47,6 +48,21 @@ export default function AssuranceTitreEspaceClientPage() {
           Réservé à votre espace client, après la première demande publique. Complétez ici le dossier, les parties
           prenantes et les éléments de risque, puis déposez vos pièces dans l’espace client.
         </p>
+        <div className="mb-8 rounded-2xl border border-violet-200 bg-violet-50 p-5">
+          <p className="text-sm font-semibold text-[#0a0a0a]">
+            Référentiel Assurance titre — couverture, exclusions et normes ALTA
+          </p>
+          <p className="mt-2 text-sm text-[#171717]">
+            Consultez le rapport détaillé sur les garanties, exclusions standards, exceptions Schedule B, polices
+            propriétaire / prêteur et variantes renforcées.
+          </p>
+          <Link
+            href="/assurance-titre/referentiel-couverture"
+            className="mt-3 inline-flex text-sm font-semibold text-[#2563eb] hover:underline"
+          >
+            Ouvrir le référentiel →
+          </Link>
+        </div>
         <FormulaireAssuranceTitreEspaceClient />
       </div>
     </main>
