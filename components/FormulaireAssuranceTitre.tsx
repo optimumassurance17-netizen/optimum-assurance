@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type FormEvent } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { signIn, useSession } from "next-auth/react"
 import {
   ASSURANCE_TITRE_BESOIN_OPTIONS,
   ASSURANCE_TITRE_BIEN_OPTIONS,
@@ -52,12 +54,18 @@ function isBlank(value?: string | null): boolean {
 }
 
 export function FormulaireAssuranceTitre() {
+  const router = useRouter()
+  const { data: session, status } = useSession()
   const [email, setEmail] = useState("")
   const [data, setData] = useState<Partial<AssuranceTitreData>>(initialData)
   const [accepte, setAccepte] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [accountPassword, setAccountPassword] = useState("")
+  const [accountConfirmPassword, setAccountConfirmPassword] = useState("")
+  const [accountLoading, setAccountLoading] = useState(false)
+  const [accountError, setAccountError] = useState<string | null>(null)
   const [trackingContext, setTrackingContext] = useState<ConversionTrackingContext | null>(null)
   const [storageReady, setStorageReady] = useState(false)
 
@@ -204,17 +212,179 @@ export function FormulaireAssuranceTitre() {
     }
   }
 
+  const sessionMatchesSubmittedEmail =
+    status === "authenticated" &&
+    Boolean(session?.user?.email) &&
+    session.user.email!.trim().toLowerCase() === email.trim().toLowerCase()
+
+  const handleCreateAccount = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setAccountError(null)
+
+    if (accountPassword.length < 8) {
+      setAccountError("Le mot de passe doit contenir au moins 8 caractères.")
+      return
+    }
+    if (accountPassword !== accountConfirmPassword) {
+      setAccountError("Les mots de passe ne correspondent pas.")
+      return
+    }
+
+    setAccountLoading(true)
+    try {
+      const registerRes = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: accountPassword,
+          raisonSociale: data.raisonSociale?.trim() || data.nomComplet?.trim() || undefined,
+          siret: normalizeSiret(data.siret),
+          telephone: data.telephone?.trim() || undefined,
+        }),
+      })
+      const registerJson = await readResponseJson<{ error?: string }>(registerRes)
+      if (!registerRes.ok) {
+        throw new Error(registerJson.error || "Création de compte impossible")
+      }
+
+      const signInResult = await signIn("credentials", {
+        email: email.trim(),
+        password: accountPassword,
+        redirect: false,
+      })
+      if (signInResult?.error) {
+        throw new Error("Compte créé mais connexion échouée")
+      }
+
+      router.push("/espace-client/assurance-titre")
+      router.refresh()
+    } catch (error) {
+      setAccountError(error instanceof Error ? error.message : "Erreur")
+    } finally {
+      setAccountLoading(false)
+    }
+  }
+
   if (submitted) {
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-8 text-center">
-        <p className="mb-2 text-lg font-semibold text-emerald-900">Demande envoyée</p>
-        <p className="mb-6 text-sm leading-relaxed text-slate-700">
-          Nous avons bien reçu votre demande d&apos;étude <strong>Assurance titre</strong>. Un conseiller revient vers
-          vous en général sous <strong>24 à 48 h ouvrées</strong> après lecture du dossier.
-        </p>
-        <Link href="/" className="font-semibold text-blue-600 hover:underline">
-          Retour à l&apos;accueil
-        </Link>
+      <div className="space-y-5">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-8 text-center">
+          <p className="mb-2 text-lg font-semibold text-emerald-900">Demande envoyée</p>
+          <p className="mb-6 text-sm leading-relaxed text-slate-700">
+            Nous avons bien reçu votre demande d&apos;étude <strong>Assurance titre</strong>. Un conseiller revient vers
+            vous en général sous <strong>24 à 48 h ouvrées</strong> après lecture du dossier.
+          </p>
+          <Link href="/" className="font-semibold text-blue-600 hover:underline">
+            Retour à l&apos;accueil
+          </Link>
+        </div>
+
+        <div className="rounded-2xl border border-violet-200 bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-wide text-violet-800">Suite 100 % digitale</p>
+          <h3 className="mt-2 text-xl font-bold text-slate-900">Poursuivre le dossier dans votre espace client</h3>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            Vous pouvez maintenant compléter le questionnaire d&apos;étude détaillé et préparer le dépôt des pièces :
+            projet d&apos;acte, état hypothécaire, plan cadastral, note du notaire, etc.
+          </p>
+
+          {sessionMatchesSubmittedEmail ? (
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href="/espace-client/assurance-titre"
+                className="inline-flex items-center rounded-xl bg-violet-700 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-800"
+              >
+                Continuer mon dossier
+              </Link>
+              <Link
+                href="/espace-client"
+                className="inline-flex items-center text-sm font-semibold text-[#2563eb] hover:underline"
+              >
+                Aller à mon espace client
+              </Link>
+            </div>
+          ) : status === "authenticated" ? (
+            <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              Votre session actuelle est ouverte avec <strong>{session?.user?.email}</strong>. Pour rattacher
+              automatiquement ce dossier, utilisez un compte avec l&apos;adresse <strong>{email.trim()}</strong> ou
+              connectez-vous avec cet email.
+              <div className="mt-3">
+                <Link
+                  href={`/connexion?callbackUrl=${encodeURIComponent("/espace-client/assurance-titre")}`}
+                  className="font-semibold text-[#2563eb] hover:underline"
+                >
+                  Se connecter avec le bon compte
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+              <form onSubmit={handleCreateAccount} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <p className="text-sm font-semibold text-slate-900">Créer mon espace client</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Utilisez <strong>{email.trim()}</strong> pour reprendre automatiquement votre demande.
+                </p>
+                <div className="mt-4 grid gap-4">
+                  <div>
+                    <label htmlFor="title-account-password" className={labelClass}>
+                      Mot de passe
+                    </label>
+                    <input
+                      id="title-account-password"
+                      type="password"
+                      minLength={8}
+                      value={accountPassword}
+                      onChange={(event) => setAccountPassword(event.target.value)}
+                      className={inputClass}
+                      placeholder="Minimum 8 caractères"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="title-account-password-confirm" className={labelClass}>
+                      Confirmer le mot de passe
+                    </label>
+                    <input
+                      id="title-account-password-confirm"
+                      type="password"
+                      minLength={8}
+                      value={accountConfirmPassword}
+                      onChange={(event) => setAccountConfirmPassword(event.target.value)}
+                      className={inputClass}
+                      required
+                    />
+                  </div>
+                  {accountError ? (
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                      {accountError}
+                    </div>
+                  ) : null}
+                  <button
+                    type="submit"
+                    disabled={accountLoading}
+                    className="rounded-xl bg-violet-700 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    {accountLoading ? "Création..." : "Créer mon espace client"}
+                  </button>
+                </div>
+              </form>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <p className="text-sm font-semibold text-slate-900">Déjà client ?</p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                  Connectez-vous pour continuer le questionnaire d&apos;étude, déposer vos pièces et centraliser les
+                  échanges du dossier.
+                </p>
+                <Link
+                  href={`/connexion?callbackUrl=${encodeURIComponent("/espace-client/assurance-titre")}`}
+                  className="mt-4 inline-flex items-center text-sm font-semibold text-[#2563eb] hover:underline"
+                >
+                  J&apos;ai déjà un compte
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     )
   }

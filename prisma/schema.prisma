@@ -24,6 +24,10 @@ model User {
   doInitialQuestionnaireJson String?           @db.Text
   /// Questionnaire d’étude DO complété depuis l’espace client — JSON
   doEtudeQuestionnaireJson   String?           @db.Text
+  /// Première demande Assurance titre (formulaire public) — JSON
+  titleInitialQuestionnaireJson String?        @db.Text
+  /// Questionnaire d’étude Assurance titre complété depuis l’espace client — JSON
+  titleEtudeQuestionnaireJson   String?        @db.Text
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   documents             Document[]

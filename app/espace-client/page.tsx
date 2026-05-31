@@ -68,18 +68,20 @@ export default function EspaceClientPage() {
   const [exportingPdf, setExportingPdf] = useState(false)
   const [insuranceContracts, setInsuranceContracts] = useState<InsuranceContractListItem[]>([])
   const [doEtudeBanner, setDoEtudeBanner] = useState<{ show: boolean; hasSaved: boolean } | null>(null)
+  const [titleEtudeBanner, setTitleEtudeBanner] = useState<{ show: boolean; hasSaved: boolean } | null>(null)
 
   useEffect(() => {
     if (status !== "authenticated") return
 
     const fetchData = async () => {
       try {
-        const [docsRes, summaryRes, paymentsRes, insRes, doqRes] = await Promise.all([
+        const [docsRes, summaryRes, paymentsRes, insRes, doqRes, titleqRes] = await Promise.all([
           fetch("/api/documents/list"),
           fetch("/api/client/summary"),
           fetch("/api/client/payments"),
           fetch("/api/client/insurance-contracts"),
           fetch("/api/client/do-questionnaire"),
+          fetch("/api/client/title-questionnaire"),
         ])
         if (docsRes.ok) setDocuments(await docsRes.json())
         if (summaryRes.ok) setSummary(await summaryRes.json())
@@ -93,6 +95,12 @@ export default function EspaceClientPage() {
           setDoEtudeBanner({ show: !!dq.hasInitial, hasSaved: !!dq.hasEtudeSaved })
         } else {
           setDoEtudeBanner(null)
+        }
+        if (titleqRes.ok) {
+          const tq = (await titleqRes.json()) as { hasInitial?: boolean; hasEtudeSaved?: boolean }
+          setTitleEtudeBanner({ show: !!tq.hasInitial, hasSaved: !!tq.hasEtudeSaved })
+        } else {
+          setTitleEtudeBanner(null)
         }
         const profileRes = await fetch("/api/client/profile")
         if (profileRes.ok) setProfile(await profileRes.json())
@@ -145,6 +153,25 @@ export default function EspaceClientPage() {
               className="inline-flex text-sm font-semibold text-[#2563eb] hover:underline"
             >
               {doEtudeBanner.hasSaved ? "Modifier le questionnaire d’étude →" : "Remplir le questionnaire d’étude →"}
+            </Link>
+          </div>
+        )}
+
+        {!loading && titleEtudeBanner?.show && (
+          <div className="mb-8 rounded-2xl border border-violet-300/40 bg-violet-50 p-5 text-[#0a0a0a]">
+            <p className="mb-1 font-semibold">Assurance titre — dossier digital</p>
+            <p className="mb-3 text-sm text-[#171717]">
+              {titleEtudeBanner.hasSaved
+                ? "Vous pouvez mettre à jour votre questionnaire d’étude Assurance titre et poursuivre le dépôt des pièces."
+                : "Complétez le questionnaire d’étude Assurance titre pour centraliser les parties prenantes, le calendrier, les risques et les pièces du dossier."}
+            </p>
+            <Link
+              href="/espace-client/assurance-titre"
+              className="inline-flex text-sm font-semibold text-[#2563eb] hover:underline"
+            >
+              {titleEtudeBanner.hasSaved
+                ? "Modifier le questionnaire Assurance titre →"
+                : "Compléter le questionnaire Assurance titre →"}
             </Link>
           </div>
         )}
@@ -378,7 +405,9 @@ export default function EspaceClientPage() {
         <div className="mb-10">
           <GedUpload />
           <p className="text-sm text-[#171717] mt-4">
-            Décennale : KBIS, pièce d&apos;identité, justificatif d&apos;activité, qualification, RIB. Dommage ouvrage : permis de construire, DOC/DROC, plans, conventions, rapport étude de sol.
+            Décennale : KBIS, pièce d&apos;identité, justificatif d&apos;activité, qualification, RIB. Dommage ouvrage :
+            permis de construire, DOC/DROC, plans, conventions, rapport étude de sol. Assurance titre : titre de
+            propriété, projet d&apos;acte, état hypothécaire, plan cadastral, note du notaire.
           </p>
         </div>
         )}

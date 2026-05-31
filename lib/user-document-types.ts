@@ -18,7 +18,17 @@ export const DOC_TYPES_DO = [
   "rapport_etude_sol",
 ] as const
 
-export const UPLOAD_DOC_TYPES = [...DOC_TYPES_DECENNALE, ...DOC_TYPES_DO] as const
+// Documents assurance titre
+export const DOC_TYPES_TITRE = [
+  "titre_propriete",
+  "projet_acte",
+  "etat_hypothecaire",
+  "plan_cadastral",
+  "piece_identite_titre",
+  "note_notaire",
+] as const
+
+export const UPLOAD_DOC_TYPES = [...DOC_TYPES_DECENNALE, ...DOC_TYPES_DO, ...DOC_TYPES_TITRE] as const
 
 export const UPLOAD_DOC_LABELS: Record<(typeof UPLOAD_DOC_TYPES)[number], string> = {
   kbis: "KBIS de moins de 3 mois",
@@ -33,4 +43,10 @@ export const UPLOAD_DOC_LABELS: Record<(typeof UPLOAD_DOC_TYPES)[number], string
   convention_maitrise_oeuvre: "Convention maîtrise d'œuvre (dommage ouvrage)",
   convention_controle_technique: "Convention contrôle technique (dommage ouvrage)",
   rapport_etude_sol: "Rapport étude de sol (dommage ouvrage)",
+  titre_propriete: "Titre de propriété / origine de propriété",
+  projet_acte: "Projet d'acte / promesse / compromis",
+  etat_hypothecaire: "État hypothécaire / inscriptions",
+  plan_cadastral: "Plan cadastral / extrait parcellaire",
+  piece_identite_titre: "Pièce d'identité des parties (Assurance titre)",
+  note_notaire: "Note du notaire / observations juridiques",
 }

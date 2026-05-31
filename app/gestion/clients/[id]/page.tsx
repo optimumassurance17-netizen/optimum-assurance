@@ -29,6 +29,8 @@ interface ClientData {
     createdAt: string
     doInitialQuestionnaireJson?: string | null
     doEtudeQuestionnaireJson?: string | null
+    titleInitialQuestionnaireJson?: string | null
+    titleEtudeQuestionnaireJson?: string | null
   }
   documents: { id: string; type: string; numero: string; status: string; createdAt: string }[]
   payments: { id: string; amount: number; status: string; paidAt: string | null; createdAt: string }[]
@@ -335,6 +337,35 @@ export default function ClientDetailPage() {
                 </summary>
                 <pre className="mt-2 max-h-80 overflow-auto rounded-lg bg-[#1a1a1a] p-3 text-xs text-gray-300 border border-gray-600 whitespace-pre-wrap break-words">
                   {prettyQuestionnaireJson(user.doEtudeQuestionnaireJson)}
+                </pre>
+              </details>
+            ) : null}
+          </section>
+        )}
+
+        {(user.titleInitialQuestionnaireJson?.trim() || user.titleEtudeQuestionnaireJson?.trim()) && (
+          <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4">
+            <h2 className="text-lg font-semibold text-white">Questionnaires Assurance titre</h2>
+            <p className="text-xs text-gray-400">
+              Données issues du formulaire public et du questionnaire d’étude en espace client. Lecture seule.
+            </p>
+            {user.titleInitialQuestionnaireJson?.trim() ? (
+              <details className="group">
+                <summary className="cursor-pointer text-sm font-medium text-[#c4b5fd] hover:text-[#ddd6fe]">
+                  Premier questionnaire (page publique)
+                </summary>
+                <pre className="mt-2 max-h-80 overflow-auto rounded-lg bg-[#1a1a1a] p-3 text-xs text-gray-300 border border-gray-600 whitespace-pre-wrap break-words">
+                  {prettyQuestionnaireJson(user.titleInitialQuestionnaireJson)}
+                </pre>
+              </details>
+            ) : null}
+            {user.titleEtudeQuestionnaireJson?.trim() ? (
+              <details className="group">
+                <summary className="cursor-pointer text-sm font-medium text-[#c4b5fd] hover:text-[#ddd6fe]">
+                  Questionnaire d&apos;étude (espace client)
+                </summary>
+                <pre className="mt-2 max-h-80 overflow-auto rounded-lg bg-[#1a1a1a] p-3 text-xs text-gray-300 border border-gray-600 whitespace-pre-wrap break-words">
+                  {prettyQuestionnaireJson(user.titleEtudeQuestionnaireJson)}
                 </pre>
               </details>
             ) : null}

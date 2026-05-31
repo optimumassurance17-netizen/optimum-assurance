@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import {
   DOC_TYPES_DECENNALE,
   DOC_TYPES_DO,
+  DOC_TYPES_TITRE,
   UPLOAD_DOC_LABELS,
 } from "@/lib/user-document-types"
 import { readResponseJson } from "@/lib/read-response-json"
@@ -29,6 +30,12 @@ const typeIcons: Record<string, string> = {
   convention_maitrise_oeuvre: "✍️",
   convention_controle_technique: "🔍",
   rapport_etude_sol: "🌍",
+  titre_propriete: "🏠",
+  projet_acte: "🖋️",
+  etat_hypothecaire: "📚",
+  plan_cadastral: "🗺️",
+  piece_identite_titre: "🪪",
+  note_notaire: "⚖️",
 }
 
 export function GedUpload() {
@@ -111,7 +118,10 @@ export function GedUpload() {
         Mes documents personnels (GED)
       </h2>
       <p className="text-sm text-[#171717] mb-6">
-        Décennale : KBIS, pièce d&apos;identité, justificatif d&apos;activité, qualification, RIB. Dommage ouvrage : permis de construire, DOC/DROC, plans, conventions maîtrise d&apos;œuvre et contrôle technique, rapport étude de sol. PDF ou image (max 10 Mo).
+        Décennale : KBIS, pièce d&apos;identité, justificatif d&apos;activité, qualification, RIB. Dommage ouvrage :
+        permis de construire, DOC/DROC, plans, conventions maîtrise d&apos;œuvre et contrôle technique, rapport étude
+        de sol. Assurance titre : titre de propriété, projet d&apos;acte, état hypothécaire, plan cadastral, note du
+        notaire. PDF ou image (max 10 Mo).
       </p>
 
       {error && (
@@ -131,6 +141,12 @@ export function GedUpload() {
           <h3 className="font-semibold text-[#0a0a0a] mb-3 text-sm">Dommage ouvrage</h3>
           <div className="space-y-4">
             {DOC_TYPES_DO.map((type) => docRow(type, uploaded, uploading, handleUpload, handleDelete))}
+          </div>
+        </div>
+        <div>
+          <h3 className="font-semibold text-[#0a0a0a] mb-3 text-sm">Assurance titre</h3>
+          <div className="space-y-4">
+            {DOC_TYPES_TITRE.map((type) => docRow(type, uploaded, uploading, handleUpload, handleDelete))}
           </div>
         </div>
       </div>

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
+import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
+import { authOptions } from "@/lib/auth"
 import { EMAIL_TEMPLATES, sendEmail } from "@/lib/email"
 import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
 import { getClientIp, checkRateLimitMemory } from "@/lib/rate-limit"
@@ -201,6 +203,24 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[devis-assurance-titre] prisma:", error)
     return NextResponse.json({ error: "Enregistrement impossible" }, { status: 500 })
+  }
+
+  try {
+    const session = await getServerSession(authOptions)
+    const emailNorm = email.trim().toLowerCase()
+    if (session?.user?.id && session.user.email?.trim().toLowerCase() === emailNorm) {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: {
+          titleInitialQuestionnaireJson: JSON.stringify(storedPayload),
+          raisonSociale: data.raisonSociale?.trim() || data.nomComplet,
+          ...(data.siret ? { siret: data.siret } : {}),
+          telephone: data.telephone,
+        },
+      })
+    }
+  } catch (error) {
+    console.error("[devis-assurance-titre] save user initial JSON:", error)
   }
 
   const lines: string[] = [

@@ -3,6 +3,7 @@ import Link from "next/link"
 import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
+import { AssuranceTitreClientGate } from "@/components/AssuranceTitreClientGate"
 import { FormulaireAssuranceTitre } from "@/components/FormulaireAssuranceTitre"
 import {
   seoBaseUrl,
@@ -142,10 +143,13 @@ export default function AssuranceTitrePage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Demande d&apos;étude</p>
               <h2 className="mt-2 text-2xl font-bold text-slate-900">Décrivez votre dossier</h2>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Plus votre demande est précise, plus l&apos;analyse initiale sera rapide et exploitable.
+                Plus votre demande est précise, plus l&apos;analyse initiale sera rapide et exploitable. Après envoi,
+                vous pourrez poursuivre le dossier dans votre espace client (questionnaire détaillé + dépôt de pièces).
               </p>
             </div>
-            <FormulaireAssuranceTitre />
+            <AssuranceTitreClientGate>
+              <FormulaireAssuranceTitre />
+            </AssuranceTitreClientGate>
           </section>
         </div>
 

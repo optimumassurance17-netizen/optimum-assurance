@@ -42,7 +42,16 @@ export async function POST(request: NextRequest) {
       leadTypeRaw === "rc-fabriquant" ||
       leadTypeRaw === "rc fabricant" ||
       leadTypeRaw === "rc_fabricant"
-    const leadType = isRcFabLeadType ? "rc_fabriquant" : "dommage_ouvrage"
+    const isTitleLeadType =
+      leadTypeRaw === "assurance_titre" ||
+      leadTypeRaw === "assurance-titre" ||
+      leadTypeRaw === "titre" ||
+      leadTypeRaw === "title"
+    const leadType = isRcFabLeadType
+      ? "rc_fabriquant"
+      : isTitleLeadType
+        ? "assurance_titre"
+        : "dommage_ouvrage"
 
     if (!leadId) {
       return NextResponse.json({ error: "leadId requis" }, { status: 400 })
@@ -54,6 +63,11 @@ export async function POST(request: NextRequest) {
             where: { id: leadId },
             select: { id: true, email: true, data: true },
           })
+        : leadType === "assurance_titre"
+          ? await prisma.devisAssuranceTitreLead.findUnique({
+              where: { id: leadId },
+              select: { id: true, email: true, data: true },
+            })
         : await prisma.devisDommageOuvrageLead.findUnique({
             where: { id: leadId },
             select: { id: true, email: true, data: true },
@@ -83,10 +97,11 @@ export async function POST(request: NextRequest) {
     try {
       const leadData = JSON.parse(lead.data) as {
         raisonSociale?: string
+        nomComplet?: string
         siret?: string
         telephone?: string
       }
-      raisonSociale = leadData.raisonSociale || null
+      raisonSociale = leadData.raisonSociale || leadData.nomComplet || null
       siret = leadData.siret ? String(leadData.siret).replace(/\s/g, "").trim() : null
       telephone = leadData.telephone ? String(leadData.telephone).trim() : null
     } catch {

@@ -66,5 +66,14 @@ test.describe("Assurance titre", () => {
 
     await expect(page.getByText("Demande envoyée")).toBeVisible()
     await expect(page.getByText(/Nous avons bien reçu votre demande d'étude/i)).toBeVisible()
+    await expect(page.getByText(/Créer mon espace client/i)).toBeVisible()
+    await expect(page.getByRole("link", { name: /J'ai déjà un compte/i })).toBeVisible()
+  })
+
+  test("espace client assurance titre redirige vers la connexion si non authentifié", async ({ page }) => {
+    await page.goto("/espace-client/assurance-titre")
+    await expect(page).toHaveURL(/\/connexion\?callbackUrl=%2Fespace-client%2Fassurance-titre/, {
+      timeout: 15000,
+    })
   })
 })
