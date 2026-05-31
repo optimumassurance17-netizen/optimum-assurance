@@ -413,6 +413,7 @@ interface DashboardData {
     byProduct: Record<string, number>
     rates: Record<string, number | null>
   }
+  schemaWarnings?: string[]
 }
 
 type RcFabLeadRow = NonNullable<DashboardData["devisRcFabriquantLeads"]>[number]
@@ -1656,6 +1657,16 @@ export default function GestionPage() {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-10">
         {data && (
           <>
+            {Array.isArray(data.schemaWarnings) && data.schemaWarnings.length > 0 && (
+              <section className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-4 text-amber-100">
+                <p className="font-semibold text-sm sm:text-base">Mode compatibilité activé sur certaines sections</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-50/95">
+                  {data.schemaWarnings.map((warning) => (
+                    <li key={warning}>{warning}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
             <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <input
@@ -4674,50 +4685,56 @@ export default function GestionPage() {
         </section>
 
         {/* Historique des résiliations */}
-        {data?.adminActivityLogs && data.adminActivityLogs.length > 0 && (
-          <section>
-            <h2 className="text-lg font-semibold text-white mb-4">Journal d&apos;audit admin (100 derniers)</h2>
-            <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
-              <table className="w-full text-sm min-w-[400px]">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left p-4 font-medium">Date</th>
-                    <th className="text-left p-4 font-medium">Admin</th>
-                    <th className="text-left p-4 font-medium">Action</th>
-                    <th className="text-left p-4 font-medium">Cible</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.adminActivityLogs.map((l) => (
+        <section>
+          <h2 className="text-lg font-semibold text-white mb-4">Journal d&apos;audit admin (100 derniers)</h2>
+          <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
+            <table className="w-full text-sm min-w-[400px]">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th className="text-left p-4 font-medium">Date</th>
+                  <th className="text-left p-4 font-medium">Admin</th>
+                  <th className="text-left p-4 font-medium">Action</th>
+                  <th className="text-left p-4 font-medium">Cible</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.adminActivityLogs && data.adminActivityLogs.length > 0 ? (
+                  data.adminActivityLogs.map((l) => (
                     <tr key={l.id} className="border-b border-gray-700/50">
                       <td className="p-4">{new Date(l.createdAt).toLocaleString("fr-FR")}</td>
                       <td className="p-4 text-gray-200">{l.adminEmail}</td>
                       <td className="p-4">{l.action}</td>
                       <td className="p-4 text-gray-200">{l.targetType} {l.targetId ? `#${l.targetId.slice(-6)}` : ""}</td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
-        {data?.resiliationLogs && data.resiliationLogs.length > 0 && (
-          <section>
-            <h2 className="text-lg font-semibold text-white mb-4">Historique des résiliations</h2>
-            <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
-              <table className="w-full text-sm min-w-[400px]">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left p-4 font-medium">Date</th>
-                    <th className="text-left p-4 font-medium">Document</th>
-                    <th className="text-left p-4 font-medium">Client</th>
-                    <th className="text-left p-4 font-medium">Admin</th>
-                    <th className="text-left p-4 font-medium">Motif</th>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="p-4 text-gray-300">
+                      Aucun historique d&apos;audit disponible pour le moment.
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {data.resiliationLogs.map((r) => (
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-white mb-4">Historique des résiliations</h2>
+          <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
+            <table className="w-full text-sm min-w-[400px]">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th className="text-left p-4 font-medium">Date</th>
+                  <th className="text-left p-4 font-medium">Document</th>
+                  <th className="text-left p-4 font-medium">Client</th>
+                  <th className="text-left p-4 font-medium">Admin</th>
+                  <th className="text-left p-4 font-medium">Motif</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.resiliationLogs && data.resiliationLogs.length > 0 ? (
+                  data.resiliationLogs.map((r) => (
                     <tr key={r.id} className="border-b border-gray-700/50">
                       <td className="p-4">{new Date(r.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-4 font-mono">{r.document.numero} ({r.document.type})</td>
@@ -4725,12 +4742,18 @@ export default function GestionPage() {
                       <td className="p-4 text-gray-200">{r.adminEmail}</td>
                       <td className="p-4 text-gray-200">{r.motif || "—"}</td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="p-4 text-gray-300">
+                      Aucune résiliation enregistrée pour le moment.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
 
       {/* Modal modification contrat / avenant — données alignées sur le JSON contrat / PDF */}

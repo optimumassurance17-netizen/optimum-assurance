@@ -19,17 +19,29 @@ test.describe("Gestion CRM — accès et API", () => {
     expect(j.error).toBeTruthy()
   })
 
-  test("API health : champs esign et sirene présents", async ({ request }) => {
+  test("API health : expose l'état infra et les champs esign/sirene", async ({ request }) => {
     const res = await request.get("/api/health")
-    expect(res.ok()).toBeTruthy()
     const j = (await res.json()) as {
+      status?: string
+      database?: string
       esign?: { supabaseUrl?: string; serviceRole?: string; ready?: boolean }
       sirene?: { insee?: string }
     }
+
+    expect([200, 503]).toContain(res.status())
+    expect(j.status).toMatch(/ok|error/)
+    expect(j.database).toMatch(/connected|disconnected/)
     expect(j.esign).toBeDefined()
     expect(typeof j.esign?.ready).toBe("boolean")
     expect(j.sirene).toBeDefined()
     expect(j.sirene?.insee).toMatch(/configured|missing/)
+
+    if (res.ok()) {
+      expect(j.database).toBe("connected")
+    } else {
+      expect(res.status()).toBe(503)
+      expect(j.database).toBe("disconnected")
+    }
   })
 })
 

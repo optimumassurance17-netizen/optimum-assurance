@@ -13,6 +13,16 @@ if (existsSync(envE2ePath)) {
 
 /** GitHub Actions : après `npm run build`, lancer l’app avec `next start` (voir workflow CI). */
 const useProductionServer = process.env.PLAYWRIGHT_USE_BUILD_SERVER === "1"
+const resolvedBaseUrl = process.env.PLAYWRIGHT_BASE_URL || (useProductionServer ? "http://127.0.0.1:3000" : "http://localhost:3000")
+
+// Les parcours E2E interrogent des routes NextAuth ; on injecte un secret de secours
+// pour éviter les faux négatifs en environnement de test local ou cloud.
+if (!process.env.NEXTAUTH_SECRET?.trim()) {
+  process.env.NEXTAUTH_SECRET = "playwright-e2e-secret-32-chars-min"
+}
+
+process.env.NEXTAUTH_URL ||= resolvedBaseUrl
+process.env.AUTH_TRUST_HOST ||= "true"
 
 export default defineConfig({
   testDir: "./e2e",
@@ -22,7 +32,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? "line" : "html",
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
+    baseURL: resolvedBaseUrl,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -32,13 +42,13 @@ export default defineConfig({
   webServer: useProductionServer
     ? {
         command: "npm run start",
-        url: "http://127.0.0.1:3000",
+        url: resolvedBaseUrl,
         reuseExistingServer: false,
         timeout: 180_000,
       }
     : {
         command: "npm run dev",
-        url: "http://localhost:3000",
+        url: resolvedBaseUrl,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
       },

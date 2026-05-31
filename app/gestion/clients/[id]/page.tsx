@@ -157,6 +157,7 @@ interface ClientData {
       createdAt: string
     }[]
   }
+  schemaWarnings?: string[]
 }
 
 function asMaybeString(value: unknown): string | null {
@@ -304,8 +305,8 @@ export default function ClientDetailPage() {
           setError("Accès refusé")
           return
         }
-        if (!res.ok) throw new Error("Erreur chargement")
-        const json = await readResponseJson<ClientData>(res)
+        const json = await readResponseJson<ClientData & { error?: string }>(res)
+        if (!res.ok) throw new Error(json.error || "Erreur chargement")
         setData(json)
         const u = json.user
         setProfileForm({
@@ -322,8 +323,8 @@ export default function ClientDetailPage() {
         setUserDocuments(json.userDocuments ?? [])
         setUserDocumentReviews(json.userDocumentReviews ?? {})
         setDevisAutonomyForm(toDevisAutonomyForm(json.devisAutonomy))
-      } catch {
-        setError("Client introuvable")
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Client introuvable")
       } finally {
         setLoading(false)
       }
@@ -367,6 +368,16 @@ export default function ClientDetailPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+        {Array.isArray(data.schemaWarnings) && data.schemaWarnings.length > 0 && (
+          <section className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-4 text-amber-100">
+            <p className="font-semibold text-sm sm:text-base">Mode compatibilité activé sur cette fiche</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-50/95">
+              {data.schemaWarnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          </section>
+        )}
         <section className="bg-[#252525] rounded-xl p-6 border border-gray-700">
           <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
             <h1 className="text-xl font-semibold text-white">Fiche client</h1>
@@ -921,120 +932,128 @@ export default function ClientDetailPage() {
           </section>
         )}
 
-        {(ddaConsents.length > 0 || ddaEvents.length > 0) && (
-          <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-5">
-            <div>
-              <h2 className="text-lg font-semibold text-white">Conformité DDA</h2>
-              <p className="text-xs text-gray-400 mt-1">
-                Journal des consentements devoir de conseil et contrôles d&apos;adéquation produit.
+        <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-5">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Conformité DDA</h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Journal des consentements devoir de conseil et contrôles d&apos;adéquation produit.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+              <p className="text-[11px] uppercase tracking-wide text-gray-400">Consentements DDA</p>
+              <p className="mt-1 text-xl font-semibold text-white">{ddaConsents.length}</p>
+            </div>
+            <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+              <p className="text-[11px] uppercase tracking-wide text-gray-400">Contrôles adéquation</p>
+              <p className="mt-1 text-xl font-semibold text-white">{ddaEvents.length}</p>
+            </div>
+            <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+              <p className="text-[11px] uppercase tracking-wide text-gray-400">Dernière preuve</p>
+              <p className="mt-1 text-sm font-medium text-gray-200">
+                {(() => {
+                  const latest = [
+                    ...ddaConsents.map((entry) => entry.acceptedAt),
+                    ...ddaEvents.map((entry) => entry.createdAt),
+                  ]
+                    .sort()
+                    .at(-1)
+                  return latest ? new Date(latest).toLocaleString("fr-FR") : "—"
+                })()}
               </p>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
-                <p className="text-[11px] uppercase tracking-wide text-gray-400">Consentements DDA</p>
-                <p className="mt-1 text-xl font-semibold text-white">{ddaConsents.length}</p>
-              </div>
-              <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
-                <p className="text-[11px] uppercase tracking-wide text-gray-400">Contrôles adéquation</p>
-                <p className="mt-1 text-xl font-semibold text-white">{ddaEvents.length}</p>
-              </div>
-              <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
-                <p className="text-[11px] uppercase tracking-wide text-gray-400">Dernière preuve</p>
-                <p className="mt-1 text-sm font-medium text-gray-200">
-                  {(() => {
-                    const latest = [
-                      ...ddaConsents.map((entry) => entry.acceptedAt),
-                      ...ddaEvents.map((entry) => entry.createdAt),
-                    ]
-                      .sort()
-                      .at(-1)
-                    return latest ? new Date(latest).toLocaleString("fr-FR") : "—"
-                  })()}
-                </p>
-              </div>
-            </div>
-
-            {ddaConsents.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-sky-200 mb-2">Consentements devoir de conseil</h3>
-                <div className="bg-[#1a1a1a] rounded-lg border border-gray-700 overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-gray-700">
-                        <th className="text-left p-3 font-medium text-gray-300">Date</th>
-                        <th className="text-left p-3 font-medium text-gray-300">Produit</th>
-                        <th className="text-left p-3 font-medium text-gray-300">Étape</th>
-                        <th className="text-left p-3 font-medium text-gray-300">Email</th>
+          <div>
+            <h3 className="text-sm font-semibold text-sky-200 mb-2">Consentements devoir de conseil</h3>
+            <div className="bg-[#1a1a1a] rounded-lg border border-gray-700 overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 font-medium text-gray-300">Date</th>
+                    <th className="text-left p-3 font-medium text-gray-300">Produit</th>
+                    <th className="text-left p-3 font-medium text-gray-300">Étape</th>
+                    <th className="text-left p-3 font-medium text-gray-300">Email</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ddaConsents.length > 0 ? (
+                    ddaConsents.map((row) => (
+                      <tr key={row.id} className="border-b border-gray-800/80">
+                        <td className="p-3 text-gray-200">{new Date(row.acceptedAt).toLocaleString("fr-FR")}</td>
+                        <td className="p-3">
+                          <span className="rounded bg-sky-900/40 px-2 py-1 text-sky-200">
+                            {ddaProductLabel(row.produit)}
+                          </span>
+                        </td>
+                        <td className="p-3 text-gray-200">{ddaPageLabel(row.page)}</td>
+                        <td className="p-3 text-gray-400">{row.email || "—"}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {ddaConsents.map((row) => (
-                        <tr key={row.id} className="border-b border-gray-800/80">
-                          <td className="p-3 text-gray-200">{new Date(row.acceptedAt).toLocaleString("fr-FR")}</td>
-                          <td className="p-3">
-                            <span className="rounded bg-sky-900/40 px-2 py-1 text-sky-200">
-                              {ddaProductLabel(row.produit)}
-                            </span>
-                          </td>
-                          <td className="p-3 text-gray-200">{ddaPageLabel(row.page)}</td>
-                          <td className="p-3 text-gray-400">{row.email || "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="p-3 text-gray-400">
+                        Aucun consentement DDA enregistré sur cette fiche.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-            {ddaEvents.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-emerald-200 mb-2">Preuves d&apos;adéquation et contrôles</h3>
-                <div className="space-y-3">
-                  {ddaEvents.map((event) => (
-                    <div key={event.id} className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className="rounded bg-emerald-900/40 px-2 py-1 text-emerald-200">
-                          {event.action}
-                        </span>
-                        <span className="text-gray-300">{new Date(event.createdAt).toLocaleString("fr-FR")}</span>
-                        <span className="text-gray-400">
-                          {event.targetType || "—"}
-                          {event.targetId ? ` #${event.targetId.slice(-8)}` : ""}
-                        </span>
-                      </div>
-                      {event.targetLabel ? (
-                        <p className="mt-1 text-xs text-gray-400">
-                          Cible : <span className="text-gray-300">{event.targetLabel}</span>
-                        </p>
-                      ) : null}
-                      <p className="mt-2 text-xs text-gray-300">
-                        Produit :{" "}
-                        <span className="text-white">
-                          {ddaProductLabel(
-                            asMaybeString(event.details.product) ||
-                              asMaybeString(event.details.produit) ||
-                              asMaybeString(event.details.recommendedProduct)
-                          )}
-                        </span>
-                      </p>
-                      {asMaybeString(event.details.needsSummary) && (
-                        <p className="mt-1 text-xs text-gray-200">
-                          <span className="text-gray-400">Besoins :</span> {asMaybeString(event.details.needsSummary)}
-                        </p>
-                      )}
-                      {asMaybeString(event.details.suitability) && (
-                        <p className="mt-1 text-xs text-gray-200">
-                          <span className="text-gray-400">Adéquation :</span> {asMaybeString(event.details.suitability)}
-                        </p>
-                      )}
+          <div>
+            <h3 className="text-sm font-semibold text-emerald-200 mb-2">Preuves d&apos;adéquation et contrôles</h3>
+            {ddaEvents.length > 0 ? (
+              <div className="space-y-3">
+                {ddaEvents.map((event) => (
+                  <div key={event.id} className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded bg-emerald-900/40 px-2 py-1 text-emerald-200">
+                        {event.action}
+                      </span>
+                      <span className="text-gray-300">{new Date(event.createdAt).toLocaleString("fr-FR")}</span>
+                      <span className="text-gray-400">
+                        {event.targetType || "—"}
+                        {event.targetId ? ` #${event.targetId.slice(-8)}` : ""}
+                      </span>
                     </div>
-                  ))}
-                </div>
+                    {event.targetLabel ? (
+                      <p className="mt-1 text-xs text-gray-400">
+                        Cible : <span className="text-gray-300">{event.targetLabel}</span>
+                      </p>
+                    ) : null}
+                    <p className="mt-2 text-xs text-gray-300">
+                      Produit :{" "}
+                      <span className="text-white">
+                        {ddaProductLabel(
+                          asMaybeString(event.details.product) ||
+                            asMaybeString(event.details.produit) ||
+                            asMaybeString(event.details.recommendedProduct)
+                        )}
+                      </span>
+                    </p>
+                    {asMaybeString(event.details.needsSummary) && (
+                      <p className="mt-1 text-xs text-gray-200">
+                        <span className="text-gray-400">Besoins :</span> {asMaybeString(event.details.needsSummary)}
+                      </p>
+                    )}
+                    {asMaybeString(event.details.suitability) && (
+                      <p className="mt-1 text-xs text-gray-200">
+                        <span className="text-gray-400">Adéquation :</span> {asMaybeString(event.details.suitability)}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3 text-xs text-gray-400">
+                Aucune preuve d&apos;adéquation enregistrée sur cette fiche.
               </div>
             )}
-          </section>
-        )}
+          </div>
+        </section>
 
         {(user.titleInitialQuestionnaireJson?.trim() || user.titleEtudeQuestionnaireJson?.trim()) && (
           <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4">
