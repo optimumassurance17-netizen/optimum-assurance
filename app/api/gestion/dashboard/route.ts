@@ -51,6 +51,7 @@ export const maxDuration = 60
 const DASH_LIST_LIMIT = 3000
 /** Pour le calcul des stats DO (sommes JSON) — plafond pour ne pas charger 100k lignes. */
 const DO_STATS_ATTESTATIONS_CAP = 10_000
+const NO_STORE_HEADERS = { "Cache-Control": "no-store, max-age=0" }
 
 function startOfUtcDay(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
@@ -227,7 +228,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id || !isAdmin(session)) {
-      return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403, headers: NO_STORE_HEADERS })
     }
     const now = new Date()
     const ddaConsentWindowStart = new Date(now.getTime() - 72 * 60 * 60 * 1000)
@@ -403,6 +404,7 @@ export async function GET() {
             take: 8,
             select: {
               id: true,
+              molliePaymentId: true,
               amount: true,
               status: true,
               paidAt: true,
@@ -1129,36 +1131,74 @@ export async function GET() {
       }
     })
 
-    return NextResponse.json({
-      users: usersWithDoFlags,
-      documents,
-      payments,
-      avenantFees,
-      devisDoLeads: devisDoLeadsWithSla,
-      devisRcFabriquantLeads: devisRcFabriquantLeadsWithUser,
-      devisEtudeLeads,
-      resiliationLogs,
-      resiliationRequests,
-      adminActivityLogs,
-      doStats,
-      devisLeads: devisLeadsWithSla,
-      devisDrafts,
-      pendingSignatures,
-      sepaSubscriptions: sepaSubscriptionsRows,
-      insuranceContractsCount,
-      insuranceContracts: insuranceContractsList,
-      dashboardActions: dashboardActionsLimited,
-      dashboardActionsSummary,
+    const existingMolliePaymentIds = new Set(
+      payments
+        .map((payment) => payment.molliePaymentId?.trim())
+        .filter((molliePaymentId): molliePaymentId is string => Boolean(molliePaymentId))
+    )
+    const syntheticLifecyclePayments = insuranceContractsList.flatMap((contract) => {
+      const userId = contract.user?.id ?? contract.userId
+      const userEmail = contract.user?.email?.trim()
+      if (!userId || !userEmail) return []
+
+      return contract.lifecyclePayments.flatMap((lifecyclePayment) => {
+        const molliePaymentId = lifecyclePayment.molliePaymentId?.trim()
+        if (!molliePaymentId || existingMolliePaymentIds.has(molliePaymentId)) return []
+        existingMolliePaymentIds.add(molliePaymentId)
+        return [
+          {
+            id: `lifecycle-${lifecyclePayment.id}`,
+            userId,
+            molliePaymentId,
+            amount: lifecyclePayment.amount,
+            status: lifecyclePayment.status,
+            paidAt: lifecyclePayment.paidAt,
+            createdAt: lifecyclePayment.createdAt,
+            user: {
+              email: userEmail,
+              raisonSociale: contract.user?.raisonSociale ?? null,
+            },
+          },
+        ]
+      })
     })
+    const unifiedPayments = [...payments, ...syntheticLifecyclePayments]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, DASH_LIST_LIMIT)
+
+    return NextResponse.json(
+      {
+        users: usersWithDoFlags,
+        documents,
+        payments: unifiedPayments,
+        avenantFees,
+        devisDoLeads: devisDoLeadsWithSla,
+        devisRcFabriquantLeads: devisRcFabriquantLeadsWithUser,
+        devisEtudeLeads,
+        resiliationLogs,
+        resiliationRequests,
+        adminActivityLogs,
+        doStats,
+        devisLeads: devisLeadsWithSla,
+        devisDrafts,
+        pendingSignatures,
+        sepaSubscriptions: sepaSubscriptionsRows,
+        insuranceContractsCount,
+        insuranceContracts: insuranceContractsList,
+        dashboardActions: dashboardActionsLimited,
+        dashboardActionsSummary,
+      },
+      { headers: NO_STORE_HEADERS }
+    )
   } catch (error) {
     console.error("Erreur dashboard gestion:", error)
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       (error.code === "P2021" || error.code === "P2022")
     ) {
-      return NextResponse.json(buildSchemaDriftFallbackDashboard(), { status: 200 })
+      return NextResponse.json(buildSchemaDriftFallbackDashboard(), { status: 200, headers: NO_STORE_HEADERS })
     }
     const body = errorPayloadForDashboard(error)
-    return NextResponse.json(body, { status: 500 })
+    return NextResponse.json(body, { status: 500, headers: NO_STORE_HEADERS })
   }
 }

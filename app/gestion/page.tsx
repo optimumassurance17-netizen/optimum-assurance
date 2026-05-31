@@ -903,14 +903,19 @@ export default function GestionPage() {
     const payments = data.payments ?? []
     const contracts: InsuranceContractRow[] = data.insuranceContracts ?? []
     const sepaSubscriptions: SepaSubscriptionRow[] = data.sepaSubscriptions ?? []
+    const normalizePaymentStatus = (status: string | null | undefined) => (status || "").trim().toLowerCase()
+    const isPaidStatus = (status: string | null | undefined) =>
+      ["paid", "completed", "succeeded"].includes(normalizePaymentStatus(status))
+    const isPendingStatus = (status: string | null | undefined) =>
+      ["pending", "open", "authorized"].includes(normalizePaymentStatus(status))
+    const isFailedStatus = (status: string | null | undefined) =>
+      ["failed", "expired", "canceled", "cancelled", "charged_back"].includes(
+        normalizePaymentStatus(status)
+      )
 
-    const paidPayments = payments.filter((p) => p.status.toLowerCase() === "paid")
-    const pendingPayments = payments.filter((p) =>
-      ["pending", "open", "authorized"].includes(p.status.toLowerCase())
-    )
-    const failedPayments = payments.filter((p) =>
-      ["failed", "expired", "canceled", "cancelled", "charged_back"].includes(p.status.toLowerCase())
-    )
+    const paidPayments = payments.filter((p) => isPaidStatus(p.status))
+    const pendingPayments = payments.filter((p) => isPendingStatus(p.status))
+    const failedPayments = payments.filter((p) => isFailedStatus(p.status))
 
     const paidAmount = paidPayments.reduce((acc, payment) => acc + payment.amount, 0)
     const pendingAmount = pendingPayments.reduce((acc, payment) => acc + payment.amount, 0)
@@ -945,7 +950,7 @@ export default function GestionPage() {
       const impayeDocumentId =
         contract.userId != null ? suspendedAttestationByUserId.get(contract.userId) ?? null : null
       for (const lifecyclePayment of contract.lifecyclePayments) {
-        if (lifecyclePayment.status.toLowerCase() === "paid") continue
+        if (isPaidStatus(lifecyclePayment.status) || lifecyclePayment.paidAt) continue
         const dueDateMs = Date.parse(lifecyclePayment.createdAt)
         const ageDays = Number.isFinite(dueDateMs)
           ? Math.max(0, Math.floor((now - dueDateMs) / DAY_MS))
@@ -1094,7 +1099,10 @@ export default function GestionPage() {
       try {
         for (let i = 0; i < attempts; i++) {
           try {
-            const res = await fetch("/api/gestion/dashboard", { credentials: "include" })
+            const res = await fetch("/api/gestion/dashboard", {
+              credentials: "include",
+              cache: "no-store",
+            })
             if (cancelled) return
             if (res.status === 403) {
               setError("Accès refusé (compte non autorisé dans ADMIN_EMAILS).")
