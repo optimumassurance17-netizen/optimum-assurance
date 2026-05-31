@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/Header"
 import { readResponseJson } from "@/lib/read-response-json"
 
 export default function ContactPage() {
-  const searchParams = useSearchParams()
   const [nom, setNom] = useState("")
   const [email, setEmail] = useState("")
   const [sujet, setSujet] = useState("")
@@ -17,10 +15,13 @@ export default function ContactPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const presetSujet = searchParams?.get("sujet")?.trim()
+    const presetSujet =
+      typeof window === "undefined"
+        ? ""
+        : new URLSearchParams(window.location.search).get("sujet")?.trim() || ""
     if (!presetSujet || sujet) return
     setSujet(presetSujet.slice(0, 120))
-  }, [searchParams, sujet])
+  }, [sujet])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
