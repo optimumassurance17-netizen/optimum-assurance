@@ -1,5 +1,14 @@
 import { expect, test } from "@playwright/test"
 
+async function dismissCookieBanner(page: import("@playwright/test").Page) {
+  const acceptButton = page.getByRole("button", { name: "Accepter" })
+  try {
+    await acceptButton.click({ timeout: 2000 })
+  } catch {
+    /* ignore */
+  }
+}
+
 test.describe("Assurance titre", () => {
   test("page disponible et formulaire envoyable", async ({ page }) => {
     await page.route("**/api/devis-assurance-titre", async (route) => {
@@ -11,6 +20,7 @@ test.describe("Assurance titre", () => {
     })
 
     await page.goto("/assurance-titre")
+    await dismissCookieBanner(page)
 
     await expect(page.getByRole("heading", { name: "Assurance titre immobilière" })).toBeVisible()
 
@@ -27,7 +37,15 @@ test.describe("Assurance titre", () => {
     await page.getByLabel(/Montant de l'opération/i).fill("850000")
     await page.getByLabel(/J'accepte que mes données soient utilisées/i).check()
 
-    await page.getByRole("button", { name: "Envoyer ma demande" }).click()
+    const submitButton = page.getByRole("button", { name: "Envoyer ma demande" })
+    await expect(submitButton).toBeEnabled()
+
+    const [response] = await Promise.all([
+      page.waitForResponse((response) => response.url().includes("/api/devis-assurance-titre")),
+      submitButton.click(),
+    ])
+
+    expect(response.ok()).toBeTruthy()
 
     await expect(page.getByText("Demande envoyée")).toBeVisible()
     await expect(page.getByText(/24 à 48 h ouvrées/i)).toBeVisible()
