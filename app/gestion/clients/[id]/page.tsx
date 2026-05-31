@@ -157,6 +157,7 @@ interface ClientData {
       createdAt: string
     }[]
   }
+  schemaWarnings?: string[]
 }
 
 function asMaybeString(value: unknown): string | null {
@@ -304,8 +305,8 @@ export default function ClientDetailPage() {
           setError("Accès refusé")
           return
         }
-        if (!res.ok) throw new Error("Erreur chargement")
-        const json = await readResponseJson<ClientData>(res)
+        const json = await readResponseJson<ClientData & { error?: string }>(res)
+        if (!res.ok) throw new Error(json.error || "Erreur chargement")
         setData(json)
         const u = json.user
         setProfileForm({
@@ -322,8 +323,8 @@ export default function ClientDetailPage() {
         setUserDocuments(json.userDocuments ?? [])
         setUserDocumentReviews(json.userDocumentReviews ?? {})
         setDevisAutonomyForm(toDevisAutonomyForm(json.devisAutonomy))
-      } catch {
-        setError("Client introuvable")
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Client introuvable")
       } finally {
         setLoading(false)
       }
@@ -367,6 +368,16 @@ export default function ClientDetailPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+        {Array.isArray(data.schemaWarnings) && data.schemaWarnings.length > 0 && (
+          <section className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-4 text-amber-100">
+            <p className="font-semibold text-sm sm:text-base">Mode compatibilité activé sur cette fiche</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-50/95">
+              {data.schemaWarnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          </section>
+        )}
         <section className="bg-[#252525] rounded-xl p-6 border border-gray-700">
           <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
             <h1 className="text-xl font-semibold text-white">Fiche client</h1>

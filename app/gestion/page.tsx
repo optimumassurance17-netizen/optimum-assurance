@@ -413,6 +413,7 @@ interface DashboardData {
     byProduct: Record<string, number>
     rates: Record<string, number | null>
   }
+  schemaWarnings?: string[]
 }
 
 type RcFabLeadRow = NonNullable<DashboardData["devisRcFabriquantLeads"]>[number]
@@ -1656,6 +1657,16 @@ export default function GestionPage() {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-10">
         {data && (
           <>
+            {Array.isArray(data.schemaWarnings) && data.schemaWarnings.length > 0 && (
+              <section className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-4 text-amber-100">
+                <p className="font-semibold text-sm sm:text-base">Mode compatibilité activé sur certaines sections</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-50/95">
+                  {data.schemaWarnings.map((warning) => (
+                    <li key={warning}>{warning}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
             <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <input
