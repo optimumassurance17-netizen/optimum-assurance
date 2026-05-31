@@ -10,14 +10,23 @@ import { logPdfGeneration } from "@/lib/pdf/logPdfGeneration"
 import { insuranceDataFromDoQuestionnaire } from "@/lib/pdf/quote-email-data"
 import { asJsonObject } from "@/lib/json-object"
 import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
+import {
+  buildConversionTrackingLines,
+  type ConversionTrackingContext,
+} from "@/lib/conversion-tracking"
 
 /**
  * Enregistre une demande de devis dommage ouvrage et envoie une estimation PDF par email si possible.
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = asJsonObject<{ email?: string; data?: unknown; coutTotal?: number | string }>(await request.json())
-    const { email, data, coutTotal } = body
+    const body = asJsonObject<{
+      email?: string
+      data?: unknown
+      coutTotal?: number | string
+      tracking?: ConversionTrackingContext
+    }>(await request.json())
+    const { email, data, coutTotal, tracking } = body
 
     if (!email || !data) {
       return NextResponse.json(
@@ -58,6 +67,7 @@ export async function POST(request: NextRequest) {
       if (parsed.destinationConstruction) lines.push(`Destination : ${String(parsed.destinationConstruction)}`)
       if (coutTotal != null && Number.isFinite(Number(coutTotal)))
         lines.push(`Montant TTC chantier (déclaré) : ${Number(coutTotal).toLocaleString("fr-FR")} €`)
+      lines.push(...buildConversionTrackingLines(tracking))
       await sendNewDevisRequestAlert({
         type: "dommage_ouvrage",
         clientEmail: String(email).trim(),

@@ -14,6 +14,7 @@ import {
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
 import { SITE_URL } from "@/lib/site-url"
 import { notFound } from "next/navigation"
+import { buildTrackedHref } from "@/lib/conversion-tracking"
 
 const baseUrl = SITE_URL
 const defaultOgImage = { url: `${baseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance" }
@@ -83,6 +84,12 @@ export default async function MetierPage({
   const expert = buildActivityExpertContent(data)
 
   const path = `/assurance-decennale/${data.slug}`
+  const trackedQuoteHref = buildTrackedHref(`/devis?metier=${encodeURIComponent(data.slug)}`, {
+    utmSource: "seo",
+    utmMedium: isHeadtermPage ? "metier-headterm" : "metier-page",
+    utmCampaign: `decennale-${data.slug}`,
+    entryPath: path,
+  })
   const metierJsonLd = seoJsonLdGraph([
     seoBreadcrumbListNode([
       { name: "Accueil", path: "/" },
@@ -297,7 +304,7 @@ export default async function MetierPage({
 
         <div className="text-center space-y-4">
           <Link
-            href={`/devis?metier=${encodeURIComponent(data.slug)}`}
+            href={trackedQuoteHref}
             className="inline-block bg-blue-600 text-white px-10 py-4 rounded-2xl hover:bg-blue-700 font-semibold shadow-lg shadow-[blue-600]/25 transition-all"
           >
             Devis {data.nom} personnalisé

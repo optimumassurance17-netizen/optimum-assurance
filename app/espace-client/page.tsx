@@ -14,6 +14,10 @@ import type { InsuranceContractListItem } from "@/lib/insurance-contract-types"
 import { PayInsuranceContractButton } from "@/components/insurance/PayInsuranceContractButton"
 import { InsuranceContractPdfLinks } from "@/components/insurance/InsuranceContractPdfLinks"
 import { primeTrimestrielle } from "@/lib/premium"
+import {
+  getInsuranceProductLabel,
+  insuranceProductAllowsActiveInstallmentPayments,
+} from "@/lib/insurance-product"
 
 interface DocumentItem {
   id: string
@@ -223,7 +227,15 @@ export default function EspaceClientPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
-  const [payments, setPayments] = useState<{ id: string; amount: number; status: string; paidAt: string | null; createdAt: string }[]>([])
+  const [payments, setPayments] = useState<{
+    id: string
+    amount: number
+    status: string
+    paidAt: string | null
+    createdAt: string
+    contractNumber?: string
+    productType?: string
+  }[]>([])
   const [savedDevisDrafts, setSavedDevisDrafts] = useState<SavedDevisDraftItem[]>([])
   const [pendingSignatures, setPendingSignatures] = useState<PendingSignatureItem[]>([])
   const [autonomyStatus, setAutonomyStatus] = useState<AutonomyStatusPayload | null>(null)
@@ -255,13 +267,24 @@ export default function EspaceClientPage() {
   const [nominativeLoading, setNominativeLoading] = useState(false)
   const [nominativeError, setNominativeError] = useState<string | null>(null)
   const [nominativeSuccess, setNominativeSuccess] = useState<string | null>(null)
+  const [titleEtudeBanner, setTitleEtudeBanner] = useState<{ show: boolean; hasSaved: boolean } | null>(null)
 
   useEffect(() => {
     if (status !== "authenticated") return
 
     const fetchData = async () => {
       try {
-        const [docsRes, summaryRes, paymentsRes, insRes, doqRes, draftsRes, pendingSignaturesRes, autonomyStatusRes] = await Promise.all([
+        const [
+          docsRes,
+          summaryRes,
+          paymentsRes,
+          insRes,
+          doqRes,
+          draftsRes,
+          pendingSignaturesRes,
+          autonomyStatusRes,
+          titleqRes,
+        ] = await Promise.all([
           fetch("/api/documents/list"),
           fetch("/api/client/summary"),
           fetch("/api/client/payments"),
@@ -270,6 +293,11 @@ export default function EspaceClientPage() {
           fetch("/api/client/devis-drafts"),
           fetch("/api/client/pending-signatures"),
           fetch("/api/client/autonomy-status"),
+          fetch("/api/client/title-questionnaire"),
+          fetch("/api/client/devis-drafts"),
+          fetch("/api/client/pending-signatures"),
+          fetch("/api/client/autonomy-status"),
+          fetch("/api/client/title-questionnaire"),
         ])
         if (docsRes.ok) setDocuments(await docsRes.json())
         if (summaryRes.ok) setSummary(await summaryRes.json())
@@ -314,6 +342,12 @@ export default function EspaceClientPage() {
           setAutonomyStatus(autonomyPayload)
         } else {
           setAutonomyStatus(null)
+        }
+        if (titleqRes.ok) {
+          const tq = (await titleqRes.json()) as { hasInitial?: boolean; hasEtudeSaved?: boolean }
+          setTitleEtudeBanner({ show: !!tq.hasInitial, hasSaved: !!tq.hasEtudeSaved })
+        } else {
+          setTitleEtudeBanner(null)
         }
         const profileRes = await fetch("/api/client/profile")
         if (profileRes.ok) setProfile(await profileRes.json())
@@ -552,6 +586,25 @@ export default function EspaceClientPage() {
           </section>
         )}
 
+        {!loading && titleEtudeBanner?.show && (
+          <div className="mb-8 rounded-2xl border border-violet-300/40 bg-violet-50 p-5 text-[#0a0a0a]">
+            <p className="mb-1 font-semibold">Assurance titre — dossier digital</p>
+            <p className="mb-3 text-sm text-[#171717]">
+              {titleEtudeBanner.hasSaved
+                ? "Vous pouvez mettre à jour votre questionnaire d’étude Assurance titre et poursuivre le dépôt des pièces."
+                : "Complétez le questionnaire d’étude Assurance titre pour centraliser les parties prenantes, le calendrier, les risques et les pièces du dossier."}
+            </p>
+            <Link
+              href="/espace-client/assurance-titre"
+              className="inline-flex text-sm font-semibold text-[#2563eb] hover:underline"
+            >
+              {titleEtudeBanner.hasSaved
+                ? "Modifier le questionnaire Assurance titre →"
+                : "Compléter le questionnaire Assurance titre →"}
+            </Link>
+          </div>
+        )}
+
         {/* Onglets */}
         <div className="flex gap-1 p-1 bg-[#e4e4e4] rounded-xl mb-10 w-fit" role="tablist">
           <button
@@ -628,16 +681,14 @@ export default function EspaceClientPage() {
                     <p className="font-mono text-sm text-[#0a0a0a]">{c.contractNumber}</p>
                     <p className="text-sm text-[#171717]">{c.clientName}</p>
                     <p className="text-xs text-[#666] mt-1">
-                      {c.productType === "do"
-                        ? "Dommages-ouvrage"
-                        : c.productType === "rc_fabriquant"
-                          ? "RC Fabriquant"
-                          : "Décennale"}{" "}
+                      {getInsuranceProductLabel(c.productType)}{" "}
                       ·{" "}
                       {c.productType === "rc_fabriquant" ? (
                         <>
                           {c.premium.toLocaleString("fr-FR")} € — montant de l&apos;échéance en cours (trimestriel) ·{" "}
                         </>
+                      ) : c.productType === "assurance_titre" ? (
+                        <>{c.premium.toLocaleString("fr-FR")} € TTC — règlement unique · </>
                       ) : c.productType === "decennale" ? (
                         <>
                           {c.premium.toLocaleString("fr-FR")} € / an — 1er trimestre CB puis SEPA ≈{" "}
@@ -668,12 +719,15 @@ export default function EspaceClientPage() {
                       </Link>
                     )}
                     {((c.status === CONTRACT_STATUS.approved && c.productType !== "decennale") ||
-                      (c.status === CONTRACT_STATUS.active && c.productType === "rc_fabriquant")) && (
+                      (c.status === CONTRACT_STATUS.active &&
+                        insuranceProductAllowsActiveInstallmentPayments(c.productType))) && (
                       <PayInsuranceContractButton
                         contractId={c.id}
                         label={
                           c.productType === "rc_fabriquant"
                             ? "Payer l\u2019échéance — virement Mollie"
+                            : c.productType === "assurance_titre"
+                              ? "Payer le dossier — virement Mollie"
                             : "Payer (virement Mollie)"
                         }
                       />
@@ -1061,7 +1115,9 @@ export default function EspaceClientPage() {
         <div className="mb-10">
           <GedUpload />
           <p className="text-sm text-[#171717] mt-4">
-            Décennale : KBIS, pièce d&apos;identité, justificatif d&apos;activité, qualification, RIB. Dommage ouvrage : permis de construire, DOC/DROC, plans, conventions, rapport étude de sol.
+            Décennale : KBIS, pièce d&apos;identité, justificatif d&apos;activité, qualification, RIB. Dommage ouvrage :
+            permis de construire, DOC/DROC, plans, conventions, rapport étude de sol. Assurance titre : titre de
+            propriété, projet d&apos;acte, état hypothécaire, plan cadastral, note du notaire.
           </p>
         </div>
         )}
@@ -1166,6 +1222,7 @@ export default function EspaceClientPage() {
                 <thead>
                   <tr className="border-b border-[#d4d4d4]">
                     <th className="text-left py-3 font-medium text-[#0a0a0a]">Date</th>
+                    <th className="text-left py-3 font-medium text-[#0a0a0a]">Référence</th>
                     <th className="text-left py-3 font-medium text-[#0a0a0a]">Montant</th>
                     <th className="text-left py-3 font-medium text-[#0a0a0a]">Statut</th>
                   </tr>
@@ -1174,10 +1231,36 @@ export default function EspaceClientPage() {
                   {payments.map((p) => (
                     <tr key={p.id} className="border-b border-[#d4d4d4]/50">
                       <td className="py-3 text-[#171717]">{new Date(p.paidAt || p.createdAt).toLocaleDateString("fr-FR")}</td>
+                      <td className="py-3 text-[#171717]">
+                        {p.contractNumber ? (
+                          <>
+                            <span className="font-mono text-xs">{p.contractNumber}</span>
+                            {p.productType ? (
+                              <span className="ml-2 text-xs text-[#666]">
+                                {getInsuranceProductLabel(p.productType)}
+                              </span>
+                            ) : null}
+                          </>
+                        ) : (
+                          <span className="text-xs text-[#666]">Paiement historique</span>
+                        )}
+                      </td>
                       <td className="py-3 font-medium text-[#0a0a0a]">{p.amount.toLocaleString("fr-FR")} €</td>
                       <td className="py-3">
-                        <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-900"}`}>
-                          {p.status === "paid" ? "Payé" : p.status === "pending" ? "En attente" : "Échoué"}
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            p.status === "paid"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : p.status === "pending" || p.status === "open" || p.status === "authorized"
+                                ? "bg-blue-100 text-blue-900"
+                                : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {p.status === "paid"
+                            ? "Payé"
+                            : p.status === "pending" || p.status === "open" || p.status === "authorized"
+                              ? "En attente"
+                              : "Échoué"}
                         </span>
                       </td>
                     </tr>

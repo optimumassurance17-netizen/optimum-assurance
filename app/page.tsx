@@ -7,6 +7,7 @@ import { garantiesDecennale, metiersBtp } from "@/lib/garanties-data"
 import { OpenChatbotButton } from "@/components/OpenChatbotButton"
 import { buildHomePageJsonLdGraph } from "@/lib/seo-home-jsonld"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
+import { buildTrackedHref } from "@/lib/conversion-tracking"
 
 /** Simulateur en chunk séparé : moins de JS critique sur le fil d’hydratation du hero / LCP (H1). */
 const SimulateurPrime = dynamic(
@@ -70,6 +71,36 @@ import {
 const reviewsUrl = process.env.NEXT_PUBLIC_REVIEWS_URL || "/avis"
 const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
 const HOME_SEO_TITLE = "Assurance décennale BTP en ligne | Devis 3 min et attestation | Optimum Assurance"
+const HOME_DECENNALE_HERO_HREF = buildTrackedHref("/devis", {
+  utmSource: "site",
+  utmMedium: "home-hero",
+  utmCampaign: "decennale",
+  entryPath: "/",
+})
+const HOME_DECENNALE_PRICE_HREF = buildTrackedHref("/devis", {
+  utmSource: "site",
+  utmMedium: "home-price-card",
+  utmCampaign: "decennale",
+  entryPath: "/",
+})
+const HOME_DO_HERO_HREF = buildTrackedHref("/devis-dommage-ouvrage", {
+  utmSource: "site",
+  utmMedium: "home-do-hero",
+  utmCampaign: "dommage-ouvrage",
+  entryPath: "/",
+})
+const HOME_TITLE_HERO_HREF = buildTrackedHref("/assurance-titre", {
+  utmSource: "site",
+  utmMedium: "home-title-study",
+  utmCampaign: "assurance-titre",
+  entryPath: "/",
+})
+const HOME_DECENNALE_FINAL_HREF = buildTrackedHref("/devis", {
+  utmSource: "site",
+  utmMedium: "home-final-cta",
+  utmCampaign: "decennale",
+  entryPath: "/",
+})
 
 export const metadata: Metadata = {
   title: {
@@ -158,7 +189,7 @@ export default function Home() {
               <p className="mb-10 text-sm text-slate-700 max-w-lg">{LEGENDE_PAIEMENT_TRIMESTRIEL}</p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  href="/devis"
+                  href={HOME_DECENNALE_HERO_HREF}
                   className="inline-flex justify-center items-center rounded-2xl bg-blue-600 px-8 py-4 text-center text-base font-semibold text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5"
                 >
                   Obtenir mon tarif
@@ -190,7 +221,7 @@ export default function Home() {
                   <span className="mt-2 block text-xs text-slate-600">{LEGENDE_PAIEMENT_TRIMESTRIEL_COURT}</span>
                 </p>
                 <Link
-                  href="/devis"
+                  href={HOME_DECENNALE_PRICE_HREF}
                   className="block w-full rounded-2xl bg-blue-600 py-4 text-center font-semibold text-white shadow-md shadow-blue-600/20 transition-all hover:bg-blue-700"
                 >
                   Obtenir ce tarif
@@ -206,24 +237,61 @@ export default function Home() {
       <HomeHowItWorks />
       <HomeQrSection />
 
-      {/* RC Fabriquant — bandeau discret vers la demande à l’étude */}
-      <section className="px-4 sm:px-6 md:px-8 py-10 bg-gradient-to-r from-teal-50 via-white to-slate-50 border-y border-teal-100/80" aria-labelledby="rc-fab-section">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div>
-            <h2 id="rc-fab-section" className="text-xl md:text-2xl font-bold text-slate-900 mb-2">
-              Responsabilité civile fabricant
+      {/* Produits à étude manuelle */}
+      <section className="border-y border-violet-100/80 bg-gradient-to-r from-violet-50 via-white to-teal-50 px-4 py-10 sm:px-6 md:px-8" aria-labelledby="etude-manuelle-section">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-8 max-w-3xl">
+            <span className="inline-block rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-900 shadow-sm">
+              Produits à étude sur dossier
+            </span>
+            <h2 id="etude-manuelle-section" className="mt-3 text-2xl font-bold text-slate-900">
+              Besoin d&apos;un montage plus spécifique ?
             </h2>
-            <p className="text-slate-700 max-w-2xl leading-relaxed">
-              Vous fabriquez ou distribuez des biens ? Protégez-vous contre les dommages causés par vos produits après
-              leur mise sur le marché. Demande personnalisée, étude par nos équipes.
+            <p className="mt-2 max-w-2xl leading-relaxed text-slate-700">
+              Certains risques nécessitent une lecture humaine du dossier plutôt qu&apos;un tarificateur public. Nous
+              ouvrons ces demandes via un formulaire qualifié puis un retour de l&apos;équipe.
             </p>
           </div>
-          <Link
-            href="/devis-rc-fabriquant"
-            className="shrink-0 inline-flex justify-center items-center rounded-2xl bg-teal-700 px-8 py-4 text-center text-base font-semibold text-white shadow-md shadow-teal-900/20 transition-all hover:bg-teal-800"
-          >
-            Faire une demande RC fabriquant
-          </Link>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-3xl border border-teal-200 bg-white p-6 shadow-sm">
+              <h3 className="text-xl font-bold text-slate-900">Responsabilité civile fabricant</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                Vous fabriquez ou distribuez des biens ? Protégez-vous contre les dommages causés par vos produits
+                après leur mise sur le marché. Étude personnalisée par nos équipes.
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                <li>• Produits industriels, alimentaires, cosmétiques, électroniques, batteries</li>
+                <li>• Zone France, Europe ou monde</li>
+                <li>• Retour en général sous 24 à 48 h ouvrées</li>
+              </ul>
+              <Link
+                href="/devis-rc-fabriquant"
+                className="mt-6 inline-flex items-center justify-center rounded-2xl bg-teal-700 px-6 py-3 text-base font-semibold text-white shadow-md shadow-teal-900/20 transition-all hover:bg-teal-800"
+              >
+                Faire une demande RC fabriquant
+              </Link>
+            </div>
+
+            <div className="rounded-3xl border border-violet-200 bg-white p-6 shadow-sm">
+              <h3 className="text-xl font-bold text-slate-900">Assurance titre immobilière</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                Sécurisez une acquisition, un refinancement ou un closing complexe avec une étude confidentielle sur le
+                titre, les charges, servitudes, erreurs documentaires ou risques de fraude.
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                <li>• Acquéreurs, investisseurs, marchands de biens, prêteurs, notaires</li>
+                <li>• Actifs résidentiels, tertiaires, terrains ou portefeuilles</li>
+                <li>• Analyse initiale en général sous 24 à 48 h ouvrées</li>
+              </ul>
+              <Link
+                href={HOME_TITLE_HERO_HREF}
+                className="mt-6 inline-flex items-center justify-center rounded-2xl bg-violet-700 px-6 py-3 text-base font-semibold text-white shadow-md shadow-violet-900/20 transition-all hover:bg-violet-800"
+              >
+                Étudier mon dossier
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -260,7 +328,7 @@ export default function Home() {
                 </ul>
                 <div className="flex flex-wrap gap-3 mb-6">
                   <Link
-                    href="/devis-dommage-ouvrage"
+                    href={HOME_DO_HERO_HREF}
                     className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-2xl hover:bg-white/95 transition-all font-bold shadow-xl"
                   >
                     Demander mon devis DO
@@ -286,7 +354,7 @@ export default function Home() {
                   <p className="text-4xl md:text-5xl font-bold mb-2">Sous 24h</p>
                   <p className="text-white/90 text-sm mb-6">Prix indicatif immédiat selon le coût de construction</p>
                   <Link
-                    href="/devis-dommage-ouvrage"
+                    href={HOME_DO_HERO_HREF}
                     className="block w-full bg-white text-blue-600 py-4 rounded-xl hover:bg-white/95 font-semibold transition-all"
                   >
                     Commencer ma demande
@@ -698,7 +766,7 @@ export default function Home() {
             Conformité légale et meilleur prix — protégez votre activité dès aujourd&apos;hui
           </h2>
           <Link
-            href="/devis"
+            href={HOME_DECENNALE_FINAL_HREF}
             className="inline-block bg-blue-600 text-white px-10 py-4 rounded-2xl hover:bg-blue-700 transition-all font-semibold shadow-lg shadow-blue-600/25 hover:-translate-y-0.5"
           >
             Mon devis en 3 minutes

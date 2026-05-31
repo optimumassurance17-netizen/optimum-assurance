@@ -5,6 +5,12 @@ import { useMemo, useState } from "react"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { primeTrimestrielle } from "@/lib/premium"
 import { readResponseJson } from "@/lib/read-response-json"
+import {
+  getInsuranceProductLabel,
+  insuranceProductHasBundledQuotePolicy,
+  insuranceProductHasFic,
+  insuranceProductHasSchedule,
+} from "@/lib/insurance-product"
 
 export type InsuranceContractGestionRow = {
   id: string
@@ -108,6 +114,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
         {(
           [
             ["all", "Tous"],
+            ["assurance_titre", "Assurance titre"],
             ["rc_fabriquant", "RC Fabriquant"],
             ["decennale", "Décennale"],
             ["do", "DO"],
@@ -166,7 +173,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                   <tr key={c.id} className="border-b border-gray-700/50">
                     <td className="p-3 sm:p-4">
                       <span className="font-mono text-xs text-white">{c.contractNumber}</span>
-                      <p className="text-xs text-gray-400 mt-0.5">{c.productType}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{getInsuranceProductLabel(c.productType)}</p>
                     </td>
                     <td className="p-3 sm:p-4">
                       <p className="text-gray-100">{c.clientName}</p>
@@ -189,6 +196,9 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                       ) : null}
                       {c.productType === "rc_fabriquant" ? (
                         <p className="text-xs text-gray-500 mt-1">Montant du prochain virement Mollie (modifiable)</p>
+                      ) : null}
+                      {c.productType === "assurance_titre" ? (
+                        <p className="text-xs text-violet-300/90 mt-1">Paiement unique du dossier après signature électronique</p>
                       ) : null}
                     </td>
                     <td className="p-3 sm:p-4">
@@ -213,7 +223,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                         >
                           Vérifier
                         </a>
-                        {c.productType === "do" || c.productType === "decennale" ? (
+                        {insuranceProductHasBundledQuotePolicy(c.productType) ? (
                           <a
                             href={`/api/contracts/${c.id}/pdf/quote`}
                             target="_blank"
@@ -242,7 +252,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                             </a>
                           </>
                         )}
-                        {(c.productType === "decennale" || c.productType === "rc_fabriquant") &&
+                        {insuranceProductHasSchedule(c.productType) &&
                         (c.status === CONTRACT_STATUS.approved || c.status === CONTRACT_STATUS.active) ? (
                           <a
                             href={`/api/contracts/${c.id}/pdf/schedule`}
@@ -253,7 +263,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                             Échéancier
                           </a>
                         ) : null}
-                        {c.productType === "rc_fabriquant" ? (
+                        {insuranceProductHasFic(c.productType) ? (
                           <a
                             href={`/api/contracts/${c.id}/pdf/fic`}
                             target="_blank"

@@ -6,6 +6,11 @@ import { calculateRiskScore, requiresManualReview } from "@/lib/risk-scoring"
 import { renderContractPdf } from "@/lib/insurance-contract-pdf"
 import { SITE_URL } from "@/lib/site-url"
 import { primeTrimestrielle } from "@/lib/premium"
+import {
+  insuranceProductAllowsActiveInstallmentPayments,
+  insuranceProductHasSchedule,
+} from "@/lib/insurance-product"
+import { readAssuranceTitreCoverageDurationYears } from "@/lib/assurance-titre-contract-config"
 
 export type CreateContractInput = {
   productType: "decennale" | "do"
@@ -152,6 +157,7 @@ export function premiumMatchesMollieAmount(contractPremium: number, paidAmount: 
  * Montant attendu pour un paiement Mollie `insurance_contract` (virement).
  * - **Décennale** : `premium` en base = prime **annuelle** TTC → chaque virement = 1 trimestre (hors parcours 1er trimestre CB + SEPA).
  * - **DO** : `premium` = montant unique du contrat.
+ * - **Assurance titre** : `premium` = montant unique du dossier.
  * - **RC Fabriquant** : `premium` = montant de l’échéance courante (saisi en gestion).
  */
 export function mollieExpectedAmountForInsuranceContract(productType: string, premiumAnnualOrInstallment: number): number {
@@ -176,7 +182,7 @@ async function generatePostPaymentPdfs(contractId: string, fresh: InsuranceContr
   const certBytes = await renderContractPdf(fresh, "certificate")
   const invBytes = await renderContractPdf(fresh, "invoice")
   let scheduleBytes: Uint8Array | null = null
-  if (fresh.productType === "decennale" || fresh.productType === "rc_fabriquant") {
+  if (insuranceProductHasSchedule(fresh.productType)) {
     try {
       scheduleBytes = await renderContractPdf(fresh, "schedule")
     } catch (e) {
@@ -185,7 +191,7 @@ async function generatePostPaymentPdfs(contractId: string, fresh: InsuranceContr
   }
   const baseUrl = `${SITE_URL}/api/contracts/${contractId}/pdf`
   const deleteTypes =
-    fresh.productType === "decennale" || fresh.productType === "rc_fabriquant"
+    insuranceProductHasSchedule(fresh.productType)
       ? (["certificate", "invoice", "schedule"] as const)
       : (["certificate", "invoice"] as const)
   await prisma.contractStoredDocument.deleteMany({
@@ -259,7 +265,7 @@ export async function processInsuranceContractPaymentSuccess(
    * RC Fabriquant : cotisation par échéances (virement Mollie). Une fois le contrat actif, les paiements suivants
    * avec un **nouvel** id Mollie doivent être enregistrés (trimestre suivant), pas ignorés comme doublon.
    */
-  if (c.status === CONTRACT_STATUS.active && c.paidAt && c.productType === "rc_fabriquant") {
+  if (c.status === CONTRACT_STATUS.active && c.paidAt && insuranceProductAllowsActiveInstallmentPayments(c.productType)) {
     if (!premiumMatchesMollieAmount(c.premium, amount)) {
       await logContractAction(contractId, "payment_amount_mismatch", {
         molliePaymentId,
@@ -290,7 +296,7 @@ export async function processInsuranceContractPaymentSuccess(
         data: {
           contractId,
           action: "installment_paid",
-          details: JSON.stringify({ molliePaymentId, amount, productType: "rc_fabriquant" }),
+          details: JSON.stringify({ molliePaymentId, amount, productType: c.productType }),
         },
       })
     })
@@ -322,6 +328,11 @@ export async function processInsuranceContractPaymentSuccess(
   const validUntil =
     c.productType === "do"
       ? addYears(paidAt, 10)
+      : c.productType === "assurance_titre"
+        ? addYears(
+            paidAt,
+            readAssuranceTitreCoverageDurationYears(c.exclusionsJson, 10)
+          )
       : addYears(paidAt, 1)
 
   await prisma.$transaction(async (tx) => {

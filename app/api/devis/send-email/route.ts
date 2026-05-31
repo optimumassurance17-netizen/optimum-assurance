@@ -9,6 +9,10 @@ import { logPdfGeneration } from "@/lib/pdf/logPdfGeneration"
 import { insuranceDataFromDecennaleDevis } from "@/lib/pdf/quote-email-data"
 import { asJsonObject } from "@/lib/json-object"
 import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
+import {
+  buildConversionTrackingLines,
+  type ConversionTrackingContext,
+} from "@/lib/conversion-tracking"
 
 const DRAFT_EXPIRY_DAYS = 7
 
@@ -20,6 +24,7 @@ type DecennaleDraftPayload = {
   raisonSociale?: string
   siret?: string
   tarif?: DecennaleDraftTarif
+  tracking?: ConversionTrackingContext
 }
 
 /**
@@ -111,6 +116,7 @@ export async function POST(request: NextRequest) {
       if (devis.siret?.trim()) lines.push(`SIRET : ${String(devis.siret).trim()}`)
       if (typeof tarif?.primeAnnuelle === "number")
         lines.push(`Prime annuelle indicative : ${tarif.primeAnnuelle.toLocaleString("fr-FR")} €`)
+      lines.push(...buildConversionTrackingLines(devis.tracking))
       lines.push(`Lien reprise du brouillon : ${resumeUrl}`)
       await sendNewDevisRequestAlert({
         type: "decennale",

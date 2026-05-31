@@ -53,6 +53,7 @@ export function buildStaticSitemapEntries(): SitemapEntry[] {
     { url: `${baseUrl}/devis-dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
     { url: `${baseUrl}/devis-rc-fabriquant`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.85 },
     { url: `${baseUrl}/devis/rcpro`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.65 },
+    { url: `${baseUrl}/assurance-titre`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.78 },
     { url: `${baseUrl}/faq`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.85 },
     { url: `${baseUrl}/a-propos`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.78 },
     { url: `${baseUrl}/comparatifs/decennale-vs-rc-pro`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.76 },

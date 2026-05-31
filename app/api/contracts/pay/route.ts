@@ -11,6 +11,7 @@ import {
 } from "@/lib/insurance-contract-service"
 import { insuranceContractPayLockKeys } from "@/lib/insurance-contract-pay-lock"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
+import { getInsuranceProductLabel } from "@/lib/insurance-product"
 
 /** Statuts Mollie pour lesquels le client peut encore utiliser le même paiement. */
 const MOLLIE_REUSABLE_STATUSES = new Set(["open", "pending", "authorized"])
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
 
       const payment = await mollieClient.payments.create({
         amount: { currency: "EUR", value: String(amount.toFixed(2)) },
-        description: `Assurance ${contract.productType} — ${contract.contractNumber}`,
+        description: `${getInsuranceProductLabel(contract.productType)} — ${contract.contractNumber}`,
         redirectUrl: `${baseUrl}/confirmation`,
         webhookUrl: `${baseUrl}/api/mollie/webhook`,
         method: PaymentMethod.banktransfer,

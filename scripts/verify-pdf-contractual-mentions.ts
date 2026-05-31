@@ -4,6 +4,10 @@ import pdfParse from "pdf-parse"
 import { generateDecennaleQuotePolicyBundle } from "@/lib/pdf/decennale/generateQuotePolicyBundle"
 import { generateDOQuotePolicyBundle } from "@/lib/pdf/do/generateQuotePolicyBundle"
 import { renderContractPdf } from "@/lib/insurance-contract-pdf"
+import {
+  buildAssuranceTitreContractConfig,
+  serializeAssuranceTitreContractConfig,
+} from "@/lib/assurance-titre-contract-config"
 import type { InsuranceData } from "@/lib/pdf/types"
 import type { InsuranceContract } from "@/lib/prisma-client"
 
@@ -19,6 +23,11 @@ const DEVOIR_CONSEIL_ONLY: MentionCheck[] = [
 const RC_FAB_MENTIONS: MentionCheck[] = [
   { label: "mention protection juridique", regex: /protection\s+juridique/i },
   { label: "montant protection juridique 20 000", regex: /20[\s\u00a0\u202f]*000/i },
+  { label: "mention devoir de conseil", regex: /devoir\s+de\s+conseil/i },
+]
+
+const ASSURANCE_TITRE_MENTIONS: MentionCheck[] = [
+  { label: "mention Assurance titre", regex: /assurance\s+titre/i },
   { label: "mention devoir de conseil", regex: /devoir\s+de\s+conseil/i },
 ]
 
@@ -107,23 +116,95 @@ function sampleRcFabContract(): InsuranceContract {
   } as unknown as InsuranceContract
 }
 
+function sampleAssuranceTitreContract(): InsuranceContract {
+  const config = buildAssuranceTitreContractConfig({
+    referenceContrat: "QA-TIT-0001",
+    primeAnnuelleTtc: 1800,
+    primeAnnuelleHt: 1500,
+    coverageDurationYears: 10,
+    dossier: {
+      contactName: "Claire Martin",
+      structureName: "SCI Demo",
+      propertyAddress: "22 rue du Titre",
+      propertyPostalCode: "33000",
+      propertyCity: "Bordeaux",
+      operationLabel: "Acquisition",
+      propertyTypeLabel: "Immeuble",
+      needLabel: "Securisation de la transaction",
+      capitalAmount: 450000,
+      riskLabels: ["Servitude contestee"],
+      parties: ["Notaire: Maitre Test", "Vendeur: Societe Exemple"],
+      availableDocuments: ["Titre de propriete", "Projet d'acte"],
+    },
+  })
+
+  return {
+    id: "qa-titre-1",
+    userId: "qa-user-2",
+    productType: "assurance_titre",
+    contractNumber: "QA-TIT-0001",
+    clientName: "Claire Martin",
+    siret: null,
+    address: "22 rue du Titre, 33000 Bordeaux",
+    activitiesJson: JSON.stringify([]),
+    exclusionsJson: serializeAssuranceTitreContractConfig(config),
+    projectName: null,
+    projectAddress: null,
+    constructionNature: null,
+    premium: 1800,
+    status: "active",
+    validFrom: new Date("2026-02-01T10:00:00.000Z"),
+    validUntil: new Date("2036-02-01T10:00:00.000Z"),
+    paidAt: new Date("2026-02-01T10:00:00.000Z"),
+    insurerValidatedAt: new Date("2026-02-01T10:00:00.000Z"),
+    riskScore: null,
+    rejectedReason: null,
+    createdAt: new Date("2026-02-01T10:00:00.000Z"),
+    updatedAt: new Date("2026-02-01T10:00:00.000Z"),
+    molliePaymentId: null,
+    paymentStatus: "paid",
+    signedQuoteStorageKey: null,
+    reminderSentAt: null,
+    reminderAt: null,
+  } as unknown as InsuranceContract
+}
+
 async function main(): Promise<void> {
   const decQuotePolicyPdf = await generateDecennaleQuotePolicyBundle(sampleDecennaleData(), "proposition")
   const doQuotePolicyPdf = await generateDOQuotePolicyBundle(sampleDoData(), "proposition")
   const rcFabPolicyPdf = await renderContractPdf(sampleRcFabContract(), "policy")
   const rcFabFicPdf = await renderContractPdf(sampleRcFabContract(), "fic")
+  const assuranceTitrePolicyPdf = await renderContractPdf(sampleAssuranceTitreContract(), "policy")
+  const assuranceTitreCertificatePdf = await renderContractPdf(
+    sampleAssuranceTitreContract(),
+    "certificate"
+  )
 
   const decText = await extractPdfText(decQuotePolicyPdf)
   const doText = await extractPdfText(doQuotePolicyPdf)
   const rcFabText = await extractPdfText(rcFabPolicyPdf)
   const rcFabFicText = await extractPdfText(rcFabFicPdf)
+  const assuranceTitrePolicyText = await extractPdfText(assuranceTitrePolicyPdf)
+  const assuranceTitreCertificateText = await extractPdfText(assuranceTitreCertificatePdf)
 
   assertMentions(decText, "devis+conditions particulières décennale", DEVOIR_CONSEIL_ONLY)
   assertMentions(doText, "devis+conditions particulières dommage-ouvrage", DEVOIR_CONSEIL_ONLY)
   assertMentions(rcFabText, "conditions RC Fabriquant", RC_FAB_MENTIONS)
   assertMentions(rcFabFicText, "FIC RC Fabriquant", RC_FAB_MENTIONS)
+  assertMentions(
+    assuranceTitrePolicyText,
+    "conditions particulières Assurance titre",
+    ASSURANCE_TITRE_MENTIONS
+  )
+  assertMentions(
+    assuranceTitreCertificateText,
+    "attestation Assurance titre",
+    ASSURANCE_TITRE_MENTIONS
+  )
 
-  console.log("OK: Mentions contractuelles PDF conformes (devoir de conseil + protection juridique).")
+  console.log(
+    "OK: Mentions contractuelles PDF conformes (devoir de conseil + protection juridique + Assurance titre)."
+  )
 }
 
 main().catch((error) => {

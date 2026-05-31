@@ -19,11 +19,19 @@ function generateTempPassword(): string {
   return pwd
 }
 
-type SupportedLeadType = "dommage_ouvrage" | "rc_fabriquant" | "decennale" | "etude"
+type SupportedLeadType =
+  | "dommage_ouvrage"
+  | "rc_fabriquant"
+  | "decennale"
+  | "etude"
+  | "assurance_titre"
 
 function normalizeLeadType(raw: string): SupportedLeadType {
   if (["rc_fabriquant", "rc-fabriquant", "rc fabricant", "rc_fabricant"].includes(raw)) {
     return "rc_fabriquant"
+  }
+  if (["assurance_titre", "assurance-titre", "titre", "title"].includes(raw)) {
+    return "assurance_titre"
   }
   if (["decennale", "décennale", "devis_decennale", "devis-décennale"].includes(raw)) {
     return "decennale"
@@ -44,10 +52,6 @@ function parseLeadData(raw: string | null | undefined): Record<string, unknown> 
   } catch {
     return {}
   }
-}
-
-function optionalString(value: unknown): string | null {
-  return typeof value === "string" && value.trim() ? value.trim() : null
 }
 
 export async function POST(request: NextRequest) {
@@ -81,6 +85,11 @@ export async function POST(request: NextRequest) {
             where: { id: leadId },
             select: { id: true, email: true, data: true },
           })
+        : leadType === "assurance_titre"
+          ? await prisma.devisAssuranceTitreLead.findUnique({
+              where: { id: leadId },
+              select: { id: true, email: true, data: true },
+            })
         : leadType === "decennale"
           ? await prisma.devisLead.findUnique({
               where: { id: leadId },
@@ -141,6 +150,9 @@ export async function POST(request: NextRequest) {
         ...(codePostal ? { codePostal } : {}),
         ...(ville ? { ville } : {}),
         ...(leadType === "dommage_ouvrage" && "data" in lead ? { doInitialQuestionnaireJson: lead.data } : {}),
+        ...(leadType === "assurance_titre" && "data" in lead
+          ? { titleInitialQuestionnaireJson: lead.data }
+          : {}),
       },
     })
 

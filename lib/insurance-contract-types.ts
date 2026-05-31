@@ -20,6 +20,6 @@ export type InsuranceContractSnapshot = {
   contractNumber: string
   status: string
   rejectedReason?: string | null
-  /** Décennale : signature → mandat → paiement trimestriel. DO : virement contrat plateforme. RC Fab : virements par échéance. */
-  productType?: "decennale" | "do" | "rc_fabriquant"
+  /** Décennale : signature → mandat → paiement trimestriel. DO / Assurance titre : virement contrat plateforme. RC Fab : virements par échéance. */
+  productType?: "decennale" | "do" | "rc_fabriquant" | "assurance_titre"
 }

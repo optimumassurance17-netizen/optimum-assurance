@@ -26,7 +26,12 @@ export function getDevisAlertRecipientEmails(): string[] {
   return out
 }
 
-type DevisAlertType = "decennale" | "dommage_ouvrage" | "rc_fabriquant" | "etude"
+type DevisAlertType =
+  | "decennale"
+  | "dommage_ouvrage"
+  | "rc_fabriquant"
+  | "etude"
+  | "assurance_titre"
 
 /**
  * Envoie une alerte interne pour chaque nouvelle demande de devis (Resend).
@@ -52,7 +57,9 @@ export async function sendNewDevisRequestAlert(params: {
         ? "Dommage ouvrage"
         : params.type === "rc_fabriquant"
           ? "RC Fabriquant"
-          : "Étude personnalisée"
+          : params.type === "assurance_titre"
+            ? "Assurance titre"
+            : "Étude personnalisée"
   const subject = `[Optimum] Nouvelle demande de devis — ${label}`
   const clientEmail = params.clientEmail.trim()
 
@@ -157,4 +164,66 @@ ${htmlLines}
   if (!results.some(Boolean)) {
     console.warn("[devis-alert] DO étude: envoi interne KO pour tous les destinataires.")
   }
+}
+
+/**
+ * Alerte interne lorsque le client enregistre / met à jour son questionnaire d’étude Assurance titre.
+ */
+export async function sendAssuranceTitreEtudeSavedAlert(params: {
+  clientEmail: string
+  contactName?: string
+  assetCity?: string
+  isUpdate: boolean
+}): Promise<void> {
+  const recipients = getDevisAlertRecipientEmails()
+  if (recipients.length === 0) {
+    console.warn(
+      "[devis-alert] Assurance titre étude : aucun destinataire — définissez DEVIS_ALERT_EMAILS, ADMIN_EMAILS, CONTACT_EMAIL ou NEXT_PUBLIC_EMAIL."
+    )
+    return
+  }
+
+  const clientEmail = params.clientEmail.trim()
+  const action = params.isUpdate ? "mis à jour" : "enregistré"
+  const subject = `[Optimum] Questionnaire d’étude Assurance titre ${action}`
+  const lines: string[] = [
+    `Le client a ${action} son questionnaire d’étude Assurance titre depuis l’espace client.`,
+    params.contactName ? `Contact / dossier : ${params.contactName}` : "",
+    params.assetCity ? `Bien (ville) : ${params.assetCity}` : "",
+    `Lien espace client : ${SITE_URL}/espace-client`,
+    `Questionnaire : ${SITE_URL}/espace-client/assurance-titre`,
+  ].filter(Boolean)
+
+  const textBody = [
+    `Questionnaire d’étude Assurance titre ${action}.`,
+    "",
+    `Email du client : ${clientEmail}`,
+    "",
+    ...lines,
+    "",
+    `Site : ${SITE_URL}`,
+    "",
+    "---",
+    "Notification automatique — Optimum Assurance",
+  ].join("\n")
+
+  const htmlLines = lines
+    .map((line) => `<p style="margin:0 0 8px;color:#0f172a;">${escapeHtmlForEmail(line)}</p>`)
+    .join("")
+  const html = `<p style="font-weight:600;font-size:16px;margin:0 0 14px;color:#0f172a;">Questionnaire d’étude Assurance titre — ${escapeHtmlForEmail(action)}</p>
+<p style="margin:0 0 12px;"><strong>Email du client :</strong> <a href="mailto:${escapeHtmlForEmail(clientEmail)}" style="color:#2563eb;">${escapeHtmlForEmail(clientEmail)}</a></p>
+${htmlLines}
+<p style="margin-top:18px;font-size:12px;color:#64748b;">Répondre à ce message pour écrire directement au client (Reply-To).</p>`.trim()
+
+  await Promise.all(
+    recipients.map((to) =>
+      sendEmail({
+        to,
+        replyTo: clientEmail,
+        subject,
+        text: textBody,
+        html,
+      })
+    )
+  )
 }

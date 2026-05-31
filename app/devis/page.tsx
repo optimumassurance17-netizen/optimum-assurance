@@ -18,7 +18,12 @@ import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { getMetierPrefillActivites } from "@/lib/metier-devis-prefill"
 import { readResponseJson } from "@/lib/read-response-json"
 import { buildOptimizedExclusionSummary } from "@/lib/optimized-exclusions"
-import { trackConversion } from "@/lib/conversion-tracking"
+import {
+  trackConversion,
+  hasConversionTrackingContext,
+  readConversionTrackingContext,
+  type ConversionTrackingContext,
+} from "@/lib/conversion-tracking"
 
 const AdresseAutocomplete = dynamic(
   () => import("@/components/AdresseAutocomplete").then((m) => m.AdresseAutocomplete),
@@ -93,6 +98,7 @@ function DevisPageContent() {
   const [emailDevis, setEmailDevis] = useState("")
   const [sendEmailLoading, setSendEmailLoading] = useState(false)
   const [sendEmailDone, setSendEmailDone] = useState(false)
+  const [trackingContext, setTrackingContext] = useState<ConversionTrackingContext | null>(null)
 
   useEffect(() => {
     if (sessionStatus !== "authenticated") return
@@ -140,6 +146,10 @@ function DevisPageContent() {
       product: "decennale",
       source: urlParams.get("from") || urlParams.get("metier") || "direct",
     })
+    const tracking = readConversionTrackingContext(urlParams, document.referrer)
+    if (hasConversionTrackingContext(tracking)) {
+      setTrackingContext(tracking)
+    }
   }, [])
 
   const nbSinistres = Number(sinistres) || 0
@@ -152,6 +162,10 @@ function DevisPageContent() {
   const calculer = useCallback(() => {
     const ca = Number(chiffreAffaires) || 0
     const nbSinistresCount = Number(sinistres) || 0
+    if (activites.length === 0) {
+      setTarif(null)
+      return
+    }
     const offreNettoyage = activites.some(
       (a) => a.toLowerCase().includes("nettoyage toiture et peinture résine")
     )
@@ -226,6 +240,9 @@ function DevisPageContent() {
           })
           if (d.dateCreationSociete) setDateCreationSociete(String(d.dateCreationSociete))
           if (d.email) setEmailDevis(String(d.email))
+          if (d.tracking && typeof d.tracking === "object") {
+            setTrackingContext(d.tracking as ConversionTrackingContext)
+          }
           sessionStorage.removeItem("optimum-devis-resume")
           router.replace("/devis", { scroll: false })
         }
@@ -253,7 +270,7 @@ function DevisPageContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (besoinEtude) {
-      const dataEtude = {
+      const dataEtude: Record<string, unknown> = {
         siret,
         raisonSociale: siretPrefill?.raisonSociale,
         chiffreAffaires: Number(chiffreAffaires),
@@ -262,6 +279,9 @@ function DevisPageContent() {
         activites,
         montantIndemnisations: Number(montantIndemnisations) || 0,
         releveSinistraliteNom: releveSinistralite?.name,
+      }
+      if (hasConversionTrackingContext(trackingContext)) {
+        dataEtude.tracking = trackingContext
       }
       if (typeof window !== "undefined") {
         sessionStorage.setItem("optimum-etude", JSON.stringify(dataEtude))
@@ -307,6 +327,9 @@ function DevisPageContent() {
       data.dateCreationSociete = dateCreationSociete.trim()
     }
     if (typeof window !== "undefined") {
+      if (hasConversionTrackingContext(trackingContext)) {
+        data.tracking = trackingContext
+      }
       sessionStorage.setItem(STORAGE_KEYS.devis, JSON.stringify(data))
     }
     trackConversion("devis_completed", {
@@ -369,6 +392,28 @@ function DevisPageContent() {
             </div>
           </div>
         </section>
+
+        <div className="grid gap-3 sm:grid-cols-3 mb-8">
+          {[
+            ["Tarif indicatif immédiat", "Après saisie du SIRET, du CA et d'au moins une activité."],
+            ["SIRET pré-rempli", "Cliquez sur Remplir pour récupérer vos coordonnées d'entreprise."],
+            ["Reprise par email", "Après calcul du tarif, sauvegardez votre devis 7 jours pour revenir plus tard."],
+          ].map(([title, body]) => (
+            <div key={title} className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm">
+              <p className="text-sm font-semibold text-slate-900 mb-1">{title}</p>
+              <p className="text-sm text-[#171717] leading-relaxed">{body}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mb-8 rounded-2xl border border-blue-100 bg-blue-50 p-5">
+          <p className="text-sm font-semibold text-slate-900 mb-2">Avant de commencer</p>
+          <p className="text-sm text-[#171717] leading-relaxed">
+            Préparez votre <strong>SIRET</strong>, votre <strong>chiffre d&apos;affaires annuel</strong> et la{" "}
+            <strong>liste exacte des activités à assurer</strong>. Le tarif affiché n&apos;est fiable que si au moins une
+            activité est sélectionnée.
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm">
@@ -712,6 +757,11 @@ function DevisPageContent() {
                 </div>
               ))}
             </div>
+            {activites.length === 0 && (
+              <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Sélectionnez au moins une activité pour obtenir un tarif cohérent et continuer vers la souscription.
+              </p>
+            )}
             <div className="mt-5 p-4 rounded-xl border border-blue-600/30 bg-blue-50">
               <p className="text-sm font-semibold text-slate-900 mb-1">Vous ne trouvez pas votre activité dans la liste ?</p>
               <p className="text-sm text-[#171717] mb-3">
@@ -791,6 +841,7 @@ function DevisPageContent() {
                           tarif,
                           montantIndemnisations: Number(montantIndemnisations) || 0,
                           ...(siretPrefill || {}),
+                          ...(hasConversionTrackingContext(trackingContext) ? { tracking: trackingContext } : {}),
                         }
                         const res = await fetch("/api/devis/send-email", {
                           method: "POST",
@@ -820,6 +871,7 @@ function DevisPageContent() {
             disabled={
               loading ||
               Number(chiffreAffaires) < CA_MINIMUM ||
+              activites.length === 0 ||
               (!besoinEtude && !tarif) ||
               (aDesSinistres && (!montantIndemnisations || !releveSinistralite))
             }

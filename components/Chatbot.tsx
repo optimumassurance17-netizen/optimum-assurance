@@ -25,6 +25,7 @@ export default function Chatbot() {
   }, [])
   const SUGGESTIONS = [
     "Combien coûte une assurance décennale ?",
+    "A quoi sert l'assurance titre ?",
     "Comment obtenir mon attestation ?",
     "Acceptez-vous les sociétés résiliées ?",
     "Comment déclarer un sinistre ?",
@@ -33,7 +34,7 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([
     {
       role: "assistant",
-      content: "Bonjour ! Je suis l'assistant Optimum Assurance. Posez-moi vos questions sur l'assurance décennale, le dommage ouvrage ou la souscription. Nous sommes 100 % en ligne — pas de téléphone.",
+      content: "Bonjour ! Je suis l'assistant Optimum Assurance. Posez-moi vos questions sur l'assurance décennale, le dommage ouvrage, l'assurance titre ou la souscription. Nous sommes 100 % en ligne — pas de téléphone.",
     },
   ])
   const [input, setInput] = useState("")

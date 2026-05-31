@@ -1,7 +1,7 @@
 import { Prisma } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 
-const PATTERN = /^OPT-(DEC|DO|RC)-(\d{4})-(\d{4})$/
+const PATTERN = /^OPT-(DEC|DO|RC|TIT)-(\d{4})-(\d{4})$/
 
 export function isValidContractNumberFormat(num: string): boolean {
   return PATTERN.test(num.trim())
@@ -11,10 +11,17 @@ export function isValidContractNumberFormat(num: string): boolean {
  * Alloue un numéro unique séquentiel (atomique côté PostgreSQL).
  */
 export async function allocateNextContractNumber(
-  product: "decennale" | "do" | "rc_fabriquant"
+  product: "decennale" | "do" | "rc_fabriquant" | "assurance_titre"
 ): Promise<string> {
   const year = new Date().getFullYear()
-  const code = product === "decennale" ? "DEC" : product === "do" ? "DO" : "RC"
+  const code =
+    product === "decennale"
+      ? "DEC"
+      : product === "do"
+        ? "DO"
+        : product === "assurance_titre"
+          ? "TIT"
+          : "RC"
 
   const rows = await prisma.$queryRaw<Array<{ lastSeq: number }>>(
     Prisma.sql`

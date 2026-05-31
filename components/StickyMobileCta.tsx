@@ -3,11 +3,24 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { buildTrackedHref } from "@/lib/conversion-tracking"
 
 const HIDDEN_PREFIXES = ["/gestion", "/admin", "/v/"]
 
 export function StickyMobileCta() {
   const pathname = usePathname() || ""
+  const decennaleHref = buildTrackedHref("/devis", {
+    utmSource: "site",
+    utmMedium: "sticky-mobile",
+    utmCampaign: "decennale",
+    entryPath: pathname || "/",
+  })
+  const dommageOuvrageHref = buildTrackedHref("/devis-dommage-ouvrage", {
+    utmSource: "site",
+    utmMedium: "sticky-mobile",
+    utmCampaign: "dommage-ouvrage",
+    entryPath: pathname || "/",
+  })
 
   const hidden =
     HIDDEN_PREFIXES.some((p) => pathname.startsWith(p)) ||
@@ -34,13 +47,13 @@ export function StickyMobileCta() {
     >
       <div className="flex gap-2 px-3 pt-2">
         <Link
-          href="/devis"
+          href={decennaleHref}
           className="flex-1 rounded-xl bg-blue-600 py-3.5 text-center font-semibold text-white shadow-md shadow-blue-600/25 transition-transform active:scale-[0.98]"
         >
           Devis décennale
         </Link>
         <Link
-          href="/devis-dommage-ouvrage"
+          href={dommageOuvrageHref}
           className="flex-1 rounded-xl border-2 border-blue-600 py-3.5 text-center font-semibold text-blue-600 transition-transform active:scale-[0.98]"
         >
           Devis DO

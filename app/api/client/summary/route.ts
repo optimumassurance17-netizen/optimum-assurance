@@ -11,7 +11,14 @@ export async function GET() {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const [documents, payments, activeContractsWithCertificate, generatedDocumentsCount, doContractsForVirtualDocs] = await Promise.all([
+    const [
+      documents,
+      payments,
+      contractPayments,
+      activeContractsWithCertificate,
+      generatedDocumentsCount,
+      doContractsForVirtualDocs,
+    ] = await Promise.all([
       prisma.document.findMany({
         where: { userId: session.user.id },
         select: { type: true, status: true },
@@ -20,6 +27,13 @@ export async function GET() {
       prisma.payment.findMany({
         where: { userId: session.user.id },
         select: { amount: true, status: true, paidAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.contractLifecyclePayment.findMany({
+        where: {
+          contract: { userId: session.user.id },
+        },
+        select: { amount: true, status: true, paidAt: true, createdAt: true },
         orderBy: { createdAt: "desc" },
       }),
       prisma.insuranceContract.count({
@@ -57,7 +71,30 @@ export async function GET() {
     const suspendedCount = documents.filter(
       (d) => isDecennaleAttestationType(d.type) && d.status === "suspendu"
     ).length
-    const paidTotal = payments.filter((p) => p.status === "paid").reduce((acc, p) => acc + p.amount, 0)
+    const allPayments = [
+      ...payments.map((payment) => ({
+        amount: payment.amount,
+        status: payment.status,
+        paidAt: payment.paidAt,
+        createdAt: payment.paidAt ?? null,
+      })),
+      ...contractPayments.map((payment) => ({
+        amount: payment.amount,
+        status: payment.status,
+        paidAt: payment.paidAt,
+        createdAt: payment.createdAt,
+      })),
+    ]
+    const paidRows = allPayments.filter((payment) => payment.status === "paid")
+    const paidTotal = paidRows.reduce((acc, payment) => acc + payment.amount, 0)
+    const lastPayment =
+      paidRows
+        .slice()
+        .sort((a, b) => {
+          const aTime = new Date(a.paidAt ?? a.createdAt ?? 0).getTime()
+          const bTime = new Date(b.paidAt ?? b.createdAt ?? 0).getTime()
+          return bTime - aTime
+        })[0] ?? null
     const virtualGeneratedDocsCount = doContractsForVirtualDocs.reduce((total, contract) => {
       const existing = new Set(contract.storedDocuments.map((doc) => doc.type))
       return total + ["quote", "policy", "certificate", "invoice"].filter((type) => !existing.has(type)).length
@@ -67,9 +104,9 @@ export async function GET() {
       documentsCount: documents.length + generatedDocumentsCount + virtualGeneratedDocsCount,
       attestationsCount: attestations.length + activeContractsWithCertificate,
       suspendedCount,
-      paymentsCount: payments.length,
+      paymentsCount: payments.length + contractPayments.length,
       paidTotal,
-      lastPayment: payments.find((p) => p.status === "paid"),
+      lastPayment,
     })
   } catch (error) {
     console.error("Erreur summary client:", error)

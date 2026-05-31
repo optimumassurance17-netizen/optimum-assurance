@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { renderContractPdf, type DocPdfType } from "@/lib/insurance-contract-pdf"
 import { PdfValidationError } from "@/lib/pdf/errors"
+import { insuranceProductHasBundledQuotePolicy } from "@/lib/insurance-product"
 
 const ALLOWED: DocPdfType[] = ["quote", "fic", "policy", "certificate", "invoice", "schedule"]
 
@@ -35,7 +36,7 @@ export async function GET(
 
     const bytes = await renderContractPdf(contract, docType as DocPdfType)
     const bundleDevisCp =
-      (contract.productType === "do" || contract.productType === "decennale") &&
+      insuranceProductHasBundledQuotePolicy(contract.productType) &&
       (docType === "quote" || docType === "policy")
     const filename = bundleDevisCp
       ? `${contract.contractNumber}-devis-et-cp.pdf`

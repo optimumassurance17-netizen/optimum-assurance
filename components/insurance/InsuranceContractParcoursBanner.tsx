@@ -3,6 +3,10 @@
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import type { InsuranceContractSnapshot } from "@/lib/insurance-contract-types"
 import { PayInsuranceContractButton } from "@/components/insurance/PayInsuranceContractButton"
+import {
+  getInsuranceProductLabel,
+  insuranceProductUsesDirectMollieAfterApproval,
+} from "@/lib/insurance-product"
 
 type Props = {
   snapshot: InsuranceContractSnapshot
@@ -15,6 +19,13 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
   const isDoPlatform =
     productType === "do" || (productType == null && souscriptionProduct === "do")
   const isRcFabriquant = productType === "rc_fabriquant"
+  const isTitlePlatform = productType === "assurance_titre"
+  const productLabel =
+    productType != null
+      ? getInsuranceProductLabel(productType)
+      : souscriptionProduct === "do"
+        ? "Dommages-ouvrage"
+        : "Décennale"
 
   if (status === CONTRACT_STATUS.rejected) {
     return (
@@ -62,7 +73,11 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
         </div>
       )
     }
-    if (!isDoPlatform) {
+    if (
+      !isDoPlatform &&
+      !isTitlePlatform &&
+      !insuranceProductUsesDirectMollieAfterApproval(productType ?? souscriptionProduct)
+    ) {
       return (
         <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-left">
           <p className="mb-1 font-semibold text-emerald-950">Dossier accepté — ordre des étapes</p>
@@ -78,10 +93,13 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
       <div className="mb-8 p-5 rounded-2xl border border-[#2563eb]/40 bg-[#eff6ff] text-left">
         <p className="font-semibold text-[#0a0a0a] mb-1">Paiement du contrat (virement)</p>
         <p className="text-sm text-[#171717] mb-4">
-          Contrat <span className="font-mono">{contractNumber}</span> est prêt. Le lien Mollie n&apos;a pas pu s&apos;ouvrir ou a été
-          fermé — vous pouvez lancer le virement depuis ce bouton.
+          {productLabel} <span className="font-mono">{contractNumber}</span> est prêt. Le lien Mollie n&apos;a pas pu
+          s&apos;ouvrir ou a été fermé — vous pouvez lancer le virement depuis ce bouton.
         </p>
-        <PayInsuranceContractButton contractId={contractId} />
+        <PayInsuranceContractButton
+          contractId={contractId}
+          label={isTitlePlatform ? "Payer le dossier — virement Mollie" : undefined}
+        />
       </div>
     )
   }

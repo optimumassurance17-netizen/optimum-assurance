@@ -24,6 +24,10 @@ model User {
   doInitialQuestionnaireJson String?           @db.Text
   /// Questionnaire d’étude DO complété depuis l’espace client — JSON
   doEtudeQuestionnaireJson   String?           @db.Text
+  /// Première demande Assurance titre (formulaire public) — JSON
+  titleInitialQuestionnaireJson String?        @db.Text
+  /// Questionnaire d’étude Assurance titre complété depuis l’espace client — JSON
+  titleEtudeQuestionnaireJson   String?        @db.Text
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   documents             Document[]
@@ -314,6 +318,17 @@ model DevisRcFabriquantLead {
   lastWhatsappRef       String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+}
+
+/// Demande Assurance titre (étude manuelle, montage sur dossier).
+model DevisAssuranceTitreLead {
+  id            String   @id @default(cuid())
+  email         String
+  data          String // JSON : actif, opération, risques identifiés, etc.
+  statut        String   @default("a_traiter")
+  notesInternes String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model PendingSignature {

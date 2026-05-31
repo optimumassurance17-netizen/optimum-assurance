@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { buildTrackedHref } from "@/lib/conversion-tracking"
 
 type Props = {
   href: string
@@ -6,16 +7,7 @@ type Props = {
   variant?: "primary" | "secondary"
   /** Paramètres UTM pour le suivi des pages SEO locales */
   utm?: { source?: string; medium?: string; campaign?: string }
-}
-
-function buildHref(base: string, utm?: Props["utm"]) {
-  if (!utm?.source && !utm?.medium && !utm?.campaign) return base
-  const p = new URLSearchParams()
-  if (utm.source) p.set("utm_source", utm.source)
-  if (utm.medium) p.set("utm_medium", utm.medium)
-  if (utm.campaign) p.set("utm_campaign", utm.campaign)
-  const sep = base.includes("?") ? "&" : "?"
-  return `${base}${sep}${p.toString()}`
+  entryPath?: string
 }
 
 /**
@@ -26,8 +18,14 @@ export function CtaDevis({
   label = "Obtenir un devis en ligne",
   variant = "primary",
   utm = { source: "seo", medium: "programmatic" },
+  entryPath,
 }: Props) {
-  const finalHref = buildHref(href, utm)
+  const finalHref = buildTrackedHref(href, {
+    utmSource: utm.source,
+    utmMedium: utm.medium,
+    utmCampaign: utm.campaign,
+    entryPath,
+  })
   const cls =
     variant === "primary"
       ? "inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"

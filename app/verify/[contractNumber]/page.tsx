@@ -6,6 +6,8 @@ import { getVerifyPaymentRow } from "@/lib/insurance-contract-verify-labels"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
+import { getInsuranceProductLabel } from "@/lib/insurance-product"
+import { readAssuranceTitreContractConfig } from "@/lib/assurance-titre-contract-config"
 
 export const dynamic = "force-dynamic"
 export const metadata = {
@@ -38,6 +40,10 @@ export default async function VerifyByContractNumberPage({
       activityExclusions: exclusions,
     })
     const paymentRow = getVerifyPaymentRow(ic, isActive)
+    const titleConfig =
+      ic.productType === "assurance_titre"
+        ? readAssuranceTitreContractConfig(ic.exclusionsJson, ic.premium, ic.contractNumber)
+        : null
 
     return (
       <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100 px-4 py-12">
@@ -77,13 +83,7 @@ export default async function VerifyByContractNumberPage({
                 </div>
                 <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
                   <dt className="font-semibold text-slate-900">Produit</dt>
-                  <dd className="text-slate-800">
-                    {ic.productType === "do"
-                      ? "Dommages-ouvrage"
-                      : ic.productType === "rc_fabriquant"
-                        ? "RC Fabriquant"
-                        : "Responsabilité décennale"}
-                  </dd>
+                  <dd className="text-slate-800">{getInsuranceProductLabel(ic.productType)}</dd>
                 </div>
                 <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
                   <dt className="font-semibold text-slate-900">Statut</dt>
@@ -158,6 +158,49 @@ export default async function VerifyByContractNumberPage({
                     <dt className="font-semibold text-slate-900">Projet</dt>
                     <dd className="mt-1 text-slate-800">
                       {ic.projectName} {ic.projectAddress ? `— ${ic.projectAddress}` : ""}
+                    </dd>
+                  </div>
+                )}
+                {titleConfig &&
+                  (titleConfig.dossier.propertyAddress ||
+                    titleConfig.dossier.propertyPostalCode ||
+                    titleConfig.dossier.propertyCity) && (
+                    <div className="border-t border-slate-100 pt-3">
+                      <dt className="font-semibold text-slate-900">Actif / bien couvert</dt>
+                      <dd className="mt-1 text-slate-800">
+                        {[
+                          titleConfig.dossier.propertyAddress,
+                          [titleConfig.dossier.propertyPostalCode, titleConfig.dossier.propertyCity]
+                            .filter(Boolean)
+                            .join(" "),
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </dd>
+                    </div>
+                  )}
+                {titleConfig &&
+                  (titleConfig.dossier.operationLabel ||
+                    titleConfig.dossier.propertyTypeLabel ||
+                    titleConfig.dossier.needLabel) && (
+                    <div className="border-t border-slate-100 pt-3">
+                      <dt className="font-semibold text-slate-900">Contexte du dossier</dt>
+                      <dd className="mt-1 text-slate-800">
+                        {[
+                          titleConfig.dossier.operationLabel,
+                          titleConfig.dossier.propertyTypeLabel,
+                          titleConfig.dossier.needLabel,
+                        ]
+                          .filter(Boolean)
+                          .join(" — ")}
+                      </dd>
+                    </div>
+                  )}
+                {titleConfig && titleConfig.dossier.riskLabels.length > 0 && (
+                  <div className="border-t border-slate-100 pt-3">
+                    <dt className="font-semibold text-slate-900">Points analysés</dt>
+                    <dd className="mt-1 text-slate-800">
+                      {titleConfig.dossier.riskLabels.join(", ")}
                     </dd>
                   </div>
                 )}

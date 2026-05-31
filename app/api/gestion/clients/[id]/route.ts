@@ -56,6 +56,8 @@ export async function GET(
         createdAt: true,
         doInitialQuestionnaireJson: true,
         doEtudeQuestionnaireJson: true,
+        titleInitialQuestionnaireJson: true,
+        titleEtudeQuestionnaireJson: true,
       },
     })
 
@@ -321,6 +323,8 @@ export async function PATCH(
               createdAt: true,
               doInitialQuestionnaireJson: true,
               doEtudeQuestionnaireJson: true,
+              titleInitialQuestionnaireJson: true,
+              titleEtudeQuestionnaireJson: true,
             },
           })
         : {
@@ -335,6 +339,8 @@ export async function PATCH(
             createdAt: current.createdAt,
             doInitialQuestionnaireJson: current.doInitialQuestionnaireJson,
             doEtudeQuestionnaireJson: current.doEtudeQuestionnaireJson,
+            titleInitialQuestionnaireJson: current.titleInitialQuestionnaireJson,
+            titleEtudeQuestionnaireJson: current.titleEtudeQuestionnaireJson,
           }
 
     const syncedDocuments =
