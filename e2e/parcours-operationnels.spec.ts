@@ -86,7 +86,7 @@ test.describe("Parcours opérationnels décennale et dommage ouvrage", () => {
     await page.getByRole("button", { name: "Suivant →" }).click()
     await expect(page.getByText("Garanties souhaitées")).toBeVisible()
 
-    const submitButton = page.getByRole("button", { name: "Créer mon compte et continuer" })
+    const submitButton = page.getByRole("button", { name: "Envoyer ma demande" })
     await expect(submitButton).toBeDisabled()
 
     await page.locator("#devoir-conseil-do").check()
