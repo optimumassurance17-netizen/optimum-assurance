@@ -16,7 +16,10 @@ function parseInsuranceSnapshotFromSession(): InsuranceContractSnapshot | null {
         status: p.status,
         rejectedReason: p.rejectedReason,
         productType:
-          p.productType === "do" || p.productType === "decennale" || p.productType === "rc_fabriquant"
+          p.productType === "do" ||
+          p.productType === "decennale" ||
+          p.productType === "rc_fabriquant" ||
+          p.productType === "assurance_titre"
             ? p.productType
             : undefined,
       }
@@ -40,7 +43,11 @@ async function tryMollieRedirectIfApproved(contractId: string): Promise<
 }
 
 function shouldRedirectApprovedToMollieContractPay(snapshot: InsuranceContractSnapshot): boolean {
-  return snapshot.productType === "do" || snapshot.productType === "rc_fabriquant"
+  return (
+    snapshot.productType === "do" ||
+    snapshot.productType === "rc_fabriquant" ||
+    snapshot.productType === "assurance_titre"
+  )
 }
 
 async function resumeInsuranceContractFlowFromSnapshot(

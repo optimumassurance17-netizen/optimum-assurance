@@ -6,6 +6,7 @@ import { SITE_URL } from "@/lib/site-url"
 import { sendOperationsAlert } from "@/lib/operations-alert"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import { getInsuranceProductLabelLower } from "@/lib/insurance-product"
 
 const CLIENT_REMINDER_AFTER_HOURS = 24
 const ADMIN_ALERT_AFTER_HOURS = 72
@@ -18,12 +19,6 @@ function startOfUtcDay(d: Date): Date {
 
 function dayKeyUtc(d: Date): string {
   return d.toISOString().slice(0, 10)
-}
-
-function productLabel(productType: string): string {
-  if (productType === "do") return "dommage ouvrage"
-  if (productType === "rc_fabriquant") return "RC fabriquant"
-  return "décennale"
 }
 
 /**
@@ -209,7 +204,7 @@ export async function GET(request: NextRequest) {
       }
       const ageHours = Math.floor((now.getTime() - contract.createdAt.getTime()) / (1000 * 60 * 60))
       const userLabel = (user?.raisonSociale || contract.clientName || email).trim()
-      const produit = productLabel(contract.productType)
+      const produit = getInsuranceProductLabelLower(contract.productType)
       const espaceClient = `${SITE_URL}/espace-client`
 
       if (!contractSentTodaySet.has(contract.id)) {

@@ -6,15 +6,11 @@ import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { SITE_URL } from "@/lib/site-url"
 import { sendOperationsAlert } from "@/lib/operations-alert"
 import { logAdminActivity } from "@/lib/admin-activity"
+import { getInsuranceProductLabelLower } from "@/lib/insurance-product"
 
 const LOOKBACK_DAYS = 14
 const CLIENT_REMINDER_AFTER_HOURS = 24
 const ADMIN_ALERT_AFTER_HOURS = 72
-function getProductLabel(productType: string): string {
-  if (productType === "do") return "assurance dommage ouvrage"
-  if (productType === "rc_fabriquant") return "assurance RC fabriquant"
-  return "assurance décennale"
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -115,7 +111,7 @@ export async function GET(request: NextRequest) {
         continue
       }
 
-      const produitLabel = getProductLabel(contract.productType)
+      const produitLabel = getInsuranceProductLabelLower(contract.productType)
       if (shouldAlertOps) {
         if (alreadyAlertedContractIds.has(contract.id)) {
           skippedAlreadyAlerted++

@@ -8,6 +8,7 @@ import { Header } from "@/components/Header"
 import { RegeneratePdfButton } from "@/components/admin/RegeneratePdfButton"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
+import { getInsuranceProductLabel } from "@/lib/insurance-product"
 
 export const dynamic = "force-dynamic"
 
@@ -121,6 +122,12 @@ export default async function AdminContractsPage({
           >
             RC Fabriquant
           </Link>
+          <Link
+            href="/admin?product=assurance_titre"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-800 transition-colors hover:border-blue-300 hover:bg-blue-50"
+          >
+            Assurance titre
+          </Link>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
@@ -141,7 +148,7 @@ export default async function AdminContractsPage({
                 {contracts.map((c) => (
                   <tr key={c.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50/80">
                     <td className="p-4 font-mono text-xs text-slate-800">{c.contractNumber}</td>
-                    <td className="p-4 text-slate-800">{c.productType}</td>
+                    <td className="p-4 text-slate-800">{getInsuranceProductLabel(c.productType)}</td>
                     <td className="p-4 text-slate-800">{c.clientName}</td>
                     <td className="p-4">{statusBadge(c.status)}</td>
                     <td className="p-4 text-slate-700">{c.riskScore ?? "—"}</td>

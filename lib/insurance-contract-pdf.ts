@@ -27,7 +27,16 @@ import {
   generateRcFabBatteriesPolicyPdf,
   generateRcFabBatteriesQuotePdf,
 } from "@/lib/pdf/rc-fabriquant/generateDossier"
-import { hasRcFabDossierConfig, readRcFabDossierConfig } from "@/lib/rc-fabriquant-dossier-config"
+import { readRcFabDossierConfig } from "@/lib/rc-fabriquant-dossier-config"
+import {
+  generateAssuranceTitreCertificatePdf,
+  generateAssuranceTitrePolicyPdf,
+} from "@/lib/pdf/assurance-titre/generateDossier"
+import { readAssuranceTitreContractConfig } from "@/lib/assurance-titre-contract-config"
+import {
+  getInsuranceProductLabel,
+  insuranceProductHasSchedule,
+} from "@/lib/insurance-product"
 
 /** Contrat actif : PDF devis+CP en version « contrat » + mentions légales complémentaires. */
 function platformQuotePolicyBundleMode(c: InsuranceContract): "proposition" | "contrat" {
@@ -85,11 +94,11 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
   page.drawText(sanitizeForPdfLib(`Contrat ${c.contractNumber}`), { x: 50, y, size: 10, font })
   y -= 16
   const produitLib =
-    c.productType === "do"
-      ? "Dommages-ouvrage"
-      : c.productType === "rc_fabriquant"
-        ? "RC Fabriquant (devis signé)"
-        : "Décennale"
+    c.productType === "rc_fabriquant"
+      ? "RC Fabriquant (devis signe)"
+      : c.productType === "assurance_titre"
+        ? "Assurance titre"
+        : getInsuranceProductLabel(c.productType)
   page.drawText(sanitizeForPdfLib(`Produit : ${produitLib}`), {
     x: 50,
     y,
@@ -173,9 +182,30 @@ function toRcFabDossierData(c: InsuranceContract) {
   } as const
 }
 
+function toAssuranceTitreDossierData(c: InsuranceContract) {
+  const cfg = readAssuranceTitreContractConfig(c.exclusionsJson, c.premium, c.contractNumber)
+  const vf = c.validFrom ?? c.paidAt ?? c.createdAt
+  const vu =
+    c.validUntil ??
+    (() => {
+      const next = new Date(vf)
+      next.setFullYear(next.getFullYear() + cfg.coverageDurationYears)
+      return next
+    })()
+  return {
+    clientName: c.clientName,
+    siret: c.siret ?? undefined,
+    address: c.address,
+    validFrom: vf.toLocaleDateString("fr-FR"),
+    validUntil: vu.toLocaleDateString("fr-FR"),
+    referenceContrat: c.contractNumber,
+    config: cfg,
+  } as const
+}
+
 export async function renderContractPdf(c: InsuranceContract, docType: DocPdfType): Promise<Uint8Array> {
   if (docType === "schedule") {
-    if (c.productType !== "decennale" && c.productType !== "rc_fabriquant") {
+    if (!insuranceProductHasSchedule(c.productType)) {
       throw new Error("DOC_NOT_AVAILABLE_FOR_PRODUCT")
     }
     return generateQuarterlyScheduleInsurancePdf(c)
@@ -191,10 +221,16 @@ export async function renderContractPdf(c: InsuranceContract, docType: DocPdfTyp
   }
   if (docType === "quote") {
     if (c.productType === "rc_fabriquant") {
-      if (!hasRcFabDossierConfig(c.exclusionsJson) && c.signedQuoteStorageKey?.trim()) {
+      if (c.signedQuoteStorageKey?.trim()) {
         return loadSignedQuotePdfBytes(c.signedQuoteStorageKey.trim())
       }
       return generateRcFabBatteriesQuotePdf(toRcFabDossierData(c))
+    }
+    if (c.productType === "assurance_titre") {
+      if (c.signedQuoteStorageKey?.trim()) {
+        return loadSignedQuotePdfBytes(c.signedQuoteStorageKey.trim())
+      }
+      return generateAssuranceTitrePolicyPdf(toAssuranceTitreDossierData(c))
     }
     if (c.productType === "do") {
       const data = contractToInsuranceData(c)
@@ -209,6 +245,9 @@ export async function renderContractPdf(c: InsuranceContract, docType: DocPdfTyp
   if (docType === "policy") {
     if (c.productType === "rc_fabriquant") {
       return generateRcFabBatteriesPolicyPdf(toRcFabDossierData(c))
+    }
+    if (c.productType === "assurance_titre") {
+      return generateAssuranceTitrePolicyPdf(toAssuranceTitreDossierData(c))
     }
     if (c.productType === "do") {
       const data = contractToInsuranceData(c)
@@ -226,6 +265,9 @@ export async function renderContractPdf(c: InsuranceContract, docType: DocPdfTyp
     }
     if (c.productType === "rc_fabriquant") {
       return generateRcFabBatteriesCertificatePdf(toRcFabDossierData(c))
+    }
+    if (c.productType === "assurance_titre") {
+      return generateAssuranceTitreCertificatePdf(toAssuranceTitreDossierData(c))
     }
     const cert = toCertificateData(c)
     if (c.productType === "decennale") {

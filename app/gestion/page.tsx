@@ -37,6 +37,11 @@ import {
   RC_FABRIQUANT_LEAD_STATUT_VALUES,
   normalizeRcFabriquantLeadStatut,
 } from "@/lib/rc-fabriquant-lead-statuts"
+import {
+  ASSURANCE_TITRE_BESOIN_LABELS,
+  ASSURANCE_TITRE_BIEN_LABELS,
+  ASSURANCE_TITRE_OPERATION_LABELS,
+} from "@/lib/assurance-titre-types"
 
 function getRcFabLeadDraft(
   d: { id: string; statut?: string; notesInternes?: string | null },
@@ -97,6 +102,48 @@ function parseRcFabLeadData(raw: string): RcFabLeadStructuredData {
   }
 }
 
+type AssuranceTitreLeadStructuredData = {
+  nomComplet?: string
+  raisonSociale?: string
+  typeOperationLabel?: string
+  typeBienLabel?: string
+  besoinPrincipalLabel?: string
+  villeBien?: string
+  montantOperation?: number
+}
+
+function parseAssuranceTitreLeadData(raw: string): AssuranceTitreLeadStructuredData {
+  try {
+    const parsed = JSON.parse(raw || "{}") as Record<string, unknown>
+    const typeOperation = typeof parsed.typeOperation === "string" ? parsed.typeOperation.trim() : ""
+    const typeBien = typeof parsed.typeBien === "string" ? parsed.typeBien.trim() : ""
+    const besoinPrincipal = typeof parsed.besoinPrincipal === "string" ? parsed.besoinPrincipal.trim() : ""
+    const montantRaw = parsed.montantOperation
+    const montantOperation =
+      typeof montantRaw === "number"
+        ? montantRaw
+        : typeof montantRaw === "string"
+          ? Number(montantRaw.replace(",", "."))
+          : Number.NaN
+    return {
+      nomComplet: typeof parsed.nomComplet === "string" ? parsed.nomComplet.trim() : undefined,
+      raisonSociale:
+        typeof parsed.raisonSociale === "string" ? parsed.raisonSociale.trim() : undefined,
+      typeOperationLabel:
+        ASSURANCE_TITRE_OPERATION_LABELS[typeOperation as keyof typeof ASSURANCE_TITRE_OPERATION_LABELS],
+      typeBienLabel:
+        ASSURANCE_TITRE_BIEN_LABELS[typeBien as keyof typeof ASSURANCE_TITRE_BIEN_LABELS],
+      besoinPrincipalLabel:
+        ASSURANCE_TITRE_BESOIN_LABELS[besoinPrincipal as keyof typeof ASSURANCE_TITRE_BESOIN_LABELS],
+      villeBien: typeof parsed.villeBien === "string" ? parsed.villeBien.trim() : undefined,
+      montantOperation:
+        Number.isFinite(montantOperation) && montantOperation > 0 ? montantOperation : undefined,
+    }
+  } catch {
+    return {}
+  }
+}
+
 function editFormFromDocData(parsed: Record<string, unknown>): EditContratForm {
   return {
     raisonSociale: String(parsed.raisonSociale ?? ""),
@@ -148,10 +195,21 @@ interface DashboardData {
     createdAt: string
     updatedAt: string
     userId: string | null
+    matchedUser?: { id: string; email: string; raisonSociale: string | null } | null
     copyTrace?: {
       proposition: { copySent: boolean; sentAt: string } | null
       signature: { copySent: boolean; sentAt: string } | null
     } | null
+  }[]
+  devisAssuranceTitreLeads?: {
+    id: string
+    email: string
+    data: string
+    statut: string
+    notesInternes: string | null
+    createdAt: string
+    updatedAt: string
+    matchedUser?: { id: string; email: string; raisonSociale: string | null } | null
   }[]
   devisEtudeLeads?: { id: string; email: string; raisonSociale: string | null; siret: string | null; data: string; statut: string; createdAt: string }[]
   documents: {
@@ -249,6 +307,7 @@ interface DashboardData {
     id: string
     contractNumber: string
     productType: string
+    exclusionsJson?: string | null
     clientName: string
     userId: string | null
     premium: number
@@ -273,6 +332,7 @@ interface DashboardData {
       | "decennale_lead_followup"
       | "do_etude_pending"
       | "rc_fabriquant_pending"
+      | "assurance_titre_pending"
     priority: "high" | "medium"
     title: string
     description: string
@@ -357,12 +417,20 @@ export default function GestionPage() {
   const customDevisPdfInputRef = useRef<HTMLInputElement>(null)
   const [customDevisUserFilter, setCustomDevisUserFilter] = useState("")
   const [customDevisUserId, setCustomDevisUserId] = useState("")
+  const [customDevisProductType, setCustomDevisProductType] = useState<"rc_fabriquant" | "assurance_titre">(
+    "rc_fabriquant"
+  )
   const [customDevisPrime, setCustomDevisPrime] = useState("")
   const [customDevisPrimeHt, setCustomDevisPrimeHt] = useState("")
   const [customDevisPeriodicity, setCustomDevisPeriodicity] = useState("trimestriel")
+  const [customDevisCoverageYears, setCustomDevisCoverageYears] = useState("10")
   const [customDevisRef, setCustomDevisRef] = useState("")
   const [customDevisLabel, setCustomDevisLabel] = useState("RC Fabriquant — proposition")
   const [customDevisNextPath, setCustomDevisNextPath] = useState("/espace-client")
+  const [customDevisSourceLeadType, setCustomDevisSourceLeadType] = useState<
+    "assurance_titre" | "rc_fabriquant" | null
+  >(null)
+  const [customDevisSourceLeadId, setCustomDevisSourceLeadId] = useState("")
   const [customDevisSending, setCustomDevisSending] = useState(false)
 
   const customDevisUserOptions = useMemo(() => {
@@ -380,6 +448,47 @@ export default function GestionPage() {
     list.sort((a, b) => a.email.localeCompare(b.email))
     return list.slice(0, 300)
   }, [data?.users, customDevisUserFilter])
+
+  const prefillCustomDevisForProduct = useCallback(
+    (params: {
+      productType: "rc_fabriquant" | "assurance_titre"
+      userId: string
+      userFilter?: string
+      label: string
+      reference?: string
+      sourceLeadType?: "assurance_titre" | "rc_fabriquant"
+      sourceLeadId?: string
+      defaultPrime?: string
+      coverageYears?: string
+    }) => {
+      setCustomDevisProductType(params.productType)
+      setCustomDevisUserId(params.userId)
+      setCustomDevisUserFilter(params.userFilter ?? "")
+      setCustomDevisLabel(params.label)
+      setCustomDevisRef(params.reference ?? "")
+      setCustomDevisSourceLeadType(params.sourceLeadType ?? null)
+      setCustomDevisSourceLeadId(params.sourceLeadId ?? "")
+      setCustomDevisNextPath("/espace-client")
+      setCustomDevisPrime(params.defaultPrime ?? "")
+      setCustomDevisPrimeHt("")
+      if (customDevisPdfInputRef.current) {
+        customDevisPdfInputRef.current.value = ""
+      }
+      if (params.productType === "assurance_titre") {
+        setCustomDevisPeriodicity("annuel")
+        setCustomDevisCoverageYears(params.coverageYears ?? "10")
+      } else {
+        setCustomDevisCoverageYears("10")
+      }
+      window.setTimeout(() => {
+        document.getElementById("devis-pdf-personnalise")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        })
+      }, 50)
+    },
+    []
+  )
 
   const devisDecUserOptions = useMemo(() => {
     if (!data?.users) return []
@@ -1060,7 +1169,7 @@ export default function GestionPage() {
             >
               <span className="text-xs text-gray-500 w-full sm:w-auto sm:mr-1">Accès rapide</span>
               <a
-                href="#devis-pdf-perso"
+                  href="#devis-pdf-personnalise"
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
               >
                 Devis PDF perso
@@ -1139,20 +1248,30 @@ export default function GestionPage() {
               )}
               {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
                 <a
-                  href="#rc-fab-leads"
+                  href="#rc-fabriquant-leads"
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
                 >
                   RC Fab
                 </a>
               )}
+              {data.devisAssuranceTitreLeads && data.devisAssuranceTitreLeads.length > 0 && (
+                <a
+                  href="#assurance-titre-leads"
+                  className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+                >
+                  Assurance titre
+                </a>
+              )}
             </nav>
             <section
-              id="devis-pdf-perso"
+              id="devis-pdf-personnalise"
               className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 scroll-mt-24"
             >
               <h2 className="text-lg font-semibold text-white">Devis PDF personnalisé → signature → paiement</h2>
               <p className="text-sm text-gray-400">
-                Joignez un PDF (devis ou proposition), choisissez le client et le montant TTC. Après signature électronique, un contrat RC Fabriquant est créé (statut approuvé) et le client peut payer depuis son espace.
+                Chargez un PDF de proposition, choisissez le produit et le client, puis déclenchez la signature
+                électronique. Après signature, un contrat plateforme est créé et le règlement Mollie s&apos;effectue
+                depuis l&apos;espace client.
               </p>
               <p className="text-xs text-amber-200/80 border border-amber-900/40 rounded-lg px-3 py-2 bg-amber-950/20">
                 Une seule demande de signature à la fois par client. Si l&apos;envoi est refusé, vérifiez la section{" "}
@@ -1185,6 +1304,27 @@ export default function GestionPage() {
                       </option>
                     ))}
                   </select>
+                  <label className="text-sm text-gray-300">Produit du contrat</label>
+                  <select
+                    value={customDevisProductType}
+                    onChange={(e) => {
+                      const next = e.target.value as "rc_fabriquant" | "assurance_titre"
+                      setCustomDevisProductType(next)
+                      setCustomDevisSourceLeadType(null)
+                      setCustomDevisSourceLeadId("")
+                      if (next === "assurance_titre") {
+                        setCustomDevisLabel("Assurance titre — proposition digitale")
+                        setCustomDevisPeriodicity("annuel")
+                        setCustomDevisCoverageYears((current) => current || "10")
+                      } else {
+                        setCustomDevisLabel("RC Fabriquant — proposition")
+                      }
+                    }}
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                  >
+                    <option value="rc_fabriquant">RC Fabriquant</option>
+                    <option value="assurance_titre">Assurance titre</option>
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm text-gray-300">Fichier PDF</label>
@@ -1194,17 +1334,29 @@ export default function GestionPage() {
                     accept="application/pdf"
                     className="block w-full text-sm text-gray-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-[#2563eb] file:text-white"
                   />
-                  <label className="text-sm text-gray-300">Prime TTC (€)</label>
+                  <label className="text-sm text-gray-300">
+                    {customDevisProductType === "assurance_titre"
+                      ? "Prime TTC totale (€)"
+                      : "Prime TTC (€)"}
+                  </label>
                   <input
                     type="number"
                     min={0}
                     step="0.01"
                     value={customDevisPrime}
                     onChange={(e) => setCustomDevisPrime(e.target.value)}
-                    placeholder="ex. 2400 (annuel TTC)"
+                    placeholder={
+                      customDevisProductType === "assurance_titre"
+                        ? "ex. 4800 (paiement unique)"
+                        : "ex. 2400 (annuel TTC)"
+                    }
                     className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
                   />
-                  <label className="text-sm text-gray-300">Prime annuelle HT (€) — optionnel</label>
+                  <label className="text-sm text-gray-300">
+                    {customDevisProductType === "assurance_titre"
+                      ? "Prime HT (€) — optionnel"
+                      : "Prime annuelle HT (€) — optionnel"}
+                  </label>
                   <input
                     type="number"
                     min={0}
@@ -1214,17 +1366,34 @@ export default function GestionPage() {
                     placeholder="ex. 2000"
                     className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
                   />
-                  <label className="text-sm text-gray-300">Échéancier RC Fabriquant</label>
-                  <select
-                    value={customDevisPeriodicity}
-                    onChange={(e) => setCustomDevisPeriodicity(e.target.value)}
-                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
-                  >
-                    <option value="mensuel">Mensuel (12 échéances)</option>
-                    <option value="trimestriel">Trimestriel (4 échéances)</option>
-                    <option value="semestriel">Semestriel (2 échéances)</option>
-                    <option value="annuel">Annuel (1 échéance)</option>
-                  </select>
+                  {customDevisProductType === "assurance_titre" ? (
+                    <>
+                      <label className="text-sm text-gray-300">Durée initiale de validité (années)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={30}
+                        value={customDevisCoverageYears}
+                        onChange={(e) => setCustomDevisCoverageYears(e.target.value)}
+                        placeholder="10"
+                        className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <label className="text-sm text-gray-300">Échéancier RC Fabriquant</label>
+                      <select
+                        value={customDevisPeriodicity}
+                        onChange={(e) => setCustomDevisPeriodicity(e.target.value)}
+                        className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                      >
+                        <option value="mensuel">Mensuel (12 échéances)</option>
+                        <option value="trimestriel">Trimestriel (4 échéances)</option>
+                        <option value="semestriel">Semestriel (2 échéances)</option>
+                        <option value="annuel">Annuel (1 échéance)</option>
+                      </select>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
@@ -1279,18 +1448,36 @@ export default function GestionPage() {
                     setError("Prime annuelle HT invalide.")
                     return
                   }
+                  const coverageYears =
+                    customDevisProductType === "assurance_titre"
+                      ? Number(customDevisCoverageYears.replace(",", "."))
+                      : undefined
+                  if (
+                    customDevisProductType === "assurance_titre" &&
+                    (!Number.isFinite(coverageYears) || coverageYears <= 0)
+                  ) {
+                    setError("Indiquez une durée de validité initiale en années.")
+                    return
+                  }
                   setCustomDevisSending(true)
                   setError(null)
                   try {
                     const fd = new FormData()
                     fd.append("pdf", file)
                     fd.append("userId", customDevisUserId)
+                    fd.append("productType", customDevisProductType)
                     fd.append("primeTtc", String(primeTtcAnnuel))
-                    if (primeHtAnnuel != null) fd.append("primeHtAnnuel", String(primeHtAnnuel))
+                    fd.append("primeAnnuelleTtc", String(primeTtcAnnuel))
+                    if (primeHtAnnuel != null) fd.append("primeAnnuelleHt", String(primeHtAnnuel))
                     fd.append("periodicite", customDevisPeriodicity)
+                    if (coverageYears != null && Number.isFinite(coverageYears)) {
+                      fd.append("coverageDurationYears", String(coverageYears))
+                    }
                     if (customDevisRef.trim()) fd.append("devisReference", customDevisRef.trim())
                     if (customDevisLabel.trim()) fd.append("produitLabel", customDevisLabel.trim())
                     if (customDevisNextPath.trim()) fd.append("afterSignNextPath", customDevisNextPath.trim())
+                    if (customDevisSourceLeadType) fd.append("sourceLeadType", customDevisSourceLeadType)
+                    if (customDevisSourceLeadId) fd.append("sourceLeadId", customDevisSourceLeadId)
                     const res = await fetch("/api/gestion/sign/send-custom-devis-pdf", {
                       method: "POST",
                       body: fd,
@@ -1299,6 +1486,10 @@ export default function GestionPage() {
                     if (!res.ok) throw new Error(j.error || res.statusText)
                     setToast({ message: j.message || "Invitation envoyée.", type: "success" })
                     if (customDevisPdfInputRef.current) customDevisPdfInputRef.current.value = ""
+                    setCustomDevisSourceLeadType(null)
+                    setCustomDevisSourceLeadId("")
+                    const dashRes = await fetch("/api/gestion/dashboard")
+                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
                   } catch (e) {
                     setError(e instanceof Error ? e.message : "Envoi impossible.")
                   } finally {
@@ -1352,6 +1543,23 @@ export default function GestionPage() {
                   <p className="text-xs text-gray-200 mt-1">
                     {(data.devisRcFabriquantLeads ?? []).filter(
                       (l) => normalizeRcFabriquantLeadStatut(l.statut) === "a_traiter"
+                    ).length}{" "}
+                    à traiter — 50 derniers
+                  </p>
+                </div>
+              )}
+              {(data.devisAssuranceTitreLeads?.length ?? 0) > 0 && (
+                <div className="bg-[#252525] rounded-xl p-4 border border-violet-700/60">
+                  <p className="text-gray-200 text-sm">Assurance titre</p>
+                  <Link
+                    href="#assurance-titre-leads"
+                    className="text-2xl font-bold text-violet-300 hover:text-violet-200 block"
+                  >
+                    {data.devisAssuranceTitreLeads?.length ?? 0}
+                  </Link>
+                  <p className="text-xs text-gray-200 mt-1">
+                    {(data.devisAssuranceTitreLeads ?? []).filter(
+                      (l) => (l.statut || "").trim().toLowerCase() === "a_traiter"
                     ).length}{" "}
                     à traiter — 50 derniers
                   </p>
@@ -2778,6 +2986,135 @@ export default function GestionPage() {
                                   </p>
                                 ) : null}
                               </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {data.devisAssuranceTitreLeads && data.devisAssuranceTitreLeads.length > 0 && (
+          <section id="assurance-titre-leads" className="scroll-mt-24">
+            <h2 className="text-lg font-semibold text-white mb-2">Demandes Assurance titre</h2>
+            <p className="text-sm text-gray-200 mb-4 max-w-3xl">
+              Ces leads passent par une étude sur dossier. Une fois l&apos;espace client créé, vous pouvez préremplir le
+              module « Devis PDF personnalisé » pour envoyer une proposition digitale à signer, puis encaisser le paiement
+              dans l&apos;espace client.
+            </p>
+            <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full text-sm min-w-[760px]">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 sm:p-4 font-medium">Email</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Contact / structure</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Dossier</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Statut</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Notes</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.devisAssuranceTitreLeads.map((d) => {
+                    const leadData = parseAssuranceTitreLeadData(d.data || "{}")
+                    const matchedUser =
+                      d.matchedUser ??
+                      data.users.find((u) => u.email.toLowerCase() === d.email.toLowerCase()) ??
+                      null
+                    return (
+                      <tr key={d.id} className="border-b border-gray-700/50 align-top">
+                        <td className="p-3 sm:p-4">{d.email}</td>
+                        <td className="p-3 sm:p-4">
+                          <p className="text-gray-100">{leadData.nomComplet || "—"}</p>
+                          <p className="text-xs text-gray-400">
+                            {leadData.raisonSociale || matchedUser?.raisonSociale || "Aucune structure déclarée"}
+                          </p>
+                        </td>
+                        <td className="p-3 sm:p-4">
+                          <div className="space-y-1 text-xs text-gray-200 max-w-[240px]">
+                            <p>{leadData.typeOperationLabel || "Opération non renseignée"}</p>
+                            <p>{leadData.typeBienLabel || "Bien non renseigné"}</p>
+                            <p>{leadData.villeBien || "Ville non renseignée"}</p>
+                            {leadData.besoinPrincipalLabel ? <p>{leadData.besoinPrincipalLabel}</p> : null}
+                            {leadData.montantOperation ? (
+                              <p>{leadData.montantOperation.toLocaleString("fr-FR")} €</p>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td className="p-3 sm:p-4">
+                          <span className="inline-flex rounded-full border border-violet-500/40 bg-violet-900/20 px-2.5 py-1 text-xs text-violet-100">
+                            {d.statut || "a_traiter"}
+                          </span>
+                        </td>
+                        <td className="p-3 sm:p-4 max-w-[220px] text-xs text-gray-300">
+                          {d.notesInternes?.trim() ? d.notesInternes : "—"}
+                        </td>
+                        <td className="p-3 sm:p-4">
+                          <div className="flex flex-col gap-2 max-w-[12rem]">
+                            {matchedUser ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    prefillCustomDevisForProduct({
+                                      productType: "assurance_titre",
+                                      userId: matchedUser.id,
+                                      userFilter: matchedUser.email || d.email,
+                                      label: "Assurance titre — proposition digitale",
+                                      reference: `TITRE-${d.id.slice(-8).toUpperCase()}`,
+                                      sourceLeadType: "assurance_titre",
+                                      sourceLeadId: d.id,
+                                      coverageYears: "10",
+                                    })
+                                    setToast({
+                                      message: "Formulaire PDF prérempli pour Assurance titre.",
+                                      type: "success",
+                                    })
+                                  }}
+                                  className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-violet-500/70 text-violet-100 hover:bg-violet-900/30"
+                                >
+                                  Préparer la proposition digitale
+                                </button>
+                                <Link
+                                  href={`/gestion/clients/${matchedUser.id}`}
+                                  className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-[#2563eb]/60 text-[#93c5fd] hover:bg-[#2563eb]/20 inline-flex items-center justify-center"
+                                >
+                                  Fiche client
+                                </Link>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch("/api/gestion/users/create-from-lead", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ leadId: d.id, leadType: "assurance_titre" }),
+                                    })
+                                    const json = await readResponseJson<{ error?: string; email?: string }>(res)
+                                    if (!res.ok) throw new Error(json.error || "Erreur")
+                                    setToast({
+                                      message: `Espace client créé pour ${json.email || d.email}`,
+                                      type: "success",
+                                    })
+                                    const dashRes = await fetch("/api/gestion/dashboard")
+                                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                  } catch (err) {
+                                    setToast({
+                                      message: err instanceof Error ? err.message : "Erreur",
+                                      type: "error",
+                                    })
+                                  }
+                                }}
+                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-sky-500/70 text-sky-200 hover:bg-sky-900/30"
+                              >
+                                Créer espace client
+                              </button>
                             )}
                           </div>
                         </td>

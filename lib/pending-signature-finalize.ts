@@ -15,6 +15,12 @@ import {
   serializeRcFabDossierConfig,
   type RcFabPeriodicity,
 } from "@/lib/rc-fabriquant-dossier-config"
+import {
+  buildAssuranceTitreContractConfig,
+  readAssuranceTitreContractConfig,
+  serializeAssuranceTitreContractConfig,
+} from "@/lib/assurance-titre-contract-config"
+import { normalizeInsurancePlatformProductType } from "@/lib/insurance-product"
 
 export type PendingFinalizeOptions = {
   /** Objet fichier dans le bucket « signed » (PDF signé) — flux devis PDF personnalisé */
@@ -43,44 +49,116 @@ export async function applyPendingFinalize(
     if (!user) {
       throw new Error("Utilisateur introuvable pour finaliser le devis PDF.")
     }
-    const premium = Number(raw.primeTtc)
-    if (!Number.isFinite(premium) || premium <= 0) {
-      throw new Error("Montant TTC invalide dans le dossier de signature.")
-    }
     const signedKey = options?.signedQuoteStorageKey?.trim()
     if (!signedKey) {
       throw new Error("Clé du PDF signé manquante — finalisation impossible.")
     }
 
-    const contractNumber = await allocateNextContractNumber("rc_fabriquant")
-    const periodiciteRaw = typeof raw.periodicitePaiement === "string" ? raw.periodicitePaiement : undefined
-    const periodicite = normalizeRcFabPeriodicity(periodiciteRaw)
+    const productType = normalizeInsurancePlatformProductType(raw.productType, "rc_fabriquant")
+    const premiumRaw = Number(raw.primeTtc)
     const primeAnnuelleTtcRaw = Number(raw.primeAnnuelleTtc)
     const primeAnnuelleHtRaw = Number(raw.primeAnnuelleHt)
-    const primeAnnuelleTtc =
-      Number.isFinite(primeAnnuelleTtcRaw) && primeAnnuelleTtcRaw > 0
-        ? Math.round(primeAnnuelleTtcRaw * 100) / 100
-        : Math.round(premium * 4 * 100) / 100
-    const primeAnnuelleHt =
-      Number.isFinite(primeAnnuelleHtRaw) && primeAnnuelleHtRaw > 0
-        ? Math.round(primeAnnuelleHtRaw * 100) / 100
-        : Math.round((primeAnnuelleTtc / 1.2) * 100) / 100
-    const dossierConfigJson = serializeRcFabDossierConfig(
-      buildRcFabDossierConfig({
-      referenceContrat: contractNumber,
-      periodicite: periodicite as RcFabPeriodicity,
-      primeAnnuelleTtc,
-      primeAnnuelleHt,
-      })
-    )
+    let premium =
+      Number.isFinite(premiumRaw) && premiumRaw > 0
+        ? Math.round(premiumRaw * 100) / 100
+        : Number.isFinite(primeAnnuelleTtcRaw) && primeAnnuelleTtcRaw > 0
+          ? Math.round(primeAnnuelleTtcRaw * 100) / 100
+          : Number.NaN
+    if (!Number.isFinite(premium) || premium <= 0) {
+      throw new Error("Montant TTC invalide dans le dossier de signature.")
+    }
+
+    const contractNumber = await allocateNextContractNumber(productType)
     const address =
       [user.adresse, user.codePostal, user.ville].filter(Boolean).join(" ").trim() || "—"
+    let exclusionsJson = ""
+    let logDetails: Record<string, unknown>
+
+    if (productType === "assurance_titre") {
+      const baseConfig =
+        typeof raw.assuranceTitreContractConfigSerialized === "string" &&
+        raw.assuranceTitreContractConfigSerialized.trim().length > 0
+          ? readAssuranceTitreContractConfig(
+              raw.assuranceTitreContractConfigSerialized,
+              Number.isFinite(primeAnnuelleTtcRaw) && primeAnnuelleTtcRaw > 0
+                ? primeAnnuelleTtcRaw
+                : premium,
+              contractNumber
+            )
+          : buildAssuranceTitreContractConfig({
+              referenceContrat: contractNumber,
+              primeAnnuelleTtc:
+                Number.isFinite(primeAnnuelleTtcRaw) && primeAnnuelleTtcRaw > 0
+                  ? primeAnnuelleTtcRaw
+                  : premium,
+              primeAnnuelleHt:
+                Number.isFinite(primeAnnuelleHtRaw) && primeAnnuelleHtRaw > 0
+                  ? primeAnnuelleHtRaw
+                  : undefined,
+              coverageDurationYears: Number(raw.coverageDurationYears),
+              productLabel:
+                typeof raw.produitLabel === "string" ? raw.produitLabel : "Assurance titre — proposition digitale",
+            })
+      const dossierConfig = buildAssuranceTitreContractConfig({
+        referenceContrat: contractNumber,
+        primeAnnuelleTtc: baseConfig.primeAnnuelleTtc,
+        primeAnnuelleHt: baseConfig.primeAnnuelleHt,
+        coverageDurationYears: baseConfig.coverageDurationYears,
+        productLabel:
+          typeof raw.produitLabel === "string" && raw.produitLabel.trim()
+            ? raw.produitLabel
+            : baseConfig.productLabel,
+        dossier: baseConfig.dossier,
+      })
+      premium = dossierConfig.montantParEcheanceTtc
+      exclusionsJson = serializeAssuranceTitreContractConfig(dossierConfig)
+      logDetails = {
+        signatureRequestId: pending.signatureRequestId,
+        devisReference: raw.devisReference,
+        produitLabel: raw.produitLabel,
+        primeAnnuelleTtc: dossierConfig.primeAnnuelleTtc,
+        primeAnnuelleHt: dossierConfig.primeAnnuelleHt,
+        coverageDurationYears: dossierConfig.coverageDurationYears,
+      }
+    } else {
+      const periodiciteRaw =
+        typeof raw.periodicitePaiement === "string"
+          ? raw.periodicitePaiement
+          : typeof raw.periodicite === "string"
+            ? raw.periodicite
+            : undefined
+      const periodicite = normalizeRcFabPeriodicity(periodiciteRaw)
+      const primeAnnuelleTtc =
+        Number.isFinite(primeAnnuelleTtcRaw) && primeAnnuelleTtcRaw > 0
+          ? Math.round(primeAnnuelleTtcRaw * 100) / 100
+          : Math.round(premium * 4 * 100) / 100
+      const primeAnnuelleHt =
+        Number.isFinite(primeAnnuelleHtRaw) && primeAnnuelleHtRaw > 0
+          ? Math.round(primeAnnuelleHtRaw * 100) / 100
+          : Math.round((primeAnnuelleTtc / 1.2) * 100) / 100
+      const dossierConfig = buildRcFabDossierConfig({
+        referenceContrat: contractNumber,
+        periodicite: periodicite as RcFabPeriodicity,
+        primeAnnuelleTtc,
+        primeAnnuelleHt,
+      })
+      premium = dossierConfig.montantParEcheanceTtc
+      exclusionsJson = serializeRcFabDossierConfig(dossierConfig)
+      logDetails = {
+        signatureRequestId: pending.signatureRequestId,
+        devisReference: raw.devisReference,
+        produitLabel: raw.produitLabel,
+        periodicitePaiement: dossierConfig.periodicite,
+        primeAnnuelleTtc,
+        primeAnnuelleHt,
+      }
+    }
 
     const c = await prisma.insuranceContract.create({
       data: {
         contractNumber,
         userId: user.id,
-        productType: "rc_fabriquant",
+        productType,
         clientName: (user.raisonSociale || user.email).trim(),
         siret: user.siret ?? undefined,
         address,
@@ -88,7 +166,7 @@ export async function applyPendingFinalize(
         status: CONTRACT_STATUS.approved,
         insurerValidatedAt: new Date(),
         signedQuoteStorageKey: signedKey,
-        exclusionsJson: dossierConfigJson,
+        exclusionsJson,
       },
     })
 
@@ -101,12 +179,10 @@ export async function applyPendingFinalize(
     })
 
     await logContractAction(c.id, "created_from_custom_devis_pdf", {
-      signatureRequestId: pending.signatureRequestId,
-      devisReference: raw.devisReference,
-      produitLabel: raw.produitLabel,
-      periodicitePaiement: periodicite,
-      primeAnnuelleTtc,
-      primeAnnuelleHt,
+      productType,
+      ...logDetails,
+      ...(typeof raw.sourceLeadType === "string" ? { sourceLeadType: raw.sourceLeadType } : {}),
+      ...(typeof raw.sourceLeadId === "string" ? { sourceLeadId: raw.sourceLeadId } : {}),
     })
 
     await prisma.pendingSignature.delete({

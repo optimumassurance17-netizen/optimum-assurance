@@ -80,6 +80,7 @@ export async function GET() {
       avenantFees,
       devisDoLeads,
       devisRcFabriquantLeads,
+      devisAssuranceTitreLeads,
       devisEtudeLeads,
       resiliationLogs,
       adminActivityLogs,
@@ -122,6 +123,10 @@ export async function GET() {
         take: 50,
       }),
       prisma.devisRcFabriquantLead.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
+      prisma.devisAssuranceTitreLead.findMany({
         orderBy: { createdAt: "desc" },
         take: 50,
       }),
@@ -211,6 +216,7 @@ export async function GET() {
           id: true,
           contractNumber: true,
           productType: true,
+          exclusionsJson: true,
           clientName: true,
           userId: true,
           premium: true,
@@ -373,6 +379,27 @@ export async function GET() {
           : null,
       }
     })
+    const titleLeadEmails = [
+      ...new Set(
+        devisAssuranceTitreLeads
+          .map((lead) => lead.email.trim().toLowerCase())
+          .filter((email) => email.length > 0)
+      ),
+    ]
+    const titleLeadUsers =
+      titleLeadEmails.length > 0
+        ? await prisma.user.findMany({
+            where: { email: { in: titleLeadEmails } },
+            select: { id: true, email: true, raisonSociale: true },
+          })
+        : []
+    const titleLeadUserByEmail = new Map(
+      titleLeadUsers.map((u) => [u.email.trim().toLowerCase(), u] as const)
+    )
+    const devisAssuranceTitreLeadsWithUser = devisAssuranceTitreLeads.map((lead) => ({
+      ...lead,
+      matchedUser: titleLeadUserByEmail.get(lead.email.trim().toLowerCase()) ?? null,
+    }))
 
     const now = new Date()
     const todayStart = startOfUtcDay(now)
@@ -386,6 +413,7 @@ export async function GET() {
         | "decennale_lead_followup"
         | "do_etude_pending"
         | "rc_fabriquant_pending"
+        | "assurance_titre_pending"
       priority: "high" | "medium"
       title: string
       description: string
@@ -485,6 +513,22 @@ export async function GET() {
       })
     }
 
+    for (const l of devisAssuranceTitreLeadsWithUser) {
+      if ((l.statut || "").trim().toLowerCase() !== "a_traiter") continue
+      const ageMs = now.getTime() - l.createdAt.getTime()
+      if (ageMs < reminder24hMs) continue
+      const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
+      dashboardActions.push({
+        id: `lead-titre-${l.id}`,
+        kind: "assurance_titre_pending",
+        priority: ageMs >= overdue72hMs ? "high" : "medium",
+        title: "Lead Assurance titre à traiter",
+        description: `${l.email} — ${ageHours}h`,
+        href: "#assurance-titre-leads",
+        ageHours,
+      })
+    }
+
     const dashboardActionsVisible = dashboardActions.filter((a) => !dismissedActionIds.has(a.id))
     dashboardActionsVisible.sort((a, b) => b.ageHours - a.ageHours)
     const dashboardActionsLimited = dashboardActionsVisible.slice(0, 20)
@@ -503,6 +547,7 @@ export async function GET() {
       avenantFees,
       devisDoLeads,
       devisRcFabriquantLeads: devisRcFabriquantLeadsWithUser,
+      devisAssuranceTitreLeads: devisAssuranceTitreLeadsWithUser,
       devisEtudeLeads,
       resiliationLogs,
       resiliationRequests,

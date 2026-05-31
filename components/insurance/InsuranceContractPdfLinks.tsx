@@ -2,6 +2,11 @@
 
 import Link from "next/link"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import {
+  insuranceProductHasBundledQuotePolicy,
+  insuranceProductHasFic,
+  insuranceProductHasSchedule,
+} from "@/lib/insurance-product"
 
 type Props = {
   contractId: string
@@ -27,9 +32,10 @@ export function InsuranceContractPdfLinks({
   const base = `/api/contracts/${contractId}/pdf`
   const isActive = status === CONTRACT_STATUS.active
   const showQuarterlySchedule =
-    (productType === "decennale" || productType === "rc_fabriquant") &&
+    insuranceProductHasSchedule(productType) &&
     (status === CONTRACT_STATUS.active || status === CONTRACT_STATUS.approved)
-  const bundleDevisCp = productType === "do" || productType === "decennale"
+  const bundleDevisCp = insuranceProductHasBundledQuotePolicy(productType)
+  const showFic = insuranceProductHasFic(productType)
 
   return (
     <div className={`flex flex-wrap gap-x-4 gap-y-2 items-center ${className ?? ""}`}>
@@ -42,9 +48,11 @@ export function InsuranceContractPdfLinks({
           <a href={`${base}/quote`} target="_blank" rel="noreferrer" className={linkClass}>
             Devis PDF
           </a>
-          <a href={`${base}/fic`} target="_blank" rel="noreferrer" className={linkClass}>
-            FIC
-          </a>
+          {showFic ? (
+            <a href={`${base}/fic`} target="_blank" rel="noreferrer" className={linkClass}>
+              FIC
+            </a>
+          ) : null}
           <a href={`${base}/policy`} target="_blank" rel="noreferrer" className={linkClass}>
             Conditions (CP)
           </a>

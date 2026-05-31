@@ -14,6 +14,10 @@ import type { InsuranceContractListItem } from "@/lib/insurance-contract-types"
 import { primeTrimestrielle } from "@/lib/insurance-premium"
 import { PayInsuranceContractButton } from "@/components/insurance/PayInsuranceContractButton"
 import { InsuranceContractPdfLinks } from "@/components/insurance/InsuranceContractPdfLinks"
+import {
+  getInsuranceProductLabel,
+  insuranceProductAllowsActiveInstallmentPayments,
+} from "@/lib/insurance-product"
 
 interface DocumentItem {
   id: string
@@ -51,7 +55,15 @@ export default function EspaceClientPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
-  const [payments, setPayments] = useState<{ id: string; amount: number; status: string; paidAt: string | null; createdAt: string }[]>([])
+  const [payments, setPayments] = useState<{
+    id: string
+    amount: number
+    status: string
+    paidAt: string | null
+    createdAt: string
+    contractNumber?: string
+    productType?: string
+  }[]>([])
   const [profile, setProfile] = useState<{ adresse?: string; codePostal?: string; ville?: string; telephone?: string; siret?: string } | null>(null)
   const [profileEditing, setProfileEditing] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
@@ -252,16 +264,14 @@ export default function EspaceClientPage() {
                     <p className="font-mono text-sm text-[#0a0a0a]">{c.contractNumber}</p>
                     <p className="text-sm text-[#171717]">{c.clientName}</p>
                     <p className="text-xs text-[#666] mt-1">
-                      {c.productType === "do"
-                        ? "Dommages-ouvrage"
-                        : c.productType === "rc_fabriquant"
-                          ? "RC Fabriquant"
-                          : "Décennale"}{" "}
+                      {getInsuranceProductLabel(c.productType)}{" "}
                       ·{" "}
                       {c.productType === "rc_fabriquant" ? (
                         <>
                           {c.premium.toLocaleString("fr-FR")} € — montant de l&apos;échéance en cours (trimestriel) ·{" "}
                         </>
+                      ) : c.productType === "assurance_titre" ? (
+                        <>{c.premium.toLocaleString("fr-FR")} € TTC — règlement unique · </>
                       ) : c.productType === "decennale" ? (
                         <>
                           {c.premium.toLocaleString("fr-FR")} € / an — virement Mollie ≈{" "}
@@ -284,12 +294,15 @@ export default function EspaceClientPage() {
                       productType={c.productType}
                     />
                     {(c.status === CONTRACT_STATUS.approved ||
-                      (c.status === CONTRACT_STATUS.active && c.productType === "rc_fabriquant")) && (
+                      (c.status === CONTRACT_STATUS.active &&
+                        insuranceProductAllowsActiveInstallmentPayments(c.productType))) && (
                       <PayInsuranceContractButton
                         contractId={c.id}
                         label={
                           c.productType === "rc_fabriquant"
                             ? "Payer l\u2019échéance — virement Mollie"
+                            : c.productType === "assurance_titre"
+                              ? "Payer le dossier — virement Mollie"
                             : "Payer (virement Mollie)"
                         }
                       />
@@ -429,6 +442,7 @@ export default function EspaceClientPage() {
                 <thead>
                   <tr className="border-b border-[#d4d4d4]">
                     <th className="text-left py-3 font-medium text-[#0a0a0a]">Date</th>
+                    <th className="text-left py-3 font-medium text-[#0a0a0a]">Référence</th>
                     <th className="text-left py-3 font-medium text-[#0a0a0a]">Montant</th>
                     <th className="text-left py-3 font-medium text-[#0a0a0a]">Statut</th>
                   </tr>
@@ -437,10 +451,36 @@ export default function EspaceClientPage() {
                   {payments.map((p) => (
                     <tr key={p.id} className="border-b border-[#d4d4d4]/50">
                       <td className="py-3 text-[#171717]">{new Date(p.paidAt || p.createdAt).toLocaleDateString("fr-FR")}</td>
+                      <td className="py-3 text-[#171717]">
+                        {p.contractNumber ? (
+                          <>
+                            <span className="font-mono text-xs">{p.contractNumber}</span>
+                            {p.productType ? (
+                              <span className="ml-2 text-xs text-[#666]">
+                                {getInsuranceProductLabel(p.productType)}
+                              </span>
+                            ) : null}
+                          </>
+                        ) : (
+                          <span className="text-xs text-[#666]">Paiement historique</span>
+                        )}
+                      </td>
                       <td className="py-3 font-medium text-[#0a0a0a]">{p.amount.toLocaleString("fr-FR")} €</td>
                       <td className="py-3">
-                        <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-900"}`}>
-                          {p.status === "paid" ? "Payé" : p.status === "pending" ? "En attente" : "Échoué"}
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            p.status === "paid"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : p.status === "pending" || p.status === "open" || p.status === "authorized"
+                                ? "bg-blue-100 text-blue-900"
+                                : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {p.status === "paid"
+                            ? "Payé"
+                            : p.status === "pending" || p.status === "open" || p.status === "authorized"
+                              ? "En attente"
+                              : "Échoué"}
                         </span>
                       </td>
                     </tr>

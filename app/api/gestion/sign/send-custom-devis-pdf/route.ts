@@ -15,6 +15,16 @@ import {
 } from "@/lib/rc-fabriquant-dossier-config"
 import { runSignatureQualityGates, type SignatureQualityGatePayload } from "@/lib/signature-quality-gates"
 import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
+import {
+  buildAssuranceTitreContractConfig,
+  buildAssuranceTitreDossierSnapshotFromUserData,
+  serializeAssuranceTitreContractConfig,
+} from "@/lib/assurance-titre-contract-config"
+import {
+  getInsuranceProductLabel,
+  normalizeInsurancePlatformProductType,
+  type InsurancePlatformProductType,
+} from "@/lib/insurance-product"
 
 export const runtime = "nodejs"
 
@@ -28,9 +38,48 @@ function normalizeNextPath(raw: string | null): string {
   return t.slice(0, 512)
 }
 
+function normalizeSourceLeadType(value: string | null): "rc_fabriquant" | "assurance_titre" | null {
+  if (value === "rc_fabriquant" || value === "assurance_titre") return value
+  return null
+}
+
+async function updateSourceLeadStatus(params: {
+  sourceLeadType: "rc_fabriquant" | "assurance_titre"
+  sourceLeadId: string
+  adminEmail: string
+  productType: InsurancePlatformProductType
+  signRequestId: string
+}) {
+  if (params.sourceLeadType === "rc_fabriquant") {
+    await prisma.devisRcFabriquantLead.updateMany({
+      where: { id: params.sourceLeadId },
+      data: { statut: "proposition_envoyee" },
+    })
+  } else {
+    await prisma.devisAssuranceTitreLead.updateMany({
+      where: { id: params.sourceLeadId },
+      data: { statut: "proposition_envoyee" },
+    })
+  }
+
+  await logAdminActivity({
+    adminEmail: params.adminEmail,
+    action: "lead_signature_invitation_sent",
+    targetType:
+      params.sourceLeadType === "rc_fabriquant"
+        ? "DevisRcFabriquantLead"
+        : "DevisAssuranceTitreLead",
+    targetId: params.sourceLeadId,
+    details: {
+      productType: params.productType,
+      signRequestId: params.signRequestId,
+    },
+  })
+}
+
 /**
  * Admin : envoie un PDF (devis / proposition) au client pour signature électronique.
- * Après signature, un InsuranceContract `rc_fabriquant` est créé (voir applyPendingFinalize).
+ * Après signature, un InsuranceContract produit est créé (voir applyPendingFinalize).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -54,16 +103,34 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = typeof form.get("userId") === "string" ? (form.get("userId") as string).trim() : ""
+    const productType = normalizeInsurancePlatformProductType(
+      typeof form.get("productType") === "string" ? (form.get("productType") as string).trim() : "",
+      "rc_fabriquant"
+    )
+    if (productType !== "rc_fabriquant" && productType !== "assurance_titre") {
+      return NextResponse.json(
+        { error: "Produit non supporté pour ce flux PDF (RC Fabriquant ou Assurance titre)." },
+        { status: 400 }
+      )
+    }
     const primeTtcRaw = form.get("primeTtc")
     const primeAnnuelleTtcRaw = form.get("primeAnnuelleTtc")
-    const primeAnnuelleHtRaw = form.get("primeAnnuelleHt")
+    const primeAnnuelleHtRaw = form.get("primeAnnuelleHt") ?? form.get("primeHtAnnuel")
     const periodiciteRaw = form.get("periodicite")
+    const coverageDurationYearsRaw = form.get("coverageDurationYears")
+    const sourceLeadType = normalizeSourceLeadType(
+      typeof form.get("sourceLeadType") === "string" ? (form.get("sourceLeadType") as string).trim() : null
+    )
+    const sourceLeadId =
+      typeof form.get("sourceLeadId") === "string" ? (form.get("sourceLeadId") as string).trim() : ""
     const devisReference =
       typeof form.get("devisReference") === "string" ? (form.get("devisReference") as string).trim().slice(0, 120) : ""
     const produitLabel =
       typeof form.get("produitLabel") === "string"
         ? (form.get("produitLabel") as string).trim().slice(0, 120)
-        : "Proposition commerciale"
+        : productType === "assurance_titre"
+          ? "Assurance titre — proposition digitale"
+          : "RC Fabriquant — proposition"
     const afterSignNextPath = normalizeNextPath(
       typeof form.get("afterSignNextPath") === "string" ? (form.get("afterSignNextPath") as string) : null
     )
@@ -73,9 +140,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Client (userId) requis" }, { status: 400 })
     }
 
-    const periodicite = normalizeRcFabPeriodicity(
-      typeof periodiciteRaw === "string" ? periodiciteRaw.trim().toLowerCase() : null
-    )
+    const periodicite =
+      productType === "assurance_titre"
+        ? "annuel"
+        : normalizeRcFabPeriodicity(
+            typeof periodiciteRaw === "string" ? periodiciteRaw.trim().toLowerCase() : null
+          )
     const primeAnnuelleTtcParsed =
       typeof primeAnnuelleTtcRaw === "string"
         ? Number(primeAnnuelleTtcRaw.replace(",", "."))
@@ -88,7 +158,14 @@ export async function POST(request: NextRequest) {
         : typeof primeTtcRaw === "number"
           ? primeTtcRaw
           : NaN
-    const installmentsPerYear = periodicite === "mensuel" ? 12 : periodicite === "semestriel" ? 2 : periodicite === "annuel" ? 1 : 4
+    const installmentsPerYear =
+      periodicite === "mensuel"
+        ? 12
+        : periodicite === "semestriel"
+          ? 2
+          : periodicite === "annuel"
+            ? 1
+            : 4
     const primeAnnuelleTtc =
       Number.isFinite(primeAnnuelleTtcParsed) && primeAnnuelleTtcParsed > 0
         ? primeAnnuelleTtcParsed
@@ -124,7 +201,13 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, raisonSociale: true },
+      select: {
+        id: true,
+        email: true,
+        raisonSociale: true,
+        titleInitialQuestionnaireJson: true,
+        titleEtudeQuestionnaireJson: true,
+      },
     })
     if (!user?.email) {
       return NextResponse.json({ error: "Client introuvable ou sans e-mail" }, { status: 404 })
@@ -152,35 +235,91 @@ export async function POST(request: NextRequest) {
     const storagePath = `gestion/devis-pdf/${folder}/devis.pdf`
     const { id: signRequestId } = await uploadPdfAndInsertSignRequest(buf, storagePath)
 
-    const provisionalNumero = `PDF-PENDING-${Date.now()}`
-    const dossierConfig = buildRcFabDossierConfig({
-      referenceContrat: devisReference || provisionalNumero,
-      periodicite,
-      primeAnnuelleTtc,
-      primeAnnuelleHt: Number.isFinite(primeAnnuelleHt) ? primeAnnuelleHt : undefined,
+    const provisionalNumero = `${productType === "assurance_titre" ? "TITRE" : "PDF"}-PENDING-${Date.now()}`
+    const coverageDurationYears =
+      typeof coverageDurationYearsRaw === "string" && coverageDurationYearsRaw.trim().length > 0
+        ? Number(coverageDurationYearsRaw.trim())
+        : Number.NaN
+    const titleSnapshot = buildAssuranceTitreDossierSnapshotFromUserData({
+      initialQuestionnaireJson: user.titleInitialQuestionnaireJson,
+      etudeQuestionnaireJson: user.titleEtudeQuestionnaireJson,
+      fallbackName: user.raisonSociale || user.email,
+      fallbackStructureName: user.raisonSociale || undefined,
     })
-    const contractData = {
-      signatureProvider: "supabase" as const,
-      customUploadedDevisFlow: true,
-      modeEtude: true,
-      activite: dossierConfig.activite,
-      periodicite: dossierConfig.periodicite,
-      primeAnnuelleHt: dossierConfig.primeAnnuelleHt,
-      primeAnnuelleTtc: dossierConfig.primeAnnuelleTtc,
-      primeTtc: dossierConfig.montantParEcheanceTtc,
-      rcFabriquantDossierConfig: dossierConfig,
-      rcFabriquantDossierConfigSerialized: serializeRcFabDossierConfig(dossierConfig),
-      ...(devisReference ? { devisReference } : {}),
-      produitLabel,
-      afterSignNextPath,
+
+    let annualTtc = primeAnnuelleTtc
+    let amountPerInstallment = primeAnnuelleTtc
+    let periodicityForQuality: "mensuel" | "trimestriel" | "semestriel" | "annuel" = "annuel"
+    let coverageDurationYearsForLog: number | undefined
+    let contractData: Record<string, unknown>
+
+    if (productType === "assurance_titre") {
+      const titleConfig = buildAssuranceTitreContractConfig({
+        referenceContrat: devisReference || provisionalNumero,
+        primeAnnuelleTtc,
+        primeAnnuelleHt: Number.isFinite(primeAnnuelleHt) ? primeAnnuelleHt : undefined,
+        coverageDurationYears: Number.isFinite(coverageDurationYears) ? coverageDurationYears : undefined,
+        productLabel: produitLabel,
+        dossier: titleSnapshot,
+      })
+      annualTtc = titleConfig.primeAnnuelleTtc
+      amountPerInstallment = titleConfig.montantParEcheanceTtc
+      periodicityForQuality = titleConfig.periodicite
+      coverageDurationYearsForLog = titleConfig.coverageDurationYears
+      contractData = {
+        signatureProvider: "supabase",
+        customUploadedDevisFlow: true,
+        productType,
+        modeEtude: true,
+        periodicite: titleConfig.periodicite,
+        primeAnnuelleHt: titleConfig.primeAnnuelleHt,
+        primeAnnuelleTtc: titleConfig.primeAnnuelleTtc,
+        primeTtc: titleConfig.montantParEcheanceTtc,
+        assuranceTitreContractConfig: titleConfig,
+        assuranceTitreContractConfigSerialized: serializeAssuranceTitreContractConfig(titleConfig),
+        coverageDurationYears: titleConfig.coverageDurationYears,
+        ...(devisReference ? { devisReference } : {}),
+        ...(sourceLeadType ? { sourceLeadType } : {}),
+        ...(sourceLeadId ? { sourceLeadId } : {}),
+        produitLabel,
+        afterSignNextPath,
+      }
+    } else {
+      const rcConfig = buildRcFabDossierConfig({
+        referenceContrat: devisReference || provisionalNumero,
+        periodicite,
+        primeAnnuelleTtc,
+        primeAnnuelleHt: Number.isFinite(primeAnnuelleHt) ? primeAnnuelleHt : undefined,
+      })
+      annualTtc = rcConfig.primeAnnuelleTtc
+      amountPerInstallment = rcConfig.montantParEcheanceTtc
+      periodicityForQuality = rcConfig.periodicite
+      contractData = {
+        signatureProvider: "supabase",
+        customUploadedDevisFlow: true,
+        productType,
+        modeEtude: true,
+        activite: rcConfig.activite,
+        periodicite: rcConfig.periodicite,
+        primeAnnuelleHt: rcConfig.primeAnnuelleHt,
+        primeAnnuelleTtc: rcConfig.primeAnnuelleTtc,
+        primeTtc: rcConfig.montantParEcheanceTtc,
+        rcFabriquantDossierConfig: rcConfig,
+        rcFabriquantDossierConfigSerialized: serializeRcFabDossierConfig(rcConfig),
+        ...(devisReference ? { devisReference } : {}),
+        ...(sourceLeadType ? { sourceLeadType } : {}),
+        ...(sourceLeadId ? { sourceLeadId } : {}),
+        produitLabel,
+        afterSignNextPath,
+      }
     }
     const qualityPayload: SignatureQualityGatePayload = {
       flow: "custom_pdf",
-      clientLabel: user.raisonSociale || user.email,
+      clientLabel: user.raisonSociale || titleSnapshot.contactName || user.email,
       reference: devisReference || provisionalNumero,
       email: user.email,
-      annualTtc: dossierConfig.primeAnnuelleTtc,
-      periodicity: dossierConfig.periodicite,
+      annualTtc,
+      periodicity: periodicityForQuality,
       hasPdfFile: true,
     }
     const qualityIssues = runSignatureQualityGates(qualityPayload)
@@ -210,7 +349,7 @@ export async function POST(request: NextRequest) {
     const raison = (user.raisonSociale || user.email).trim()
     const tpl = EMAIL_TEMPLATES.invitationSignatureDevisPersonnalise(raison, signatureLink, {
       produitLabel,
-      montantTtc: dossierConfig.primeAnnuelleTtc,
+      montantTtc: annualTtc,
       reference: devisReference || undefined,
     })
 
@@ -230,13 +369,15 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       )
     }
-    await sendRcFabriquantEmailCopy({
-      originalTo: user.email,
-      subject: tpl.subject,
-      text: tpl.text,
-      html: tpl.html,
-      contextLabel: "invitation_signature_devis_pdf_personnalise_rc_fabriquant",
-    })
+    if (productType === "rc_fabriquant") {
+      await sendRcFabriquantEmailCopy({
+        originalTo: user.email,
+        subject: tpl.subject,
+        text: tpl.text,
+        html: tpl.html,
+        contextLabel: "invitation_signature_devis_pdf_personnalise_rc_fabriquant",
+      })
+    }
 
     await logAdminActivity({
       adminEmail: session.user.email || "admin",
@@ -245,13 +386,28 @@ export async function POST(request: NextRequest) {
       targetId: user.id,
       details: {
         signRequestId,
+        productType,
+        productLabel: getInsuranceProductLabel(productType),
         produitLabel,
         modeEtude: true,
-        primeAnnuelleTtc: dossierConfig.primeAnnuelleTtc,
-        montantParEcheanceTtc: dossierConfig.montantParEcheanceTtc,
-        periodicite: dossierConfig.periodicite,
+        primeAnnuelleTtc: annualTtc,
+        montantParEcheanceTtc: amountPerInstallment,
+        periodicite: periodicityForQuality,
+        ...(coverageDurationYearsForLog ? { coverageDurationYears: coverageDurationYearsForLog } : {}),
       },
     })
+
+    if (sourceLeadType && sourceLeadId) {
+      await updateSourceLeadStatus({
+        sourceLeadType,
+        sourceLeadId,
+        adminEmail: session.user.email || "admin",
+        productType,
+        signRequestId,
+      }).catch((error) => {
+        console.error("[gestion/sign/send-custom-devis-pdf] maj lead source:", error)
+      })
+    }
 
     return NextResponse.json({
       ok: true,

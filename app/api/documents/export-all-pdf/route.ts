@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { DocumentsCombinedPDF } from "@/components/pdf/DocumentsCombinedPDF"
 import { qrCodePngDataUri } from "@/lib/qr-pdf"
 
-type AssuranceFilter = "decennale" | "do" | "rc_fabriquant"
+type AssuranceFilter = "decennale" | "do" | "rc_fabriquant" | "assurance_titre"
 
 const DOC_TYPES_BY_ASSURANCE: Record<AssuranceFilter, Set<string>> = {
   decennale: new Set([
@@ -21,6 +21,8 @@ const DOC_TYPES_BY_ASSURANCE: Record<AssuranceFilter, Set<string>> = {
   do: new Set(["devis_do", "attestation_do", "facture_do"]),
   // RC Fabriquant passe principalement par les PDFs de contrats plateforme (/api/contracts/:id/pdf/*).
   rc_fabriquant: new Set(),
+  // Assurance titre passe par les PDFs du contrat plateforme (/api/contracts/:id/pdf/*).
+  assurance_titre: new Set(),
 }
 
 export async function GET(request: NextRequest) {
@@ -35,10 +37,11 @@ export async function GET(request: NextRequest) {
     if (
       assurance !== "decennale" &&
       assurance !== "do" &&
-      assurance !== "rc_fabriquant"
+      assurance !== "rc_fabriquant" &&
+      assurance !== "assurance_titre"
     ) {
       return NextResponse.json(
-        { error: "Paramètre assurance requis: decennale, do ou rc_fabriquant" },
+        { error: "Paramètre assurance requis: decennale, do, rc_fabriquant ou assurance_titre" },
         { status: 400 }
       )
     }
@@ -56,6 +59,8 @@ export async function GET(request: NextRequest) {
       const message =
         assurance === "rc_fabriquant"
           ? "Aucun document exportable RC Fabriquant sur ce flux (utilisez les PDFs du contrat plateforme)."
+          : assurance === "assurance_titre"
+            ? "Aucun document exportable Assurance titre sur ce flux (utilisez les PDFs du contrat plateforme)."
           : "Aucun document à exporter pour cette assurance."
       return NextResponse.json({ error: message }, { status: 400 })
     }
