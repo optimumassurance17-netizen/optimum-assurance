@@ -39,7 +39,7 @@ const ASSURANCE_TITRE_CERTIFICATE_MENTIONS: MentionCheck[] = [
 
 const ASSURANCE_TITRE_INVOICE_MENTIONS: MentionCheck[] = [
   { label: "mention Assurance titre", regex: /assurance\s+titre/i },
-  { label: "statut facture à régler", regex: /statut\s*:\s*non\s+pay[ée]\s*\/\s*[àa]\s+r[èe]gler/i },
+  { label: "statut facture à régler", regex: /statut\s*:\s*non\s+pay\S*\s*\/\s*[^\n]*r\S*gler/i },
 ]
 
 function normalizeExtractedPdfText(input: string): string {
