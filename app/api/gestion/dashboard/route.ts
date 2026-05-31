@@ -6,7 +6,6 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
-import { isPrismaSchemaDriftError, withSchemaDriftFallback } from "@/lib/prisma-schema-drift"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -186,43 +185,60 @@ function parseLeadCompanyName(rawData: string | null | undefined): string | null
   return null
 }
 
-function dashboardSchemaWarning(label: string): string {
-  return `${label} indisponible : la base n'a pas encore toutes les migrations attendues pour ce module. Les autres données du dashboard restent affichées.`
+function buildSchemaDriftFallbackDashboard() {
+  return {
+    users: [],
+    documents: [],
+    payments: [],
+    avenantFees: [],
+    devisDoLeads: [],
+    devisRcFabriquantLeads: [],
+    devisEtudeLeads: [],
+    resiliationLogs: [],
+    resiliationRequests: [],
+    adminActivityLogs: [],
+    doStats: {
+      attestationsCount: 0,
+      facturesCount: 0,
+      primesTotal: 0,
+      closCouvertCount: 0,
+      doCompletCount: 0,
+    },
+    devisLeads: [],
+    devisDrafts: [],
+    pendingSignatures: [],
+    insuranceContractsCount: 0,
+    insuranceContracts: [],
+    dashboardActions: [],
+    dashboardActionsSummary: {
+      total: 0,
+      high: 0,
+      medium: 0,
+      overdue72h: 0,
+      dismissedToday: 0,
+    },
+    warning:
+      "Mode dégradé activé : certaines colonnes/tables Prisma manquent en base. Appliquez les migrations pour restaurer toutes les données du dashboard.",
+  }
 }
 
-async function fetchDevisRcFabriquantLeadsSafe(
-  onWarning?: (warning: string) => void
-) {
+async function fetchDevisRcFabriquantLeadsSafe() {
   // Sélection minimale compatible avec les schémas plus anciens (sans colonnes WhatsApp).
-  const rows = await withSchemaDriftFallback(
-    () =>
-      prisma.devisRcFabriquantLead.findMany({
-        select: {
-          id: true,
-          email: true,
-          data: true,
-          statut: true,
-          notesInternes: true,
-          primeProposee: true,
-          propositionEnvoyeeAt: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      }),
-    [],
-    {
-      identifiers: [
-        "DevisRcFabriquantLead",
-        "lastWhatsappClickAt",
-        "lastWhatsappSource",
-        "lastWhatsappRef",
-      ],
-      warning: dashboardSchemaWarning("Leads RC Fabriquant"),
-      onWarning,
-    }
-  )
+  const rows = await prisma.devisRcFabriquantLead.findMany({
+    select: {
+      id: true,
+      email: true,
+      data: true,
+      statut: true,
+      notesInternes: true,
+      primeProposee: true,
+      propositionEnvoyeeAt: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  })
   return rows.map((row) => ({
     ...row,
     lastWhatsappClickAt: null,
@@ -231,27 +247,7 @@ async function fetchDevisRcFabriquantLeadsSafe(
   }))
 }
 
-async function fetchDevisAssuranceTitreLeadsSafe(
-  onWarning?: (warning: string) => void
-) {
-  return withSchemaDriftFallback(
-    () =>
-      prisma.devisAssuranceTitreLead.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      }),
-    [],
-    {
-      identifiers: ["DevisAssuranceTitreLead"],
-      warning: dashboardSchemaWarning("Leads Assurance titre"),
-      onWarning,
-    }
-  )
-}
-
-async function fetchUsersDoQuestionnaireRowsSafe(
-  onWarning?: (warning: string) => void
-) {
+async function fetchUsersDoQuestionnaireRowsSafe() {
   try {
     return await prisma.user.findMany({
       where: {
@@ -265,13 +261,11 @@ async function fetchUsersDoQuestionnaireRowsSafe(
       take: DASH_LIST_LIMIT,
     })
   } catch (error) {
-    if (isPrismaSchemaDriftError(error, ["doInitialQuestionnaireJson", "doEtudeQuestionnaireJson"])) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === "P2022" || error.code === "P2021")
+    ) {
       // Compatibilité temporaire si ces colonnes ne sont pas encore présentes en prod.
-      if (onWarning) {
-        onWarning(
-          dashboardSchemaWarning("Pré-remplissage des questionnaires DO")
-        )
-      }
       return []
     }
     throw error
@@ -283,10 +277,6 @@ export async function GET() {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id || !isAdmin(session)) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
-    }
-    const schemaWarnings = new Set<string>()
-    const addSchemaWarning = (warning: string) => {
-      schemaWarnings.add(warning)
     }
     const now = new Date()
     const ddaConsentWindowStart = new Date(now.getTime() - 72 * 60 * 60 * 1000)
@@ -346,8 +336,11 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         take: 50,
       }),
-      fetchDevisRcFabriquantLeadsSafe(addSchemaWarning),
-      fetchDevisAssuranceTitreLeadsSafe(addSchemaWarning),
+      fetchDevisRcFabriquantLeadsSafe(),
+      prisma.devisAssuranceTitreLead.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
       prisma.devisEtudeLead.findMany({
         where: { statut: "pending" },
         orderBy: { createdAt: "desc" },
@@ -475,7 +468,7 @@ export async function GET() {
           },
         },
       }),
-      fetchUsersDoQuestionnaireRowsSafe(addSchemaWarning),
+      fetchUsersDoQuestionnaireRowsSafe(),
       prisma.devoirConseilLog.findMany({
         where: {
           acceptedAt: { gte: ddaConsentWindowStart },
@@ -1046,10 +1039,15 @@ export async function GET() {
       dashboardActions: dashboardActionsLimited,
       dashboardActionsSummary,
       conversionFunnel,
-      ...(schemaWarnings.size > 0 ? { schemaWarnings: [...schemaWarnings] } : {}),
     })
   } catch (error) {
     console.error("Erreur dashboard gestion:", error)
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === "P2021" || error.code === "P2022")
+    ) {
+      return NextResponse.json(buildSchemaDriftFallbackDashboard(), { status: 200 })
+    }
     const body = errorPayloadForDashboard(error)
     return NextResponse.json(body, { status: 500 })
   }

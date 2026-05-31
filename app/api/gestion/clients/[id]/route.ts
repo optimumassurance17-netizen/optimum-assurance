@@ -13,7 +13,6 @@ import { createSupabaseServiceClient } from "@/lib/supabase"
 import { GED_SUPABASE_BUCKET } from "@/lib/user-documents"
 import { asJsonObject } from "@/lib/json-object"
 import { fetchUserDocumentReviews } from "@/lib/user-document-review"
-import { isPrismaSchemaDriftError, withSchemaDriftFallback } from "@/lib/prisma-schema-drift"
 import {
   CLIENT_DEVIS_AUTONOMY_ACTION,
   getClientDevisAutonomyConfig,
@@ -31,79 +30,6 @@ function parseLogDetails(raw: string | null | undefined): Record<string, unknown
   }
 }
 
-const CLIENT_USER_BASE_SELECT = {
-  id: true,
-  email: true,
-  raisonSociale: true,
-  siret: true,
-  adresse: true,
-  codePostal: true,
-  ville: true,
-  telephone: true,
-  createdAt: true,
-  doInitialQuestionnaireJson: true,
-  doEtudeQuestionnaireJson: true,
-} as const
-
-const DEFAULT_DEVIS_AUTONOMY = {
-  allowDevisEdition: false,
-  allowForcedActivities: false,
-  forcedActivities: [] as string[],
-  note: null,
-  updatedAt: null,
-  updatedBy: null,
-}
-
-function clientSchemaWarning(label: string): string {
-  return `${label} indisponible : la base n'a pas encore toutes les migrations attendues pour ce module. Le reste de la fiche client reste accessible.`
-}
-
-function emptyTitleQuestionnaireFields() {
-  return {
-    titleInitialQuestionnaireJson: null as string | null,
-    titleEtudeQuestionnaireJson: null as string | null,
-  }
-}
-
-async function fetchClientUserWithOptionalTitleQuestionnaires(
-  id: string,
-  onWarning?: (warning: string) => void
-) {
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: CLIENT_USER_BASE_SELECT,
-  })
-  if (!user) return null
-
-  try {
-    const titleQuestionnaires = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        titleInitialQuestionnaireJson: true,
-        titleEtudeQuestionnaireJson: true,
-      },
-    })
-    return {
-      ...user,
-      ...emptyTitleQuestionnaireFields(),
-      ...(titleQuestionnaires ?? {}),
-    }
-  } catch (error) {
-    if (!isPrismaSchemaDriftError(error, ["titleInitialQuestionnaireJson", "titleEtudeQuestionnaireJson"])) {
-      throw error
-    }
-    if (onWarning) {
-      onWarning(
-        clientSchemaWarning("Questionnaires Assurance titre")
-      )
-    }
-    return {
-      ...user,
-      ...emptyTitleQuestionnaireFields(),
-    }
-  }
-}
-
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -115,12 +41,25 @@ export async function GET(
     }
 
     const { id } = await params
-    const schemaWarnings = new Set<string>()
-    const addSchemaWarning = (warning: string) => {
-      schemaWarnings.add(warning)
-    }
 
-    const user = await fetchClientUserWithOptionalTitleQuestionnaires(id, addSchemaWarning)
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        raisonSociale: true,
+        siret: true,
+        adresse: true,
+        codePostal: true,
+        ville: true,
+        telephone: true,
+        createdAt: true,
+        doInitialQuestionnaireJson: true,
+        doEtudeQuestionnaireJson: true,
+        titleInitialQuestionnaireJson: true,
+        titleEtudeQuestionnaireJson: true,
+      },
+    })
 
     if (!user) {
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
@@ -157,46 +96,20 @@ export async function GET(
         select: { id: true, type: true, filename: true, size: true, createdAt: true },
         orderBy: { type: "asc" },
       }),
-      withSchemaDriftFallback(
-        () =>
-          prisma.insuranceContract.findMany({
-            where: { userId: id },
-            select: { id: true, contractNumber: true, productType: true, createdAt: true },
-            orderBy: { createdAt: "desc" },
-          }),
-        [],
-        {
-          identifiers: ["InsuranceContract"],
-          warning: clientSchemaWarning("Contrats plateforme"),
-          onWarning: addSchemaWarning,
-        }
-      ),
-      withSchemaDriftFallback(
-        () =>
-          prisma.devoirConseilLog.findMany({
-            where: {
-              OR: [{ userId: id }, { email: user.email.trim().toLowerCase() }],
-            },
-            select: { id: true, email: true, userId: true, page: true, produit: true, acceptedAt: true },
-            orderBy: { acceptedAt: "desc" },
-            take: 60,
-          }),
-        [],
-        {
-          identifiers: ["DevoirConseilLog"],
-          warning: clientSchemaWarning("Historique DDA"),
-          onWarning: addSchemaWarning,
-        }
-      ),
-      withSchemaDriftFallback(
-        () => getClientDevisAutonomyConfig(id),
-        DEFAULT_DEVIS_AUTONOMY,
-        {
-          identifiers: ["AdminActivityLog"],
-          warning: clientSchemaWarning("Autonomie devis"),
-          onWarning: addSchemaWarning,
-        }
-      ),
+      prisma.insuranceContract.findMany({
+        where: { userId: id },
+        select: { id: true, contractNumber: true, productType: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.devoirConseilLog.findMany({
+        where: {
+          OR: [{ userId: id }, { email: user.email.trim().toLowerCase() }],
+        },
+        select: { id: true, email: true, userId: true, page: true, produit: true, acceptedAt: true },
+        orderBy: { acceptedAt: "desc" },
+        take: 60,
+      }),
+      getClientDevisAutonomyConfig(id),
     ])
 
     const contractById = new Map(insuranceContracts.map((c) => [c.id, c] as const))
@@ -218,57 +131,39 @@ export async function GET(
 
     const ddaAuditLogs =
       ddaScopes.length > 0
-        ? await withSchemaDriftFallback(
-            () =>
-              prisma.adminActivityLog.findMany({
-                where: {
-                  action: {
-                    in: [
-                      "dda_advice_acknowledged",
-                      "dda_contract_suitability_checked",
-                      "dda_do_payment_suitability_checked",
-                      "dda_rc_fabriquant_lead_collected",
-                      "dda_rc_fabriquant_proposition_sent",
-                      "dda_rc_fabriquant_signature_invited",
-                      "dda_rc_fabriquant_contract_created",
-                      "dda_avenant_created",
-                      "dda_avenant_updated",
-                    ],
-                  },
-                  OR: ddaScopes,
-                },
-                select: {
-                  id: true,
-                  adminEmail: true,
-                  action: true,
-                  targetType: true,
-                  targetId: true,
-                  details: true,
-                  createdAt: true,
-                },
-                orderBy: { createdAt: "desc" },
-                take: 120,
-              }),
-            [],
-            {
-              identifiers: ["AdminActivityLog"],
-              warning: clientSchemaWarning("Journal DDA"),
-              onWarning: addSchemaWarning,
-            }
-          )
+        ? await prisma.adminActivityLog.findMany({
+            where: {
+              action: {
+                in: [
+                  "dda_advice_acknowledged",
+                  "dda_contract_suitability_checked",
+                  "dda_do_payment_suitability_checked",
+                  "dda_rc_fabriquant_lead_collected",
+                  "dda_rc_fabriquant_proposition_sent",
+                  "dda_rc_fabriquant_signature_invited",
+                  "dda_rc_fabriquant_contract_created",
+                  "dda_avenant_created",
+                  "dda_avenant_updated",
+                ],
+              },
+              OR: ddaScopes,
+            },
+            select: {
+              id: true,
+              adminEmail: true,
+              action: true,
+              targetType: true,
+              targetId: true,
+              details: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: "desc" },
+            take: 120,
+          })
         : []
 
-    const userDocumentReviews = await withSchemaDriftFallback(
-      () =>
-        fetchUserDocumentReviews(
-          userDocuments.map((d) => d.id)
-        ),
-      {},
-      {
-        identifiers: ["AdminActivityLog"],
-        warning: clientSchemaWarning("Historique de validation GED"),
-        onWarning: addSchemaWarning,
-      }
+    const userDocumentReviews = await fetchUserDocumentReviews(
+      userDocuments.map((d) => d.id)
     )
 
     return NextResponse.json({
@@ -313,7 +208,6 @@ export async function GET(
           }
         }),
       },
-      ...(schemaWarnings.size > 0 ? { schemaWarnings: [...schemaWarnings] } : {}),
     })
   } catch (error) {
     console.error("Erreur détail client:", error)
@@ -354,7 +248,7 @@ export async function PATCH(
     }
     const payload = body as Record<string, unknown>
 
-    const current = await fetchClientUserWithOptionalTitleQuestionnaires(id)
+    const current = await prisma.user.findUnique({ where: { id } })
     if (!current) {
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
     }
@@ -412,17 +306,42 @@ export async function PATCH(
       return NextResponse.json({ error: "Aucun champ à mettre à jour" }, { status: 400 })
     }
 
-    if (Object.keys(data).length > 0) {
-      await prisma.user.update({
-        where: { id },
-        data,
-      })
-    }
-
-    const updated = await fetchClientUserWithOptionalTitleQuestionnaires(id)
-    if (!updated) {
-      return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
-    }
+    const updated =
+      Object.keys(data).length > 0
+        ? await prisma.user.update({
+            where: { id },
+            data,
+            select: {
+              id: true,
+              email: true,
+              raisonSociale: true,
+              siret: true,
+              adresse: true,
+              codePostal: true,
+              ville: true,
+              telephone: true,
+              createdAt: true,
+              doInitialQuestionnaireJson: true,
+              doEtudeQuestionnaireJson: true,
+              titleInitialQuestionnaireJson: true,
+              titleEtudeQuestionnaireJson: true,
+            },
+          })
+        : {
+            id: current.id,
+            email: current.email,
+            raisonSociale: current.raisonSociale,
+            siret: current.siret,
+            adresse: current.adresse,
+            codePostal: current.codePostal,
+            ville: current.ville,
+            telephone: current.telephone,
+            createdAt: current.createdAt,
+            doInitialQuestionnaireJson: current.doInitialQuestionnaireJson,
+            doEtudeQuestionnaireJson: current.doEtudeQuestionnaireJson,
+            titleInitialQuestionnaireJson: current.titleInitialQuestionnaireJson,
+            titleEtudeQuestionnaireJson: current.titleEtudeQuestionnaireJson,
+          }
 
     const syncedDocuments =
       Object.keys(data).length > 0 ? await syncContratAvenantDocumentsFromUser(id) : 0
