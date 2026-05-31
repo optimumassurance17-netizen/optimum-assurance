@@ -73,6 +73,22 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
         </div>
       )
     }
+    if (isTitlePlatform) {
+      return (
+        <div className="mb-8 p-5 rounded-2xl border border-violet-200 bg-violet-50 text-left">
+          <p className="font-semibold text-violet-950 mb-1">Assurance titre — dossier prêt au règlement</p>
+          <p className="text-sm text-violet-900/90 mb-4">
+            Votre devis signé et votre contrat <span className="font-mono">{contractNumber}</span> sont disponibles
+            dans l&apos;espace client. La facture de règlement est également téléchargeable avant paiement ; l&apos;attestation
+            avec QR de vérification sera émise dès encaissement.
+          </p>
+          <PayInsuranceContractButton
+            contractId={contractId}
+            label={"Payer le dossier — virement Mollie"}
+          />
+        </div>
+      )
+    }
     if (
       !isDoPlatform &&
       !isTitlePlatform &&
@@ -109,8 +125,10 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
       <div className="mb-8 p-5 rounded-2xl border border-emerald-200 bg-emerald-50 text-left">
         <p className="font-semibold text-emerald-900 mb-1">Contrat plateforme actif</p>
         <p className="text-sm text-emerald-900/90">
-          N° <span className="font-mono">{contractNumber}</span> — après paiement, vos attestations sont disponibles dans l&apos;espace
-          client (PDF).
+          N° <span className="font-mono">{contractNumber}</span> —{" "}
+          {isTitlePlatform
+            ? "contrat actif : devis signé, contrat, facture et attestation avec QR sont disponibles dans l’espace client."
+            : "après paiement, vos attestations sont disponibles dans l’espace client (PDF)."}
         </p>
       </div>
     )

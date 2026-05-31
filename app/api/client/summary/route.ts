@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { isDecennaleAttestationType } from "@/lib/decennale-impaye"
+import { requiredGeneratedDocTypesForContract } from "@/lib/insurance-contract-generated-documents"
 
 export async function GET() {
   try {
@@ -15,9 +16,8 @@ export async function GET() {
       documents,
       payments,
       contractPayments,
-      activeContractsWithCertificate,
       generatedDocumentsCount,
-      doContractsForVirtualDocs,
+      platformContractsForVirtualDocs,
     ] = await Promise.all([
       prisma.document.findMany({
         where: { userId: session.user.id },
@@ -36,15 +36,6 @@ export async function GET() {
         select: { amount: true, status: true, paidAt: true, createdAt: true },
         orderBy: { createdAt: "desc" },
       }),
-      prisma.insuranceContract.count({
-        where: {
-          userId: session.user.id,
-          status: "active",
-          storedDocuments: {
-            some: { type: "certificate" },
-          },
-        },
-      }),
       prisma.contractStoredDocument.count({
         where: {
           contract: { userId: session.user.id },
@@ -53,9 +44,11 @@ export async function GET() {
       prisma.insuranceContract.findMany({
         where: {
           userId: session.user.id,
-          productType: "do",
+          productType: { in: ["do", "assurance_titre"] },
         },
         select: {
+          productType: true,
+          status: true,
           storedDocuments: { select: { type: true } },
         },
       }),
@@ -95,10 +88,16 @@ export async function GET() {
           const bTime = new Date(b.paidAt ?? b.createdAt ?? 0).getTime()
           return bTime - aTime
         })[0] ?? null
-    const virtualGeneratedDocsCount = doContractsForVirtualDocs.reduce((total, contract) => {
+    const virtualGeneratedDocsCount = platformContractsForVirtualDocs.reduce((total, contract) => {
       const existing = new Set(contract.storedDocuments.map((doc) => doc.type))
-      return total + ["quote", "policy", "certificate", "invoice"].filter((type) => !existing.has(type)).length
+      const expected = requiredGeneratedDocTypesForContract(contract)
+      return total + expected.filter((type) => !existing.has(type)).length
     }, 0)
+    const activeContractsWithCertificate = platformContractsForVirtualDocs.filter(
+      (contract) =>
+        contract.status === "active" &&
+        requiredGeneratedDocTypesForContract(contract).includes("certificate")
+    ).length
 
     return NextResponse.json({
       documentsCount: documents.length + generatedDocumentsCount + virtualGeneratedDocsCount,

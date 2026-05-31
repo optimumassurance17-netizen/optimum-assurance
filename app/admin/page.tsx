@@ -76,12 +76,26 @@ export default async function AdminContractsPage({
                 Filtrer par statut ou produit. Liste des contrats plateforme (100 derniers).
               </p>
             </div>
-            <Link
-              href="/gestion"
-              className="shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-800 transition-colors hover:border-blue-300 hover:bg-blue-50"
-            >
-              ← Gestion CRM
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/dashboard"
+                className="shrink-0 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition-colors hover:border-emerald-400 hover:bg-emerald-100"
+              >
+                GEO Intelligence
+              </Link>
+              <Link
+                href="/admin/seo/linkpilot"
+                className="shrink-0 rounded-xl border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:border-blue-400 hover:bg-blue-100"
+              >
+                SEO LinkPilot AI
+              </Link>
+              <Link
+                href="/gestion"
+                className="shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-800 transition-colors hover:border-blue-300 hover:bg-blue-50"
+              >
+                ← Gestion CRM
+              </Link>
+            </div>
           </div>
           <div className="mt-4">
             <DelegationLegalLine size="xs" />

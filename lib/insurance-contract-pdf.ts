@@ -98,16 +98,21 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
   const page = pdf.addPage([595.28, 841.89])
   const accelLogo = await loadAccelerantLogoImage(pdf)
+  const invoicePaid = Boolean(c.paidAt)
+  const invoiceTitle = invoicePaid
+    ? "FACTURE ACQUITTÉE"
+    : c.productType === "assurance_titre"
+      ? "FACTURE / APPEL DE RÈGLEMENT"
+      : "FACTURE"
   let y = 800
   if (accelLogo) {
     const { imgBottom } = drawAccelerantLogoOnPage(page, accelLogo)
     y = imgBottom - 22
   }
-  page.drawText(sanitizeForPdfLib("FACTURE ACQUITTÉE"), { x: 50, y, size: 14, font: bold })
+  page.drawText(sanitizeForPdfLib(invoiceTitle), { x: 50, y, size: 14, font: bold })
   y -= 28
   page.drawText(sanitizeForPdfLib(`Contrat ${c.contractNumber}`), { x: 50, y, size: 10, font })
   y -= 16
-  const invoicePaid = Boolean(c.paidAt)
   page.drawText(
     sanitizeForPdfLib(invoicePaid ? "Statut : PAYÉ / ACQUITTÉ" : "Statut : NON PAYÉ / À RÉGLER"),
     { x: 50, y, size: 11, font: bold, maxWidth: 500 }

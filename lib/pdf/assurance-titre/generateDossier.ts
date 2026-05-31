@@ -7,6 +7,7 @@ import { drawOptimumHeader } from "@/lib/pdf/shared/drawHeader"
 import { embedStandardFonts } from "@/lib/pdf/shared/initPdf"
 import { finalizeWithFooters } from "@/lib/pdf/shared/finalizePdf"
 import { loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
+import { embedVerificationQr } from "@/lib/pdf/shared/qrCode"
 import type { AssuranceTitreContractConfig } from "@/lib/assurance-titre-contract-config"
 
 export type AssuranceTitreDocumentData = {
@@ -236,6 +237,8 @@ export async function generateAssuranceTitreCertificatePdf(
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
+  const verifyUrl = `${SITE_URL}/verify/${encodeURIComponent(data.referenceContrat)}`
+  const qrImage = await embedVerificationQr(pdfDoc, verifyUrl)
   const accelerantLogo = await loadAccelerantLogoImage(pdfDoc)
   const page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
 
@@ -246,7 +249,7 @@ export async function generateAssuranceTitreCertificatePdf(
       font,
       fontBold,
       "ATTESTATION DE GARANTIE — Assurance titre",
-      "Document emis apres signature et enregistrement du paiement",
+      "Document emis apres signature, paiement et QR de verification",
       accelerantLogo
     ),
   }
@@ -308,7 +311,17 @@ export async function generateAssuranceTitreCertificatePdf(
     11
   )
   state = drawParagraph(state, getDevoirConseilLinksLine("assurance_titre"), font, 8, 10)
-  drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
+  state = drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
+
+  const qrSize = 92
+  page.drawImage(qrImage, {
+    x: PDF_PAGE.marginX,
+    y: Math.max(72, state.y - qrSize),
+    width: qrSize,
+    height: qrSize,
+  })
+  state = { ...state, y: Math.max(72, state.y - qrSize - 10) }
+  drawParagraph(state, `Vérification : ${verifyUrl}`, font, 8, 10)
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }

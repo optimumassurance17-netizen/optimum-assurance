@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { requiredGeneratedDocTypesForContract } from "@/lib/insurance-contract-generated-documents"
 
 export async function GET() {
   try {
@@ -39,11 +40,11 @@ export async function GET() {
     const generatedDocuments = contracts.flatMap((contract) => {
       const baseUrl = `/api/contracts/${contract.id}/pdf`
       const existingByType = new Map(contract.storedDocuments.map((doc) => [doc.type, doc] as const))
-      const requiredTypes = requiredGeneratedDocTypes(contract.productType)
+      const requiredTypes = requiredGeneratedDocTypesForContract(contract)
       const materialized = contract.storedDocuments.map((doc) => ({
         id: `contract:${doc.id}`,
         type: toClientDocumentType(contract.productType, doc.type),
-        numero: `${contract.contractNumber} — ${labelContractDoc(doc.type)}`,
+        numero: `${contract.contractNumber} — ${labelContractDoc(contract.productType, doc.type)}`,
         status: contract.status,
         createdAt: doc.createdAt,
         href: doc.url,
@@ -57,7 +58,7 @@ export async function GET() {
         .map((type) => ({
           id: `contract-virtual:${contract.id}:${type}`,
           type: toClientDocumentType(contract.productType, type),
-          numero: `${contract.contractNumber} — ${labelContractDoc(type)}`,
+          numero: `${contract.contractNumber} — ${labelContractDoc(contract.productType, type)}`,
           status: contract.status,
           createdAt: contract.createdAt,
           href: `${baseUrl}/${type}`,
@@ -83,11 +84,6 @@ export async function GET() {
   }
 }
 
-function requiredGeneratedDocTypes(productType: string): string[] {
-  if (productType === "do") return ["quote", "policy", "certificate", "invoice"]
-  return []
-}
-
 function buildGeneratedPaymentStatus(
   productType: string,
   docType: string,
@@ -107,6 +103,12 @@ function buildGeneratedPaymentStatus(
 }
 
 function toClientDocumentType(productType: string, docType: string): string {
+  if (productType === "assurance_titre") {
+    if (docType === "quote") return "devis_assurance_titre"
+    if (docType === "policy") return "conditions_particulieres_assurance_titre"
+    if (docType === "certificate") return "attestation_assurance_titre"
+    if (docType === "invoice") return "facture_assurance_titre"
+  }
   if (docType === "quote") return productType === "do" ? "devis_do" : "devis_cp"
   if (docType === "policy") return "conditions_particulieres"
   if (docType === "certificate") return productType === "do" ? "attestation_do" : "attestation"
@@ -116,7 +118,13 @@ function toClientDocumentType(productType: string, docType: string): string {
   return `contrat_${docType}`
 }
 
-function labelContractDoc(type: string): string {
+function labelContractDoc(productType: string, type: string): string {
+  if (productType === "assurance_titre") {
+    if (type === "quote") return "Devis signé"
+    if (type === "policy") return "Contrat / conditions particulières"
+    if (type === "certificate") return "Attestation avec QR"
+    if (type === "invoice") return "Facture"
+  }
   if (type === "quote") return "Devis et conditions"
   if (type === "policy") return "Conditions particulières"
   if (type === "certificate") return "Attestation"

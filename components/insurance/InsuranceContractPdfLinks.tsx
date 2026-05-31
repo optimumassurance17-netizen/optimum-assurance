@@ -32,6 +32,10 @@ export function InsuranceContractPdfLinks({
   const base = `/api/contracts/${contractId}/pdf`
   const isActive = status === CONTRACT_STATUS.active
   const certificateAvailable = isActive
+  const titleInvoiceAvailable =
+    productType === "assurance_titre" &&
+    (status === CONTRACT_STATUS.approved || status === CONTRACT_STATUS.active)
+  const invoiceAvailable = certificateAvailable || titleInvoiceAvailable
   const showQuarterlySchedule =
     insuranceProductHasSchedule(productType) &&
     (status === CONTRACT_STATUS.active || status === CONTRACT_STATUS.approved)
@@ -65,14 +69,14 @@ export function InsuranceContractPdfLinks({
         </a>
       ) : null}
       {certificateAvailable ? (
-        <>
-          <a href={`${base}/certificate`} target="_blank" rel="noreferrer" className={linkClass}>
-            Attestation
-          </a>
-          <a href={`${base}/invoice`} target="_blank" rel="noreferrer" className={linkClass}>
-            Facture
-          </a>
-        </>
+        <a href={`${base}/certificate`} target="_blank" rel="noreferrer" className={linkClass}>
+          Attestation
+        </a>
+      ) : null}
+      {invoiceAvailable ? (
+        <a href={`${base}/invoice`} target="_blank" rel="noreferrer" className={linkClass}>
+          {productType === "assurance_titre" && !isActive ? "Facture / règlement" : "Facture"}
+        </a>
       ) : null}
       <Link href={`/verify/${encodeURIComponent(contractNumber)}`} className={linkClass}>
         Vérification publique

@@ -99,16 +99,20 @@ type CaRegularisationDraft = {
 const typeLabels: Record<string, string> = {
   devis: "Devis décennale",
   devis_do: "Devis dommage ouvrage",
+  devis_assurance_titre: "Devis Assurance titre",
   contrat: "Contrat",
   attestation: "Attestation décennale",
+  attestation_assurance_titre: "Attestation Assurance titre (QR)",
   attestation_nominative: "Attestation décennale nominative",
   attestation_do: "Attestation dommage ouvrage",
   attestation_non_sinistralite: "Attestation non sinistralité",
   avenant: "Avenant",
   facture_do: "Facture acquittée DO",
   facture_decennale: "Facture acquittée décennale",
+  facture_assurance_titre: "Facture Assurance titre",
   devis_cp: "Devis et conditions",
   conditions_particulieres: "Conditions particulières",
+  conditions_particulieres_assurance_titre: "Contrat Assurance titre",
   facture: "Facture",
   echeancier: "Échéancier",
   fic: "FIC",
@@ -117,16 +121,20 @@ const typeLabels: Record<string, string> = {
 const typeIcons: Record<string, string> = {
   devis: "📋",
   devis_do: "🏗️",
+  devis_assurance_titre: "🏠",
   contrat: "📄",
   attestation: "✅",
+  attestation_assurance_titre: "✅",
   attestation_nominative: "🪪",
   attestation_do: "🏠",
   attestation_non_sinistralite: "📜",
   avenant: "📝",
   facture_do: "🧾",
   facture_decennale: "🧾",
+  facture_assurance_titre: "🧾",
   devis_cp: "📋",
   conditions_particulieres: "📄",
+  conditions_particulieres_assurance_titre: "📄",
   facture: "🧾",
   echeancier: "📆",
   fic: "🧾",
@@ -1277,7 +1285,7 @@ export default function EspaceClientPage() {
         <>
         <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-10 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <h2 className="font-bold text-[#0a0a0a] text-lg">Devis, contrats et attestations</h2>
+            <h2 className="font-bold text-[#0a0a0a] text-lg">Devis, contrats, factures et attestations</h2>
             {documents.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {(["decennale", "do"] as const).map((assurance) => (
@@ -1323,7 +1331,8 @@ export default function EspaceClientPage() {
             </div>
           ) : documents.length === 0 ? (
             <p className="text-[#171717] leading-relaxed">
-              Aucun document pour le moment. Vos devis, contrats et attestations apparaîtront ici après souscription.
+              Aucun document pour le moment. Vos devis, contrats, factures et attestations apparaîtront ici après
+              souscription.
             </p>
           ) : (
             <div className="space-y-3">
