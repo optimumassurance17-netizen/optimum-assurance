@@ -24,7 +24,9 @@ test.describe("Parcours opérationnels décennale et dommage ouvrage", () => {
     ).toBeVisible()
     await expect(continueButton).toBeDisabled()
 
-    await page.locator("#activite-selection").selectOption({ label: "Plomberie sanitaire" })
+    await page.locator("#categorie-selection").selectOption({ label: "Toutes les catégories" })
+    await page.locator("#activite-recherche").fill("plomberie")
+    await page.locator("#activite-selection").selectOption("Plomberie sanitaire")
     await page.getByRole("button", { name: "Ajouter" }).click()
 
     await expect(page.getByRole("heading", { name: "Votre tarification" })).toBeVisible()
