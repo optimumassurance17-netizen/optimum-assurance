@@ -381,7 +381,7 @@ export default function ClientDetailPage() {
         <section className="bg-[#252525] rounded-xl p-6 border border-gray-700">
           <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
             <h1 className="text-xl font-semibold text-white">Fiche client</h1>
-            <div className="flex gap-3">
+            <div className="flex w-full flex-wrap gap-3 sm:w-auto sm:justify-end">
               <button
                 type="button"
                 onClick={async () => {
@@ -415,17 +415,6 @@ export default function ClientDetailPage() {
                 className="text-sm text-emerald-300 hover:text-emerald-200 font-medium disabled:opacity-50"
               >
                 {clientAccessLoading ? "Création accès..." : "Créer / renvoyer accès client"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmailPresetLabel(null)
-                  setSinistreForm({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
-                  setSinistreModal(true)
-                }}
-                className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium"
-              >
-                Sinistre
               </button>
               <button
                 type="button"
@@ -485,11 +474,22 @@ export default function ClientDetailPage() {
                     setAttestationGenerating(false)
                   }
                 }}
-                className="text-sm text-cyan-300 hover:text-cyan-200 font-medium disabled:opacity-50"
+                className="rounded-lg border border-cyan-500/70 px-3 py-2 text-sm text-cyan-200 hover:bg-cyan-950/40 font-semibold disabled:opacity-50 whitespace-nowrap"
               >
                 {attestationGenerating
                   ? "Génération attestation..."
                   : "Générer attestation décennale"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailPresetLabel(null)
+                  setSinistreForm({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
+                  setSinistreModal(true)
+                }}
+                className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium"
+              >
+                Sinistre
               </button>
               <button
                 type="button"
