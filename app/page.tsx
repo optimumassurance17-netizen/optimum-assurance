@@ -89,6 +89,12 @@ const HOME_DO_HERO_HREF = buildTrackedHref("/devis-dommage-ouvrage", {
   utmCampaign: "dommage-ouvrage",
   entryPath: "/",
 })
+const HOME_TITLE_HERO_HREF = buildTrackedHref("/assurance-titre", {
+  utmSource: "site",
+  utmMedium: "home-title-study",
+  utmCampaign: "assurance-titre",
+  entryPath: "/",
+})
 const HOME_DECENNALE_FINAL_HREF = buildTrackedHref("/devis", {
   utmSource: "site",
   utmMedium: "home-final-cta",
@@ -231,24 +237,61 @@ export default function Home() {
       <HomeHowItWorks />
       <HomeQrSection />
 
-      {/* RC Fabriquant — bandeau discret vers la demande à l’étude */}
-      <section className="px-4 sm:px-6 md:px-8 py-10 bg-gradient-to-r from-teal-50 via-white to-slate-50 border-y border-teal-100/80" aria-labelledby="rc-fab-section">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div>
-            <h2 id="rc-fab-section" className="text-xl md:text-2xl font-bold text-slate-900 mb-2">
-              Responsabilité civile fabricant
+      {/* Produits à étude manuelle */}
+      <section className="border-y border-violet-100/80 bg-gradient-to-r from-violet-50 via-white to-teal-50 px-4 py-10 sm:px-6 md:px-8" aria-labelledby="etude-manuelle-section">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-8 max-w-3xl">
+            <span className="inline-block rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-900 shadow-sm">
+              Produits à étude sur dossier
+            </span>
+            <h2 id="etude-manuelle-section" className="mt-3 text-2xl font-bold text-slate-900">
+              Besoin d&apos;un montage plus spécifique ?
             </h2>
-            <p className="text-slate-700 max-w-2xl leading-relaxed">
-              Vous fabriquez ou distribuez des biens ? Protégez-vous contre les dommages causés par vos produits après
-              leur mise sur le marché. Demande personnalisée, étude par nos équipes.
+            <p className="mt-2 max-w-2xl leading-relaxed text-slate-700">
+              Certains risques nécessitent une lecture humaine du dossier plutôt qu&apos;un tarificateur public. Nous
+              ouvrons ces demandes via un formulaire qualifié puis un retour de l&apos;équipe.
             </p>
           </div>
-          <Link
-            href="/devis-rc-fabriquant"
-            className="shrink-0 inline-flex justify-center items-center rounded-2xl bg-teal-700 px-8 py-4 text-center text-base font-semibold text-white shadow-md shadow-teal-900/20 transition-all hover:bg-teal-800"
-          >
-            Faire une demande RC fabriquant
-          </Link>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-3xl border border-teal-200 bg-white p-6 shadow-sm">
+              <h3 className="text-xl font-bold text-slate-900">Responsabilité civile fabricant</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                Vous fabriquez ou distribuez des biens ? Protégez-vous contre les dommages causés par vos produits
+                après leur mise sur le marché. Étude personnalisée par nos équipes.
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                <li>• Produits industriels, alimentaires, cosmétiques, électroniques, batteries</li>
+                <li>• Zone France, Europe ou monde</li>
+                <li>• Retour en général sous 24 à 48 h ouvrées</li>
+              </ul>
+              <Link
+                href="/devis-rc-fabriquant"
+                className="mt-6 inline-flex items-center justify-center rounded-2xl bg-teal-700 px-6 py-3 text-base font-semibold text-white shadow-md shadow-teal-900/20 transition-all hover:bg-teal-800"
+              >
+                Faire une demande RC fabriquant
+              </Link>
+            </div>
+
+            <div className="rounded-3xl border border-violet-200 bg-white p-6 shadow-sm">
+              <h3 className="text-xl font-bold text-slate-900">Assurance titre immobilière</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                Sécurisez une acquisition, un refinancement ou un closing complexe avec une étude confidentielle sur le
+                titre, les charges, servitudes, erreurs documentaires ou risques de fraude.
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                <li>• Acquéreurs, investisseurs, marchands de biens, prêteurs, notaires</li>
+                <li>• Actifs résidentiels, tertiaires, terrains ou portefeuilles</li>
+                <li>• Analyse initiale en général sous 24 à 48 h ouvrées</li>
+              </ul>
+              <Link
+                href={HOME_TITLE_HERO_HREF}
+                className="mt-6 inline-flex items-center justify-center rounded-2xl bg-violet-700 px-6 py-3 text-base font-semibold text-white shadow-md shadow-violet-900/20 transition-all hover:bg-violet-800"
+              >
+                Étudier mon dossier
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

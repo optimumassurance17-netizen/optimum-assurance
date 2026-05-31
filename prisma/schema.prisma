@@ -234,6 +234,17 @@ model DevisRcFabriquantLead {
   updatedAt             DateTime  @updatedAt
 }
 
+/// Demande Assurance titre (étude manuelle, montage sur dossier).
+model DevisAssuranceTitreLead {
+  id            String   @id @default(cuid())
+  email         String
+  data          String // JSON : actif, opération, risques identifiés, etc.
+  statut        String   @default("a_traiter")
+  notesInternes String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model PendingSignature {
   id                 String   @id @default(cuid())
   signatureRequestId String   @unique // UUID sign_requests (Supabase Sign)

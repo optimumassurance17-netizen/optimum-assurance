@@ -32,6 +32,9 @@ export function Footer() {
             <Link href="/dommage-ouvrage" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
               Profils DO
             </Link>
+            <Link href="/assurance-titre" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
+              Assurance titre
+            </Link>
             <Link href="/contact" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
               Contact
             </Link>

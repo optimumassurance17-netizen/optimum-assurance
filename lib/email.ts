@@ -226,6 +226,11 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nNous avons bien enregistré votre demande de devis dommage ouvrage. Vous trouverez en pièce jointe une estimation indicative (PDF), sous réserve d’étude de votre dossier.\n\nUn conseiller peut vous confirmer le montant définitif sous 24 h ouvrées.\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Nous avons bien enregistré votre <strong>demande de devis dommage ouvrage</strong>. Vous trouverez en pièce jointe une <strong>estimation indicative</strong> (PDF), sous réserve d’étude de votre dossier.</p><p>Un conseiller peut vous confirmer le montant définitif sous <strong>24 h ouvrées</strong>.</p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
+  demandeAssuranceTitreRecue: (nomComplet: string) => ({
+    subject: "Demande Assurance titre bien reçue - Optimum Assurance",
+    text: `Bonjour ${nomComplet},\n\nNous avons bien enregistré votre demande d'étude pour une assurance titre.\n\nNotre équipe analyse votre dossier (type d'actif, opération, calendrier et points de risque identifiés) et revient vers vous en général sous 24 à 48 h ouvrées.\n\nL'assurance titre est étudiée au cas par cas et intervient en complément des vérifications notariales / juridiques.\n\nPour toute précision : répondez à cet email ou écrivez-nous via ${APP_URL}/contact\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${nomComplet},</p><p>Nous avons bien enregistré votre <strong>demande d'étude Assurance titre</strong>.</p><p>Notre équipe analyse votre dossier (type d'actif, opération, calendrier et points de risque identifiés) et revient vers vous en général sous <strong>24 à 48 h ouvrées</strong>.</p><p>L'assurance titre est étudiée au cas par cas et intervient en complément des vérifications notariales / juridiques.</p><p>Pour toute précision : répondez à cet email ou utilisez notre <a href="${APP_URL}/contact" style="color:#2563eb;font-weight:bold">formulaire de contact</a>.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+  }),
   /** RC Fabriquant — pas de PDF automatique ; étude par un conseiller. */
   demandeRcFabriquantRecue: (raisonSociale: string) => ({
     subject: "Demande de devis RC Fabriquant bien reçue - Optimum Assurance",
