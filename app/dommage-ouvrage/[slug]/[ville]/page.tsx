@@ -52,12 +52,16 @@ export async function generateMetadata({
     data.description,
     158
   )
+  const thinProgrammaticPage = !data.bodyExtra?.trim() && !data.contentHash
 
   return {
     title,
     description,
     alternates: { canonical: `${baseUrl}${path}` },
-    robots: data.indexable ? { index: true, follow: true } : { index: false, follow: true },
+    robots:
+      data.indexable && !thinProgrammaticPage
+        ? { index: true, follow: true }
+        : { index: false, follow: true },
     openGraph: {
       type: "website",
       locale: "fr_FR",
