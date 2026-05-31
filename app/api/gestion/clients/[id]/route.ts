@@ -5,6 +5,7 @@ import { createMollieClient } from "@mollie/api-client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
+import { Prisma } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { syncContratAvenantDocumentsFromUser } from "@/lib/sync-user-document-identity"
@@ -30,19 +31,32 @@ function parseLogDetails(raw: string | null | undefined): Record<string, unknown
   }
 }
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+function isSchemaDriftError(error: unknown, identifiers: string[] = []): boolean {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2021" || error.code === "P2022")
+  ) {
+    if (identifiers.length === 0) return true
+    const message = error.message.toLowerCase()
+    return identifiers.some((identifier) => message.includes(identifier.toLowerCase()))
+  }
+  return false
+}
+
+async function withSchemaDriftFallback<T>(fn: () => Promise<T>, fallbackValue: T): Promise<T> {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !isAdmin(session)) {
-      return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
+    return await fn()
+  } catch (error) {
+    if (isSchemaDriftError(error)) {
+      return fallbackValue
     }
+    throw error
+  }
+}
 
-    const { id } = await params
-
-    const user = await prisma.user.findUnique({
+async function fetchClientUserWithOptionalTitleQuestionnaires(id: string) {
+  try {
+    return await prisma.user.findUnique({
       where: { id },
       select: {
         id: true,
@@ -60,6 +74,51 @@ export async function GET(
         titleEtudeQuestionnaireJson: true,
       },
     })
+  } catch (error) {
+    if (
+      isSchemaDriftError(error, ["titleinitialquestionnairejson", "titleetudequestionnairejson"])
+    ) {
+      const user = await prisma.user.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          email: true,
+          raisonSociale: true,
+          siret: true,
+          adresse: true,
+          codePostal: true,
+          ville: true,
+          telephone: true,
+          createdAt: true,
+          doInitialQuestionnaireJson: true,
+          doEtudeQuestionnaireJson: true,
+        },
+      })
+      return user
+        ? {
+            ...user,
+            titleInitialQuestionnaireJson: null,
+            titleEtudeQuestionnaireJson: null,
+          }
+        : null
+    }
+    throw error
+  }
+}
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id || !isAdmin(session)) {
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
+    }
+
+    const { id } = await params
+
+    const user = await fetchClientUserWithOptionalTitleQuestionnaires(id)
 
     if (!user) {
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
@@ -96,20 +155,35 @@ export async function GET(
         select: { id: true, type: true, filename: true, size: true, createdAt: true },
         orderBy: { type: "asc" },
       }),
-      prisma.insuranceContract.findMany({
-        where: { userId: id },
-        select: { id: true, contractNumber: true, productType: true, createdAt: true },
-        orderBy: { createdAt: "desc" },
+      withSchemaDriftFallback(
+        () =>
+          prisma.insuranceContract.findMany({
+            where: { userId: id },
+            select: { id: true, contractNumber: true, productType: true, createdAt: true },
+            orderBy: { createdAt: "desc" },
+          }),
+        []
+      ),
+      withSchemaDriftFallback(
+        () =>
+          prisma.devoirConseilLog.findMany({
+            where: {
+              OR: [{ userId: id }, { email: user.email.trim().toLowerCase() }],
+            },
+            select: { id: true, email: true, userId: true, page: true, produit: true, acceptedAt: true },
+            orderBy: { acceptedAt: "desc" },
+            take: 60,
+          }),
+        []
+      ),
+      withSchemaDriftFallback(() => getClientDevisAutonomyConfig(id), {
+        allowDevisEdition: false,
+        allowForcedActivities: false,
+        forcedActivities: [],
+        note: null,
+        updatedAt: null,
+        updatedBy: null,
       }),
-      prisma.devoirConseilLog.findMany({
-        where: {
-          OR: [{ userId: id }, { email: user.email.trim().toLowerCase() }],
-        },
-        select: { id: true, email: true, userId: true, page: true, produit: true, acceptedAt: true },
-        orderBy: { acceptedAt: "desc" },
-        take: 60,
-      }),
-      getClientDevisAutonomyConfig(id),
     ])
 
     const contractById = new Map(insuranceContracts.map((c) => [c.id, c] as const))
@@ -131,39 +205,44 @@ export async function GET(
 
     const ddaAuditLogs =
       ddaScopes.length > 0
-        ? await prisma.adminActivityLog.findMany({
-            where: {
-              action: {
-                in: [
-                  "dda_advice_acknowledged",
-                  "dda_contract_suitability_checked",
-                  "dda_do_payment_suitability_checked",
-                  "dda_rc_fabriquant_lead_collected",
-                  "dda_rc_fabriquant_proposition_sent",
-                  "dda_rc_fabriquant_signature_invited",
-                  "dda_rc_fabriquant_contract_created",
-                  "dda_avenant_created",
-                  "dda_avenant_updated",
-                ],
-              },
-              OR: ddaScopes,
-            },
-            select: {
-              id: true,
-              adminEmail: true,
-              action: true,
-              targetType: true,
-              targetId: true,
-              details: true,
-              createdAt: true,
-            },
-            orderBy: { createdAt: "desc" },
-            take: 120,
-          })
+        ? await withSchemaDriftFallback(
+            () =>
+              prisma.adminActivityLog.findMany({
+                where: {
+                  action: {
+                    in: [
+                      "dda_advice_acknowledged",
+                      "dda_contract_suitability_checked",
+                      "dda_do_payment_suitability_checked",
+                      "dda_rc_fabriquant_lead_collected",
+                      "dda_rc_fabriquant_proposition_sent",
+                      "dda_rc_fabriquant_signature_invited",
+                      "dda_rc_fabriquant_contract_created",
+                      "dda_avenant_created",
+                      "dda_avenant_updated",
+                    ],
+                  },
+                  OR: ddaScopes,
+                },
+                select: {
+                  id: true,
+                  adminEmail: true,
+                  action: true,
+                  targetType: true,
+                  targetId: true,
+                  details: true,
+                  createdAt: true,
+                },
+                orderBy: { createdAt: "desc" },
+                take: 120,
+              }),
+            []
+          )
         : []
 
-    const userDocumentReviews = await fetchUserDocumentReviews(
-      userDocuments.map((d) => d.id)
+    const userDocumentReviews = await withSchemaDriftFallback(
+      () => fetchUserDocumentReviews(userDocuments.map((d) => d.id)),
+      {}
     )
 
     return NextResponse.json({
@@ -248,7 +327,20 @@ export async function PATCH(
     }
     const payload = body as Record<string, unknown>
 
-    const current = await prisma.user.findUnique({ where: { id } })
+    const current = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        raisonSociale: true,
+        siret: true,
+        adresse: true,
+        codePostal: true,
+        ville: true,
+        telephone: true,
+        createdAt: true,
+      },
+    })
     if (!current) {
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
     }
@@ -306,42 +398,16 @@ export async function PATCH(
       return NextResponse.json({ error: "Aucun champ à mettre à jour" }, { status: 400 })
     }
 
-    const updated =
-      Object.keys(data).length > 0
-        ? await prisma.user.update({
-            where: { id },
-            data,
-            select: {
-              id: true,
-              email: true,
-              raisonSociale: true,
-              siret: true,
-              adresse: true,
-              codePostal: true,
-              ville: true,
-              telephone: true,
-              createdAt: true,
-              doInitialQuestionnaireJson: true,
-              doEtudeQuestionnaireJson: true,
-              titleInitialQuestionnaireJson: true,
-              titleEtudeQuestionnaireJson: true,
-            },
-          })
-        : {
-            id: current.id,
-            email: current.email,
-            raisonSociale: current.raisonSociale,
-            siret: current.siret,
-            adresse: current.adresse,
-            codePostal: current.codePostal,
-            ville: current.ville,
-            telephone: current.telephone,
-            createdAt: current.createdAt,
-            doInitialQuestionnaireJson: current.doInitialQuestionnaireJson,
-            doEtudeQuestionnaireJson: current.doEtudeQuestionnaireJson,
-            titleInitialQuestionnaireJson: current.titleInitialQuestionnaireJson,
-            titleEtudeQuestionnaireJson: current.titleEtudeQuestionnaireJson,
-          }
+    if (Object.keys(data).length > 0) {
+      await prisma.user.update({
+        where: { id },
+        data,
+      })
+    }
+    const updated = await fetchClientUserWithOptionalTitleQuestionnaires(id)
+    if (!updated) {
+      return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
+    }
 
     const syncedDocuments =
       Object.keys(data).length > 0 ? await syncContratAvenantDocumentsFromUser(id) : 0
@@ -379,7 +445,14 @@ export async function PATCH(
       })
     }
 
-    const devisAutonomy = await getClientDevisAutonomyConfig(id)
+    const devisAutonomy = await withSchemaDriftFallback(() => getClientDevisAutonomyConfig(id), {
+      allowDevisEdition: false,
+      allowForcedActivities: false,
+      forcedActivities: [],
+      note: null,
+      updatedAt: null,
+      updatedBy: null,
+    })
 
     return NextResponse.json({ user: updated, syncedDocuments, devisAutonomy })
   } catch (error) {

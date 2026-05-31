@@ -165,6 +165,24 @@ function parseJsonObject(raw: string | null | undefined): Record<string, unknown
   }
 }
 
+function isSchemaDriftError(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2021" || error.code === "P2022")
+  )
+}
+
+async function withSchemaDriftFallback<T>(fn: () => Promise<T>, fallbackValue: T): Promise<T> {
+  try {
+    return await fn()
+  } catch (error) {
+    if (isSchemaDriftError(error)) {
+      return fallbackValue
+    }
+    throw error
+  }
+}
+
 function inferProductTypeFromDocumentData(rawData: string | null | undefined): "decennale" | "do" | "rc_fabriquant" {
   const data = parseJsonObject(rawData)
   const normalized = typeof data.insuranceProduct === "string"
@@ -185,66 +203,44 @@ function parseLeadCompanyName(rawData: string | null | undefined): string | null
   return null
 }
 
-function buildSchemaDriftFallbackDashboard() {
-  return {
-    users: [],
-    documents: [],
-    payments: [],
-    avenantFees: [],
-    devisDoLeads: [],
-    devisRcFabriquantLeads: [],
-    devisEtudeLeads: [],
-    resiliationLogs: [],
-    resiliationRequests: [],
-    adminActivityLogs: [],
-    doStats: {
-      attestationsCount: 0,
-      facturesCount: 0,
-      primesTotal: 0,
-      closCouvertCount: 0,
-      doCompletCount: 0,
-    },
-    devisLeads: [],
-    devisDrafts: [],
-    pendingSignatures: [],
-    insuranceContractsCount: 0,
-    insuranceContracts: [],
-    dashboardActions: [],
-    dashboardActionsSummary: {
-      total: 0,
-      high: 0,
-      medium: 0,
-      overdue72h: 0,
-      dismissedToday: 0,
-    },
-    warning:
-      "Mode dégradé activé : certaines colonnes/tables Prisma manquent en base. Appliquez les migrations pour restaurer toutes les données du dashboard.",
-  }
-}
-
 async function fetchDevisRcFabriquantLeadsSafe() {
-  // Sélection minimale compatible avec les schémas plus anciens (sans colonnes WhatsApp).
-  const rows = await prisma.devisRcFabriquantLead.findMany({
-    select: {
-      id: true,
-      email: true,
-      data: true,
-      statut: true,
-      notesInternes: true,
-      primeProposee: true,
-      propositionEnvoyeeAt: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  })
-  return rows.map((row) => ({
-    ...row,
-    lastWhatsappClickAt: null,
-    lastWhatsappSource: null,
-    lastWhatsappRef: null,
-  }))
+  return withSchemaDriftFallback(async () => {
+    // Sélection minimale compatible avec les schémas plus anciens (sans colonnes WhatsApp).
+    const rows = await prisma.devisRcFabriquantLead.findMany({
+      select: {
+        id: true,
+        email: true,
+        data: true,
+        statut: true,
+        notesInternes: true,
+        primeProposee: true,
+        propositionEnvoyeeAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    })
+    return rows.map((row) => ({
+      ...row,
+      lastWhatsappClickAt: null,
+      lastWhatsappSource: null,
+      lastWhatsappRef: null,
+    }))
+  }, [] as Array<{
+    id: string
+    email: string
+    data: string
+    statut: string
+    notesInternes: string | null
+    primeProposee: number | null
+    propositionEnvoyeeAt: Date | null
+    createdAt: Date
+    updatedAt: Date
+    lastWhatsappClickAt: null
+    lastWhatsappSource: null
+    lastWhatsappRef: null
+  }>)
 }
 
 async function fetchUsersDoQuestionnaireRowsSafe() {
@@ -337,37 +333,57 @@ export async function GET() {
         take: 50,
       }),
       fetchDevisRcFabriquantLeadsSafe(),
-      prisma.devisAssuranceTitreLead.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      }),
-      prisma.devisEtudeLead.findMany({
-        where: { statut: "pending" },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      }),
-      prisma.resiliationLog.findMany({
-        include: {
-          document: {
-            include: { user: { select: { email: true, raisonSociale: true } } },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      }),
-      prisma.adminActivityLog.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 100,
-      }),
-      prisma.resiliationRequest.findMany({
-        where: { status: "pending" },
-        include: {
-          document: {
-            include: { user: { select: { email: true, raisonSociale: true } } },
-          },
-        },
-        orderBy: { createdAt: "asc" },
-      }),
+      withSchemaDriftFallback(
+        () =>
+          prisma.devisAssuranceTitreLead.findMany({
+            orderBy: { createdAt: "desc" },
+            take: 50,
+          }),
+        []
+      ),
+      withSchemaDriftFallback(
+        () =>
+          prisma.devisEtudeLead.findMany({
+            where: { statut: "pending" },
+            orderBy: { createdAt: "desc" },
+            take: 50,
+          }),
+        []
+      ),
+      withSchemaDriftFallback(
+        () =>
+          prisma.resiliationLog.findMany({
+            include: {
+              document: {
+                include: { user: { select: { email: true, raisonSociale: true } } },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 50,
+          }),
+        []
+      ),
+      withSchemaDriftFallback(
+        () =>
+          prisma.adminActivityLog.findMany({
+            orderBy: { createdAt: "desc" },
+            take: 100,
+          }),
+        []
+      ),
+      withSchemaDriftFallback(
+        () =>
+          prisma.resiliationRequest.findMany({
+            where: { status: "pending" },
+            include: {
+              document: {
+                include: { user: { select: { email: true, raisonSociale: true } } },
+              },
+            },
+            orderBy: { createdAt: "asc" },
+          }),
+        []
+      ),
       (async () => {
         const [attestationsTotal, facturesCount, attestationsDo] = await Promise.all([
           prisma.document.count({ where: { type: "attestation_do" } }),
@@ -403,124 +419,152 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         take: 100,
       }),
-      prisma.devisDraft.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 40,
-        select: {
-          id: true,
-          token: true,
-          email: true,
-          produit: true,
-          expiresAt: true,
-          createdAt: true,
-        },
-      }),
-      prisma.pendingSignature.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 25,
-      }),
-      prisma.sepaSubscription.findMany({
-        orderBy: { updatedAt: "desc" },
-        take: 200,
-        select: {
-          id: true,
-          userId: true,
-          status: true,
-          mollieCustomerId: true,
-          mollieMandateId: true,
-          primeAnnuelle: true,
-          trimestresSepaPayes: true,
-          firstTrimesterPaidAt: true,
-          nextSepaDue: true,
-          lastError: true,
-          sepaPendingPaymentId: true,
-          updatedAt: true,
-        },
-      }),
-      prisma.insuranceContract.count(),
-      prisma.insuranceContract.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 150,
-        select: {
-          id: true,
-          contractNumber: true,
-          productType: true,
-          exclusionsJson: true,
-          clientName: true,
-          userId: true,
-          premium: true,
-          status: true,
-          paidAt: true,
-          rejectedReason: true,
-          validUntil: true,
-          createdAt: true,
-          user: { select: { id: true, email: true, raisonSociale: true } },
-          lifecyclePayments: {
+      withSchemaDriftFallback(
+        () =>
+          prisma.devisDraft.findMany({
             orderBy: { createdAt: "desc" },
-            take: 8,
+            take: 40,
             select: {
               id: true,
-              amount: true,
-              status: true,
-              paidAt: true,
+              token: true,
+              email: true,
+              produit: true,
+              expiresAt: true,
               createdAt: true,
             },
-          },
-        },
-      }),
+          }),
+        []
+      ),
+      withSchemaDriftFallback(
+        () =>
+          prisma.pendingSignature.findMany({
+            orderBy: { createdAt: "desc" },
+            take: 25,
+          }),
+        []
+      ),
+      withSchemaDriftFallback(
+        () =>
+          prisma.sepaSubscription.findMany({
+            orderBy: { updatedAt: "desc" },
+            take: 200,
+            select: {
+              id: true,
+              userId: true,
+              status: true,
+              mollieCustomerId: true,
+              mollieMandateId: true,
+              primeAnnuelle: true,
+              trimestresSepaPayes: true,
+              firstTrimesterPaidAt: true,
+              nextSepaDue: true,
+              lastError: true,
+              sepaPendingPaymentId: true,
+              updatedAt: true,
+            },
+          }),
+        []
+      ),
+      withSchemaDriftFallback(() => prisma.insuranceContract.count(), 0),
+      withSchemaDriftFallback(
+        () =>
+          prisma.insuranceContract.findMany({
+            orderBy: { createdAt: "desc" },
+            take: 150,
+            select: {
+              id: true,
+              contractNumber: true,
+              productType: true,
+              exclusionsJson: true,
+              clientName: true,
+              userId: true,
+              premium: true,
+              status: true,
+              paidAt: true,
+              rejectedReason: true,
+              validUntil: true,
+              createdAt: true,
+              user: { select: { id: true, email: true, raisonSociale: true } },
+              lifecyclePayments: {
+                orderBy: { createdAt: "desc" },
+                take: 8,
+                select: {
+                  id: true,
+                  amount: true,
+                  status: true,
+                  paidAt: true,
+                  createdAt: true,
+                },
+              },
+            },
+          }),
+        []
+      ),
       fetchUsersDoQuestionnaireRowsSafe(),
-      prisma.devoirConseilLog.findMany({
-        where: {
-          acceptedAt: { gte: ddaConsentWindowStart },
-        },
-        select: {
-          id: true,
-          userId: true,
-          email: true,
-          produit: true,
-          page: true,
-          acceptedAt: true,
-        },
-        orderBy: { acceptedAt: "desc" },
-        take: DASH_LIST_LIMIT,
-      }),
-      prisma.adminActivityLog.findMany({
-        where: {
-          createdAt: { gte: ddaEventWindowStart },
-          action: {
-            in: [
-              "dda_advice_acknowledged",
-              "dda_contract_suitability_checked",
-              "dda_do_payment_suitability_checked",
-              "dda_rc_fabriquant_initial_request_logged",
-              "dda_rc_fabriquant_proposition_suitability_checked",
-              "dda_rc_fabriquant_signature_suitability_checked",
-              "dda_rc_fabriquant_contract_created_after_signature",
-              "dda_avenant_suitability_checked",
-              "dda_document_update_suitability_checked",
-            ],
-          },
-        },
-        select: {
-          id: true,
-          action: true,
-          targetType: true,
-          targetId: true,
-          details: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: "desc" },
-        take: DASH_LIST_LIMIT,
-      }),
-      prisma.adminActivityLog.findMany({
-        where: {
-          createdAt: { gte: conversionWindowStart },
-          action: { startsWith: "conversion_" },
-        },
-        select: { action: true, details: true, createdAt: true },
-        orderBy: { createdAt: "desc" },
-        take: DASH_LIST_LIMIT,
-      }),
+      withSchemaDriftFallback(
+        () =>
+          prisma.devoirConseilLog.findMany({
+            where: {
+              acceptedAt: { gte: ddaConsentWindowStart },
+            },
+            select: {
+              id: true,
+              userId: true,
+              email: true,
+              produit: true,
+              page: true,
+              acceptedAt: true,
+            },
+            orderBy: { acceptedAt: "desc" },
+            take: DASH_LIST_LIMIT,
+          }),
+        []
+      ),
+      withSchemaDriftFallback(
+        () =>
+          prisma.adminActivityLog.findMany({
+            where: {
+              createdAt: { gte: ddaEventWindowStart },
+              action: {
+                in: [
+                  "dda_advice_acknowledged",
+                  "dda_contract_suitability_checked",
+                  "dda_do_payment_suitability_checked",
+                  "dda_rc_fabriquant_initial_request_logged",
+                  "dda_rc_fabriquant_proposition_suitability_checked",
+                  "dda_rc_fabriquant_signature_suitability_checked",
+                  "dda_rc_fabriquant_contract_created_after_signature",
+                  "dda_avenant_suitability_checked",
+                  "dda_document_update_suitability_checked",
+                ],
+              },
+            },
+            select: {
+              id: true,
+              action: true,
+              targetType: true,
+              targetId: true,
+              details: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: "desc" },
+            take: DASH_LIST_LIMIT,
+          }),
+        []
+      ),
+      withSchemaDriftFallback(
+        () =>
+          prisma.adminActivityLog.findMany({
+            where: {
+              createdAt: { gte: conversionWindowStart },
+              action: { startsWith: "conversion_" },
+            },
+            select: { action: true, details: true, createdAt: true },
+            orderBy: { createdAt: "desc" },
+            take: DASH_LIST_LIMIT,
+          }),
+        []
+      ),
     ])
 
     const doQuestionnaireByUserId = new Map<
@@ -623,16 +667,20 @@ export async function GET() {
     const rcLeadIds = devisRcFabriquantLeads.map((lead) => lead.id)
     const rcFabLeadActivityLogs =
       rcLeadIds.length > 0
-        ? await prisma.adminActivityLog.findMany({
-            where: {
-              targetType: "DevisRcFabriquantLead",
-              targetId: { in: rcLeadIds },
-              action: { in: ["rc_fabriquant_proposition_email", "rc_fabriquant_etude_signature_sent"] },
-            },
-            orderBy: { createdAt: "desc" },
-            select: { action: true, targetId: true, details: true, createdAt: true },
-            take: 400,
-          })
+        ? await withSchemaDriftFallback(
+            () =>
+              prisma.adminActivityLog.findMany({
+                where: {
+                  targetType: "DevisRcFabriquantLead",
+                  targetId: { in: rcLeadIds },
+                  action: { in: ["rc_fabriquant_proposition_email", "rc_fabriquant_etude_signature_sent"] },
+                },
+                orderBy: { createdAt: "desc" },
+                select: { action: true, targetId: true, details: true, createdAt: true },
+                take: 400,
+              }),
+            []
+          )
         : []
     const rcFabTraceByLeadId = new Map<
       string,
@@ -772,14 +820,18 @@ export async function GET() {
         missing?: string
       }
     }
-    const dismissedLogs = await prisma.adminActivityLog.findMany({
-      where: {
-        action: "dashboard_action_dismissed",
-        targetType: "dashboard_action",
-        createdAt: { gte: todayStart },
-      },
-      select: { targetId: true },
-    })
+    const dismissedLogs = await withSchemaDriftFallback(
+      () =>
+        prisma.adminActivityLog.findMany({
+          where: {
+            action: "dashboard_action_dismissed",
+            targetType: "dashboard_action",
+            createdAt: { gte: todayStart },
+          },
+          select: { targetId: true },
+        }),
+      []
+    )
     const dismissedActionIds = new Set(
       dismissedLogs.map((l) => (typeof l.targetId === "string" ? l.targetId : "")).filter(Boolean)
     )
@@ -1042,12 +1094,6 @@ export async function GET() {
     })
   } catch (error) {
     console.error("Erreur dashboard gestion:", error)
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      (error.code === "P2021" || error.code === "P2022")
-    ) {
-      return NextResponse.json(buildSchemaDriftFallbackDashboard(), { status: 200 })
-    }
     const body = errorPayloadForDashboard(error)
     return NextResponse.json(body, { status: 500 })
   }
