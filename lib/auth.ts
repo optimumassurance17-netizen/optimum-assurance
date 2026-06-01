@@ -18,6 +18,12 @@ export const authOptions: NextAuthOptions = {
         if (!email || !password) return null
         const user = await prisma.user.findFirst({
           where: { email: { equals: email, mode: "insensitive" } },
+          select: {
+            id: true,
+            email: true,
+            raisonSociale: true,
+            passwordHash: true,
+          },
         })
         if (!user) return null
         const valid = await compare(password, user.passwordHash)
