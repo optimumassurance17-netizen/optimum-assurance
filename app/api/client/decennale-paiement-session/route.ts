@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import {
+  hasCurrentDecennaleFirstPayment,
+  isSepaSubscriptionForCurrentDecennale,
+} from "@/lib/decennale-payment-progress"
 import { prisma } from "@/lib/prisma"
 import { buildSignatureSessionFromContrat } from "@/lib/decennale-session-from-contrat"
 
@@ -17,17 +21,10 @@ export async function GET() {
 
     const userId = session.user.id
 
-    const sepa = await prisma.sepaSubscription.findUnique({
-      where: { userId },
-      select: { id: true, status: true },
-    })
-    if (sepa && sepa.status !== "cancelled") {
-      return NextResponse.json({ available: false, reason: "sepa_deja_configure" })
-    }
-
     const contrat = await prisma.document.findFirst({
       where: { userId, type: "contrat" },
       orderBy: { createdAt: "desc" },
+      select: { numero: true, data: true, createdAt: true },
     })
     if (!contrat) {
       return NextResponse.json({ available: false, reason: "pas_de_contrat" })
@@ -40,19 +37,30 @@ export async function GET() {
       return NextResponse.json({ available: false, reason: "donnees_invalides" })
     }
 
-    const payments = await prisma.payment.findMany({
-      where: { userId, status: "paid" },
-      select: { metadata: true },
-    })
-    const aPayePremierTrimestre = payments.some((p) => {
-      if (!p.metadata) return false
-      try {
-        const m = JSON.parse(p.metadata) as Record<string, unknown>
-        return m.premierPaiementCarte === "true" || m.premierPaiementCarte === true
-      } catch {
-        return false
-      }
-    })
+    const [payments, sepa] = await Promise.all([
+      prisma.payment.findMany({
+        where: { userId, status: "paid" },
+        select: { metadata: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+      prisma.sepaSubscription.findUnique({
+        where: { userId },
+        select: {
+          status: true,
+          createdAt: true,
+          firstTrimesterPaidAt: true,
+        },
+      }),
+    ])
+
+    const currentContract = {
+      numero: contrat.numero,
+      createdAt: contrat.createdAt,
+    }
+    const aPayePremierTrimestre =
+      hasCurrentDecennaleFirstPayment(payments, currentContract) ||
+      isSepaSubscriptionForCurrentDecennale(sepa, currentContract)
     if (aPayePremierTrimestre) {
       return NextResponse.json({ available: false, reason: "deja_paye" })
     }

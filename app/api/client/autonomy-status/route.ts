@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import {
+  hasCurrentDecennaleFirstPayment,
+  isSepaSubscriptionForCurrentDecennale,
+} from "@/lib/decennale-payment-progress"
 import { isDecennaleAttestationType } from "@/lib/decennale-impaye"
 import { prisma } from "@/lib/prisma"
 
@@ -72,7 +76,7 @@ export async function GET() {
         prisma.document.findFirst({
           where: { userId, type: "contrat" },
           orderBy: { createdAt: "desc" },
-          select: { id: true },
+          select: { id: true, numero: true, createdAt: true },
         }),
         prisma.insuranceContract.findFirst({
           where: {
@@ -87,7 +91,7 @@ export async function GET() {
         }),
         prisma.payment.findMany({
           where: { userId, status: "paid" },
-          select: { metadata: true },
+          select: { metadata: true, createdAt: true },
           orderBy: { createdAt: "desc" },
           take: 100,
         }),
@@ -98,6 +102,8 @@ export async function GET() {
             nextSepaDue: true,
             trimestresSepaPayes: true,
             lastError: true,
+            firstTrimesterPaidAt: true,
+            createdAt: true,
           },
         }),
         prisma.insuranceContract.count({
@@ -124,14 +130,19 @@ export async function GET() {
       })
       .filter((row): row is { signatureRequestId: string; signatureLink: string } => Boolean(row))
 
-    const decennaleFirstPaymentLogged = paidPayments.some((payment) => {
-      const m = parseJsonObject(payment.metadata)
-      return (
-        m.premierPaiementCarte === true ||
-        m.premierPaiementCarte === "true" ||
-        m.type === "decennale_premier_trimestre"
-      )
-    })
+    const currentDecennaleContract = latestDecennaleContract
+      ? {
+          numero: latestDecennaleContract.numero,
+          createdAt: latestDecennaleContract.createdAt,
+        }
+      : null
+    const decennaleFirstPaymentLogged = currentDecennaleContract
+      ? hasCurrentDecennaleFirstPayment(paidPayments, currentDecennaleContract)
+      : false
+    const currentDecennaleSepa =
+      currentDecennaleContract && isSepaSubscriptionForCurrentDecennale(sepa, currentDecennaleContract)
+        ? sepa
+        : null
 
     const suspendedDecennaleAttestationsCount = docs.filter(
       (doc) => isDecennaleAttestationType(doc.type) && doc.status === "suspendu"
@@ -141,7 +152,7 @@ export async function GET() {
     )
     const decennaleCertificateAvailable = Boolean(activeDecennaleContract || validLegacyDecennaleAttestation)
     const decennaleFirstPaymentDone =
-      decennaleFirstPaymentLogged || decennaleCertificateAvailable
+      decennaleFirstPaymentLogged || Boolean(currentDecennaleSepa) || decennaleCertificateAvailable
 
     const hasDecennaleContract = Boolean(
       latestDecennaleContract || activeDecennaleContract || approvedUnpaidContracts > 0
@@ -193,7 +204,12 @@ export async function GET() {
       })
     }
 
-    if (decennaleFirstPaymentDone && (!sepa || sepa.status === "pending_mandate" || sepa.status === "failed")) {
+    if (
+      decennaleFirstPaymentDone &&
+      (!currentDecennaleSepa ||
+        currentDecennaleSepa.status === "pending_mandate" ||
+        currentDecennaleSepa.status === "failed")
+    ) {
       advisories.push(
         "Votre premier paiement est enregistré. L’activation SEPA est en cours ; en cas de blocage persistant, un suivi dédié peut être déclenché côté gestion."
       )
@@ -223,12 +239,12 @@ export async function GET() {
       decennaleCertificateAvailable,
       approvedUnpaidContractsCount: approvedUnpaidContracts,
       suspendedAttestationsCount: suspendedDecennaleAttestationsCount,
-      sepaSubscription: sepa
+      sepaSubscription: currentDecennaleSepa
         ? {
-            status: sepa.status,
-            nextSepaDue: sepa.nextSepaDue?.toISOString() ?? null,
-            trimestresSepaPayes: sepa.trimestresSepaPayes,
-            lastError: sepa.lastError ?? null,
+            status: currentDecennaleSepa.status,
+            nextSepaDue: currentDecennaleSepa.nextSepaDue?.toISOString() ?? null,
+            trimestresSepaPayes: currentDecennaleSepa.trimestresSepaPayes,
+            lastError: currentDecennaleSepa.lastError ?? null,
           }
         : null,
       advisories,

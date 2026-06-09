@@ -230,6 +230,7 @@ export default function ConfirmationPage() {
                       siret: souscription.siret,
                       periodicite: paiementOpts?.periodicite,
                       fraisGestion: paiementOpts ? 60 : undefined,
+                      contractNumero: getSignedContractNumero(souscription),
                       ...(trimestrielCarte && { premierPaiementCarte: true }),
                     },
                   }),
