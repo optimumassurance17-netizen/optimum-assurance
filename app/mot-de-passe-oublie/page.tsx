@@ -56,8 +56,11 @@ export default function MotDePasseOubliePage() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block mb-2 font-medium text-[#0a0a0a]">Email</label>
+              <label htmlFor="forgot-password-email" className="block mb-2 font-medium text-[#0a0a0a]">
+                Email
+              </label>
               <input
+                id="forgot-password-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
