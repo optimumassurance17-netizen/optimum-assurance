@@ -356,6 +356,7 @@ interface DashboardData {
     productType: string
     exclusionsJson?: string | null
     clientName: string
+    siret?: string | null
     userId: string | null
     premium: number
     status: string
@@ -415,10 +416,41 @@ interface DashboardData {
   }
 }
 
+type DashboardUserRow = NonNullable<DashboardData["users"]>[number]
 type RcFabLeadRow = NonNullable<DashboardData["devisRcFabriquantLeads"]>[number]
 type PendingSignatureRow = NonNullable<DashboardData["pendingSignatures"]>[number]
 type SepaSubscriptionRow = NonNullable<DashboardData["sepaSubscriptions"]>[number]
 type InsuranceContractRow = NonNullable<DashboardData["insuranceContracts"]>[number]
+type ResolvedPendingSignatureRow = PendingSignatureRow & {
+  clientLabel: string | null
+  clientUserId: string | null
+}
+type ResolvedInsuranceContractRow = InsuranceContractRow & { clientUserId: string | null }
+
+function normalizeDashboardClientLookupValue(value: string | null | undefined): string {
+  return value?.trim().toLowerCase() ?? ""
+}
+
+function buildUniqueDashboardUserLookup(
+  users: DashboardUserRow[],
+  getKey: (user: DashboardUserRow) => string
+): Map<string, DashboardUserRow> {
+  const unique = new Map<string, DashboardUserRow>()
+  const duplicates = new Set<string>()
+  for (const user of users) {
+    const key = getKey(user)
+    if (!key) continue
+    if (duplicates.has(key)) continue
+    const existing = unique.get(key)
+    if (existing) {
+      unique.delete(key)
+      duplicates.add(key)
+      continue
+    }
+    unique.set(key, user)
+  }
+  return unique
+}
 
 export default function GestionPage() {
   const { status } = useSession()
@@ -780,13 +812,14 @@ export default function GestionPage() {
     })
   }
 
-  const matchesPendingSignatureSearch = (signature: PendingSignatureRow, q: string): boolean => {
+  const matchesPendingSignatureSearch = (signature: ResolvedPendingSignatureRow, q: string): boolean => {
     const query = q.trim().toLowerCase()
     if (!query) return true
     if (signature.contractNumero.toLowerCase().includes(query)) return true
     if (signature.signatureRequestId.toLowerCase().includes(query)) return true
     if ((signature.user?.email ?? "").toLowerCase().includes(query)) return true
     if ((signature.user?.raisonSociale ?? "").toLowerCase().includes(query)) return true
+    if ((signature.clientLabel ?? "").toLowerCase().includes(query)) return true
     return false
   }
 
@@ -863,17 +896,6 @@ export default function GestionPage() {
     ]
   }, [data?.conversionFunnel])
 
-  const filteredPendingSignatures = useMemo(() => {
-    if (!data?.pendingSignatures) return []
-    return data.pendingSignatures.filter((signature) => {
-      if (!matchesPendingSignatureSearch(signature, searchQuery)) return false
-      if (signatureFlowFilter === "custom_pdf") return signature.signatureFlow === "custom_pdf"
-      if (signatureFlowFilter === "decennale") return signature.signatureFlow !== "custom_pdf"
-      if (signatureFlowFilter === "repair_eligible") return signature.repairEligible === true
-      return true
-    })
-  }, [data, searchQuery, signatureFlowFilter])
-
   const filteredDashboardActions = useMemo(() => {
     const list = data?.dashboardActions ?? []
     if (actionsFilter === "high") return list.filter((a) => a.priority === "high")
@@ -900,14 +922,117 @@ export default function GestionPage() {
     })
   }, [data, searchQuery, rcFabFilter])
 
+  const dashboardUserLookup = useMemo(() => {
+    const users = data?.users ?? []
+    return {
+      userById: new Map(users.map((user) => [user.id, user] as const)),
+      userByEmail: new Map(
+        users
+          .map((user) => [normalizeDashboardClientLookupValue(user.email), user] as const)
+          .filter(([email]) => Boolean(email))
+      ),
+      userBySiret: buildUniqueDashboardUserLookup(users, (user) =>
+        normalizeDashboardClientLookupValue(user.siret)
+      ),
+      userByCompanyName: buildUniqueDashboardUserLookup(users, (user) =>
+        normalizeDashboardClientLookupValue(user.raisonSociale)
+      ),
+    }
+  }, [data?.users])
+
+  const resolveInsuranceContractClientUserId = useCallback(
+    (contract: InsuranceContractRow): string | null => {
+      if (contract.user?.id) return contract.user.id
+      if (contract.userId) return contract.userId
+
+      const normalizedClientName = normalizeDashboardClientLookupValue(contract.clientName)
+      if (normalizedClientName.includes("@")) {
+        const matchedByEmail = dashboardUserLookup.userByEmail.get(normalizedClientName)
+        if (matchedByEmail) return matchedByEmail.id
+      }
+
+      const normalizedSiret = normalizeDashboardClientLookupValue(contract.siret)
+      if (normalizedSiret) {
+        const matchedBySiret = dashboardUserLookup.userBySiret.get(normalizedSiret)
+        if (matchedBySiret) return matchedBySiret.id
+      }
+
+      if (normalizedClientName) {
+        const matchedByCompanyName = dashboardUserLookup.userByCompanyName.get(normalizedClientName)
+        if (matchedByCompanyName) return matchedByCompanyName.id
+      }
+
+      return null
+    },
+    [dashboardUserLookup]
+  )
+
+  const resolvedPendingSignatures = useMemo<ResolvedPendingSignatureRow[]>(() => {
+    const list = data?.pendingSignatures ?? []
+    return list.map((signature) => {
+      const resolvedUser = signature.user ?? dashboardUserLookup.userById.get(signature.userId) ?? null
+      return {
+        ...signature,
+        clientLabel: resolvedUser?.raisonSociale || resolvedUser?.email || null,
+        clientUserId: signature.userId || null,
+      }
+    })
+  }, [data?.pendingSignatures, dashboardUserLookup])
+
+  const resolvedInsuranceContracts = useMemo<ResolvedInsuranceContractRow[]>(() => {
+    const contracts = data?.insuranceContracts ?? []
+    return contracts.map((contract) => ({
+      ...contract,
+      clientUserId: resolveInsuranceContractClientUserId(contract),
+    }))
+  }, [data?.insuranceContracts, resolveInsuranceContractClientUserId])
+
+  const dashboardActionClientHrefById = useMemo(() => {
+    const hrefByActionId = new Map<string, string>()
+    const signatureClientByRequestId = new Map(
+      resolvedPendingSignatures.map((signature) => [signature.signatureRequestId, signature.clientUserId] as const)
+    )
+    const contractClientById = new Map(
+      resolvedInsuranceContracts.map((contract) => [contract.id, contract.clientUserId] as const)
+    )
+
+    for (const action of data?.dashboardActions ?? []) {
+      let clientUserId: string | null = null
+
+      if (action.id.startsWith("sig-")) {
+        clientUserId = signatureClientByRequestId.get(action.id.slice(4)) ?? null
+      } else if (action.id.startsWith("ctr-")) {
+        clientUserId = contractClientById.get(action.id.slice(4)) ?? null
+      } else if (action.id.startsWith("dda-contract-")) {
+        clientUserId = contractClientById.get(action.id.slice("dda-contract-".length)) ?? null
+      }
+
+      if (clientUserId) {
+        hrefByActionId.set(action.id, `/gestion/clients/${clientUserId}`)
+      }
+    }
+
+    return hrefByActionId
+  }, [data?.dashboardActions, resolvedInsuranceContracts, resolvedPendingSignatures])
+
+  const filteredPendingSignatures = useMemo(() => {
+    return resolvedPendingSignatures.filter((signature) => {
+      if (!matchesPendingSignatureSearch(signature, searchQuery)) return false
+      if (signatureFlowFilter === "custom_pdf") return signature.signatureFlow === "custom_pdf"
+      if (signatureFlowFilter === "decennale") return signature.signatureFlow !== "custom_pdf"
+      if (signatureFlowFilter === "repair_eligible") return signature.repairEligible === true
+      return true
+    })
+  }, [resolvedPendingSignatures, searchQuery, signatureFlowFilter])
+
   const pilotageV2 = useMemo(() => {
     if (!data) return null
 
     const decennaleLeads = data.devisLeads ?? []
     const rcFabriquantLeads = data.devisRcFabriquantLeads ?? []
     const doEtudeLeads = data.devisEtudeLeads ?? []
-    const pendingSignatures = data.pendingSignatures ?? []
-    const contracts = data.insuranceContracts ?? []
+    const pendingSignatures = resolvedPendingSignatures
+    const contracts = resolvedInsuranceContracts
 
     const totalLeads = decennaleLeads.length + rcFabriquantLeads.length + doEtudeLeads.length
     const hotLeads =
@@ -982,7 +1107,7 @@ export default function GestionPage() {
         },
       ],
     }
-  }, [data])
+  }, [data, resolvedInsuranceContracts, resolvedPendingSignatures])
 
   const comptabiliteV2 = useMemo(() => {
     if (!data) return null
@@ -990,7 +1115,7 @@ export default function GestionPage() {
     const DAY_MS = 24 * 60 * 60 * 1000
     const now = Date.now()
     const payments = data.payments ?? []
-    const contracts: InsuranceContractRow[] = data.insuranceContracts ?? []
+    const contracts: ResolvedInsuranceContractRow[] = resolvedInsuranceContracts
     const sepaSubscriptions: SepaSubscriptionRow[] = data.sepaSubscriptions ?? []
 
     const paidPayments = payments.filter((p) => p.status.toLowerCase() === "paid")
@@ -1032,7 +1157,11 @@ export default function GestionPage() {
       const clientLabel =
         contract.clientName || contract.user?.raisonSociale || contract.user?.email || "Client non renseigné"
       const impayeDocumentId =
-        contract.userId != null ? suspendedAttestationByUserId.get(contract.userId) ?? null : null
+        contract.clientUserId != null
+          ? suspendedAttestationByUserId.get(contract.clientUserId) ?? null
+          : contract.userId != null
+            ? suspendedAttestationByUserId.get(contract.userId) ?? null
+            : null
       for (const lifecyclePayment of contract.lifecyclePayments) {
         if (lifecyclePayment.status.toLowerCase() === "paid") continue
         const dueDateMs = Date.parse(lifecyclePayment.createdAt)
@@ -1044,7 +1173,7 @@ export default function GestionPage() {
           contractNumber: contract.contractNumber,
           productType: contract.productType,
           clientLabel,
-          userId: contract.userId,
+          userId: contract.clientUserId ?? contract.userId,
           amount: Math.max(0, lifecyclePayment.amount),
           ageDays,
           status: lifecyclePayment.status,
@@ -1068,12 +1197,16 @@ export default function GestionPage() {
         productType: contract.productType,
         clientLabel:
           contract.clientName || contract.user?.raisonSociale || contract.user?.email || "Client non renseigné",
-        userId: contract.userId,
+        userId: contract.clientUserId ?? contract.userId,
         amount: Math.max(0, contract.premium),
         ageDays,
         status: "approved_unpaid",
         impayeDocumentId:
-          contract.userId != null ? suspendedAttestationByUserId.get(contract.userId) ?? null : null,
+          contract.clientUserId != null
+            ? suspendedAttestationByUserId.get(contract.clientUserId) ?? null
+            : contract.userId != null
+              ? suspendedAttestationByUserId.get(contract.userId) ?? null
+              : null,
       })
     }
 
@@ -1157,7 +1290,7 @@ export default function GestionPage() {
         .sort((a, b) => a.daysUntil - b.daysUntil)
         .slice(0, 6),
     }
-  }, [data])
+  }, [data, resolvedInsuranceContracts])
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -2711,7 +2844,9 @@ export default function GestionPage() {
                       Aucune action pour ce filtre.
                     </div>
                   ) : (
-                    filteredDashboardActions.map((a) => (
+                    filteredDashboardActions.map((a) => {
+                    const clientHref = dashboardActionClientHrefById.get(a.id)
+                    return (
                     <div
                       key={a.id}
                       className="rounded-lg border border-gray-700 bg-[#1f1f1f] px-3 py-2"
@@ -2734,6 +2869,14 @@ export default function GestionPage() {
                           <p className="text-xs text-gray-300 mt-1">{a.description}</p>
                         </a>
                         <div className="shrink-0 flex flex-col sm:flex-row items-stretch gap-2">
+                          {clientHref ? (
+                            <Link
+                              href={clientHref}
+                              className="text-xs px-2.5 py-1.5 rounded border border-[#2563eb] text-[#bfdbfe] hover:bg-[#2563eb]/20"
+                            >
+                              Fiche client
+                            </Link>
+                          ) : null}
                           {a.remediation?.kind === "dda" ? (
                             <button
                               type="button"
@@ -2807,7 +2950,8 @@ export default function GestionPage() {
                         </div>
                       </div>
                     </div>
-                    ))
+                    )
+                    })
                   )}
                 </div>
               </section>
@@ -2817,7 +2961,7 @@ export default function GestionPage() {
 
         {data && Array.isArray(data.insuranceContracts) && (
           <InsuranceContractsGestionBlock
-            contracts={data.insuranceContracts}
+            contracts={resolvedInsuranceContracts}
             searchQuery={searchQuery}
             onRefresh={async () => {
               const dashRes = await fetch("/api/gestion/dashboard")
@@ -3097,7 +3241,7 @@ export default function GestionPage() {
                           </td>
                           <td className="p-3 sm:p-4 font-mono text-white text-xs">{s.contractNumero}</td>
                           <td className="p-3 sm:p-4">
-                            {s.user ? s.user.raisonSociale || s.user.email : "—"}
+                            {s.user?.raisonSociale || s.user?.email || s.clientLabel || "—"}
                           </td>
                           <td
                             className="p-3 sm:p-4 font-mono text-xs text-gray-200 hidden sm:table-cell max-w-[12rem] truncate"
@@ -3106,9 +3250,12 @@ export default function GestionPage() {
                             {s.signatureRequestId}
                           </td>
                           <td className="p-3 sm:p-4">
-                            {s.user ? (
-                              <Link href={`/gestion/clients/${s.userId}`} className="text-[#2563eb] hover:underline text-sm">
-                                Fiche →
+                            {s.clientUserId ? (
+                              <Link
+                                href={`/gestion/clients/${s.clientUserId}`}
+                                className="text-[#2563eb] hover:underline text-sm whitespace-nowrap"
+                              >
+                                Fiche client
                               </Link>
                             ) : (
                               "—"

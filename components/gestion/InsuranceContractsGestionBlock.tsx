@@ -19,6 +19,7 @@ export type InsuranceContractGestionRow = {
   exclusionsJson?: string | null
   clientName: string
   userId: string | null
+  clientUserId?: string | null
   premium: number
   status: string
   paidAt: string | null
@@ -293,8 +294,11 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                             </a>
                           </>
                         ) : null}
-                        {c.userId ? (
-                          <Link href={`/gestion/clients/${c.userId}`} className="text-[#2563eb] hover:underline text-xs">
+                        {c.clientUserId ?? c.userId ? (
+                          <Link
+                            href={`/gestion/clients/${c.clientUserId ?? c.userId}`}
+                            className="text-[#2563eb] hover:underline text-xs"
+                          >
                             Fiche client
                           </Link>
                         ) : null}
