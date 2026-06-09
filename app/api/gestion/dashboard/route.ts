@@ -3,6 +3,10 @@ import { Prisma } from "@/lib/prisma-client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
+import {
+  getAutoReminderBlockedTargetIds,
+  parseDashboardActionAutoReminderTarget,
+} from "@/lib/auto-reminder-blocking"
 import { prisma } from "@/lib/prisma"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
@@ -201,6 +205,38 @@ function parseLeadCompanyName(rawData: string | null | undefined): string | null
     return data.raisonSociale.trim().slice(0, 160)
   }
   return null
+}
+
+type DashboardLinkedUser = {
+  id: string
+  email: string
+  raisonSociale: string | null
+  siret?: string | null
+}
+
+function normalizeLookupValue(value: string | null | undefined): string {
+  return value?.trim().toLowerCase() ?? ""
+}
+
+function buildUniqueUserLookup(
+  users: DashboardLinkedUser[],
+  getKey: (user: DashboardLinkedUser) => string
+): Map<string, DashboardLinkedUser> {
+  const unique = new Map<string, DashboardLinkedUser>()
+  const duplicates = new Set<string>()
+  for (const user of users) {
+    const key = getKey(user)
+    if (!key) continue
+    if (duplicates.has(key)) continue
+    const existing = unique.get(key)
+    if (existing) {
+      unique.delete(key)
+      duplicates.add(key)
+      continue
+    }
+    unique.set(key, user)
+  }
+  return unique
 }
 
 async function fetchDevisRcFabriquantLeadsSafe() {
@@ -477,6 +513,7 @@ export async function GET() {
               productType: true,
               exclusionsJson: true,
               clientName: true,
+              siret: true,
               userId: true,
               premium: true,
               status: true,
@@ -588,47 +625,182 @@ export async function GET() {
 
     const pendingUserIds = [...new Set(pendingSignaturesRaw.map((p) => p.userId))]
     const sepaUserIds = [...new Set(sepaSubscriptions.map((s) => s.userId))]
-    const pendingUsers =
+    const insuranceContractCandidateUserIds = [
+      ...new Set(
+        insuranceContractsList
+          .map((contract) => (typeof contract.userId === "string" ? contract.userId.trim() : ""))
+          .filter(Boolean)
+      ),
+    ]
+    const insuranceContractCandidateSirets = [
+      ...new Set(
+        insuranceContractsList
+          .map((contract) => (typeof contract.siret === "string" ? contract.siret.trim() : ""))
+          .filter(Boolean)
+      ),
+    ]
+    const insuranceContractCandidateEmails = [
+      ...new Set(
+        insuranceContractsList
+          .map((contract) => {
+            const normalized = normalizeLookupValue(contract.clientName)
+            return normalized.includes("@") ? normalized : ""
+          })
+          .filter(Boolean)
+      ),
+    ]
+    const insuranceContractCandidateCompanyNames = [
+      ...new Set(
+        insuranceContractsList
+          .map((contract) => contract.clientName.trim())
+          .filter((value) => value.length > 0 && !value.includes("@"))
+      ),
+    ]
+    const [
+      pendingUsers,
+      sepaUsers,
+      insuranceContractUsersByIdRows,
+      insuranceContractUsersBySiretRows,
+      insuranceContractUsersByEmailRows,
+      insuranceContractUsersByCompanyNameRows,
+    ] = await Promise.all([
       pendingUserIds.length > 0
-        ? await prisma.user.findMany({
+        ? prisma.user.findMany({
             where: { id: { in: pendingUserIds } },
             select: { id: true, email: true, raisonSociale: true },
           })
-        : []
-    const sepaUsers =
+        : [],
       sepaUserIds.length > 0
-        ? await prisma.user.findMany({
+        ? prisma.user.findMany({
             where: { id: { in: sepaUserIds } },
             select: { id: true, email: true, raisonSociale: true },
           })
-        : []
+        : [],
+      insuranceContractCandidateUserIds.length > 0
+        ? prisma.user.findMany({
+            where: { id: { in: insuranceContractCandidateUserIds } },
+            select: { id: true, email: true, raisonSociale: true, siret: true },
+          })
+        : [],
+      insuranceContractCandidateSirets.length > 0
+        ? prisma.user.findMany({
+            where: { siret: { in: insuranceContractCandidateSirets } },
+            select: { id: true, email: true, raisonSociale: true, siret: true },
+          })
+        : [],
+      insuranceContractCandidateEmails.length > 0
+        ? prisma.user.findMany({
+            where: {
+              OR: insuranceContractCandidateEmails.map((email) => ({
+                email: { equals: email, mode: "insensitive" as const },
+              })),
+            },
+            select: { id: true, email: true, raisonSociale: true, siret: true },
+          })
+        : [],
+      insuranceContractCandidateCompanyNames.length > 0
+        ? prisma.user.findMany({
+            where: {
+              OR: insuranceContractCandidateCompanyNames.map((raisonSociale) => ({
+                raisonSociale: { equals: raisonSociale, mode: "insensitive" as const },
+              })),
+            },
+            select: { id: true, email: true, raisonSociale: true, siret: true },
+          })
+        : [],
+    ])
     const pendingUserById = Object.fromEntries(pendingUsers.map((u) => [u.id, u]))
     const sepaUserById = Object.fromEntries(sepaUsers.map((u) => [u.id, u]))
+    const insuranceContractLookupUsers = Array.from(
+      new Map(
+        [
+          ...insuranceContractUsersByIdRows,
+          ...insuranceContractUsersBySiretRows,
+          ...insuranceContractUsersByEmailRows,
+          ...insuranceContractUsersByCompanyNameRows,
+        ].map((user) => [user.id, user] as const)
+      ).values()
+    )
+    const insuranceContractUserById = new Map(
+      insuranceContractLookupUsers.map((user) => [user.id, user] as const)
+    )
+    const insuranceContractUserByEmail = new Map(
+      insuranceContractLookupUsers
+        .map((user) => [normalizeLookupValue(user.email), user] as const)
+        .filter(([email]) => Boolean(email))
+    )
+    const insuranceContractUserBySiret = buildUniqueUserLookup(
+      insuranceContractLookupUsers,
+      (user) => normalizeLookupValue(user.siret)
+    )
+    const insuranceContractUserByCompanyName = buildUniqueUserLookup(
+      insuranceContractLookupUsers,
+      (user) => normalizeLookupValue(user.raisonSociale)
+    )
     const pendingSignatures = pendingSignaturesRaw.map((p) => {
       let signatureFlow: "custom_pdf" | "decennale" = "decennale"
       let signatureFlowLabel: string | undefined
       const ageHours = Math.max(0, Math.floor((Date.now() - p.createdAt.getTime()) / (60 * 60 * 1000)))
+      const contractData = parseJsonObject(p.contractData)
       try {
-        const j = JSON.parse(p.contractData || "{}") as Record<string, unknown>
-        if (j.customUploadedDevisFlow === true) {
+        if (contractData.customUploadedDevisFlow === true) {
           signatureFlow = "custom_pdf"
-          const pl = typeof j.produitLabel === "string" ? j.produitLabel.trim() : ""
+          const pl = typeof contractData.produitLabel === "string" ? contractData.produitLabel.trim() : ""
           signatureFlowLabel = pl ? pl.slice(0, 120) : undefined
         }
       } catch {
         /* ignore */
       }
+      const pendingUser = pendingUserById[p.userId] ?? null
+      const clientLabel =
+        pendingUser?.raisonSociale ||
+        pendingUser?.email ||
+        (typeof contractData.raisonSociale === "string" && contractData.raisonSociale.trim()
+          ? contractData.raisonSociale.trim().slice(0, 160)
+          : typeof contractData.email === "string" && contractData.email.trim()
+            ? contractData.email.trim().slice(0, 160)
+            : null)
       return {
         id: p.id,
         signatureRequestId: p.signatureRequestId,
         contractNumero: p.contractNumero,
         createdAt: p.createdAt,
         userId: p.userId,
-        user: pendingUserById[p.userId] ?? null,
+        user: pendingUser,
+        clientLabel,
+        clientUserId: p.userId,
         signatureFlow,
         signatureFlowLabel,
         ageHours,
         repairEligible: ageHours >= 24,
+      }
+    })
+    const insuranceContracts = insuranceContractsList.map((contract) => {
+      const normalizedClientName = normalizeLookupValue(contract.clientName)
+      const resolvedUser =
+        contract.user ??
+        (contract.userId ? insuranceContractUserById.get(contract.userId) ?? null : null) ??
+        (normalizedClientName.includes("@")
+          ? insuranceContractUserByEmail.get(normalizedClientName) ?? null
+          : null) ??
+        (contract.siret
+          ? insuranceContractUserBySiret.get(normalizeLookupValue(contract.siret)) ?? null
+          : null) ??
+        (normalizedClientName
+          ? insuranceContractUserByCompanyName.get(normalizedClientName) ?? null
+          : null) ??
+        null
+
+      return {
+        ...contract,
+        user: resolvedUser
+          ? {
+              id: resolvedUser.id,
+              email: resolvedUser.email,
+              raisonSociale: resolvedUser.raisonSociale,
+            }
+          : contract.user,
+        clientUserId: resolvedUser?.id ?? contract.userId ?? null,
       }
     })
     const sepaSubscriptionsRows = sepaSubscriptions.map((s) => ({
@@ -809,7 +981,9 @@ export async function GET() {
       title: string
       description: string
       href: string
+      clientHref?: string
       ageHours: number
+      canBlockAutoReminders?: boolean
       remediation?: {
         kind: "dda"
         toEmail: string
@@ -835,11 +1009,26 @@ export async function GET() {
     const dismissedActionIds = new Set(
       dismissedLogs.map((l) => (typeof l.targetId === "string" ? l.targetId : "")).filter(Boolean)
     )
+    const [blockedPendingSignatureIds, blockedInsuranceContractIds, blockedDevisLeadIds] = await Promise.all([
+      getAutoReminderBlockedTargetIds(
+        "pending_signature",
+        pendingSignaturesRaw.map((signature) => signature.signatureRequestId)
+      ),
+      getAutoReminderBlockedTargetIds(
+        "insurance_contract",
+        insuranceContracts.map((contract) => contract.id)
+      ),
+      getAutoReminderBlockedTargetIds(
+        "devis_lead",
+        devisLeads.map((lead) => lead.id)
+      ),
+    ])
 
     const dashboardActions: DashboardAction[] = []
 
-    for (const p of pendingSignaturesRaw) {
-      const ageMs = now.getTime() - p.createdAt.getTime()
+    for (const p of pendingSignatures) {
+      const createdAt = new Date(p.createdAt)
+      const ageMs = now.getTime() - createdAt.getTime()
       if (ageMs < reminder24hMs) continue
       const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
       dashboardActions.push({
@@ -849,13 +1038,16 @@ export async function GET() {
         title: "Signature en attente",
         description: `Référence ${p.contractNumero} — ${ageHours}h`,
         href: "#signatures-attente",
+        clientHref: p.clientUserId ? `/gestion/clients/${p.clientUserId}` : undefined,
         ageHours,
+        canBlockAutoReminders: true,
       })
     }
 
-    for (const c of insuranceContractsList) {
+    for (const c of insuranceContracts) {
       if (c.status !== "approved" || c.paidAt) continue
-      const ageMs = now.getTime() - c.createdAt.getTime()
+      const createdAt = new Date(c.createdAt)
+      const ageMs = now.getTime() - createdAt.getTime()
       if (ageMs < reminder24hMs) continue
       const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
       dashboardActions.push({
@@ -865,7 +1057,9 @@ export async function GET() {
         title: "Contrat approuvé non payé",
         description: `${c.contractNumber} (${c.productType}) — ${ageHours}h`,
         href: "#contrats-plateforme",
+        clientHref: c.clientUserId ? `/gestion/clients/${c.clientUserId}` : undefined,
         ageHours,
+        canBlockAutoReminders: true,
       })
     }
 
@@ -882,6 +1076,7 @@ export async function GET() {
         description: `${d.email} — ${ageHours}h`,
         href: "#leads-decennale",
         ageHours,
+        canBlockAutoReminders: true,
       })
     }
 
@@ -917,13 +1112,14 @@ export async function GET() {
       })
     }
 
-    for (const c of insuranceContractsList) {
+    for (const c of insuranceContracts) {
       if (!["decennale", "do", "rc_fabriquant"].includes(c.productType)) continue
       if (c.status !== CONTRACT_STATUS.approved && c.status !== CONTRACT_STATUS.active) continue
-      const ageMs = now.getTime() - c.createdAt.getTime()
+      const createdAt = new Date(c.createdAt)
+      const ageMs = now.getTime() - createdAt.getTime()
       if (ageMs < reminder24hMs) continue
       const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
-      const userId = c.user?.id ?? c.userId ?? ""
+      const userId = c.clientUserId ?? c.user?.id ?? c.userId ?? ""
       const email = c.user?.email?.trim().toLowerCase() ?? ""
       const hasConsent =
         (userId && recentDdaConsentUserIds.has(userId)) || (email && recentDdaConsentEmails.has(email))
@@ -958,6 +1154,7 @@ export async function GET() {
         title: "DDA incomplète (contrat)",
         description: `${c.contractNumber} (${c.productType}) — manque: ${missing || "preuve"} — ${ageHours}h`,
         href: userId ? `/gestion/clients/${userId}` : "#contrats-plateforme",
+        clientHref: userId ? `/gestion/clients/${userId}` : undefined,
         ageHours,
         remediation,
       })
@@ -1048,7 +1245,26 @@ export async function GET() {
       })
     }
 
-    const dashboardActionsVisible = dashboardActions.filter((a) => !dismissedActionIds.has(a.id))
+    const isDashboardActionAutoReminderBlocked = (action: DashboardAction): boolean => {
+      const target = parseDashboardActionAutoReminderTarget(action.id)
+      if (!target) return false
+
+      if (target.targetType === "pending_signature") {
+        return blockedPendingSignatureIds.has(target.targetId)
+      }
+      if (target.targetType === "insurance_contract") {
+        return blockedInsuranceContractIds.has(target.targetId)
+      }
+      return blockedDevisLeadIds.has(target.targetId)
+    }
+
+    const blockedDashboardActionsCount = dashboardActions.filter((action) =>
+      isDashboardActionAutoReminderBlocked(action)
+    ).length
+    const dashboardActionsVisible = dashboardActions.filter(
+      (action) =>
+        !dismissedActionIds.has(action.id) && !isDashboardActionAutoReminderBlocked(action)
+    )
     dashboardActionsVisible.sort((a, b) => b.ageHours - a.ageHours)
     const dashboardActionsLimited = dashboardActionsVisible.slice(0, 20)
     const dashboardActionsSummary = {
@@ -1057,6 +1273,7 @@ export async function GET() {
       medium: dashboardActionsLimited.filter((a) => a.priority === "medium").length,
       overdue72h: dashboardActionsLimited.filter((a) => a.ageHours >= 72).length,
       dismissedToday: dismissedActionIds.size,
+      blocked: blockedDashboardActionsCount,
     }
     const conversionFunnel = buildConversionFunnel(conversionLogs)
 
@@ -1087,7 +1304,7 @@ export async function GET() {
       pendingSignatures,
       sepaSubscriptions: sepaSubscriptionsRows,
       insuranceContractsCount,
-      insuranceContracts: insuranceContractsList,
+      insuranceContracts,
       dashboardActions: dashboardActionsLimited,
       dashboardActionsSummary,
       conversionFunnel,

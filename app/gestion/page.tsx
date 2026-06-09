@@ -329,6 +329,8 @@ interface DashboardData {
     createdAt: string
     userId: string
     user: { id: string; email: string; raisonSociale: string | null } | null
+    clientLabel?: string | null
+    clientUserId?: string | null
     signatureFlow: "custom_pdf" | "decennale"
     signatureFlowLabel?: string
     ageHours?: number
@@ -357,6 +359,7 @@ interface DashboardData {
     exclusionsJson?: string | null
     clientName: string
     userId: string | null
+    clientUserId?: string | null
     premium: number
     status: string
     paidAt: string | null
@@ -387,6 +390,7 @@ interface DashboardData {
     title: string
     description: string
     href: string
+    clientHref?: string | null
     ageHours: number
     remediation?: {
       kind: "dda"
@@ -1032,7 +1036,11 @@ export default function GestionPage() {
       const clientLabel =
         contract.clientName || contract.user?.raisonSociale || contract.user?.email || "Client non renseigné"
       const impayeDocumentId =
-        contract.userId != null ? suspendedAttestationByUserId.get(contract.userId) ?? null : null
+        contract.clientUserId != null
+          ? suspendedAttestationByUserId.get(contract.clientUserId) ?? null
+          : contract.userId != null
+            ? suspendedAttestationByUserId.get(contract.userId) ?? null
+            : null
       for (const lifecyclePayment of contract.lifecyclePayments) {
         if (lifecyclePayment.status.toLowerCase() === "paid") continue
         const dueDateMs = Date.parse(lifecyclePayment.createdAt)
@@ -1044,7 +1052,7 @@ export default function GestionPage() {
           contractNumber: contract.contractNumber,
           productType: contract.productType,
           clientLabel,
-          userId: contract.userId,
+          userId: contract.clientUserId ?? contract.userId,
           amount: Math.max(0, lifecyclePayment.amount),
           ageDays,
           status: lifecyclePayment.status,
@@ -1068,12 +1076,16 @@ export default function GestionPage() {
         productType: contract.productType,
         clientLabel:
           contract.clientName || contract.user?.raisonSociale || contract.user?.email || "Client non renseigné",
-        userId: contract.userId,
+        userId: contract.clientUserId ?? contract.userId,
         amount: Math.max(0, contract.premium),
         ageDays,
         status: "approved_unpaid",
         impayeDocumentId:
-          contract.userId != null ? suspendedAttestationByUserId.get(contract.userId) ?? null : null,
+          contract.clientUserId != null
+            ? suspendedAttestationByUserId.get(contract.clientUserId) ?? null
+            : contract.userId != null
+              ? suspendedAttestationByUserId.get(contract.userId) ?? null
+              : null,
       })
     }
 
@@ -2734,6 +2746,14 @@ export default function GestionPage() {
                           <p className="text-xs text-gray-300 mt-1">{a.description}</p>
                         </a>
                         <div className="shrink-0 flex flex-col sm:flex-row items-stretch gap-2">
+                          {a.clientHref ? (
+                            <Link
+                              href={a.clientHref}
+                              className="text-xs px-2.5 py-1.5 rounded border border-[#2563eb] text-[#bfdbfe] hover:bg-[#2563eb]/20"
+                            >
+                              Fiche client
+                            </Link>
+                          ) : null}
                           {a.remediation?.kind === "dda" ? (
                             <button
                               type="button"
@@ -3097,7 +3117,7 @@ export default function GestionPage() {
                           </td>
                           <td className="p-3 sm:p-4 font-mono text-white text-xs">{s.contractNumero}</td>
                           <td className="p-3 sm:p-4">
-                            {s.user ? s.user.raisonSociale || s.user.email : "—"}
+                            {s.user?.raisonSociale || s.user?.email || s.clientLabel || "—"}
                           </td>
                           <td
                             className="p-3 sm:p-4 font-mono text-xs text-gray-200 hidden sm:table-cell max-w-[12rem] truncate"
@@ -3106,9 +3126,12 @@ export default function GestionPage() {
                             {s.signatureRequestId}
                           </td>
                           <td className="p-3 sm:p-4">
-                            {s.user ? (
-                              <Link href={`/gestion/clients/${s.userId}`} className="text-[#2563eb] hover:underline text-sm">
-                                Fiche →
+                            {s.clientUserId ? (
+                              <Link
+                                href={`/gestion/clients/${s.clientUserId}`}
+                                className="text-[#2563eb] hover:underline text-sm whitespace-nowrap"
+                              >
+                                Fiche client
                               </Link>
                             ) : (
                               "—"
