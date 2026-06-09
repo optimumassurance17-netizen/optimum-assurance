@@ -2,10 +2,10 @@ import { test, expect } from "@playwright/test"
 
 /** Fermer le bandeau cookies s'il est visible */
 async function dismissCookieBanner(page: import("@playwright/test").Page) {
-  const banner = page.getByRole("dialog", { name: /Cookies et confidentialité/i })
-  const acceptBtn = page.getByRole("button", { name: "Accepter" })
+  const banner = page.getByRole("dialog").filter({ hasText: /Cookies et confidentialité/i }).first()
   try {
-    await acceptBtn.click({ timeout: 2000 })
+    await banner.waitFor({ state: "visible", timeout: 3000 })
+    await banner.getByRole("button", { name: "Accepter" }).click({ timeout: 3000, force: true })
     await expect(banner).toBeHidden({ timeout: 5000 })
   } catch {
     // Pas de bandeau ou déjà fermé
@@ -13,6 +13,75 @@ async function dismissCookieBanner(page: import("@playwright/test").Page) {
 }
 
 test.describe("Parcours devis → paiement → attestation", () => {
+  test("Reprise devis par token -> retour sur devis prérempli puis souscription", async ({ page }) => {
+    const resumeToken = "resume-token-e2e-123"
+
+    await page.route(`**/api/devis/draft/${resumeToken}`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          email: "client.resume@example.com",
+          produit: "decennale",
+          data: {
+            siret: "73282932000074",
+            chiffreAffaires: 80000,
+            sinistres: 0,
+            jamaisAssure: true,
+            resilieNonPaiement: false,
+            reprisePasse: true,
+            activites: ["Plomberie sanitaire"],
+            tarif: {
+              primeAnnuelle: 1200,
+              primeMensuelle: 100,
+              primeTrimestrielle: 300,
+              franchise: 1000,
+              plafond: 160000,
+              details: {
+                base: 1200,
+                majorationSinistres: 0,
+                majorationNouveau: 0,
+                majorationActivites: 0,
+              },
+            },
+            raisonSociale: "SARL Resume Optimum",
+            adresse: "10 rue de Paris",
+            codePostal: "75001",
+            ville: "Paris",
+            dateCreationSociete: "2024-01-15",
+          },
+        }),
+      })
+    })
+
+    await page.route("**/api/conversion/track", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      })
+    })
+
+    await page.goto(`/devis/resume/${resumeToken}`)
+    await dismissCookieBanner(page)
+
+    await expect(page.getByRole("heading", { level: 1, name: "Demande de devis décennale" })).toBeVisible()
+    await expect(page.getByPlaceholder("12345678900012")).toHaveValue("73282932000074")
+    await expect(page.locator('input[type="number"]').first()).toHaveValue("80000")
+    await expect(page.locator('input[type="number"]').nth(1)).toHaveValue("0")
+    await expect(page.getByRole("checkbox", { name: "Je n'ai jamais été assuré" })).toBeChecked()
+    await expect(page.getByRole("checkbox", { name: /Reprise du passé/ })).toBeChecked()
+    await expect(page.locator("#dateCreationSociete")).toHaveValue("2024-01-15")
+    await expect(page.getByPlaceholder("votre@email.com")).toHaveValue("client.resume@example.com")
+    await expect(page.locator("span.text-black.font-medium").filter({ hasText: "Plomberie sanitaire" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Continuer vers la souscription" })).toBeEnabled()
+
+    await page.getByRole("button", { name: "Continuer vers la souscription" }).click()
+
+    await expect(page).toHaveURL(/\/souscription$/)
+    await expect(page.getByRole("heading", { level: 1, name: "Souscription" })).toBeVisible()
+  })
+
   test("Accès à la page devis et formulaire", async ({ page }) => {
     await page.goto("/devis")
     await expect(page.locator("h1")).toContainText("Demande de devis décennale")

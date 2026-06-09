@@ -49,10 +49,10 @@ const DECENNALE_SIGNATURE_PAYLOAD = {
 } as const
 
 async function dismissCookieBanner(page: import("@playwright/test").Page) {
-  const banner = page.getByRole("dialog", { name: /Cookies et confidentialité/i })
-  const acceptBtn = page.getByRole("button", { name: "Accepter" })
+  const banner = page.getByRole("dialog").filter({ hasText: /Cookies et confidentialité/i }).first()
   try {
-    await acceptBtn.click({ timeout: 2000 })
+    await banner.waitFor({ state: "visible", timeout: 3000 })
+    await banner.getByRole("button", { name: "Accepter" }).click({ timeout: 3000, force: true })
     await expect(banner).toBeHidden({ timeout: 5000 })
   } catch {
     // Bandeau absent ou déjà accepté

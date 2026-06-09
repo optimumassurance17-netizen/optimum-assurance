@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test"
 
 async function dismissCookieBanner(page: import("@playwright/test").Page) {
-  const banner = page.getByRole("dialog", { name: /Cookies et confidentialité/i })
-  const acceptButton = page.getByRole("button", { name: "Accepter" })
+  const banner = page.getByRole("dialog").filter({ hasText: /Cookies et confidentialité/i }).first()
   try {
-    await acceptButton.click({ timeout: 2000 })
+    await banner.waitFor({ state: "visible", timeout: 3000 })
+    await banner.getByRole("button", { name: "Accepter" }).click({ timeout: 3000, force: true })
     await expect(banner).toBeHidden({ timeout: 5000 })
   } catch {
     /* ignore */
