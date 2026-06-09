@@ -294,9 +294,9 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                             </a>
                           </>
                         ) : null}
-                        {c.clientUserId ? (
+                        {c.clientUserId ?? c.userId ? (
                           <Link
-                            href={`/gestion/clients/${c.clientUserId}`}
+                            href={`/gestion/clients/${c.clientUserId ?? c.userId}`}
                             className="text-[#2563eb] hover:underline text-xs"
                           >
                             Fiche client
