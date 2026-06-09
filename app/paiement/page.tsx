@@ -129,14 +129,14 @@ export default function PaiementPage() {
     if (sessionStatus === "loading") return
     if (sessionStatus !== "unauthenticated") return
     if (!data || !mandat) return
-    router.replace(`/connexion?callbackUrl=${encodeURIComponent("/paiement")}`)
+    window.location.assign(`/connexion?callbackUrl=${encodeURIComponent("/paiement")}`)
   }, [sessionStatus, data, mandat, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!data?.tarif || !mandat) return
     if (!authSession?.user?.id) {
-      router.push(`/connexion?callbackUrl=${encodeURIComponent("/paiement")}`)
+      window.location.assign(`/connexion?callbackUrl=${encodeURIComponent("/paiement")}`)
       return
     }
 
@@ -191,6 +191,11 @@ export default function PaiementPage() {
         checkoutUrl?: string
         id?: string
       }>(res)
+
+      if (res.status === 401) {
+        window.location.assign(`/connexion?callbackUrl=${encodeURIComponent("/paiement")}`)
+        return
+      }
 
       if (!res.ok) {
         throw new Error(result.error || "Erreur paiement")

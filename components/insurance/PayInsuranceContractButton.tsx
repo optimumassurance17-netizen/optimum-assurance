@@ -28,6 +28,14 @@ export function PayInsuranceContractButton({
           try {
             const r = await startMollieInsurancePayment(contractId)
             if (!r.ok) {
+              if (/authentifi/i.test(r.error)) {
+                const callbackUrl =
+                  typeof window !== "undefined"
+                    ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+                    : "/espace-client"
+                window.location.assign(`/connexion?callbackUrl=${encodeURIComponent(callbackUrl)}`)
+                return
+              }
               setErr(r.error)
               return
             }

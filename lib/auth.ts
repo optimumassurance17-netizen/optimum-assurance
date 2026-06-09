@@ -45,13 +45,22 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.email = user.email
+        token.name = user.name
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
-        session.user.isAdmin = isAdmin({ user: { email: token.email as string } } as Parameters<typeof isAdmin>[0])
+        if (typeof token.email === "string") {
+          session.user.email = token.email
+        }
+        if (typeof token.name === "string") {
+          session.user.name = token.name
+        }
+        session.user.isAdmin = isAdmin({
+          user: { email: typeof token.email === "string" ? token.email : "" },
+        } as Parameters<typeof isAdmin>[0])
       }
       return session
     },

@@ -2,22 +2,32 @@
 
 import { useState, Suspense } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Header } from "@/components/Header"
 
+function normalizeCallbackUrl(raw: string | null, fallback: string): string {
+  if (!raw) return fallback
+  if (raw.startsWith("/") && !raw.startsWith("//")) return raw
+  if (typeof window === "undefined") return fallback
+  try {
+    const parsed = new URL(raw, window.location.origin)
+    if (parsed.origin === window.location.origin) {
+      return `${parsed.pathname}${parsed.search}${parsed.hash}` || fallback
+    }
+  } catch {
+    // ignore invalid callback urls
+  }
+  return fallback
+}
+
 function ConnexionForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const safeSearchParams = searchParams ?? new URLSearchParams()
   const from = safeSearchParams.get("from")
   const rawCallbackUrl = safeSearchParams.get("callbackUrl")
-  const callbackUrl =
-    rawCallbackUrl && rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//")
-      ? rawCallbackUrl
-      : from === "signature"
-        ? "/signature"
-        : "/espace-client"
+  const fallbackCallbackUrl = from === "signature" ? "/signature" : "/espace-client"
+  const callbackUrl = normalizeCallbackUrl(rawCallbackUrl, fallbackCallbackUrl)
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -34,6 +44,7 @@ function ConnexionForm() {
         email,
         password,
         redirect: false,
+        callbackUrl,
       })
 
       if (result?.error) {
@@ -42,8 +53,9 @@ function ConnexionForm() {
         return
       }
 
-      router.push(callbackUrl)
-      router.refresh()
+      const nextUrl = normalizeCallbackUrl(result?.url ?? callbackUrl, callbackUrl)
+      window.location.assign(nextUrl)
+      return
     } catch {
       setError("Erreur de connexion")
     } finally {
