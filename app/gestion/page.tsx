@@ -422,13 +422,16 @@ type LeadAccountCreationResponse = {
   email?: string
   raisonSociale?: string | null
   accessMode?: "created" | "resent"
+  emailSent?: boolean
+  warning?: string
   error?: string
 }
 
 function getLeadAccountSuccessMessage(
-  response: Pick<LeadAccountCreationResponse, "email" | "accessMode">,
+  response: Pick<LeadAccountCreationResponse, "email" | "accessMode" | "warning">,
   fallbackEmail?: string
 ): string {
+  if (response.warning?.trim()) return response.warning.trim()
   const email = response.email || fallbackEmail || "ce client"
   return response.accessMode === "resent"
     ? `Accès client renvoyé à ${email}`
@@ -679,7 +682,7 @@ export default function GestionPage() {
       }
       setToast({
         message: getLeadAccountSuccessMessage(json),
-        type: "success",
+        type: json.warning ? "error" : "success",
       })
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : "Erreur création compte", type: "error" })

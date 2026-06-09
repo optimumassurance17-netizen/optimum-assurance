@@ -370,6 +370,44 @@ test.describe("Gestion CRM — création compte lead", () => {
     await expect(page.getByText("Accès client renvoyé à lead@example.com")).toBeVisible()
     await expect(page.getByRole("link", { name: /Compte existant/ })).toBeVisible()
   })
+
+  test("Lead décennale : compte créé même si l'email d'accès échoue", async ({ page }) => {
+    await mockGestionRectificationAuth(page)
+
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildGestionDashboardWithDecennaleLead()),
+      })
+    })
+
+    await page.route("**/api/gestion/users/create-from-lead", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "user_new_1",
+          email: "lead@example.com",
+          raisonSociale: "Lead Exemple",
+          accessMode: "created",
+          emailSent: false,
+          warning:
+            "Compte créé, mais email d'accès non envoyé. Utilisez ensuite 'Créer / renvoyer accès client' depuis la fiche client ou la gestion.",
+        }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await page.getByRole("button", { name: "Créer le compte" }).click()
+
+    await expect(
+      page.getByText(
+        "Compte créé, mais email d'accès non envoyé. Utilisez ensuite 'Créer / renvoyer accès client' depuis la fiche client ou la gestion."
+      )
+    ).toBeVisible()
+    await expect(page.getByRole("link", { name: /Compte existant/ })).toBeVisible()
+  })
 })
 
 test.describe("Gestion CRM — parcours admin (optionnel)", () => {

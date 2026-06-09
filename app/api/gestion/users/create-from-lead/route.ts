@@ -279,15 +279,27 @@ export async function POST(request: NextRequest) {
       mode: "created",
     })
     if (!sent) {
-      return NextResponse.json(
-        {
-          error:
-            "Compte créé, mais envoi de l'email client impossible (RESEND_API_KEY / domaine expéditeur). Utilisez ensuite 'Créer / renvoyer accès client' pour renvoyer l'accès.",
-          userId: user.id,
+      await logAdminActivity({
+        adminEmail: session.user.email || "admin",
+        action: "user_create_from_lead_access_email_failed",
+        targetType: "user",
+        targetId: user.id,
+        details: {
           email: user.email,
+          leadId,
+          leadType,
         },
-        { status: 503 }
-      )
+      })
+
+      return NextResponse.json({
+        id: user.id,
+        email: user.email,
+        raisonSociale: user.raisonSociale,
+        accessMode: "created",
+        emailSent: false,
+        warning:
+          "Compte créé, mais email d'accès non envoyé. Utilisez ensuite 'Créer / renvoyer accès client' depuis la fiche client ou la gestion.",
+      })
     }
 
     const accountCreationAlertSent = await sendAccountCreationSummaryAlert({
@@ -323,6 +335,7 @@ export async function POST(request: NextRequest) {
       email: user.email,
       raisonSociale: user.raisonSociale,
       accessMode: "created",
+      emailSent: true,
     })
   } catch (error) {
     console.error("Erreur création compte depuis lead:", error)
