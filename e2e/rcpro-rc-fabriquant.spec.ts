@@ -36,20 +36,10 @@ async function mockAuthenticatedSession(page: import("@playwright/test").Page) {
   })
 }
 
-async function mockUnauthenticatedSession(page: import("@playwright/test").Page) {
-  await page.route("**/api/auth/session", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: "null",
-    })
-  })
-}
-
 async function fillRcProFormUntilSummary(page: import("@playwright/test").Page) {
-  await page.getByLabel("Activité").fill(RC_PRO_FORM_DRAFT.activity)
-  await page.getByLabel(/Chiffre d’affaires/i).fill(String(RC_PRO_FORM_DRAFT.revenue))
-  await page.getByLabel(/Nombre d’employés/i).fill(String(RC_PRO_FORM_DRAFT.employees))
+  await page.getByPlaceholder("Ex: Conseil en informatique").fill(RC_PRO_FORM_DRAFT.activity)
+  await page.getByRole("spinbutton").nth(0).fill(String(RC_PRO_FORM_DRAFT.revenue))
+  await page.getByRole("spinbutton").nth(1).fill(String(RC_PRO_FORM_DRAFT.employees))
   await page.getByRole("button", { name: "Continuer" }).click()
   await page.locator('input[type="range"]').evaluate((element, value) => {
     const input = element as HTMLInputElement
@@ -63,8 +53,6 @@ async function fillRcProFormUntilSummary(page: import("@playwright/test").Page) 
 
 test.describe("RC Pro et RC fabriquant", () => {
   test("RC Pro : redirige vers la connexion avant l'enregistrement du devis", async ({ page }) => {
-    await mockUnauthenticatedSession(page)
-
     await page.goto("/devis/rcpro")
     await dismissCookieBanner(page)
     await fillRcProFormUntilSummary(page)
@@ -164,6 +152,6 @@ test.describe("RC Pro et RC fabriquant", () => {
     await page.getByRole("button", { name: "Envoyer ma demande" }).click()
 
     await expect(page.getByText("Demande envoyée")).toBeVisible()
-    await expect(page.getByText(/24 à 48 h ouvrées/i)).toBeVisible()
+    await expect(page.getByText(/Nous avons bien reçu votre demande de devis RC Fabriquant/i)).toBeVisible()
   })
 })
