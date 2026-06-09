@@ -2,9 +2,11 @@ import { test, expect } from "@playwright/test"
 
 /** Fermer le bandeau cookies s'il est visible */
 async function dismissCookieBanner(page: import("@playwright/test").Page) {
+  const banner = page.getByRole("dialog", { name: /Cookies et confidentialité/i })
   const acceptBtn = page.getByRole("button", { name: "Accepter" })
   try {
     await acceptBtn.click({ timeout: 2000 })
+    await expect(banner).toBeHidden({ timeout: 5000 })
   } catch {
     // Pas de bandeau ou déjà fermé
   }
