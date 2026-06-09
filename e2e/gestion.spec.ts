@@ -89,6 +89,48 @@ function buildGestionDashboardWithActions(
   }
 }
 
+function buildGestionDashboardWithDecennaleLead() {
+  return {
+    users: [],
+    documents: [],
+    payments: [],
+    avenantFees: [],
+    devisDoLeads: [],
+    devisRcFabriquantLeads: [],
+    devisAssuranceTitreLeads: [],
+    devisEtudeLeads: [],
+    resiliationLogs: [],
+    resiliationRequests: [],
+    adminActivityLogs: [],
+    devisLeads: [
+      {
+        id: "lead_dec_1",
+        email: "lead@example.com",
+        raisonSociale: "Lead Exemple",
+        siret: "12345678901234",
+        primeAnnuelle: 1200,
+        rappelSentAt: null,
+        createdAt: "2026-06-09T08:00:00.000Z",
+        slaHours: 36,
+      },
+    ],
+    devisDrafts: [],
+    pendingSignatures: [],
+    sepaSubscriptions: [],
+    insuranceContractsCount: 0,
+    insuranceContracts: [],
+    dashboardActions: [],
+    dashboardActionsSummary: {
+      total: 0,
+      high: 0,
+      medium: 0,
+      overdue72h: 0,
+      dismissedToday: 0,
+      blocked: 0,
+    },
+  }
+}
+
 async function mockGestionRectificationAuth(page: import("@playwright/test").Page) {
   await page.route("**/api/auth/session", async (route) => {
     await route.fulfill({
@@ -290,6 +332,43 @@ test.describe("Gestion CRM — actions du jour", () => {
     await expect(actionsSection.getByRole("link", { name: /Signature en attente/ })).toHaveCount(0)
     await expect(page.getByText("Relances bloquées : 1")).toBeVisible()
     await expect(page.getByText("Aucune action pour ce filtre.")).toBeVisible()
+  })
+})
+
+test.describe("Gestion CRM — création compte lead", () => {
+  test("Compte déjà existant côté serveur : l'accès est renvoyé sans erreur UI", async ({ page }) => {
+    await mockGestionRectificationAuth(page)
+
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildGestionDashboardWithDecennaleLead()),
+      })
+    })
+
+    let createPayload: unknown = null
+    await page.route("**/api/gestion/users/create-from-lead", async (route) => {
+      createPayload = route.request().postDataJSON()
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "user_existing_1",
+          email: "lead@example.com",
+          raisonSociale: "Lead Exemple",
+          accessMode: "resent",
+        }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await expect(page.getByRole("button", { name: "Créer le compte" })).toBeVisible()
+    await page.getByRole("button", { name: "Créer le compte" }).click()
+
+    expect(createPayload).toEqual({ leadId: "lead_dec_1", leadType: "decennale" })
+    await expect(page.getByText("Accès client renvoyé à lead@example.com")).toBeVisible()
+    await expect(page.getByRole("link", { name: /Compte existant/ })).toBeVisible()
   })
 })
 
