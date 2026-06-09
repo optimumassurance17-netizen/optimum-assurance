@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test"
 
 async function dismissCookieBanner(page: import("@playwright/test").Page) {
-  const acceptButton = page.getByRole("button", { name: "Accepter" })
+  const banner = page.getByRole("dialog").filter({ hasText: /Cookies et confidentialité/i }).first()
   try {
-    await acceptButton.click({ timeout: 2000 })
+    await banner.waitFor({ state: "visible", timeout: 3000 })
+    await banner.getByRole("button", { name: "Accepter" }).click({ timeout: 3000, force: true })
+    await expect(banner).toBeHidden({ timeout: 5000 })
   } catch {
     /* ignore */
   }
@@ -68,6 +70,11 @@ test.describe("Assurance titre", () => {
     await expect(page.getByText(/Nous avons bien reçu votre demande d'étude/i)).toBeVisible()
     await expect(page.getByRole("button", { name: /Créer mon espace client/i })).toBeVisible()
     await expect(page.getByRole("link", { name: /J'ai déjà un compte/i })).toBeVisible()
+
+    await page.getByRole("link", { name: /J'ai déjà un compte/i }).click()
+    await expect(page).toHaveURL(/\/connexion\?callbackUrl=%2Fespace-client%2Fassurance-titre/, {
+      timeout: 15000,
+    })
   })
 
   test("espace client assurance titre redirige vers la connexion si non authentifié", async ({ page }) => {

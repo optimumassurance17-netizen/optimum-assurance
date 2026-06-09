@@ -5,6 +5,7 @@ import { EMAIL_TEMPLATES, sendEmail } from "@/lib/email"
 import { SITE_URL } from "@/lib/site-url"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { sendOperationsAlert } from "@/lib/operations-alert"
+import { getAutoReminderBlockedTargetIds } from "@/lib/auto-reminder-blocking"
 import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 
 const CLIENT_REMINDER_AFTER_HOURS = 24
@@ -93,7 +94,7 @@ export async function GET(request: NextRequest) {
     const signatureIds = pendingSignatures.map((p) => p.signatureRequestId)
     const userIds = [...new Set(pendingSignatures.map((p) => p.userId))]
 
-    const [users, sentTodayLogs] = await Promise.all([
+    const [users, sentTodayLogs, blockedPendingSignatureIds] = await Promise.all([
       prisma.user.findMany({
         where: { id: { in: userIds } },
         select: { id: true, email: true, raisonSociale: true },
@@ -107,6 +108,7 @@ export async function GET(request: NextRequest) {
         },
         select: { targetId: true },
       }),
+      getAutoReminderBlockedTargetIds("pending_signature", signatureIds),
     ])
 
     const userById = new Map(users.map((u) => [u.id, u]))
@@ -115,12 +117,17 @@ export async function GET(request: NextRequest) {
     let reminded = 0
     let skippedAlreadySent = 0
     let skippedUnsubscribed = 0
+    let skippedBlocked = 0
     let failed = 0
     let missingUser = 0
 
     const staleRows: Array<{ signatureRequestId: string; ageHours: number; email: string }> = []
 
     for (const pending of pendingSignatures) {
+      if (blockedPendingSignatureIds.has(pending.signatureRequestId)) {
+        skippedBlocked++
+        continue
+      }
       const ageHours = Math.floor((now.getTime() - pending.createdAt.getTime()) / (1000 * 60 * 60))
       const user = userById.get(pending.userId)
       const email = user?.email?.trim().toLowerCase() || ""
@@ -224,6 +231,7 @@ export async function GET(request: NextRequest) {
       reminded,
       skippedAlreadySent,
       skippedUnsubscribed,
+      skippedBlocked,
       missingUser,
       failed,
       staleCount: staleRows.length,

@@ -388,6 +388,7 @@ interface DashboardData {
     description: string
     href: string
     ageHours: number
+    canBlockAutoReminders?: boolean
     remediation?: {
       kind: "dda"
       toEmail: string
@@ -404,6 +405,7 @@ interface DashboardData {
     medium: number
     overdue72h: number
     dismissedToday?: number
+    blocked?: number
   }
   conversionFunnel?: {
     windowDays: number
@@ -413,6 +415,27 @@ interface DashboardData {
     byProduct: Record<string, number>
     rates: Record<string, number | null>
   }
+}
+
+type LeadAccountCreationResponse = {
+  id?: string
+  email?: string
+  raisonSociale?: string | null
+  accessMode?: "created" | "resent"
+  emailSent?: boolean
+  warning?: string
+  error?: string
+}
+
+function getLeadAccountSuccessMessage(
+  response: Pick<LeadAccountCreationResponse, "email" | "accessMode" | "warning">,
+  fallbackEmail?: string
+): string {
+  if (response.warning?.trim()) return response.warning.trim()
+  const email = response.email || fallbackEmail || "ce client"
+  return response.accessMode === "resent"
+    ? `Accès client renvoyé à ${email}`
+    : `Compte créé pour ${email}`
 }
 
 type RcFabLeadRow = NonNullable<DashboardData["devisRcFabriquantLeads"]>[number]
@@ -492,6 +515,7 @@ export default function GestionPage() {
   const [cancellingSignatureId, setCancellingSignatureId] = useState<string | null>(null)
   const [repairingSignatureId, setRepairingSignatureId] = useState<string | null>(null)
   const [dismissingActionId, setDismissingActionId] = useState<string | null>(null)
+  const [blockingReminderActionId, setBlockingReminderActionId] = useState<string | null>(null)
   const [remediatingActionId, setRemediatingActionId] = useState<string | null>(null)
   const [bulkRemediatingDda, setBulkRemediatingDda] = useState(false)
   const [sendingComptaRelanceId, setSendingComptaRelanceId] = useState<string | null>(null)
@@ -525,6 +549,112 @@ export default function GestionPage() {
     )
   }
 
+  const removePendingSignatureLocally = useCallback((signatureRequestId: string) => {
+    setData((prev) => {
+      if (!prev?.pendingSignatures) return prev
+      return {
+        ...prev,
+        pendingSignatures: prev.pendingSignatures.filter(
+          (signature) => signature.signatureRequestId !== signatureRequestId
+        ),
+      }
+    })
+  }, [])
+
+  const refreshDashboardSnapshot = useCallback(async () => {
+    try {
+      const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+      if (dashRes.ok) {
+        setData(await readResponseJson<DashboardData>(dashRes))
+      }
+    } catch (error) {
+      console.warn(
+        "[gestion] refresh dashboard snapshot:",
+        error instanceof Error ? error.message : String(error)
+      )
+    }
+  }, [])
+
+  const removeDashboardActionLocally = useCallback(
+    (
+      actionId: string,
+      options?: {
+        incrementDismissed?: boolean
+        incrementBlocked?: boolean
+      }
+    ) => {
+      setData((prev) => {
+        if (!prev?.dashboardActions) return prev
+        const nextActions = prev.dashboardActions.filter((action) => action.id !== actionId)
+        if (nextActions.length === prev.dashboardActions.length) return prev
+
+        return {
+          ...prev,
+          dashboardActions: nextActions,
+          dashboardActionsSummary: prev.dashboardActionsSummary
+            ? {
+                ...prev.dashboardActionsSummary,
+                total: nextActions.length,
+                high: nextActions.filter((action) => action.priority === "high").length,
+                medium: nextActions.filter((action) => action.priority === "medium").length,
+                overdue72h: nextActions.filter((action) => action.ageHours >= 72).length,
+                dismissedToday:
+                  (prev.dashboardActionsSummary.dismissedToday ?? 0) +
+                  (options?.incrementDismissed ? 1 : 0),
+                blocked:
+                  (prev.dashboardActionsSummary.blocked ?? 0) +
+                  (options?.incrementBlocked ? 1 : 0),
+              }
+            : prev.dashboardActionsSummary,
+        }
+      })
+    },
+    []
+  )
+
+  const upsertUserLocally = useCallback(
+    (user: { id: string; email: string; raisonSociale?: string | null }) => {
+      setData((prev) => {
+        if (!prev?.users) return prev
+        const existingById = prev.users.findIndex((row) => row.id === user.id)
+        const nextUser = {
+          id: user.id,
+          email: user.email,
+          raisonSociale: user.raisonSociale ?? null,
+          siret: null,
+          createdAt: new Date().toISOString(),
+        }
+
+        if (existingById >= 0) {
+          const nextUsers = [...prev.users]
+          nextUsers[existingById] = {
+            ...nextUsers[existingById],
+            email: user.email,
+            raisonSociale: user.raisonSociale ?? nextUsers[existingById].raisonSociale,
+          }
+          return { ...prev, users: nextUsers }
+        }
+
+        const existingByEmail = prev.users.findIndex(
+          (row) => row.email.toLowerCase() === user.email.toLowerCase()
+        )
+        if (existingByEmail >= 0) {
+          const nextUsers = [...prev.users]
+          nextUsers[existingByEmail] = {
+            ...nextUsers[existingByEmail],
+            id: user.id,
+            email: user.email,
+            raisonSociale: user.raisonSociale ?? nextUsers[existingByEmail].raisonSociale,
+          }
+          return { ...prev, users: nextUsers }
+        }
+
+        return { ...prev, users: [nextUser, ...prev.users] }
+      })
+    },
+    []
+  )
+
   const handleCreateLeadAccount = async (leadId: string, leadType: string) => {
     setCreatingLeadAccountId(leadId)
     try {
@@ -533,11 +663,27 @@ export default function GestionPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leadId, leadType }),
       })
-      const json = await readResponseJson<{ error?: string; email?: string }>(res)
+      const json = await readResponseJson<LeadAccountCreationResponse>(res)
       if (!res.ok) throw new Error(json.error || "Erreur création compte")
-      setToast({ message: `Compte créé pour ${json.email}`, type: "success" })
-      const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
-      if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+      if (json.id && json.email) {
+        upsertUserLocally({
+          id: json.id,
+          email: json.email,
+          raisonSociale: json.raisonSociale ?? null,
+        })
+      }
+      await refreshDashboardSnapshot()
+      if (json.id && json.email) {
+        upsertUserLocally({
+          id: json.id,
+          email: json.email,
+          raisonSociale: json.raisonSociale ?? null,
+        })
+      }
+      setToast({
+        message: getLeadAccountSuccessMessage(json),
+        type: json.warning ? "error" : "success",
+      })
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : "Erreur création compte", type: "error" })
     } finally {
@@ -1718,7 +1864,9 @@ export default function GestionPage() {
               >
                 Comptabilité & impayés V2
               </a>
-              {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
+              {data.dashboardActionsSummary &&
+                ((data.dashboardActionsSummary.total ?? 0) > 0 ||
+                  (data.dashboardActionsSummary.blocked ?? 0) > 0) && (
                 <a
                   href="#actions-du-jour"
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#4a2c08] text-amber-100 border border-amber-700/70 hover:bg-[#5c3710]"
@@ -2583,7 +2731,9 @@ export default function GestionPage() {
                   >
                     Ouvrir les contrats plateforme
                   </a>
-                  {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 ? (
+                  {data.dashboardActionsSummary &&
+                  ((data.dashboardActionsSummary.total ?? 0) > 0 ||
+                    (data.dashboardActionsSummary.blocked ?? 0) > 0) ? (
                     <a
                       href="#actions-du-jour"
                       className="text-xs px-2.5 py-1.5 rounded border border-amber-700/70 text-amber-100 hover:bg-amber-900/30"
@@ -2595,7 +2745,9 @@ export default function GestionPage() {
               </section>
             )}
 
-            {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
+            {data.dashboardActionsSummary &&
+              ((data.dashboardActionsSummary.total ?? 0) > 0 ||
+                (data.dashboardActionsSummary.blocked ?? 0) > 0) && (
               <section id="actions-du-jour" className="scroll-mt-24 bg-[#252525] rounded-xl p-5 border border-amber-700/60">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <h2 className="text-lg font-semibold text-white">Actions du jour (automatique)</h2>
@@ -2612,6 +2764,11 @@ export default function GestionPage() {
                     <span className="px-2 py-1 rounded bg-gray-800 text-gray-200 border border-gray-600">
                       Traitées aujourd&apos;hui : {data.dashboardActionsSummary.dismissedToday ?? 0}
                     </span>
+                    {(data.dashboardActionsSummary.blocked ?? 0) > 0 ? (
+                      <span className="px-2 py-1 rounded bg-slate-800 text-slate-100 border border-slate-600">
+                        Relances bloquées : {data.dashboardActionsSummary.blocked}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
                 <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
@@ -2774,9 +2931,64 @@ export default function GestionPage() {
                               {remediatingActionId === a.id ? "…" : "Remédier auto DDA"}
                             </button>
                           ) : null}
+                          {a.canBlockAutoReminders ? (
+                            <button
+                              type="button"
+                              disabled={blockingReminderActionId === a.id}
+                              onClick={async () => {
+                                if (
+                                  !window.confirm(
+                                    "Bloquer définitivement les relances automatiques pour ce dossier ?"
+                                  )
+                                ) {
+                                  return
+                                }
+
+                                setBlockingReminderActionId(a.id)
+                                try {
+                                  const res = await fetch("/api/gestion/actions-du-jour/block-reminders", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ actionId: a.id }),
+                                  })
+                                  const j = await readResponseJson<{
+                                    error?: string
+                                    alreadyBlocked?: boolean
+                                  }>(res)
+                                  if (!res.ok) {
+                                    throw new Error(
+                                      j.error || "Impossible de bloquer les relances automatiques."
+                                    )
+                                  }
+
+                                  removeDashboardActionLocally(a.id, { incrementBlocked: true })
+                                  void refreshDashboardSnapshot()
+                                  setToast({
+                                    message: j.alreadyBlocked
+                                      ? "Relances automatiques déjà bloquées pour ce dossier."
+                                      : "Relances automatiques bloquées pour ce dossier.",
+                                    type: "success",
+                                  })
+                                } catch (err) {
+                                  setToast({
+                                    message:
+                                      err instanceof Error
+                                        ? err.message
+                                        : "Erreur lors du blocage des relances automatiques",
+                                    type: "error",
+                                  })
+                                } finally {
+                                  setBlockingReminderActionId(null)
+                                }
+                              }}
+                              className="text-xs px-2.5 py-1.5 rounded border border-slate-500 text-slate-100 hover:border-slate-300 hover:bg-slate-800/50 disabled:opacity-50"
+                            >
+                              {blockingReminderActionId === a.id ? "…" : "Bloquer relances auto"}
+                            </button>
+                          ) : null}
                           <button
                             type="button"
-                            disabled={dismissingActionId === a.id}
+                            disabled={dismissingActionId === a.id || blockingReminderActionId === a.id}
                             onClick={async () => {
                               setDismissingActionId(a.id)
                               try {
@@ -2788,8 +3000,8 @@ export default function GestionPage() {
                                 const j = await readResponseJson<{ error?: string }>(res)
                                 if (!res.ok) throw new Error(j.error || "Impossible de marquer l'action comme traitée.")
 
-                                const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
-                                if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                removeDashboardActionLocally(a.id, { incrementDismissed: true })
+                                void refreshDashboardSnapshot()
                                 setToast({ message: "Action marquée comme traitée.", type: "success" })
                               } catch (err) {
                                 setToast({
@@ -3135,9 +3347,9 @@ export default function GestionPage() {
                                     )
                                     const j = (await readResponseJson(res)) as { error?: string; message?: string }
                                     if (!res.ok) throw new Error(j.error || res.statusText)
+                                    removePendingSignatureLocally(s.signatureRequestId)
                                     setToast({ message: j.message || "Demande annulée.", type: "success" })
-                                    const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
-                                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                    await refreshDashboardSnapshot()
                                   } catch (e) {
                                     setToast({
                                       message: e instanceof Error ? e.message : "Annulation impossible.",
@@ -3172,9 +3384,9 @@ export default function GestionPage() {
                                       })
                                       const j = (await readResponseJson(res)) as { error?: string; message?: string }
                                       if (!res.ok) throw new Error(j.error || res.statusText)
+                                      removePendingSignatureLocally(s.signatureRequestId)
                                       setToast({ message: j.message || "Finalisation relancée.", type: "success" })
-                                      const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
-                                      if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                      await refreshDashboardSnapshot()
                                     } catch (e) {
                                       setToast({
                                         message: e instanceof Error ? e.message : "Relance impossible.",
@@ -4278,31 +4490,11 @@ export default function GestionPage() {
                             ) : (
                               <button
                                 type="button"
-                                onClick={async () => {
-                                  try {
-                                    const res = await fetch("/api/gestion/users/create-from-lead", {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ leadId: d.id, leadType: "rc_fabriquant" }),
-                                    })
-                                    const json = await readResponseJson<{ error?: string; email?: string }>(res)
-                                    if (!res.ok) throw new Error(json.error || "Erreur")
-                                    setToast({
-                                      message: `Espace client créé pour ${json.email || d.email}`,
-                                      type: "success",
-                                    })
-                                    const dashRes = await fetch("/api/gestion/dashboard")
-                                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
-                                  } catch (err) {
-                                    setToast({
-                                      message: err instanceof Error ? err.message : "Erreur",
-                                      type: "error",
-                                    })
-                                  }
-                                }}
-                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-sky-500/70 text-sky-200 hover:bg-sky-900/30"
+                                disabled={creatingLeadAccountId === d.id}
+                                onClick={() => void handleCreateLeadAccount(d.id, "rc_fabriquant")}
+                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-sky-500/70 text-sky-200 hover:bg-sky-900/30 disabled:opacity-40 disabled:pointer-events-none"
                               >
-                                Créer espace client
+                                {creatingLeadAccountId === d.id ? "Création..." : "Créer espace client"}
                               </button>
                             )}
                             {(propositionCopy || signatureCopy) && (
@@ -4430,31 +4622,11 @@ export default function GestionPage() {
                             ) : (
                               <button
                                 type="button"
-                                onClick={async () => {
-                                  try {
-                                    const res = await fetch("/api/gestion/users/create-from-lead", {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ leadId: d.id, leadType: "assurance_titre" }),
-                                    })
-                                    const json = await readResponseJson<{ error?: string; email?: string }>(res)
-                                    if (!res.ok) throw new Error(json.error || "Erreur")
-                                    setToast({
-                                      message: `Espace client créé pour ${json.email || d.email}`,
-                                      type: "success",
-                                    })
-                                    const dashRes = await fetch("/api/gestion/dashboard")
-                                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
-                                  } catch (err) {
-                                    setToast({
-                                      message: err instanceof Error ? err.message : "Erreur",
-                                      type: "error",
-                                    })
-                                  }
-                                }}
-                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-sky-500/70 text-sky-200 hover:bg-sky-900/30"
+                                disabled={creatingLeadAccountId === d.id}
+                                onClick={() => void handleCreateLeadAccount(d.id, "assurance_titre")}
+                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-sky-500/70 text-sky-200 hover:bg-sky-900/30 disabled:opacity-40 disabled:pointer-events-none"
                               >
-                                Créer espace client
+                                {creatingLeadAccountId === d.id ? "Création..." : "Créer espace client"}
                               </button>
                             )}
                           </div>
@@ -4501,25 +4673,11 @@ export default function GestionPage() {
                           {!matchingUser ? (
                             <button
                               type="button"
-                              onClick={async () => {
-                                try {
-                                  const res = await fetch("/api/gestion/users/create-from-lead", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ leadId: d.id }),
-                                  })
-                                  const json = await readResponseJson<{ error?: string; email?: string }>(res)
-                                  if (!res.ok) throw new Error(json.error || "Erreur")
-                                  setToast({ message: `Compte créé pour ${json.email}`, type: "success" })
-                                  const dashRes = await fetch("/api/gestion/dashboard")
-                                  if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
-                                } catch (err) {
-                                  setToast({ message: err instanceof Error ? err.message : "Erreur", type: "error" })
-                                }
-                              }}
-                              className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 py-2 -m-1"
+                              disabled={creatingLeadAccountId === d.id}
+                              onClick={() => void handleCreateLeadAccount(d.id, "dommage_ouvrage")}
+                              className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 py-2 -m-1 disabled:opacity-40 disabled:pointer-events-none"
                             >
-                              Créer le compte
+                              {creatingLeadAccountId === d.id ? "Création..." : "Créer le compte"}
                             </button>
                           ) : null}
                         </td>

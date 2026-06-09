@@ -33,13 +33,6 @@ export async function setupSepaSubscriptionAfterT1Card(
     baseUrl: string
   }
 ): Promise<{ ok: boolean; error?: string }> {
-  const existing = await prisma.sepaSubscription.findUnique({
-    where: { userId: params.userId },
-  })
-  if (existing) {
-    return { ok: true }
-  }
-
   const iban = normalizeIban(params.iban)
   if (!isValidIban(iban)) {
     return { ok: false, error: "IBAN invalide (clé ou format incorrect)" }
@@ -64,8 +57,9 @@ export async function setupSepaSubscriptionAfterT1Card(
     const now = new Date()
     const nextSepaDue = addMonths(now, 3)
 
-    await prisma.sepaSubscription.create({
-      data: {
+    await prisma.sepaSubscription.upsert({
+      where: { userId: params.userId },
+      create: {
         userId: params.userId,
         mollieCustomerId: customer.id,
         mollieMandateId: mandate.id,
@@ -75,6 +69,20 @@ export async function setupSepaSubscriptionAfterT1Card(
         nextSepaDue,
         status: mandateOk ? "active" : "pending_mandate",
         lastError: mandateOk ? null : `Mandat ${mandate.status}`,
+        sepaPendingPaymentId: null,
+      },
+      update: {
+        // Un nouveau contrat décennale sur le même compte doit remplacer l'ancien calendrier
+        // de prélèvements afin que les échéances futures suivent la prime et le mandat courants.
+        mollieCustomerId: customer.id,
+        mollieMandateId: mandate.id,
+        primeAnnuelle: params.primeAnnuelle,
+        trimestresSepaPayes: 0,
+        firstTrimesterPaidAt: now,
+        nextSepaDue,
+        status: mandateOk ? "active" : "pending_mandate",
+        lastError: mandateOk ? null : `Mandat ${mandate.status}`,
+        sepaPendingPaymentId: null,
       },
     })
 

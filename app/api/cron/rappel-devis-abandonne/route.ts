@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { assertCronAuthorized } from "@/lib/cron-auth"
+import { getAutoReminderBlockedTargetIds } from "@/lib/auto-reminder-blocking"
 import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 
 /**
@@ -28,9 +29,19 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    const blockedLeadIds = await getAutoReminderBlockedTargetIds(
+      "devis_lead",
+      leads.map((lead) => lead.id)
+    )
+
     let sent = 0
     let unsubscribedSkipped = 0
+    let blockedSkipped = 0
     for (const lead of leads) {
+      if (blockedLeadIds.has(lead.id)) {
+        blockedSkipped++
+        continue
+      }
       const normalizedEmail = lead.email.trim().toLowerCase()
       if (!normalizedEmail) continue
       if (await isReminderUnsubscribed(normalizedEmail, "devis_reminder")) {
@@ -66,7 +77,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ sent, total: leads.length, unsubscribedSkipped })
+    return NextResponse.json({ sent, total: leads.length, unsubscribedSkipped, blockedSkipped })
   } catch (error) {
     console.error("Erreur rappel devis:", error)
     return NextResponse.json({ error: "Erreur" }, { status: 500 })

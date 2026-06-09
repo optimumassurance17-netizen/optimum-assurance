@@ -147,6 +147,10 @@ export default function PaiementPage() {
       const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
       const primeAnnuelle = data.tarif.primeAnnuelle ?? 0
       const amount = calculerEcheancierTrimestriel(primeAnnuelle).premierMontant
+      const contractNumero =
+        typeof data.signedContractNumero === "string" && data.signedContractNumero.trim().length > 0
+          ? data.signedContractNumero.trim()
+          : undefined
 
       const payload: Record<string, unknown> = {
         amount,
@@ -162,6 +166,7 @@ export default function PaiementPage() {
           primeAnnuelle: String(primeAnnuelle),
           fraisGestion: String(FRAIS_GESTION_PRELEVEMENT),
           premierPaiementCarte: "true",
+          ...(contractNumero ? { contractNumero } : {}),
           prelevementsSuivantsSepa: "trimestriel",
           /** Pour création mandat SEPA Mollie (webhook) — métadonnées Mollie = chaînes */
           iban: mandat.iban.replace(/\s+/g, ""),

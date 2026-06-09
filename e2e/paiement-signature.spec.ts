@@ -39,10 +39,21 @@ const DECENNALE_SOUSCRIPTION = {
   insuranceProduct: "decennale",
 } as const
 
+const DECENNALE_SIGNATURE_PAYLOAD = {
+  ...DECENNALE_SOUSCRIPTION,
+  signedContractNumero: "CTR-TEST-RESUME-001",
+  signedContractData: {
+    numero: "CTR-TEST-RESUME-001",
+    raisonSociale: DECENNALE_SOUSCRIPTION.raisonSociale,
+  },
+} as const
+
 async function dismissCookieBanner(page: import("@playwright/test").Page) {
-  const acceptBtn = page.getByRole("button", { name: "Accepter" })
+  const banner = page.getByRole("dialog").filter({ hasText: /Cookies et confidentialité/i }).first()
   try {
-    await acceptBtn.click({ timeout: 2000 })
+    await banner.waitFor({ state: "visible", timeout: 3000 })
+    await banner.getByRole("button", { name: "Accepter" }).click({ timeout: 3000, force: true })
+    await expect(banner).toBeHidden({ timeout: 5000 })
   } catch {
     // Bandeau absent ou déjà accepté
   }
@@ -170,6 +181,88 @@ test.describe("Tunnel signature et paiement", () => {
     await expect(page).toHaveURL(/\/confirmation\?payment_id=pay_test_123/)
     await expect(page.getByRole("heading", { name: "Souscription confirmée" })).toBeVisible()
     await expect(page.getByRole("link", { name: "Accéder à mon espace client" })).toBeVisible()
+  })
+
+  test("Décennale : reprise mandat/paiement sans sessionStorage après signature", async ({ page }) => {
+    await mockAuthenticatedSession(page)
+
+    await page.route("**/api/client/decennale-paiement-session", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          available: true,
+          contratNumero: DECENNALE_SIGNATURE_PAYLOAD.signedContractNumero,
+          signaturePayload: DECENNALE_SIGNATURE_PAYLOAD,
+        }),
+      })
+    })
+
+    let createPaymentBody: Record<string, unknown> | null = null
+    await page.route("**/api/mollie/create-payment", async (route) => {
+      createPaymentBody = JSON.parse(route.request().postData() || "{}") as Record<string, unknown>
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "pay_test_resume_123",
+          checkoutUrl: "/confirmation?payment_id=pay_test_resume_123",
+        }),
+      })
+    })
+    await page.route("**/api/mollie/payment-status**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          status: "paid",
+          amount: 360,
+          metadata: {},
+        }),
+      })
+    })
+    await page.route("**/api/payments/record", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      })
+    })
+    await page.route("**/api/documents/create", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      })
+    })
+    await page.route("**/api/email/confirmation-souscription", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      })
+    })
+
+    await page.goto("/mandat-sepa")
+    await dismissCookieBanner(page)
+
+    await expect(page.getByRole("heading", { name: "IBAN et mandat SEPA" })).toBeVisible()
+    await expect(page.getByText(DECENNALE_SIGNATURE_PAYLOAD.raisonSociale)).toBeVisible()
+
+    await page.getByPlaceholder("FR76 1234 5678 9012 3456 7890 123").fill("FR7630006000011234567890189")
+    await page.getByPlaceholder("Nom du titulaire ou raison sociale").fill("Jean Test")
+    await page.locator("#sepa-mandat").check()
+    await page.getByRole("button", { name: "Continuer vers le paiement" }).click()
+
+    await expect(page).toHaveURL(/\/paiement$/)
+    await expect(page.getByRole("heading", { name: "Paiement" })).toBeVisible()
+
+    await page.getByRole("button", { name: "Payer le 1er trimestre par carte" }).click()
+
+    await expect(page).toHaveURL(/\/confirmation\?payment_id=pay_test_resume_123/)
+    expect(createPaymentBody).not.toBeNull()
+    const paymentPayload = createPaymentBody as { metadata?: { contractNumero?: string } } | null
+    expect(paymentPayload?.metadata?.contractNumero).toBe("CTR-TEST-RESUME-001")
   })
 
   test("DO : confirmation de paiement contrat plateforme", async ({ page }) => {

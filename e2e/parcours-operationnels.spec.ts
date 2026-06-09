@@ -1,12 +1,63 @@
 import { test, expect } from "@playwright/test"
 
+const AUTHENTICATED_SESSION = {
+  user: {
+    id: "user_e2e",
+    email: "prospect@example.com",
+    name: "Prospect Optimum",
+  },
+  expires: "2099-01-01T00:00:00.000Z",
+}
+
+const DECENNALE_DEVIS = {
+  siret: "73282932000074",
+  chiffreAffaires: 80000,
+  sinistres: 0,
+  jamaisAssure: false,
+  activites: ["Plomberie sanitaire"],
+  tarif: {
+    primeAnnuelle: 1200,
+    primeMensuelle: 100,
+    primeTrimestrielle: 300,
+    franchise: 1000,
+    plafond: 160000,
+    details: {
+      base: 1200,
+      majorationSinistres: 0,
+      majorationNouveau: 0,
+      majorationActivites: 0,
+    },
+  },
+  raisonSociale: "SARL Test Optimum",
+  adresse: "10 rue de Paris",
+  codePostal: "75001",
+  ville: "Paris",
+  email: "prospect@example.com",
+  telephone: "0601020304",
+  representantLegal: "Jean Test",
+  civilite: "M",
+  insuranceProduct: "decennale",
+} as const
+
 async function dismissCookieBanner(page: import("@playwright/test").Page) {
-  const acceptBtn = page.getByRole("button", { name: "Accepter" })
+  const banner = page.getByRole("dialog").filter({ hasText: /Cookies et confidentialité/i }).first()
   try {
-    await acceptBtn.click({ timeout: 2000 })
+    await banner.waitFor({ state: "visible", timeout: 3000 })
+    await banner.getByRole("button", { name: "Accepter" }).click({ timeout: 3000, force: true })
+    await expect(banner).toBeHidden({ timeout: 5000 })
   } catch {
     // Bandeau absent ou déjà accepté
   }
+}
+
+async function mockAuthenticatedSession(page: import("@playwright/test").Page) {
+  await page.route("**/api/auth/session", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(AUTHENTICATED_SESSION),
+    })
+  })
 }
 
 test.describe("Parcours opérationnels décennale et dommage ouvrage", () => {
@@ -39,6 +90,59 @@ test.describe("Parcours opérationnels décennale et dommage ouvrage", () => {
     await expect(
       page.getByText("Complétez vos coordonnées pour finaliser votre assurance décennale.")
     ).toBeVisible()
+  })
+
+  test("Souscription décennale avec compte connecté -> signature", async ({ page }) => {
+    await mockAuthenticatedSession(page)
+
+    await page.route("**/api/conversion/track", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      })
+    })
+    await page.route("**/api/devoir-conseil/log", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      })
+    })
+    await page.route("**/api/contracts/create", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          contract: {
+            id: "contract_test_123",
+            contractNumber: "CTR-TEST-123",
+            status: "approved",
+            riskScore: 0.12,
+            riskReasons: [],
+            rejectedReason: null,
+          },
+        }),
+      })
+    })
+
+    await page.addInitScript((devis) => {
+      window.sessionStorage.setItem("optimum-devis", JSON.stringify(devis))
+    }, DECENNALE_DEVIS)
+
+    await page.goto("/souscription")
+    await dismissCookieBanner(page)
+
+    await expect(page.getByRole("heading", { name: "Souscription" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Continuer (compte connecté)" })).toBeVisible()
+
+    await page.getByLabel("J'ai pris connaissance des garanties et exclusions et confirme que ce contrat correspond à ma situation.").check()
+    await page.getByRole("button", { name: "Continuer (compte connecté)" }).click()
+
+    await expect(page).toHaveURL(/\/signature$/)
+    await expect(page.getByRole("heading", { name: "Signature numérique" })).toBeVisible()
+    await expect(page.getByText("SARL Test Optimum")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Signer le contrat (contrat type)" })).toBeVisible()
   })
 
   test("Parcours DO guidé jusqu'à l'écran de souscription en ligne", async ({ page }) => {

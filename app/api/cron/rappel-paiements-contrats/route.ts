@@ -6,6 +6,7 @@ import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { SITE_URL } from "@/lib/site-url"
 import { sendOperationsAlert } from "@/lib/operations-alert"
 import { logAdminActivity } from "@/lib/admin-activity"
+import { getAutoReminderBlockedTargetIds } from "@/lib/auto-reminder-blocking"
 import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 import { getInsuranceProductLabelLower } from "@/lib/insurance-product"
 
@@ -56,11 +57,12 @@ export async function GET(request: NextRequest) {
     let skippedAlreadyReminded = 0
     let skippedAlreadyAlerted = 0
     let skippedUnsubscribed = 0
+    let skippedBlocked = 0
     const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
     const paymentIds = candidates.map((c) => c.lifecyclePayments[0]?.id).filter(Boolean) as string[]
     const contractIds = candidates.map((c) => c.id)
 
-    const [sentClientLogs, sentOpsLogs] = await Promise.all([
+    const [sentClientLogs, sentOpsLogs, blockedInsuranceContractIds] = await Promise.all([
       paymentIds.length
         ? prisma.adminActivityLog.findMany({
             where: {
@@ -83,11 +85,16 @@ export async function GET(request: NextRequest) {
             select: { targetId: true },
           })
         : Promise.resolve([]),
+      getAutoReminderBlockedTargetIds("insurance_contract", contractIds),
     ])
     const alreadyRemindedPaymentIds = new Set(sentClientLogs.map((l) => l.targetId ?? ""))
     const alreadyAlertedContractIds = new Set(sentOpsLogs.map((l) => l.targetId ?? ""))
 
     for (const contract of candidates) {
+      if (blockedInsuranceContractIds.has(contract.id)) {
+        skippedBlocked++
+        continue
+      }
       const user = contract.user
       const normalizedEmail = user?.email?.trim().toLowerCase() || ""
       if (!normalizedEmail) {
@@ -208,6 +215,7 @@ export async function GET(request: NextRequest) {
       skippedAlreadyReminded,
       skippedAlreadyAlerted,
       skippedUnsubscribed,
+      skippedBlocked,
     })
   } catch (error) {
     console.error("[cron rappel-paiements-contrats]", error)
