@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { Header } from "@/components/Header"
 import { RcProForm } from "@/src/modules/rcpro/components/RcProForm"
 
@@ -12,7 +13,9 @@ export default function RcProDevisPage() {
         <p className="mb-8 text-[#171717]">
           Responsabilite Civile Professionnelle (hors batiment). Obtenez un tarif indicatif en quelques etapes.
         </p>
-        <RcProForm />
+        <Suspense fallback={<p className="text-sm text-[#475569]">Chargement du devis RC Pro...</p>}>
+          <RcProForm />
+        </Suspense>
       </div>
     </main>
   )
