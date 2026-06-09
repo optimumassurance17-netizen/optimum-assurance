@@ -612,6 +612,13 @@ export default function GestionPage() {
       })
       const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
       if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+      if (json.id && json.email) {
+        upsertUserLocally({
+          id: json.id,
+          email: json.email,
+          raisonSociale: json.raisonSociale ?? null,
+        })
+      }
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : "Erreur création compte", type: "error" })
     } finally {
