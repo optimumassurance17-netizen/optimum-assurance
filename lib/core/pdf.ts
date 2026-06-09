@@ -7,7 +7,7 @@ export type CoreLegalMentions = {
 
 export function getCoreRcProLegalMentions(): CoreLegalMentions {
   return {
-    legalNotes: DEVOIR_CONSEIL_TEXT_BY_PRODUCT.rc_fabriquant.contenu,
-    legalLinks: getDevoirConseilLinksLine("rc_fabriquant"),
+    legalNotes: DEVOIR_CONSEIL_TEXT_BY_PRODUCT.rc_pro.contenu,
+    legalLinks: getDevoirConseilLinksLine("rc_pro"),
   }
 }

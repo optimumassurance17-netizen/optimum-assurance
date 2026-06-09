@@ -1,12 +1,15 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { RcProOptions, RC_PRO_AVAILABLE_OPTIONS } from "@/src/modules/rcpro/components/RcProOptions"
 import { RcProSummary } from "@/src/modules/rcpro/components/RcProSummary"
 import { computeRcProPrice } from "@/src/modules/rcpro/lib/rcproEngine"
 import { validateRcProFormInput } from "@/src/modules/rcpro/lib/rcproValidation"
 import type { RcProInput } from "@/src/modules/rcpro/types/rcpro.types"
+
+type RcProStep = 1 | 2 | 3
 
 const defaultForm: RcProInput = {
   activity: "",
@@ -16,12 +19,40 @@ const defaultForm: RcProInput = {
   options: [],
 }
 
+const RC_PRO_RESUME_STORAGE_KEY = "optimum-rcpro-resume"
+
+type RcProResumeDraft = {
+  form: RcProInput
+  step: RcProStep
+  autoSubmit?: boolean
+}
+
+function parseRcProResumeDraft(raw: unknown): RcProResumeDraft | null {
+  if (!raw || typeof raw !== "object") return null
+  const draft = raw as Record<string, unknown>
+  const parsedForm = validateRcProFormInput(draft.form)
+  if (!parsedForm.ok) return null
+  const step = draft.step === 1 || draft.step === 2 || draft.step === 3 ? draft.step : 3
+  return {
+    form: parsedForm.value,
+    step,
+    autoSubmit: draft.autoSubmit === true,
+  }
+}
+
 export function RcProForm() {
   const router = useRouter()
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const searchParams = useSearchParams()
+  const { status: sessionStatus } = useSession()
+  const [step, setStep] = useState<RcProStep>(1)
   const [form, setForm] = useState<RcProInput>(defaultForm)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [resumeMessage, setResumeMessage] = useState<string | null>(null)
+  const [resumeDraft, setResumeDraft] = useState<RcProResumeDraft | null>(null)
+  const resumeLoadedRef = useRef(false)
+  const resumeSubmittedRef = useRef(false)
+  const resumeParam = searchParams?.get("resume") ?? null
 
   const breakdown = useMemo(() => {
     try {
@@ -31,6 +62,100 @@ export function RcProForm() {
     }
   }, [form])
 
+  const redirectToLogin = useCallback(
+    (input: RcProInput) => {
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(
+          RC_PRO_RESUME_STORAGE_KEY,
+          JSON.stringify({
+            form: input,
+            step: 3,
+            autoSubmit: true,
+          } satisfies RcProResumeDraft)
+        )
+      }
+      setResumeMessage("Connexion requise pour enregistrer le devis RC Pro. Votre saisie a ete conservee.")
+      router.push(`/connexion?callbackUrl=${encodeURIComponent("/devis/rcpro?resume=1")}`)
+    },
+    [router]
+  )
+
+  const submitQuote = useCallback(
+    async (input: RcProInput) => {
+      setError(null)
+      if (sessionStatus !== "authenticated") {
+        redirectToLogin(input)
+        return
+      }
+
+      setLoading(true)
+      try {
+        const calcRes = await fetch("/api/rcpro/calculate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        })
+        if (!calcRes.ok) {
+          const data = (await calcRes.json().catch(() => null)) as { error?: string } | null
+          throw new Error(data?.error || "Impossible de calculer le tarif RC Pro.")
+        }
+
+        await calcRes.json()
+        const createRes = await fetch("/api/rcpro/create-quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        })
+        if (createRes.status === 401) {
+          redirectToLogin(input)
+          return
+        }
+        if (!createRes.ok) {
+          const data = (await createRes.json().catch(() => null)) as { error?: string } | null
+          throw new Error(data?.error || "Impossible de créer le devis RC Pro.")
+        }
+        const createData = (await createRes.json()) as { quote: { id: string; price: number } }
+        router.push(
+          `/devis/rcpro/result?id=${encodeURIComponent(createData.quote.id)}&price=${encodeURIComponent(
+            String(createData.quote.price)
+          )}`
+        )
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Erreur inconnue.")
+      } finally {
+        setLoading(false)
+      }
+    },
+    [redirectToLogin, router, sessionStatus]
+  )
+
+  useEffect(() => {
+    if (resumeParam !== "1" || resumeLoadedRef.current || typeof window === "undefined") return
+    resumeLoadedRef.current = true
+    try {
+      const saved = window.sessionStorage.getItem(RC_PRO_RESUME_STORAGE_KEY)
+      window.sessionStorage.removeItem(RC_PRO_RESUME_STORAGE_KEY)
+      const parsed = saved ? parseRcProResumeDraft(JSON.parse(saved)) : null
+      if (parsed) {
+        setForm(parsed.form)
+        setStep(parsed.step)
+        setResumeDraft(parsed)
+        if (parsed.autoSubmit) {
+          setResumeMessage("Connexion reussie. Reprise de votre devis RC Pro...")
+        }
+      }
+    } catch {
+      window.sessionStorage.removeItem(RC_PRO_RESUME_STORAGE_KEY)
+    }
+    router.replace("/devis/rcpro", { scroll: false })
+  }, [resumeParam, router])
+
+  useEffect(() => {
+    if (!resumeDraft?.autoSubmit || sessionStatus !== "authenticated" || resumeSubmittedRef.current) return
+    resumeSubmittedRef.current = true
+    void submitQuote(resumeDraft.form)
+  }, [resumeDraft, sessionStatus, submitQuote])
+
   async function handleCalculateAndSave() {
     setError(null)
     const validation = validateRcProFormInput(form)
@@ -38,40 +163,7 @@ export function RcProForm() {
       setError(validation.error)
       return
     }
-
-    setLoading(true)
-    try {
-      const calcRes = await fetch("/api/rcpro/calculate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      })
-      if (!calcRes.ok) {
-        const data = (await calcRes.json().catch(() => null)) as { error?: string } | null
-        throw new Error(data?.error || "Impossible de calculer le tarif RC Pro.")
-      }
-
-      await calcRes.json()
-      const createRes = await fetch("/api/rcpro/create-quote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      })
-      if (!createRes.ok) {
-        const data = (await createRes.json().catch(() => null)) as { error?: string } | null
-        throw new Error(data?.error || "Impossible de créer le devis RC Pro.")
-      }
-      const createData = (await createRes.json()) as { quote: { id: string; price: number } }
-      router.push(
-        `/devis/rcpro/result?id=${encodeURIComponent(createData.quote.id)}&price=${encodeURIComponent(
-          String(createData.quote.price)
-        )}`
-      )
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur inconnue.")
-    } finally {
-      setLoading(false)
-    }
+    await submitQuote(validation.value)
   }
 
   return (
@@ -151,6 +243,17 @@ export function RcProForm() {
           />
         )}
 
+        {step === 3 && sessionStatus === "unauthenticated" && (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            Connectez-vous pour enregistrer ce devis RC Pro et le retrouver dans votre espace client. Votre saisie
+            sera conservee.
+          </div>
+        )}
+        {resumeMessage && (
+          <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+            {resumeMessage}
+          </div>
+        )}
         {error && <p className="mt-4 text-sm text-red-700">{error}</p>}
 
         <div className="mt-6 flex items-center gap-3">
@@ -175,10 +278,16 @@ export function RcProForm() {
             <button
               type="button"
               onClick={handleCalculateAndSave}
-              disabled={loading}
+              disabled={loading || sessionStatus === "loading"}
               className="rounded-xl bg-[#2563eb] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
-              {loading ? "Traitement..." : "Calculer et enregistrer le devis"}
+              {sessionStatus === "loading"
+                ? "Verification de la session..."
+                : loading
+                  ? "Traitement..."
+                  : sessionStatus === "authenticated"
+                    ? "Calculer et enregistrer le devis"
+                    : "Se connecter pour enregistrer le devis"}
             </button>
           )}
         </div>

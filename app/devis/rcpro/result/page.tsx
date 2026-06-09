@@ -17,7 +17,7 @@ function RcProResultContent() {
   const searchParams = useSearchParams()
   const quoteId = searchParams?.get("id")?.trim() || ""
   const price = parsePrice(searchParams?.get("price") ?? null)
-  const devoirConseil = DEVOIR_CONSEIL_TEXT_BY_PRODUCT.rc_fabriquant
+  const devoirConseil = DEVOIR_CONSEIL_TEXT_BY_PRODUCT.rc_pro
 
   return (
     <main className="min-h-screen bg-[var(--background)]">
@@ -54,7 +54,7 @@ function RcProResultContent() {
         <section className="mt-6 rounded-xl border border-[#d4d4d8] bg-[#f8fafc] p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-[#0a0a0a]">{devoirConseil.titre}</h2>
           <p className="mt-3 text-sm text-[#171717]">{devoirConseil.contenu}</p>
-          <p className="mt-3 text-xs text-[#64748b]">{getDevoirConseilLinksLine("rc_fabriquant")}</p>
+          <p className="mt-3 text-xs text-[#64748b]">{getDevoirConseilLinksLine("rc_pro")}</p>
         </section>
       </div>
     </main>

@@ -4,6 +4,9 @@ export type DevoirConseilProduit =
   | "decennale"
   | "dommage-ouvrage"
   | "do"
+  | "rc-pro"
+  | "rc_pro"
+  | "rcpro"
   | "rc-fabriquant"
   | "rc_fabriquant"
   | "assurance-titre"
@@ -50,6 +53,16 @@ const TEXTE_RC_FABRIQUANT: DevoirConseilTexte = {
   lienGuide: "/guides",
 }
 
+const TEXTE_RC_PRO: DevoirConseilTexte = {
+  titre: DEVOIR_CONSEIL_TITLE_LOCAL,
+  contenu:
+    "En souscrivant, vous confirmez avoir pris connaissance des garanties, exclusions, franchises et limites de l'assurance RC Pro. Le devis indicatif est etabli sur la base de vos declarations (activite, chiffre d'affaires, effectif, niveau de risque et options). En cas de changement de situation, contactez-nous avant validation definitive.",
+  lienCgv: "/cgv",
+  lienAttestations: "/conditions-attestations",
+  lienFaq: "/faq",
+  lienGuide: "/guides",
+}
+
 const TEXTE_ASSURANCE_TITRE: DevoirConseilTexte = {
   titre: DEVOIR_CONSEIL_TITLE_LOCAL,
   contenu:
@@ -62,9 +75,10 @@ const TEXTE_ASSURANCE_TITRE: DevoirConseilTexte = {
 
 function normalizeProduit(
   produit: DevoirConseilProduit
-): "decennale" | "do" | "rc_fabriquant" | "assurance_titre" {
+): "decennale" | "do" | "rc_pro" | "rc_fabriquant" | "assurance_titre" {
   if (produit === "decennale") return "decennale"
   if (produit === "dommage-ouvrage" || produit === "do") return "do"
+  if (produit === "rc-pro" || produit === "rc_pro" || produit === "rcpro") return "rc_pro"
   if (produit === "assurance-titre" || produit === "assurance_titre") return "assurance_titre"
   return "rc_fabriquant"
 }
@@ -72,6 +86,7 @@ function normalizeProduit(
 export const DEVOIR_CONSEIL_TEXT_BY_PRODUCT = {
   decennale: TEXTE_DECENNALE,
   do: TEXTE_DO,
+  rc_pro: TEXTE_RC_PRO,
   rc_fabriquant: TEXTE_RC_FABRIQUANT,
   assurance_titre: TEXTE_ASSURANCE_TITRE,
 } as const
@@ -82,6 +97,7 @@ export const DEVOIR_CONSEIL_TEXTE_BY_PRODUCT = DEVOIR_CONSEIL_TEXT_BY_PRODUCT
 export const DEVOIR_CONSEIL_TEXT = {
   decennale: { title: TEXTE_DECENNALE.titre, content: TEXTE_DECENNALE.contenu },
   do: { title: TEXTE_DO.titre, content: TEXTE_DO.contenu },
+  rc_pro: { title: TEXTE_RC_PRO.titre, content: TEXTE_RC_PRO.contenu },
   rc_fabriquant: { title: TEXTE_RC_FABRIQUANT.titre, content: TEXTE_RC_FABRIQUANT.contenu },
   assurance_titre: { title: TEXTE_ASSURANCE_TITRE.titre, content: TEXTE_ASSURANCE_TITRE.contenu },
 } as const
