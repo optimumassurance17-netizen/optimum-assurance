@@ -3,6 +3,10 @@ import { Prisma } from "@/lib/prisma-client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
+import {
+  getAutoReminderBlockedTargetIds,
+  parseDashboardActionAutoReminderTarget,
+} from "@/lib/auto-reminder-blocking"
 import { prisma } from "@/lib/prisma"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
@@ -810,6 +814,7 @@ export async function GET() {
       description: string
       href: string
       ageHours: number
+      canBlockAutoReminders?: boolean
       remediation?: {
         kind: "dda"
         toEmail: string
@@ -835,6 +840,20 @@ export async function GET() {
     const dismissedActionIds = new Set(
       dismissedLogs.map((l) => (typeof l.targetId === "string" ? l.targetId : "")).filter(Boolean)
     )
+    const [blockedPendingSignatureIds, blockedInsuranceContractIds, blockedDevisLeadIds] = await Promise.all([
+      getAutoReminderBlockedTargetIds(
+        "pending_signature",
+        pendingSignaturesRaw.map((signature) => signature.signatureRequestId)
+      ),
+      getAutoReminderBlockedTargetIds(
+        "insurance_contract",
+        insuranceContractsList.map((contract) => contract.id)
+      ),
+      getAutoReminderBlockedTargetIds(
+        "devis_lead",
+        devisLeads.map((lead) => lead.id)
+      ),
+    ])
 
     const dashboardActions: DashboardAction[] = []
 
@@ -850,6 +869,7 @@ export async function GET() {
         description: `Référence ${p.contractNumero} — ${ageHours}h`,
         href: "#signatures-attente",
         ageHours,
+        canBlockAutoReminders: true,
       })
     }
 
@@ -866,6 +886,7 @@ export async function GET() {
         description: `${c.contractNumber} (${c.productType}) — ${ageHours}h`,
         href: "#contrats-plateforme",
         ageHours,
+        canBlockAutoReminders: true,
       })
     }
 
@@ -882,6 +903,7 @@ export async function GET() {
         description: `${d.email} — ${ageHours}h`,
         href: "#leads-decennale",
         ageHours,
+        canBlockAutoReminders: true,
       })
     }
 
@@ -1048,7 +1070,26 @@ export async function GET() {
       })
     }
 
-    const dashboardActionsVisible = dashboardActions.filter((a) => !dismissedActionIds.has(a.id))
+    const isDashboardActionAutoReminderBlocked = (action: DashboardAction): boolean => {
+      const target = parseDashboardActionAutoReminderTarget(action.id)
+      if (!target) return false
+
+      if (target.targetType === "pending_signature") {
+        return blockedPendingSignatureIds.has(target.targetId)
+      }
+      if (target.targetType === "insurance_contract") {
+        return blockedInsuranceContractIds.has(target.targetId)
+      }
+      return blockedDevisLeadIds.has(target.targetId)
+    }
+
+    const blockedDashboardActionsCount = dashboardActions.filter((action) =>
+      isDashboardActionAutoReminderBlocked(action)
+    ).length
+    const dashboardActionsVisible = dashboardActions.filter(
+      (action) =>
+        !dismissedActionIds.has(action.id) && !isDashboardActionAutoReminderBlocked(action)
+    )
     dashboardActionsVisible.sort((a, b) => b.ageHours - a.ageHours)
     const dashboardActionsLimited = dashboardActionsVisible.slice(0, 20)
     const dashboardActionsSummary = {
@@ -1057,6 +1098,7 @@ export async function GET() {
       medium: dashboardActionsLimited.filter((a) => a.priority === "medium").length,
       overdue72h: dashboardActionsLimited.filter((a) => a.ageHours >= 72).length,
       dismissedToday: dismissedActionIds.size,
+      blocked: blockedDashboardActionsCount,
     }
     const conversionFunnel = buildConversionFunnel(conversionLogs)
 

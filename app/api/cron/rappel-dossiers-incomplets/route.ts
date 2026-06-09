@@ -6,6 +6,7 @@ import { SITE_URL } from "@/lib/site-url"
 import { sendOperationsAlert } from "@/lib/operations-alert"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import { getAutoReminderBlockedTargetIds } from "@/lib/auto-reminder-blocking"
 import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 import { getInsuranceProductLabelLower } from "@/lib/insurance-product"
 
@@ -67,7 +68,15 @@ export async function GET(request: NextRequest) {
     const contractIds = approvedContracts.map((c) => c.id)
     const userIdsFromSignatures = [...new Set(pendingSignatures.map((p) => p.userId))]
 
-    const [signatureUsers, signatureSentToday, contractSentToday, signatureAdminAlertsToday, contractAdminAlertsToday] = await Promise.all([
+    const [
+      signatureUsers,
+      signatureSentToday,
+      contractSentToday,
+      signatureAdminAlertsToday,
+      contractAdminAlertsToday,
+      blockedPendingSignatureIds,
+      blockedInsuranceContractIds,
+    ] = await Promise.all([
       userIdsFromSignatures.length > 0
         ? prisma.user.findMany({
             where: { id: { in: userIdsFromSignatures } },
@@ -118,6 +127,8 @@ export async function GET(request: NextRequest) {
             select: { targetId: true },
           })
         : Promise.resolve([]),
+      getAutoReminderBlockedTargetIds("pending_signature", signatureIds),
+      getAutoReminderBlockedTargetIds("insurance_contract", contractIds),
     ])
 
     const signatureUserById = new Map(signatureUsers.map((u) => [u.id, u]))
@@ -133,8 +144,13 @@ export async function GET(request: NextRequest) {
     let skippedNoEmail = 0
     let skippedAlreadyDoneToday = 0
     let skippedUnsubscribed = 0
+    let skippedBlocked = 0
 
     for (const pending of pendingSignatures) {
+      if (blockedPendingSignatureIds.has(pending.signatureRequestId)) {
+        skippedBlocked++
+        continue
+      }
       const user = signatureUserById.get(pending.userId)
       const email = user?.email?.trim().toLowerCase() || ""
       if (!email) {
@@ -207,6 +223,10 @@ export async function GET(request: NextRequest) {
     }
 
     for (const contract of approvedContracts) {
+      if (blockedInsuranceContractIds.has(contract.id)) {
+        skippedBlocked++
+        continue
+      }
       const user = contract.user
       const email = user?.email?.trim().toLowerCase() || ""
       if (!email) {
@@ -303,6 +323,7 @@ export async function GET(request: NextRequest) {
       skippedNoEmail,
       skippedAlreadyDoneToday,
       skippedUnsubscribed,
+      skippedBlocked,
     })
   } catch (error) {
     console.error("[cron rappel-dossiers-incomplets]", error)

@@ -38,6 +38,57 @@ function buildRectificationDashboard(signatureRequestId: string) {
   }
 }
 
+function buildGestionDashboardWithActions(
+  actions: Array<{
+    id: string
+    kind:
+      | "signature_pending"
+      | "approved_unpaid_contract"
+      | "decennale_lead_followup"
+      | "do_etude_pending"
+      | "rc_fabriquant_pending"
+      | "dda_proof_missing"
+      | "dda_avenant_missing"
+      | "dda_rc_fabriquant_missing"
+      | "assurance_titre_pending"
+    priority: "high" | "medium"
+    title: string
+    description: string
+    href: string
+    ageHours: number
+    canBlockAutoReminders?: boolean
+  }>
+) {
+  return {
+    users: [],
+    documents: [],
+    payments: [],
+    avenantFees: [],
+    devisDoLeads: [],
+    devisRcFabriquantLeads: [],
+    devisAssuranceTitreLeads: [],
+    devisEtudeLeads: [],
+    resiliationLogs: [],
+    resiliationRequests: [],
+    adminActivityLogs: [],
+    devisLeads: [],
+    devisDrafts: [],
+    pendingSignatures: [],
+    sepaSubscriptions: [],
+    insuranceContractsCount: 0,
+    insuranceContracts: [],
+    dashboardActions: actions,
+    dashboardActionsSummary: {
+      total: actions.length,
+      high: actions.filter((action) => action.priority === "high").length,
+      medium: actions.filter((action) => action.priority === "medium").length,
+      overdue72h: actions.filter((action) => action.ageHours >= 72).length,
+      dismissedToday: 0,
+      blocked: 0,
+    },
+  }
+}
+
 async function mockGestionRectificationAuth(page: import("@playwright/test").Page) {
   await page.route("**/api/auth/session", async (route) => {
     await route.fulfill({
@@ -173,6 +224,71 @@ test.describe("Gestion CRM — signatures en attente", () => {
     await expect(page.getByText("Réparation signature effectuée.")).toBeVisible()
     await expect(page.getByText("Aucune signature en attente.")).toBeVisible()
     await expect(page.getByText("CTR-RECTIF-001")).not.toBeVisible()
+  })
+})
+
+test.describe("Gestion CRM — actions du jour", () => {
+  test("Blocage relances auto : la ligne disparaît même si le refresh dashboard échoue", async ({ page }) => {
+    const actionId = "sig-33333333-3333-4333-8333-333333333333"
+    await mockGestionRectificationAuth(page)
+
+    let dashboardCalls = 0
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      dashboardCalls += 1
+      if (dashboardCalls === 1) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(
+            buildGestionDashboardWithActions([
+              {
+                id: actionId,
+                kind: "signature_pending",
+                priority: "high",
+                title: "Signature en attente",
+                description: "Référence CTR-REL-001 — 48h",
+                href: "#signatures-attente",
+                ageHours: 48,
+                canBlockAutoReminders: true,
+              },
+            ])
+          ),
+        })
+        return
+      }
+
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "refresh unavailable" }),
+      })
+    })
+
+    let blockPayload: unknown = null
+    await page.route("**/api/gestion/actions-du-jour/block-reminders", async (route) => {
+      blockPayload = route.request().postDataJSON()
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, blocked: true }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await expect(page.getByRole("heading", { name: "Actions du jour (automatique)" })).toBeVisible()
+    await expect(page.getByText("Signature en attente")).toBeVisible()
+
+    page.once("dialog", (dialog) => {
+      expect(dialog.message()).toContain("Bloquer définitivement")
+      void dialog.accept()
+    })
+    await page.getByRole("button", { name: "Bloquer relances auto" }).click()
+
+    expect(blockPayload).toEqual({ actionId })
+    await expect(page.getByText("Relances automatiques bloquées pour ce dossier.")).toBeVisible()
+    await expect(page.getByText("Signature en attente")).not.toBeVisible()
+    await expect(page.getByText("Relances bloquées : 1")).toBeVisible()
+    await expect(page.getByText("Aucune action pour ce filtre.")).toBeVisible()
   })
 })
 

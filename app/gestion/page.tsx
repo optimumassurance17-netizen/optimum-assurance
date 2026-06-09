@@ -388,6 +388,7 @@ interface DashboardData {
     description: string
     href: string
     ageHours: number
+    canBlockAutoReminders?: boolean
     remediation?: {
       kind: "dda"
       toEmail: string
@@ -404,6 +405,7 @@ interface DashboardData {
     medium: number
     overdue72h: number
     dismissedToday?: number
+    blocked?: number
   }
   conversionFunnel?: {
     windowDays: number
@@ -492,6 +494,7 @@ export default function GestionPage() {
   const [cancellingSignatureId, setCancellingSignatureId] = useState<string | null>(null)
   const [repairingSignatureId, setRepairingSignatureId] = useState<string | null>(null)
   const [dismissingActionId, setDismissingActionId] = useState<string | null>(null)
+  const [blockingReminderActionId, setBlockingReminderActionId] = useState<string | null>(null)
   const [remediatingActionId, setRemediatingActionId] = useState<string | null>(null)
   const [bulkRemediatingDda, setBulkRemediatingDda] = useState(false)
   const [sendingComptaRelanceId, setSendingComptaRelanceId] = useState<string | null>(null)
@@ -545,11 +548,48 @@ export default function GestionPage() {
       }
     } catch (error) {
       console.warn(
-        "[gestion] refresh dashboard after signature action:",
+        "[gestion] refresh dashboard snapshot:",
         error instanceof Error ? error.message : String(error)
       )
     }
   }, [])
+
+  const removeDashboardActionLocally = useCallback(
+    (
+      actionId: string,
+      options?: {
+        incrementDismissed?: boolean
+        incrementBlocked?: boolean
+      }
+    ) => {
+      setData((prev) => {
+        if (!prev?.dashboardActions) return prev
+        const nextActions = prev.dashboardActions.filter((action) => action.id !== actionId)
+        if (nextActions.length === prev.dashboardActions.length) return prev
+
+        return {
+          ...prev,
+          dashboardActions: nextActions,
+          dashboardActionsSummary: prev.dashboardActionsSummary
+            ? {
+                ...prev.dashboardActionsSummary,
+                total: nextActions.length,
+                high: nextActions.filter((action) => action.priority === "high").length,
+                medium: nextActions.filter((action) => action.priority === "medium").length,
+                overdue72h: nextActions.filter((action) => action.ageHours >= 72).length,
+                dismissedToday:
+                  (prev.dashboardActionsSummary.dismissedToday ?? 0) +
+                  (options?.incrementDismissed ? 1 : 0),
+                blocked:
+                  (prev.dashboardActionsSummary.blocked ?? 0) +
+                  (options?.incrementBlocked ? 1 : 0),
+              }
+            : prev.dashboardActionsSummary,
+        }
+      })
+    },
+    []
+  )
 
   const handleCreateLeadAccount = async (leadId: string, leadType: string) => {
     setCreatingLeadAccountId(leadId)
@@ -1744,7 +1784,9 @@ export default function GestionPage() {
               >
                 Comptabilité & impayés V2
               </a>
-              {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
+              {data.dashboardActionsSummary &&
+                ((data.dashboardActionsSummary.total ?? 0) > 0 ||
+                  (data.dashboardActionsSummary.blocked ?? 0) > 0) && (
                 <a
                   href="#actions-du-jour"
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#4a2c08] text-amber-100 border border-amber-700/70 hover:bg-[#5c3710]"
@@ -2609,7 +2651,9 @@ export default function GestionPage() {
                   >
                     Ouvrir les contrats plateforme
                   </a>
-                  {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 ? (
+                  {data.dashboardActionsSummary &&
+                  ((data.dashboardActionsSummary.total ?? 0) > 0 ||
+                    (data.dashboardActionsSummary.blocked ?? 0) > 0) ? (
                     <a
                       href="#actions-du-jour"
                       className="text-xs px-2.5 py-1.5 rounded border border-amber-700/70 text-amber-100 hover:bg-amber-900/30"
@@ -2621,7 +2665,9 @@ export default function GestionPage() {
               </section>
             )}
 
-            {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
+            {data.dashboardActionsSummary &&
+              ((data.dashboardActionsSummary.total ?? 0) > 0 ||
+                (data.dashboardActionsSummary.blocked ?? 0) > 0) && (
               <section id="actions-du-jour" className="scroll-mt-24 bg-[#252525] rounded-xl p-5 border border-amber-700/60">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <h2 className="text-lg font-semibold text-white">Actions du jour (automatique)</h2>
@@ -2638,6 +2684,11 @@ export default function GestionPage() {
                     <span className="px-2 py-1 rounded bg-gray-800 text-gray-200 border border-gray-600">
                       Traitées aujourd&apos;hui : {data.dashboardActionsSummary.dismissedToday ?? 0}
                     </span>
+                    {(data.dashboardActionsSummary.blocked ?? 0) > 0 ? (
+                      <span className="px-2 py-1 rounded bg-slate-800 text-slate-100 border border-slate-600">
+                        Relances bloquées : {data.dashboardActionsSummary.blocked}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
                 <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
@@ -2800,9 +2851,64 @@ export default function GestionPage() {
                               {remediatingActionId === a.id ? "…" : "Remédier auto DDA"}
                             </button>
                           ) : null}
+                          {a.canBlockAutoReminders ? (
+                            <button
+                              type="button"
+                              disabled={blockingReminderActionId === a.id}
+                              onClick={async () => {
+                                if (
+                                  !window.confirm(
+                                    "Bloquer définitivement les relances automatiques pour ce dossier ?"
+                                  )
+                                ) {
+                                  return
+                                }
+
+                                setBlockingReminderActionId(a.id)
+                                try {
+                                  const res = await fetch("/api/gestion/actions-du-jour/block-reminders", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ actionId: a.id }),
+                                  })
+                                  const j = await readResponseJson<{
+                                    error?: string
+                                    alreadyBlocked?: boolean
+                                  }>(res)
+                                  if (!res.ok) {
+                                    throw new Error(
+                                      j.error || "Impossible de bloquer les relances automatiques."
+                                    )
+                                  }
+
+                                  removeDashboardActionLocally(a.id, { incrementBlocked: true })
+                                  void refreshDashboardSnapshot()
+                                  setToast({
+                                    message: j.alreadyBlocked
+                                      ? "Relances automatiques déjà bloquées pour ce dossier."
+                                      : "Relances automatiques bloquées pour ce dossier.",
+                                    type: "success",
+                                  })
+                                } catch (err) {
+                                  setToast({
+                                    message:
+                                      err instanceof Error
+                                        ? err.message
+                                        : "Erreur lors du blocage des relances automatiques",
+                                    type: "error",
+                                  })
+                                } finally {
+                                  setBlockingReminderActionId(null)
+                                }
+                              }}
+                              className="text-xs px-2.5 py-1.5 rounded border border-slate-500 text-slate-100 hover:border-slate-300 hover:bg-slate-800/50 disabled:opacity-50"
+                            >
+                              {blockingReminderActionId === a.id ? "…" : "Bloquer relances auto"}
+                            </button>
+                          ) : null}
                           <button
                             type="button"
-                            disabled={dismissingActionId === a.id}
+                            disabled={dismissingActionId === a.id || blockingReminderActionId === a.id}
                             onClick={async () => {
                               setDismissingActionId(a.id)
                               try {
@@ -2814,8 +2920,8 @@ export default function GestionPage() {
                                 const j = await readResponseJson<{ error?: string }>(res)
                                 if (!res.ok) throw new Error(j.error || "Impossible de marquer l'action comme traitée.")
 
-                                const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
-                                if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                removeDashboardActionLocally(a.id, { incrementDismissed: true })
+                                void refreshDashboardSnapshot()
                                 setToast({ message: "Action marquée comme traitée.", type: "success" })
                               } catch (err) {
                                 setToast({
