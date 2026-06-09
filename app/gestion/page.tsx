@@ -525,6 +525,32 @@ export default function GestionPage() {
     )
   }
 
+  const removePendingSignatureLocally = useCallback((signatureRequestId: string) => {
+    setData((prev) => {
+      if (!prev?.pendingSignatures) return prev
+      return {
+        ...prev,
+        pendingSignatures: prev.pendingSignatures.filter(
+          (signature) => signature.signatureRequestId !== signatureRequestId
+        ),
+      }
+    })
+  }, [])
+
+  const refreshDashboardSnapshot = useCallback(async () => {
+    try {
+      const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+      if (dashRes.ok) {
+        setData(await readResponseJson<DashboardData>(dashRes))
+      }
+    } catch (error) {
+      console.warn(
+        "[gestion] refresh dashboard after signature action:",
+        error instanceof Error ? error.message : String(error)
+      )
+    }
+  }, [])
+
   const handleCreateLeadAccount = async (leadId: string, leadType: string) => {
     setCreatingLeadAccountId(leadId)
     try {
@@ -3135,9 +3161,9 @@ export default function GestionPage() {
                                     )
                                     const j = (await readResponseJson(res)) as { error?: string; message?: string }
                                     if (!res.ok) throw new Error(j.error || res.statusText)
+                                    removePendingSignatureLocally(s.signatureRequestId)
                                     setToast({ message: j.message || "Demande annulée.", type: "success" })
-                                    const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
-                                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                    await refreshDashboardSnapshot()
                                   } catch (e) {
                                     setToast({
                                       message: e instanceof Error ? e.message : "Annulation impossible.",
@@ -3172,9 +3198,9 @@ export default function GestionPage() {
                                       })
                                       const j = (await readResponseJson(res)) as { error?: string; message?: string }
                                       if (!res.ok) throw new Error(j.error || res.statusText)
+                                      removePendingSignatureLocally(s.signatureRequestId)
                                       setToast({ message: j.message || "Finalisation relancée.", type: "success" })
-                                      const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
-                                      if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                                      await refreshDashboardSnapshot()
                                     } catch (e) {
                                       setToast({
                                         message: e instanceof Error ? e.message : "Relance impossible.",

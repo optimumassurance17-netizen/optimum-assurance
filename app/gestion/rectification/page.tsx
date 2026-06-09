@@ -124,6 +124,29 @@ export default function GestionRectificationPage() {
     })
   }
 
+  const removePendingSignatureLocally = (signatureRequestId: string) => {
+    setData((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        pendingSignatures: prev.pendingSignatures.filter(
+          (signature) => signature.signatureRequestId !== signatureRequestId
+        ),
+      }
+    })
+  }
+
+  const refreshDashboardSafely = async () => {
+    try {
+      await loadDashboard()
+    } catch (error) {
+      console.warn(
+        "[gestion/rectification] refresh dashboard after signature action:",
+        error instanceof Error ? error.message : String(error)
+      )
+    }
+  }
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/connexion?callbackUrl=/gestion/rectification")
@@ -582,7 +605,8 @@ export default function GestionRectificationPage() {
                             )
                             const json = await readResponseJson<{ error?: string }>(res)
                             if (!res.ok) throw new Error(json.error || "Annulation impossible")
-                            await loadDashboard()
+                            removePendingSignatureLocally(s.signatureRequestId)
+                            await refreshDashboardSafely()
                             setToast({ type: "success", message: "Signature en attente annulée." })
                           } catch (error) {
                             setToast({
@@ -612,7 +636,8 @@ export default function GestionRectificationPage() {
                               })
                               const json = await readResponseJson<{ error?: string }>(res)
                               if (!res.ok) throw new Error(json.error || "Réparation impossible")
-                              await loadDashboard()
+                              removePendingSignatureLocally(s.signatureRequestId)
+                              await refreshDashboardSafely()
                               setToast({ type: "success", message: "Réparation signature effectuée." })
                             } catch (error) {
                               setToast({
