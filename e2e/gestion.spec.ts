@@ -275,8 +275,9 @@ test.describe("Gestion CRM — actions du jour", () => {
     })
 
     await page.goto("/gestion")
+    const actionsSection = page.locator("#actions-du-jour")
     await expect(page.getByRole("heading", { name: "Actions du jour (automatique)" })).toBeVisible()
-    await expect(page.getByText("Signature en attente")).toBeVisible()
+    await expect(actionsSection.getByRole("link", { name: /Signature en attente/ })).toBeVisible()
 
     page.once("dialog", (dialog) => {
       expect(dialog.message()).toContain("Bloquer définitivement")
@@ -286,7 +287,7 @@ test.describe("Gestion CRM — actions du jour", () => {
 
     expect(blockPayload).toEqual({ actionId })
     await expect(page.getByText("Relances automatiques bloquées pour ce dossier.")).toBeVisible()
-    await expect(page.getByText("Signature en attente")).not.toBeVisible()
+    await expect(actionsSection.getByRole("link", { name: /Signature en attente/ })).toHaveCount(0)
     await expect(page.getByText("Relances bloquées : 1")).toBeVisible()
     await expect(page.getByText("Aucune action pour ce filtre.")).toBeVisible()
   })
