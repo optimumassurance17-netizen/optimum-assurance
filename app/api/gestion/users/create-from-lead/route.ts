@@ -1,23 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { hash } from "bcryptjs"
+import { Prisma } from "@/lib/prisma-client"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
-import { SITE_URL } from "@/lib/site-url"
 import { sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
 import { extractClientIdentityFromRecord, mergeClientIdentity } from "@/lib/client-identity-extract"
-
-function generateTempPassword(): string {
-  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
-  let pwd = ""
-  for (let i = 0; i < 12; i++) {
-    pwd += chars[Math.floor(Math.random() * chars.length)]
-  }
-  return pwd
-}
+import { generateTempPassword, sendClientAccessEmail } from "@/lib/client-access"
 
 type SupportedLeadType =
   | "dommage_ouvrage"
@@ -52,6 +43,88 @@ function parseLeadData(raw: string | null | undefined): Record<string, unknown> 
   } catch {
     return {}
   }
+}
+
+function isSchemaDriftError(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2021" || error.code === "P2022")
+  )
+}
+
+const USER_CREATE_SELECT = {
+  id: true,
+  email: true,
+  raisonSociale: true,
+} as const
+
+type CreateLeadUserParams = {
+  email: string
+  passwordHash: string
+  raisonSociale: string
+  siret: string | null
+  telephone: string | null
+  adresse: string | null
+  codePostal: string | null
+  ville: string | null
+  doInitialQuestionnaireJson?: string
+  titleInitialQuestionnaireJson?: string
+}
+
+async function createLeadUserWithSchemaFallback(params: CreateLeadUserParams) {
+  const baseData = {
+    email: params.email,
+    passwordHash: params.passwordHash,
+    raisonSociale: params.raisonSociale,
+  }
+  const identityData = {
+    ...(params.siret ? { siret: params.siret } : {}),
+    ...(params.telephone ? { telephone: params.telephone } : {}),
+    ...(params.adresse ? { adresse: params.adresse } : {}),
+    ...(params.codePostal ? { codePostal: params.codePostal } : {}),
+    ...(params.ville ? { ville: params.ville } : {}),
+  }
+  const questionnaireData = {
+    ...(params.doInitialQuestionnaireJson
+      ? { doInitialQuestionnaireJson: params.doInitialQuestionnaireJson }
+      : {}),
+    ...(params.titleInitialQuestionnaireJson
+      ? { titleInitialQuestionnaireJson: params.titleInitialQuestionnaireJson }
+      : {}),
+  }
+
+  const attempts = [
+    { label: "full", data: { ...baseData, ...identityData, ...questionnaireData } },
+    {
+      label: "without-title-questionnaire",
+      data: {
+        ...baseData,
+        ...identityData,
+        ...(params.doInitialQuestionnaireJson
+          ? { doInitialQuestionnaireJson: params.doInitialQuestionnaireJson }
+          : {}),
+      },
+    },
+    { label: "without-questionnaires", data: { ...baseData, ...identityData } },
+    { label: "minimal", data: baseData },
+  ] as const
+
+  let lastSchemaError: unknown = null
+  for (const attempt of attempts) {
+    try {
+      const user = await prisma.user.create({
+        data: attempt.data,
+        select: USER_CREATE_SELECT,
+      })
+      return { user, usedFallback: attempt.label !== "full" }
+    } catch (error) {
+      if (!isSchemaDriftError(error)) throw error
+      lastSchemaError = error
+      console.warn("[gestion/users/create-from-lead] schema drift fallback:", attempt.label)
+    }
+  }
+
+  throw lastSchemaError ?? new Error("Création utilisateur impossible")
 }
 
 export async function POST(request: NextRequest) {
@@ -109,15 +182,78 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Lead introuvable" }, { status: 404 })
     }
 
-    const existing = await prisma.user.findUnique({
-      where: { email: lead.email.toLowerCase() },
+    const normalizedEmail = lead.email.trim().toLowerCase()
+    const existing = await prisma.user.findFirst({
+      where: {
+        email: {
+          equals: normalizedEmail,
+          mode: "insensitive",
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        raisonSociale: true,
+      },
     })
 
     if (existing) {
-      return NextResponse.json(
-        { error: "Un compte existe déjà avec cet email", userId: existing.id },
-        { status: 400 }
-      )
+      const tempPassword = generateTempPassword()
+      const passwordHash = await hash(tempPassword, 12)
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { passwordHash },
+      })
+
+      const sent = await sendClientAccessEmail({
+        email: existing.email,
+        tempPassword,
+        mode: "resent",
+      })
+
+      if (!sent) {
+        await logAdminActivity({
+          adminEmail: session.user.email || "admin",
+          action: "user_create_from_lead_existing_access_email_failed",
+          targetType: "user",
+          targetId: existing.id,
+          details: {
+            email: existing.email,
+            leadId,
+            leadType,
+          },
+        })
+
+        return NextResponse.json({
+          id: existing.id,
+          email: existing.email,
+          raisonSociale: existing.raisonSociale,
+          accessMode: "resent",
+          emailSent: false,
+          warning:
+            "Compte existant détecté, mais email d'accès non envoyé. Utilisez ensuite 'Créer / renvoyer accès client' depuis la fiche client ou la gestion.",
+        })
+      }
+
+      await logAdminActivity({
+        adminEmail: session.user.email || "admin",
+        action: "user_create_from_lead_existing_access_sent",
+        targetType: "user",
+        targetId: existing.id,
+        details: {
+          email: existing.email,
+          leadId,
+          leadType,
+        },
+      })
+
+      return NextResponse.json({
+        id: existing.id,
+        email: existing.email,
+        raisonSociale: existing.raisonSociale,
+        accessMode: "resent",
+        emailSent: true,
+      })
     }
 
     const tempPassword = generateTempPassword()
@@ -139,40 +275,51 @@ export async function POST(request: NextRequest) {
     const codePostal = leadIdentity.codePostal ?? null
     const ville = leadIdentity.ville ?? null
 
-    const user = await prisma.user.create({
-      data: {
-        email: lead.email.toLowerCase(),
-        passwordHash,
-        raisonSociale: raisonSociale || lead.email,
-        ...(siret ? { siret } : {}),
-        ...(telephone ? { telephone } : {}),
-        ...(adresse ? { adresse } : {}),
-        ...(codePostal ? { codePostal } : {}),
-        ...(ville ? { ville } : {}),
-        ...(leadType === "dommage_ouvrage" && "data" in lead ? { doInitialQuestionnaireJson: lead.data } : {}),
-        ...(leadType === "assurance_titre" && "data" in lead
-          ? { titleInitialQuestionnaireJson: lead.data }
-          : {}),
-      },
+    const { user, usedFallback } = await createLeadUserWithSchemaFallback({
+      email: normalizedEmail,
+      passwordHash,
+      raisonSociale: raisonSociale || normalizedEmail,
+      siret,
+      telephone,
+      adresse,
+      codePostal,
+      ville,
+      ...(leadType === "dommage_ouvrage" && "data" in lead
+        ? { doInitialQuestionnaireJson: lead.data }
+        : {}),
+      ...(leadType === "assurance_titre" && "data" in lead
+        ? { titleInitialQuestionnaireJson: lead.data }
+        : {}),
     })
 
-    const template = {
-      subject: "Votre compte Optimum Assurance a été créé",
-      text: `Bonjour,\n\nVotre compte a été créé pour accéder à votre espace client.\n\nEmail : ${user.email}\nMot de passe temporaire : ${tempPassword}\n\nConnectez-vous et changez votre mot de passe dès que possible : ${SITE_URL}/connexion\n\nCordialement,\nOptimum Assurance`,
-      html: `<p>Bonjour,</p><p>Votre compte a été créé pour accéder à votre espace client.</p><p><strong>Email :</strong> ${user.email}<br><strong>Mot de passe temporaire :</strong> ${tempPassword}</p><p><a href="${SITE_URL}/connexion" style="color:#2563eb;font-weight:bold">Se connecter à mon espace client</a></p><p>Pensez à changer votre mot de passe dès la première connexion.</p><p>Cordialement,<br>Optimum Assurance</p>`,
-    }
-
-    const sent = await sendEmail({
-      to: user.email,
-      subject: template.subject,
-      text: template.text,
-      html: template.html,
+    const sent = await sendClientAccessEmail({
+      email: user.email,
+      tempPassword,
+      mode: "created",
     })
+
     if (!sent) {
-      return NextResponse.json(
-        { error: "Envoi de l'email client impossible (RESEND_API_KEY / domaine expéditeur)" },
-        { status: 503 }
-      )
+      await logAdminActivity({
+        adminEmail: session.user.email || "admin",
+        action: "user_create_from_lead_access_email_failed",
+        targetType: "user",
+        targetId: user.id,
+        details: {
+          email: user.email,
+          leadId,
+          leadType,
+        },
+      })
+
+      return NextResponse.json({
+        id: user.id,
+        email: user.email,
+        raisonSociale: user.raisonSociale,
+        accessMode: "created",
+        emailSent: false,
+        warning:
+          "Compte créé, mais email d'accès non envoyé. Utilisez ensuite 'Créer / renvoyer accès client' depuis la fiche client ou la gestion.",
+      })
     }
 
     const accountCreationAlertSent = await sendAccountCreationSummaryAlert({
@@ -199,6 +346,7 @@ export async function POST(request: NextRequest) {
         leadId,
         leadType,
         accountCreationAlertSent,
+        usedSchemaFallback: usedFallback,
       },
     })
 
@@ -206,6 +354,8 @@ export async function POST(request: NextRequest) {
       id: user.id,
       email: user.email,
       raisonSociale: user.raisonSociale,
+      accessMode: "created",
+      emailSent: true,
     })
   } catch (error) {
     console.error("Erreur création compte depuis lead:", error)

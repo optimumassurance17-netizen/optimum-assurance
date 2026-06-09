@@ -4,6 +4,66 @@ const e2eAdminEmail = process.env.E2E_ADMIN_EMAIL?.trim()
 const e2eAdminPassword = process.env.E2E_ADMIN_PASSWORD?.trim()
 const hasE2EAdminCreds = Boolean(e2eAdminEmail && e2eAdminPassword)
 
+const MOCK_ADMIN_SESSION = {
+  user: {
+    id: "admin_e2e",
+    email: "admin@example.com",
+    name: "Admin Optimum",
+  },
+  expires: "2099-01-01T00:00:00.000Z",
+}
+
+function buildGestionDashboardWithDecennaleLead() {
+  return {
+    users: [],
+    documents: [],
+    payments: [],
+    avenantFees: [],
+    devisDoLeads: [],
+    devisRcFabriquantLeads: [],
+    devisAssuranceTitreLeads: [],
+    devisEtudeLeads: [],
+    resiliationLogs: [],
+    resiliationRequests: [],
+    adminActivityLogs: [],
+    devisLeads: [
+      {
+        id: "lead_dec_1",
+        email: "lead@example.com",
+        raisonSociale: "Lead Exemple",
+        siret: "12345678901234",
+        primeAnnuelle: 1200,
+        rappelSentAt: null,
+        createdAt: "2026-06-09T08:00:00.000Z",
+        slaHours: 36,
+      },
+    ],
+    devisDrafts: [],
+    pendingSignatures: [],
+    sepaSubscriptions: [],
+    insuranceContractsCount: 0,
+    insuranceContracts: [],
+    dashboardActions: [],
+    dashboardActionsSummary: {
+      total: 0,
+      high: 0,
+      medium: 0,
+      overdue72h: 0,
+      dismissedToday: 0,
+    },
+  }
+}
+
+async function mockGestionAuth(page: import("@playwright/test").Page) {
+  await page.route("**/api/auth/session", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_ADMIN_SESSION),
+    })
+  })
+}
+
 test.describe("Gestion CRM — accès et API", () => {
   test("Sans session : redirection vers la connexion avec retour /gestion", async ({ page }) => {
     await page.goto("/gestion")
@@ -42,6 +102,82 @@ test.describe("Gestion CRM — accès et API", () => {
       expect(res.status()).toBe(503)
       expect(j.database).toBe("disconnected")
     }
+  })
+})
+
+test.describe("Gestion CRM — création compte lead", () => {
+  test("Compte déjà existant côté serveur : l'accès est renvoyé sans erreur UI", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildGestionDashboardWithDecennaleLead()),
+      })
+    })
+
+    let createPayload: unknown = null
+    await page.route("**/api/gestion/users/create-from-lead", async (route) => {
+      createPayload = route.request().postDataJSON()
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "user_existing_1",
+          email: "lead@example.com",
+          raisonSociale: "Lead Exemple",
+          accessMode: "resent",
+          emailSent: true,
+        }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await expect(page.getByRole("button", { name: "Créer le compte" })).toBeVisible()
+    await page.getByRole("button", { name: "Créer le compte" }).click()
+
+    expect(createPayload).toEqual({ leadId: "lead_dec_1", leadType: "decennale" })
+    await expect(page.getByText("Accès client renvoyé à lead@example.com")).toBeVisible()
+    await expect(page.getByRole("link", { name: /Compte existant/ })).toBeVisible()
+  })
+
+  test("Lead décennale : compte créé même si l'email d'accès échoue", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildGestionDashboardWithDecennaleLead()),
+      })
+    })
+
+    await page.route("**/api/gestion/users/create-from-lead", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "user_new_1",
+          email: "lead@example.com",
+          raisonSociale: "Lead Exemple",
+          accessMode: "created",
+          emailSent: false,
+          warning:
+            "Compte créé, mais email d'accès non envoyé. Utilisez ensuite 'Créer / renvoyer accès client' depuis la fiche client ou la gestion.",
+        }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await page.getByRole("button", { name: "Créer le compte" }).click()
+
+    await expect(
+      page.getByText(
+        "Compte créé, mais email d'accès non envoyé. Utilisez ensuite 'Créer / renvoyer accès client' depuis la fiche client ou la gestion."
+      )
+    ).toBeVisible()
+    await expect(page.getByRole("link", { name: /Compte existant/ })).toBeVisible()
   })
 })
 

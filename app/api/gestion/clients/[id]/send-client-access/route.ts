@@ -4,18 +4,8 @@ import { hash } from "bcryptjs"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { sendEmail } from "@/lib/email"
-import { SITE_URL } from "@/lib/site-url"
 import { logAdminActivity } from "@/lib/admin-activity"
-
-function generateTempPassword(): string {
-  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
-  let pwd = ""
-  for (let i = 0; i < 12; i++) {
-    pwd += chars[Math.floor(Math.random() * chars.length)]
-  }
-  return pwd
-}
+import { generateTempPassword, sendClientAccessEmail } from "@/lib/client-access"
 
 /**
  * Depuis la fiche client : (re)génère un accès espace client
@@ -47,15 +37,10 @@ export async function POST(
       data: { passwordHash },
     })
 
-    const subject = "Accès espace client — Optimum Assurance"
-    const text = `Bonjour,\n\nVotre accès à l’espace client Optimum Assurance est prêt.\n\nEmail : ${user.email}\nMot de passe temporaire : ${tempPassword}\n\nConnexion : ${SITE_URL}/connexion\nMerci de changer votre mot de passe dès la première connexion.\n\nCordialement,\nOptimum Assurance`
-    const html = `<p>Bonjour,</p><p>Votre accès à l’espace client Optimum Assurance est prêt.</p><p><strong>Email :</strong> ${user.email}<br><strong>Mot de passe temporaire :</strong> ${tempPassword}</p><p><a href="${SITE_URL}/connexion" style="color:#2563eb;font-weight:bold">Se connecter à mon espace client</a></p><p>Merci de changer votre mot de passe dès la première connexion.</p><p>Cordialement,<br>Optimum Assurance</p>`
-
-    const sent = await sendEmail({
-      to: user.email,
-      subject,
-      text,
-      html,
+    const sent = await sendClientAccessEmail({
+      email: user.email,
+      tempPassword,
+      mode: "resent",
     })
     if (!sent) {
       return NextResponse.json(
@@ -72,7 +57,7 @@ export async function POST(
       details: { email: user.email },
     })
 
-    return NextResponse.json({ ok: true, email: user.email })
+    return NextResponse.json({ ok: true, sentTo: user.email })
   } catch (error) {
     console.error("Erreur envoi accès espace client:", error)
     return NextResponse.json(

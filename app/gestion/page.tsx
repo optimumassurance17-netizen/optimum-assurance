@@ -415,6 +415,27 @@ interface DashboardData {
   }
 }
 
+type LeadAccountCreationResponse = {
+  id?: string
+  email?: string
+  raisonSociale?: string | null
+  accessMode?: "created" | "resent"
+  emailSent?: boolean
+  warning?: string
+  error?: string
+}
+
+function getLeadAccountSuccessMessage(
+  response: Pick<LeadAccountCreationResponse, "email" | "accessMode" | "warning">,
+  fallbackEmail?: string
+): string {
+  if (response.warning?.trim()) return response.warning.trim()
+  const email = response.email || fallbackEmail || "ce client"
+  return response.accessMode === "resent"
+    ? `Accès client renvoyé à ${email}`
+    : `Compte créé pour ${email}`
+}
+
 type RcFabLeadRow = NonNullable<DashboardData["devisRcFabriquantLeads"]>[number]
 type PendingSignatureRow = NonNullable<DashboardData["pendingSignatures"]>[number]
 type SepaSubscriptionRow = NonNullable<DashboardData["sepaSubscriptions"]>[number]
@@ -525,6 +546,49 @@ export default function GestionPage() {
     )
   }
 
+  const upsertUserLocally = useCallback(
+    (user: { id: string; email: string; raisonSociale?: string | null }) => {
+      setData((prev) => {
+        if (!prev?.users) return prev
+        const existingById = prev.users.findIndex((row) => row.id === user.id)
+        const nextUser = {
+          id: user.id,
+          email: user.email,
+          raisonSociale: user.raisonSociale ?? null,
+          siret: null,
+          createdAt: new Date().toISOString(),
+        }
+
+        if (existingById >= 0) {
+          const nextUsers = [...prev.users]
+          nextUsers[existingById] = {
+            ...nextUsers[existingById],
+            email: user.email,
+            raisonSociale: user.raisonSociale ?? nextUsers[existingById].raisonSociale,
+          }
+          return { ...prev, users: nextUsers }
+        }
+
+        const existingByEmail = prev.users.findIndex(
+          (row) => row.email.toLowerCase() === user.email.toLowerCase()
+        )
+        if (existingByEmail >= 0) {
+          const nextUsers = [...prev.users]
+          nextUsers[existingByEmail] = {
+            ...nextUsers[existingByEmail],
+            id: user.id,
+            email: user.email,
+            raisonSociale: user.raisonSociale ?? nextUsers[existingByEmail].raisonSociale,
+          }
+          return { ...prev, users: nextUsers }
+        }
+
+        return { ...prev, users: [nextUser, ...prev.users] }
+      })
+    },
+    []
+  )
+
   const handleCreateLeadAccount = async (leadId: string, leadType: string) => {
     setCreatingLeadAccountId(leadId)
     try {
@@ -533,9 +597,19 @@ export default function GestionPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leadId, leadType }),
       })
-      const json = await readResponseJson<{ error?: string; email?: string }>(res)
+      const json = await readResponseJson<LeadAccountCreationResponse>(res)
       if (!res.ok) throw new Error(json.error || "Erreur création compte")
-      setToast({ message: `Compte créé pour ${json.email}`, type: "success" })
+      if (json.id && json.email) {
+        upsertUserLocally({
+          id: json.id,
+          email: json.email,
+          raisonSociale: json.raisonSociale ?? null,
+        })
+      }
+      setToast({
+        message: getLeadAccountSuccessMessage(json),
+        type: json.warning ? "error" : "success",
+      })
       const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
       if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
     } catch (err) {
@@ -4278,31 +4352,11 @@ export default function GestionPage() {
                             ) : (
                               <button
                                 type="button"
-                                onClick={async () => {
-                                  try {
-                                    const res = await fetch("/api/gestion/users/create-from-lead", {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ leadId: d.id, leadType: "rc_fabriquant" }),
-                                    })
-                                    const json = await readResponseJson<{ error?: string; email?: string }>(res)
-                                    if (!res.ok) throw new Error(json.error || "Erreur")
-                                    setToast({
-                                      message: `Espace client créé pour ${json.email || d.email}`,
-                                      type: "success",
-                                    })
-                                    const dashRes = await fetch("/api/gestion/dashboard")
-                                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
-                                  } catch (err) {
-                                    setToast({
-                                      message: err instanceof Error ? err.message : "Erreur",
-                                      type: "error",
-                                    })
-                                  }
-                                }}
-                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-sky-500/70 text-sky-200 hover:bg-sky-900/30"
+                                disabled={creatingLeadAccountId === d.id}
+                                onClick={() => void handleCreateLeadAccount(d.id, "rc_fabriquant")}
+                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-sky-500/70 text-sky-200 hover:bg-sky-900/30 disabled:opacity-40 disabled:pointer-events-none"
                               >
-                                Créer espace client
+                                {creatingLeadAccountId === d.id ? "Création..." : "Créer espace client"}
                               </button>
                             )}
                             {(propositionCopy || signatureCopy) && (
@@ -4430,31 +4484,11 @@ export default function GestionPage() {
                             ) : (
                               <button
                                 type="button"
-                                onClick={async () => {
-                                  try {
-                                    const res = await fetch("/api/gestion/users/create-from-lead", {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ leadId: d.id, leadType: "assurance_titre" }),
-                                    })
-                                    const json = await readResponseJson<{ error?: string; email?: string }>(res)
-                                    if (!res.ok) throw new Error(json.error || "Erreur")
-                                    setToast({
-                                      message: `Espace client créé pour ${json.email || d.email}`,
-                                      type: "success",
-                                    })
-                                    const dashRes = await fetch("/api/gestion/dashboard")
-                                    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
-                                  } catch (err) {
-                                    setToast({
-                                      message: err instanceof Error ? err.message : "Erreur",
-                                      type: "error",
-                                    })
-                                  }
-                                }}
-                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-sky-500/70 text-sky-200 hover:bg-sky-900/30"
+                                disabled={creatingLeadAccountId === d.id}
+                                onClick={() => void handleCreateLeadAccount(d.id, "assurance_titre")}
+                                className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-sky-500/70 text-sky-200 hover:bg-sky-900/30 disabled:opacity-40 disabled:pointer-events-none"
                               >
-                                Créer espace client
+                                {creatingLeadAccountId === d.id ? "Création..." : "Créer espace client"}
                               </button>
                             )}
                           </div>
@@ -4501,25 +4535,11 @@ export default function GestionPage() {
                           {!matchingUser ? (
                             <button
                               type="button"
-                              onClick={async () => {
-                                try {
-                                  const res = await fetch("/api/gestion/users/create-from-lead", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ leadId: d.id }),
-                                  })
-                                  const json = await readResponseJson<{ error?: string; email?: string }>(res)
-                                  if (!res.ok) throw new Error(json.error || "Erreur")
-                                  setToast({ message: `Compte créé pour ${json.email}`, type: "success" })
-                                  const dashRes = await fetch("/api/gestion/dashboard")
-                                  if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
-                                } catch (err) {
-                                  setToast({ message: err instanceof Error ? err.message : "Erreur", type: "error" })
-                                }
-                              }}
-                              className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 py-2 -m-1"
+                              disabled={creatingLeadAccountId === d.id}
+                              onClick={() => void handleCreateLeadAccount(d.id, "dommage_ouvrage")}
+                              className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 py-2 -m-1 disabled:opacity-40 disabled:pointer-events-none"
                             >
-                              Créer le compte
+                              {creatingLeadAccountId === d.id ? "Création..." : "Créer le compte"}
                             </button>
                           ) : null}
                         </td>
