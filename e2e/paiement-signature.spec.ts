@@ -259,9 +259,11 @@ test.describe("Tunnel signature et paiement", () => {
 
     await expect(page).toHaveURL(/\/confirmation\?payment_id=pay_test_resume_123/)
     expect(createPaymentBody).not.toBeNull()
-    expect(
-      (createPaymentBody?.metadata as { contractNumero?: string } | undefined)?.contractNumero
-    ).toBe("CTR-TEST-RESUME-001")
+    const paymentMetadata =
+      createPaymentBody && typeof createPaymentBody.metadata === "object" && createPaymentBody.metadata
+        ? (createPaymentBody.metadata as { contractNumero?: string })
+        : undefined
+    expect(paymentMetadata?.contractNumero).toBe("CTR-TEST-RESUME-001")
   })
 
   test("DO : confirmation de paiement contrat plateforme", async ({ page }) => {
