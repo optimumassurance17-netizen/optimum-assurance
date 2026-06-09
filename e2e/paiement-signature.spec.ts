@@ -169,6 +169,12 @@ test.describe("Tunnel signature et paiement", () => {
 
     await expect(page).toHaveURL(/\/confirmation\?payment_id=pay_test_123/)
     await expect(page.getByRole("heading", { name: "Souscription confirmée" })).toBeVisible()
+    await expect(
+      page.getByText(
+        "Votre premier trimestre a bien été réglé par carte bancaire. Les échéances suivantes seront"
+      )
+    ).toBeVisible()
+    await expect(page.getByText("reconduction automatique annuelle")).toBeVisible()
     await expect(page.getByRole("link", { name: "Accéder à mon espace client" })).toBeVisible()
   })
 

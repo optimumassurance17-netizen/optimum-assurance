@@ -338,7 +338,10 @@ export default function ConfirmationPage() {
               ) : decennalePremierTrimestreCarte
                 ? (
                     <>
-                      par <strong>SEPA trimestriel</strong> sur l’IBAN du mandat, avec <strong>reconduction automatique annuelle</strong>. Vous recevrez votre attestation par email dans les prochaines minutes.
+                      Votre premier trimestre a bien été réglé par carte bancaire. Les échéances suivantes seront
+                      prélevées par <strong>SEPA trimestriel</strong> sur l’IBAN du mandat, avec{" "}
+                      <strong>reconduction automatique annuelle</strong>. Vous recevrez votre attestation par email dans
+                      les prochaines minutes.
                     </>
                   )
                 : "Votre assurance décennale a été souscrite avec succès. Vous recevrez votre attestation par email dans les prochaines minutes."}
