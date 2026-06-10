@@ -144,6 +144,29 @@ test.describe("API validations critiques", () => {
     expect(res.status()).toBe(401)
   })
 
+  test("RC Pro create quote: route protégée sans session", async ({ request }) => {
+    const res = await request.post("/api/rcpro/create-quote", {
+      data: {
+        activity: "Conseil informatique",
+        revenue: 120000,
+        employees: 2,
+        riskLevel: 3,
+        options: [],
+      },
+    })
+    expect(res.status()).toBe(401)
+  })
+
+  test("RC Pro liste devis: route protégée sans session", async ({ request }) => {
+    const res = await request.get("/api/rcpro/get-user-quotes")
+    expect(res.status()).toBe(401)
+  })
+
+  test("RC Pro détail devis: route protégée sans session", async ({ request }) => {
+    const res = await request.get("/api/rcpro/get-quote-by-id?id=quote_test")
+    expect(res.status()).toBe(401)
+  })
+
   test("Gestion signature depuis devis: route admin protégée sans session", async ({ request }) => {
     const res = await request.post("/api/gestion/sign/send-from-devis", {
       data: { documentId: "doc_test" },
