@@ -64,6 +64,38 @@ async function mockGestionAuth(page: import("@playwright/test").Page) {
   })
 }
 
+function buildGestionClientData() {
+  return {
+    user: {
+      id: "client_1",
+      email: "client@example.com",
+      raisonSociale: "",
+      siret: "",
+      adresse: "",
+      codePostal: "",
+      ville: "",
+      telephone: "",
+      createdAt: "2026-06-09T08:00:00.000Z",
+      doInitialQuestionnaireJson: null,
+      doEtudeQuestionnaireJson: null,
+      titleInitialQuestionnaireJson: null,
+      titleEtudeQuestionnaireJson: null,
+    },
+    documents: [],
+    payments: [],
+    avenantFees: [],
+    notes: [],
+    sinistres: [],
+    userDocuments: [],
+    userDocumentReviews: {},
+    devisAutonomy: null,
+    dda: {
+      consents: [],
+      events: [],
+    },
+  }
+}
+
 test.describe("Gestion CRM — accès et API", () => {
   test("Sans session : redirection vers la connexion avec retour /gestion", async ({ page }) => {
     await page.goto("/gestion")
@@ -178,6 +210,50 @@ test.describe("Gestion CRM — création compte lead", () => {
       )
     ).toBeVisible()
     await expect(page.getByRole("link", { name: /Compte existant/ })).toBeVisible()
+  })
+})
+
+test.describe("Gestion CRM — Sirene", () => {
+  test("Fiche client : préremplit la raison sociale et l'adresse via Sirene", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    await page.route("**/api/gestion/clients/client_1", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildGestionClientData()),
+      })
+    })
+
+    await page.route("**/api/siret?siret=73282932000074", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          raisonSociale: "EXEMPLE BATIMENT SAS",
+          adresse: "10 rue de Paris",
+          codePostal: "75001",
+          ville: "Paris",
+        }),
+      })
+    })
+
+    await page.goto("/gestion/clients/client_1")
+    await expect(page.getByRole("heading", { name: "Fiche client" })).toBeVisible()
+
+    const siretField = page.locator("label").filter({ hasText: /^SIRET$/ }).first().locator("xpath=..")
+    await siretField.locator("input").fill("73282932000074")
+    await siretField.getByRole("button", { name: "Remplir via Sirene" }).click()
+
+    const raisonInput = page.locator("label").filter({ hasText: /^Raison sociale$/ }).first().locator("xpath=..").locator("input")
+    const adresseInput = page.locator("label").filter({ hasText: /^Adresse$/ }).first().locator("xpath=..").locator("input")
+    const codePostalInput = page.locator("label").filter({ hasText: /^Code postal$/ }).first().locator("xpath=..").locator("input")
+    const villeInput = page.locator("label").filter({ hasText: /^Ville$/ }).first().locator("xpath=..").locator("input")
+
+    await expect(raisonInput).toHaveValue("EXEMPLE BATIMENT SAS")
+    await expect(adresseInput).toHaveValue("10 rue de Paris")
+    await expect(codePostalInput).toHaveValue("75001")
+    await expect(villeInput).toHaveValue("Paris")
   })
 })
 
