@@ -1,16 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next"
-import { getServerSession } from "next-auth"
 import { getToken } from "next-auth/jwt"
-import { authOptions } from "@/lib/auth"
 
 export async function getCoreApiUserId(
   req: NextApiRequest,
-  res: NextApiResponse
+  _res: NextApiResponse
 ): Promise<string | null> {
-  // Les endpoints RC Pro vivent encore sous pages/api. En prod, la lecture de
-  // session via getServerSession(req, res, authOptions) peut échouer avec un
-  // routeur App Router + session JWT. On lit d'abord le JWT directement pour
-  // renvoyer un 401 propre sans transformer l'absence de session en 500.
+  // Les endpoints RC Pro vivent sous pages/api et ne doivent pas dépendre de
+  // lib/auth, car ce module importe Prisma via `server-only`, incompatible ici.
+  // La session NextAuth est en stratégie JWT : lire le token suffit pour
+  // distinguer proprement utilisateur connecté vs. anonyme.
   try {
     const token = await getToken({
       req,
@@ -19,13 +17,7 @@ export async function getCoreApiUserId(
     if (typeof token?.id === "string" && token.id.trim()) {
       return token.id
     }
-  } catch {
-    // Fallback silencieux vers getServerSession ci-dessous.
-  }
-
-  try {
-    const session = await getServerSession(req, res, authOptions)
-    return session?.user?.id ?? null
+    return null
   } catch {
     return null
   }
