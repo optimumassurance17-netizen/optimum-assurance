@@ -13,7 +13,7 @@ export default async function handler(
     return
   }
 
-  const userId = await getCoreApiUserId(req, res)
+  const userId = await getCoreApiUserId(req)
   if (!userId) {
     res.status(401).json({ error: "Non authentifié" })
     return
