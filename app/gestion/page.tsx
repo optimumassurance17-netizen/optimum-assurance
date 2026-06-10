@@ -358,6 +358,7 @@ interface DashboardData {
     productType: string
     exclusionsJson?: string | null
     clientName: string
+    siret?: string | null
     userId: string | null
     premium: number
     status: string
@@ -442,6 +443,35 @@ type RcFabLeadRow = NonNullable<DashboardData["devisRcFabriquantLeads"]>[number]
 type PendingSignatureRow = NonNullable<DashboardData["pendingSignatures"]>[number]
 type SepaSubscriptionRow = NonNullable<DashboardData["sepaSubscriptions"]>[number]
 type InsuranceContractRow = NonNullable<DashboardData["insuranceContracts"]>[number]
+type DashboardUserRow = DashboardData["users"][number]
+type ResolvedInsuranceContractRow = InsuranceContractRow & { clientUserId: string | null }
+
+function normalizeDashboardLookupValue(value: string | null | undefined): string {
+  return value?.trim().toLowerCase() ?? ""
+}
+
+function buildUniqueUserLookup(
+  users: DashboardUserRow[],
+  getKey: (user: DashboardUserRow) => string
+): Map<string, DashboardUserRow> {
+  const unique = new Map<string, DashboardUserRow>()
+  const duplicates = new Set<string>()
+
+  for (const user of users) {
+    const key = getKey(user)
+    if (!key || duplicates.has(key)) continue
+
+    if (unique.has(key)) {
+      unique.delete(key)
+      duplicates.add(key)
+      continue
+    }
+
+    unique.set(key, user)
+  }
+
+  return unique
+}
 
 export default function GestionPage() {
   const { status } = useSession()
@@ -942,6 +972,39 @@ export default function GestionPage() {
   const filteredAttestations = useMemo(() => filterBySearch(attestations, searchQuery), [attestations, searchQuery])
   const filteredContrats = useMemo(() => filterBySearch(contrats, searchQuery), [contrats, searchQuery])
 
+  const dashboardUserLookup = useMemo(() => {
+    const users = data?.users ?? []
+    return {
+      userByEmail: new Map(
+        users
+          .map((user) => [normalizeDashboardLookupValue(user.email), user] as const)
+          .filter(([email]) => Boolean(email))
+      ),
+      userBySiret: buildUniqueUserLookup(users, (user) => normalizeDashboardLookupValue(user.siret)),
+      userByCompanyName: buildUniqueUserLookup(users, (user) => normalizeDashboardLookupValue(user.raisonSociale)),
+    }
+  }, [data?.users])
+
+  const resolvedInsuranceContracts = useMemo<ResolvedInsuranceContractRow[]>(() => {
+    const contracts = data?.insuranceContracts ?? []
+
+    return contracts.map((contract) => {
+      if (contract.user?.id || contract.userId) {
+        return { ...contract, clientUserId: contract.user?.id ?? contract.userId }
+      }
+
+      const normalizedClientName = normalizeDashboardLookupValue(contract.clientName)
+      const normalizedSiret = normalizeDashboardLookupValue(contract.siret)
+      const matchedUser =
+        (normalizedClientName.includes("@") ? dashboardUserLookup.userByEmail.get(normalizedClientName) : null) ??
+        (normalizedSiret ? dashboardUserLookup.userBySiret.get(normalizedSiret) : null) ??
+        (normalizedClientName ? dashboardUserLookup.userByCompanyName.get(normalizedClientName) : null) ??
+        null
+
+      return { ...contract, clientUserId: matchedUser?.id ?? null }
+    })
+  }, [data?.insuranceContracts, dashboardUserLookup])
+
   const conversionSteps = useMemo(() => {
     const counts = data?.conversionFunnel?.counts ?? {}
     const rates = data?.conversionFunnel?.rates ?? {}
@@ -1029,7 +1092,7 @@ export default function GestionPage() {
     const rcFabriquantLeads = data.devisRcFabriquantLeads ?? []
     const doEtudeLeads = data.devisEtudeLeads ?? []
     const pendingSignatures = data.pendingSignatures ?? []
-    const contracts = data.insuranceContracts ?? []
+    const contracts = resolvedInsuranceContracts
 
     const totalLeads = decennaleLeads.length + rcFabriquantLeads.length + doEtudeLeads.length
     const hotLeads =
@@ -1104,7 +1167,7 @@ export default function GestionPage() {
         },
       ],
     }
-  }, [data])
+  }, [data, resolvedInsuranceContracts])
 
   const comptabiliteV2 = useMemo(() => {
     if (!data) return null
@@ -1112,7 +1175,7 @@ export default function GestionPage() {
     const DAY_MS = 24 * 60 * 60 * 1000
     const now = Date.now()
     const payments = data.payments ?? []
-    const contracts: InsuranceContractRow[] = data.insuranceContracts ?? []
+    const contracts: ResolvedInsuranceContractRow[] = resolvedInsuranceContracts
     const sepaSubscriptions: SepaSubscriptionRow[] = data.sepaSubscriptions ?? []
 
     const paidPayments = payments.filter((p) => p.status.toLowerCase() === "paid")
@@ -1279,7 +1342,7 @@ export default function GestionPage() {
         .sort((a, b) => a.daysUntil - b.daysUntil)
         .slice(0, 6),
     }
-  }, [data])
+  }, [data, resolvedInsuranceContracts])
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -2946,7 +3009,7 @@ export default function GestionPage() {
 
         {data && Array.isArray(data.insuranceContracts) && (
           <InsuranceContractsGestionBlock
-            contracts={data.insuranceContracts}
+            contracts={resolvedInsuranceContracts}
             searchQuery={searchQuery}
             onRefresh={async () => {
               const dashRes = await fetch("/api/gestion/dashboard")
