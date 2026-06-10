@@ -30,8 +30,10 @@ import { getSession, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Toast } from "@/components/Toast"
+import { ClientQuickSearch } from "@/components/gestion/ClientQuickSearch"
 import { InsuranceContractsGestionBlock } from "@/components/gestion/InsuranceContractsGestionBlock"
 import { readResponseJson } from "@/lib/read-response-json"
+import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { extractClientIdentityFromRecord } from "@/lib/client-identity-extract"
 import {
   RC_FABRIQUANT_LEAD_STATUT_LABELS,
@@ -503,6 +505,8 @@ export default function GestionPage() {
     form: EditContratForm
   } | null>(null)
   const [editSubmitting, setEditSubmitting] = useState(false)
+  const [editModalSireneLoading, setEditModalSireneLoading] = useState(false)
+  const [editModalSireneError, setEditModalSireneError] = useState<string | null>(null)
   const [etudeMiseModal, setEtudeMiseModal] = useState<{
     id: string
     email: string
@@ -753,6 +757,8 @@ export default function GestionPage() {
     } catch {
       /* ignore */
     }
+    setEditModalSireneError(null)
+    setEditModalSireneLoading(false)
     setEditModal({
       docId: doc.id,
       type: doc.type as "contrat" | "avenant",
@@ -760,6 +766,39 @@ export default function GestionPage() {
       form: editFormFromDocData(parsed),
     })
   }, [])
+
+  const handleEditModalSireneFill = useCallback(async () => {
+    if (!editModal) return
+    setEditModalSireneError(null)
+    setEditModalSireneLoading(true)
+    try {
+      const siret = normalizeSiretForLookup(editModal.form.siret)
+      const sirene = await fetchClientSireneLookup(siret)
+      setEditModal((current) =>
+        current
+          ? {
+              ...current,
+              form: {
+                ...current.form,
+                siret,
+                raisonSociale: sirene.raisonSociale || current.form.raisonSociale,
+                adresse: sirene.adresse || current.form.adresse,
+                codePostal: sirene.codePostal || current.form.codePostal,
+                ville: sirene.ville || current.form.ville,
+              },
+            }
+          : current
+      )
+      setToast({
+        message: "Coordonnées Sirene préremplies dans le document. Pensez à enregistrer.",
+        type: "success",
+      })
+    } catch (err) {
+      setEditModalSireneError(err instanceof Error ? err.message : "Erreur Sirene")
+    } finally {
+      setEditModalSireneLoading(false)
+    }
+  }, [editModal])
 
   const handleSaveEdit = async () => {
     if (!editModal) return
@@ -821,6 +860,8 @@ export default function GestionPage() {
       const patchBody = await readResponseJson<{ error?: string }>(res)
       if (!res.ok) throw new Error(patchBody.error || "Erreur")
       setEditModal(null)
+      setEditModalSireneError(null)
+      setEditModalSireneLoading(false)
       setToast({ message: "Modification enregistrée", type: "success" })
       const dashRes = await fetch("/api/gestion/dashboard")
       if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
@@ -1737,32 +1778,39 @@ export default function GestionPage() {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-10">
         {data && (
           <>
-            <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <input
-                  type="search"
-                  placeholder="Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant)..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-[29rem]"
-                />
-                {searchQuery.trim() ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-gray-600 text-gray-200 hover:border-gray-500"
-                  >
-                    Effacer
-                  </button>
-                ) : null}
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start">
+              <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <input
+                    type="search"
+                    placeholder="Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant)..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-[29rem]"
+                  />
+                  {searchQuery.trim() ? (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-gray-600 text-gray-200 hover:border-gray-500"
+                    >
+                      Effacer
+                    </button>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDashboardLoadKey((k) => k + 1)}
+                  className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-[#2563eb]/70 text-[#93c5fd] hover:bg-[#2563eb]/20"
+                >
+                  Rafraîchir les données
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setDashboardLoadKey((k) => k + 1)}
-                className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-[#2563eb]/70 text-[#93c5fd] hover:bg-[#2563eb]/20"
-              >
-                Rafraîchir les données
-              </button>
+              <ClientQuickSearch
+                label="Recherche fiche client"
+                placeholder="Nom, email ou SIRET"
+                helperText="Ouvre directement la fiche client sans scroller le dashboard."
+              />
             </div>
             <nav
               className="flex flex-wrap gap-2 items-center rounded-xl border border-gray-700 bg-[#222] px-4 py-3"
@@ -4762,7 +4810,14 @@ export default function GestionPage() {
 
       {/* Modal modification contrat / avenant — données alignées sur le JSON contrat / PDF */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 overflow-y-auto py-6 px-2" onClick={() => setEditModal(null)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 overflow-y-auto py-6 px-2"
+          onClick={() => {
+            setEditModal(null)
+            setEditModalSireneError(null)
+            setEditModalSireneLoading(false)
+          }}
+        >
           <div
             className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-3xl w-full mx-2 my-auto max-h-[92vh] overflow-y-auto shadow-xl"
             onClick={(e) => e.stopPropagation()}
@@ -4793,11 +4848,37 @@ export default function GestionPage() {
                   </div>
                   <div>
                     <label className="block text-gray-200 mb-1">SIRET</label>
-                    <input
-                      value={editModal.form.siret}
-                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, siret: e.target.value } } : m))}
-                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white font-mono"
-                    />
+                    <div className="space-y-2">
+                      <input
+                        value={editModal.form.siret}
+                        onChange={(e) => {
+                          setEditModalSireneError(null)
+                          setEditModal((m) =>
+                            m
+                              ? {
+                                  ...m,
+                                  form: { ...m.form, siret: normalizeSiretForLookup(e.target.value) },
+                                }
+                              : m
+                          )
+                        }}
+                        className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white font-mono"
+                      />
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={handleEditModalSireneFill}
+                          disabled={normalizeSiretForLookup(editModal.form.siret).length !== 14 || editModalSireneLoading}
+                          className="rounded-lg border border-sky-500/70 px-3 py-2 text-xs font-medium text-sky-100 hover:bg-sky-900/40 disabled:opacity-50"
+                        >
+                          {editModalSireneLoading ? "Recherche Sirene…" : "Remplir via Sirene"}
+                        </button>
+                        <span className="text-xs text-gray-400">
+                          Préremplit la raison sociale et l&apos;adresse depuis le SIRET.
+                        </span>
+                      </div>
+                      {editModalSireneError ? <p className="text-xs text-red-400">{editModalSireneError}</p> : null}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-gray-200 mb-1">Civilité</label>
@@ -5022,7 +5103,11 @@ export default function GestionPage() {
             <div className="flex flex-wrap gap-3 justify-end pt-2 border-t border-gray-700">
               <button
                 type="button"
-                onClick={() => setEditModal(null)}
+                onClick={() => {
+                  setEditModal(null)
+                  setEditModalSireneError(null)
+                  setEditModalSireneLoading(false)
+                }}
                 className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
               >
                 Annuler
