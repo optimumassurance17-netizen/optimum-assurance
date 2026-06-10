@@ -162,6 +162,7 @@ export default function PaiementPage() {
           primeAnnuelle: String(primeAnnuelle),
           fraisGestion: String(FRAIS_GESTION_PRELEVEMENT),
           premierPaiementCarte: "true",
+          contractNumero: data.signedContractNumero || "",
           prelevementsSuivantsSepa: "trimestriel",
           /** Pour création mandat SEPA Mollie (webhook) — métadonnées Mollie = chaînes */
           iban: mandat.iban.replace(/\s+/g, ""),

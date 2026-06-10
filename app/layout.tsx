@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { EQ_MENSUEL_MIN } from "@/lib/decennale-affichage-tarif";
 import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
@@ -123,6 +125,8 @@ export default function RootLayout({
           <CookieBanner />
           <StickyMobileCta />
         </SessionProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

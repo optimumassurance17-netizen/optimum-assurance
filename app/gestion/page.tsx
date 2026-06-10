@@ -30,8 +30,10 @@ import { getSession, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Toast } from "@/components/Toast"
+import { ClientQuickSearch } from "@/components/gestion/ClientQuickSearch"
 import { InsuranceContractsGestionBlock } from "@/components/gestion/InsuranceContractsGestionBlock"
 import { readResponseJson } from "@/lib/read-response-json"
+import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { extractClientIdentityFromRecord } from "@/lib/client-identity-extract"
 import {
   RC_FABRIQUANT_LEAD_STATUT_LABELS,
@@ -356,6 +358,7 @@ interface DashboardData {
     productType: string
     exclusionsJson?: string | null
     clientName: string
+    siret?: string | null
     userId: string | null
     premium: number
     status: string
@@ -440,6 +443,35 @@ type RcFabLeadRow = NonNullable<DashboardData["devisRcFabriquantLeads"]>[number]
 type PendingSignatureRow = NonNullable<DashboardData["pendingSignatures"]>[number]
 type SepaSubscriptionRow = NonNullable<DashboardData["sepaSubscriptions"]>[number]
 type InsuranceContractRow = NonNullable<DashboardData["insuranceContracts"]>[number]
+type DashboardUserRow = DashboardData["users"][number]
+type ResolvedInsuranceContractRow = InsuranceContractRow & { clientUserId: string | null }
+
+function normalizeDashboardLookupValue(value: string | null | undefined): string {
+  return value?.trim().toLowerCase() ?? ""
+}
+
+function buildUniqueUserLookup(
+  users: DashboardUserRow[],
+  getKey: (user: DashboardUserRow) => string
+): Map<string, DashboardUserRow> {
+  const unique = new Map<string, DashboardUserRow>()
+  const duplicates = new Set<string>()
+
+  for (const user of users) {
+    const key = getKey(user)
+    if (!key || duplicates.has(key)) continue
+
+    if (unique.has(key)) {
+      unique.delete(key)
+      duplicates.add(key)
+      continue
+    }
+
+    unique.set(key, user)
+  }
+
+  return unique
+}
 
 export default function GestionPage() {
   const { status } = useSession()
@@ -503,6 +535,8 @@ export default function GestionPage() {
     form: EditContratForm
   } | null>(null)
   const [editSubmitting, setEditSubmitting] = useState(false)
+  const [editModalSireneLoading, setEditModalSireneLoading] = useState(false)
+  const [editModalSireneError, setEditModalSireneError] = useState<string | null>(null)
   const [etudeMiseModal, setEtudeMiseModal] = useState<{
     id: string
     email: string
@@ -753,6 +787,8 @@ export default function GestionPage() {
     } catch {
       /* ignore */
     }
+    setEditModalSireneError(null)
+    setEditModalSireneLoading(false)
     setEditModal({
       docId: doc.id,
       type: doc.type as "contrat" | "avenant",
@@ -760,6 +796,39 @@ export default function GestionPage() {
       form: editFormFromDocData(parsed),
     })
   }, [])
+
+  const handleEditModalSireneFill = useCallback(async () => {
+    if (!editModal) return
+    setEditModalSireneError(null)
+    setEditModalSireneLoading(true)
+    try {
+      const siret = normalizeSiretForLookup(editModal.form.siret)
+      const sirene = await fetchClientSireneLookup(siret)
+      setEditModal((current) =>
+        current
+          ? {
+              ...current,
+              form: {
+                ...current.form,
+                siret,
+                raisonSociale: sirene.raisonSociale || current.form.raisonSociale,
+                adresse: sirene.adresse || current.form.adresse,
+                codePostal: sirene.codePostal || current.form.codePostal,
+                ville: sirene.ville || current.form.ville,
+              },
+            }
+          : current
+      )
+      setToast({
+        message: "Coordonnées Sirene préremplies dans le document. Pensez à enregistrer.",
+        type: "success",
+      })
+    } catch (err) {
+      setEditModalSireneError(err instanceof Error ? err.message : "Erreur Sirene")
+    } finally {
+      setEditModalSireneLoading(false)
+    }
+  }, [editModal])
 
   const handleSaveEdit = async () => {
     if (!editModal) return
@@ -821,6 +890,8 @@ export default function GestionPage() {
       const patchBody = await readResponseJson<{ error?: string }>(res)
       if (!res.ok) throw new Error(patchBody.error || "Erreur")
       setEditModal(null)
+      setEditModalSireneError(null)
+      setEditModalSireneLoading(false)
       setToast({ message: "Modification enregistrée", type: "success" })
       const dashRes = await fetch("/api/gestion/dashboard")
       if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
@@ -900,6 +971,39 @@ export default function GestionPage() {
   const filteredPayments = useMemo(() => (data ? filterBySearch(data.payments, searchQuery) : []), [data, searchQuery])
   const filteredAttestations = useMemo(() => filterBySearch(attestations, searchQuery), [attestations, searchQuery])
   const filteredContrats = useMemo(() => filterBySearch(contrats, searchQuery), [contrats, searchQuery])
+
+  const dashboardUserLookup = useMemo(() => {
+    const users = data?.users ?? []
+    return {
+      userByEmail: new Map(
+        users
+          .map((user) => [normalizeDashboardLookupValue(user.email), user] as const)
+          .filter(([email]) => Boolean(email))
+      ),
+      userBySiret: buildUniqueUserLookup(users, (user) => normalizeDashboardLookupValue(user.siret)),
+      userByCompanyName: buildUniqueUserLookup(users, (user) => normalizeDashboardLookupValue(user.raisonSociale)),
+    }
+  }, [data?.users])
+
+  const resolvedInsuranceContracts = useMemo<ResolvedInsuranceContractRow[]>(() => {
+    const contracts = data?.insuranceContracts ?? []
+
+    return contracts.map((contract) => {
+      if (contract.user?.id || contract.userId) {
+        return { ...contract, clientUserId: contract.user?.id ?? contract.userId }
+      }
+
+      const normalizedClientName = normalizeDashboardLookupValue(contract.clientName)
+      const normalizedSiret = normalizeDashboardLookupValue(contract.siret)
+      const matchedUser =
+        (normalizedClientName.includes("@") ? dashboardUserLookup.userByEmail.get(normalizedClientName) : null) ??
+        (normalizedSiret ? dashboardUserLookup.userBySiret.get(normalizedSiret) : null) ??
+        (normalizedClientName ? dashboardUserLookup.userByCompanyName.get(normalizedClientName) : null) ??
+        null
+
+      return { ...contract, clientUserId: matchedUser?.id ?? null }
+    })
+  }, [data?.insuranceContracts, dashboardUserLookup])
 
   const conversionSteps = useMemo(() => {
     const counts = data?.conversionFunnel?.counts ?? {}
@@ -988,7 +1092,7 @@ export default function GestionPage() {
     const rcFabriquantLeads = data.devisRcFabriquantLeads ?? []
     const doEtudeLeads = data.devisEtudeLeads ?? []
     const pendingSignatures = data.pendingSignatures ?? []
-    const contracts = data.insuranceContracts ?? []
+    const contracts = resolvedInsuranceContracts
 
     const totalLeads = decennaleLeads.length + rcFabriquantLeads.length + doEtudeLeads.length
     const hotLeads =
@@ -1063,7 +1167,7 @@ export default function GestionPage() {
         },
       ],
     }
-  }, [data])
+  }, [data, resolvedInsuranceContracts])
 
   const comptabiliteV2 = useMemo(() => {
     if (!data) return null
@@ -1071,7 +1175,7 @@ export default function GestionPage() {
     const DAY_MS = 24 * 60 * 60 * 1000
     const now = Date.now()
     const payments = data.payments ?? []
-    const contracts: InsuranceContractRow[] = data.insuranceContracts ?? []
+    const contracts: ResolvedInsuranceContractRow[] = resolvedInsuranceContracts
     const sepaSubscriptions: SepaSubscriptionRow[] = data.sepaSubscriptions ?? []
 
     const paidPayments = payments.filter((p) => p.status.toLowerCase() === "paid")
@@ -1238,7 +1342,7 @@ export default function GestionPage() {
         .sort((a, b) => a.daysUntil - b.daysUntil)
         .slice(0, 6),
     }
-  }, [data])
+  }, [data, resolvedInsuranceContracts])
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -1737,32 +1841,39 @@ export default function GestionPage() {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-10">
         {data && (
           <>
-            <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <input
-                  type="search"
-                  placeholder="Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant)..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-[29rem]"
-                />
-                {searchQuery.trim() ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-gray-600 text-gray-200 hover:border-gray-500"
-                  >
-                    Effacer
-                  </button>
-                ) : null}
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start">
+              <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <input
+                    type="search"
+                    placeholder="Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant)..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-[29rem]"
+                  />
+                  {searchQuery.trim() ? (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-gray-600 text-gray-200 hover:border-gray-500"
+                    >
+                      Effacer
+                    </button>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDashboardLoadKey((k) => k + 1)}
+                  className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-[#2563eb]/70 text-[#93c5fd] hover:bg-[#2563eb]/20"
+                >
+                  Rafraîchir les données
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setDashboardLoadKey((k) => k + 1)}
-                className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-[#2563eb]/70 text-[#93c5fd] hover:bg-[#2563eb]/20"
-              >
-                Rafraîchir les données
-              </button>
+              <ClientQuickSearch
+                label="Recherche fiche client"
+                placeholder="Nom, email ou SIRET"
+                helperText="Ouvre directement la fiche client sans scroller le dashboard."
+              />
             </div>
             <nav
               className="flex flex-wrap gap-2 items-center rounded-xl border border-gray-700 bg-[#222] px-4 py-3"
@@ -2898,7 +3009,7 @@ export default function GestionPage() {
 
         {data && Array.isArray(data.insuranceContracts) && (
           <InsuranceContractsGestionBlock
-            contracts={data.insuranceContracts}
+            contracts={resolvedInsuranceContracts}
             searchQuery={searchQuery}
             onRefresh={async () => {
               const dashRes = await fetch("/api/gestion/dashboard")
@@ -4762,7 +4873,14 @@ export default function GestionPage() {
 
       {/* Modal modification contrat / avenant — données alignées sur le JSON contrat / PDF */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 overflow-y-auto py-6 px-2" onClick={() => setEditModal(null)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 overflow-y-auto py-6 px-2"
+          onClick={() => {
+            setEditModal(null)
+            setEditModalSireneError(null)
+            setEditModalSireneLoading(false)
+          }}
+        >
           <div
             className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-3xl w-full mx-2 my-auto max-h-[92vh] overflow-y-auto shadow-xl"
             onClick={(e) => e.stopPropagation()}
@@ -4793,11 +4911,37 @@ export default function GestionPage() {
                   </div>
                   <div>
                     <label className="block text-gray-200 mb-1">SIRET</label>
-                    <input
-                      value={editModal.form.siret}
-                      onChange={(e) => setEditModal((m) => (m ? { ...m, form: { ...m.form, siret: e.target.value } } : m))}
-                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white font-mono"
-                    />
+                    <div className="space-y-2">
+                      <input
+                        value={editModal.form.siret}
+                        onChange={(e) => {
+                          setEditModalSireneError(null)
+                          setEditModal((m) =>
+                            m
+                              ? {
+                                  ...m,
+                                  form: { ...m.form, siret: normalizeSiretForLookup(e.target.value) },
+                                }
+                              : m
+                          )
+                        }}
+                        className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white font-mono"
+                      />
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={handleEditModalSireneFill}
+                          disabled={normalizeSiretForLookup(editModal.form.siret).length !== 14 || editModalSireneLoading}
+                          className="rounded-lg border border-sky-500/70 px-3 py-2 text-xs font-medium text-sky-100 hover:bg-sky-900/40 disabled:opacity-50"
+                        >
+                          {editModalSireneLoading ? "Recherche Sirene…" : "Remplir via Sirene"}
+                        </button>
+                        <span className="text-xs text-gray-400">
+                          Préremplit la raison sociale et l&apos;adresse depuis le SIRET.
+                        </span>
+                      </div>
+                      {editModalSireneError ? <p className="text-xs text-red-400">{editModalSireneError}</p> : null}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-gray-200 mb-1">Civilité</label>
@@ -5022,7 +5166,11 @@ export default function GestionPage() {
             <div className="flex flex-wrap gap-3 justify-end pt-2 border-t border-gray-700">
               <button
                 type="button"
-                onClick={() => setEditModal(null)}
+                onClick={() => {
+                  setEditModal(null)
+                  setEditModalSireneError(null)
+                  setEditModalSireneLoading(false)
+                }}
                 className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
               >
                 Annuler

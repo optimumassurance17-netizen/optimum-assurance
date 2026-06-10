@@ -477,6 +477,7 @@ export async function GET() {
               productType: true,
               exclusionsJson: true,
               clientName: true,
+              siret: true,
               userId: true,
               premium: true,
               status: true,

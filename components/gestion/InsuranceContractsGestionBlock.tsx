@@ -19,6 +19,7 @@ export type InsuranceContractGestionRow = {
   exclusionsJson?: string | null
   clientName: string
   userId: string | null
+  clientUserId?: string | null
   premium: number
   status: string
   paidAt: string | null
@@ -169,6 +170,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                     ? rcFabInstallmentsFromExclusionsJson(c.exclusionsJson ?? null)
                     : 4
                 const rcFabAnnual = c.premium * rcFabInstallments
+                const clientUserId = c.clientUserId ?? c.userId
                 return (
                   <tr key={c.id} className="border-b border-gray-700/50">
                     <td className="p-3 sm:p-4">
@@ -293,8 +295,8 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                             </a>
                           </>
                         ) : null}
-                        {c.userId ? (
-                          <Link href={`/gestion/clients/${c.userId}`} className="text-[#2563eb] hover:underline text-xs">
+                        {clientUserId ? (
+                          <Link href={`/gestion/clients/${clientUserId}`} className="text-[#2563eb] hover:underline text-xs">
                             Fiche client
                           </Link>
                         ) : null}

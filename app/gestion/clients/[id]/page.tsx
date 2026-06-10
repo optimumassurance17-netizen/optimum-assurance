@@ -4,7 +4,9 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
+import { ClientQuickSearch } from "@/components/gestion/ClientQuickSearch"
 import { readResponseJson } from "@/lib/read-response-json"
+import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { Toast } from "@/components/Toast"
 
 function prettyQuestionnaireJson(raw: string | null | undefined): string {
@@ -271,6 +273,8 @@ export default function ClientDetailPage() {
     telephone: "",
   })
   const [profileSaving, setProfileSaving] = useState(false)
+  const [profileSireneLoading, setProfileSireneLoading] = useState(false)
+  const [profileSireneError, setProfileSireneError] = useState<string | null>(null)
   const [devisAutonomySaving, setDevisAutonomySaving] = useState(false)
   const [devisAutonomyForm, setDevisAutonomyForm] = useState<DevisAutonomyForm>({
     allowDevisEdition: false,
@@ -357,6 +361,31 @@ export default function ClientDetailPage() {
   const ddaConsents = data.dda?.consents ?? []
   const ddaEvents = data.dda?.events ?? []
   const questionnaireProfilePrefill = buildQuestionnaireProfilePrefill(user)
+
+  const handleProfileSireneFill = async () => {
+    setProfileSireneError(null)
+    setProfileSireneLoading(true)
+    try {
+      const siret = normalizeSiretForLookup(profileForm.siret)
+      const sirene = await fetchClientSireneLookup(siret)
+      setProfileForm((current) => ({
+        ...current,
+        siret,
+        raisonSociale: sirene.raisonSociale || current.raisonSociale,
+        adresse: sirene.adresse || current.adresse,
+        codePostal: sirene.codePostal || current.codePostal,
+        ville: sirene.ville || current.ville,
+      }))
+      setToast({
+        message: "Coordonnées Sirene préremplies. Vérifiez puis enregistrez la fiche.",
+        type: "success",
+      })
+    } catch (err) {
+      setProfileSireneError(err instanceof Error ? err.message : "Erreur Sirene")
+    } finally {
+      setProfileSireneLoading(false)
+    }
+  }
 
   return (
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
@@ -518,6 +547,13 @@ export default function ClientDetailPage() {
             Client depuis le {new Date(user.createdAt).toLocaleDateString("fr-FR")} — modifiez les coordonnées compte
             (connexion, facturation) ci-dessous.
           </p>
+          <div className="mb-4 rounded-xl border border-gray-700 bg-[#202020] p-4">
+            <ClientQuickSearch
+              label="Recherche rapide d'une autre fiche client"
+              placeholder="Nom, email ou SIRET"
+              helperText="Ouvre une autre fiche client sans revenir au dashboard."
+            />
+          </div>
           {questionnaireProfilePrefill ? (
             <div className="mb-4 rounded-lg border border-sky-800/60 bg-sky-950/20 p-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -685,11 +721,30 @@ export default function ClientDetailPage() {
               </div>
               <div>
                 <label className="block text-gray-200 mb-1">SIRET</label>
-                <input
-                  value={profileForm.siret}
-                  onChange={(e) => setProfileForm((f) => ({ ...f, siret: e.target.value }))}
-                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white font-mono"
-                />
+                <div className="space-y-2">
+                  <input
+                    value={profileForm.siret}
+                    onChange={(e) => {
+                      setProfileSireneError(null)
+                      setProfileForm((f) => ({ ...f, siret: normalizeSiretForLookup(e.target.value) }))
+                    }}
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white font-mono"
+                  />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleProfileSireneFill}
+                      disabled={normalizeSiretForLookup(profileForm.siret).length !== 14 || profileSireneLoading}
+                      className="rounded-lg border border-sky-500/70 px-3 py-2 text-xs font-medium text-sky-100 hover:bg-sky-900/40 disabled:opacity-50"
+                    >
+                      {profileSireneLoading ? "Recherche Sirene…" : "Remplir via Sirene"}
+                    </button>
+                    <span className="text-xs text-gray-400">
+                      Préremplit la raison sociale et l&apos;adresse depuis le SIRET.
+                    </span>
+                  </div>
+                  {profileSireneError ? <p className="text-xs text-red-400">{profileSireneError}</p> : null}
+                </div>
               </div>
               <div>
                 <label className="block text-gray-200 mb-1">Téléphone</label>
