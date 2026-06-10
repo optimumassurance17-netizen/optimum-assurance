@@ -10,6 +10,24 @@ async function dismissCookieBanner(page: import("@playwright/test").Page) {
   }
 }
 
+async function mockAdminSession(page: import("@playwright/test").Page) {
+  await page.route("**/api/auth/session", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: {
+          id: "admin_e2e",
+          email: "admin@example.com",
+          name: "Administrateur",
+          isAdmin: true,
+        },
+        expires: "2099-01-01T00:00:00.000Z",
+      }),
+    })
+  })
+}
+
 test.describe("Parcours devis → paiement → attestation", () => {
   test("Accès à la page devis et formulaire", async ({ page }) => {
     await page.goto("/devis")
@@ -22,6 +40,33 @@ test.describe("Parcours devis → paiement → attestation", () => {
     // Vérifier qu'on peut soumettre (bouton Remplir ou Calculer)
     const remplirBtn = page.getByRole("button", { name: "Remplir" })
     await expect(remplirBtn).toBeVisible()
+  })
+
+  test("Devis décennale : une session admin ne préremplit pas l'email client", async ({ page }) => {
+    await mockAdminSession(page)
+    await page.route("**/api/client/profile", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          email: "admin@example.com",
+          siret: "73282932000074",
+          raisonSociale: "Administrateur",
+        }),
+      })
+    })
+
+    await page.goto("/devis")
+    await dismissCookieBanner(page)
+
+    await page.locator('input[type="number"]').first().fill("80000")
+    await page.locator("#categorie-selection").selectOption({ label: "Toutes les catégories" })
+    await page.locator("#activite-recherche").fill("plomberie")
+    await page.locator("#activite-selection").selectOption("Plomberie sanitaire")
+    await page.getByRole("button", { name: "Ajouter" }).click()
+
+    await expect(page.getByRole("heading", { name: "Votre tarification" })).toBeVisible()
+    await expect(page.locator("#email-devis-save")).toHaveValue("")
   })
 
   test("Page accueil et navigation", async ({ page }) => {
