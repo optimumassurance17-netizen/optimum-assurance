@@ -64,7 +64,21 @@ async function mockGestionAuth(page: import("@playwright/test").Page) {
   })
 }
 
-function buildGestionClientData() {
+function buildGestionClientData(
+  overrides?: {
+    user?: Partial<{
+      id: string
+      email: string
+      raisonSociale: string
+      siret: string
+      adresse: string
+      codePostal: string
+      ville: string
+      telephone: string
+      createdAt: string
+    }>
+  }
+) {
   return {
     user: {
       id: "client_1",
@@ -80,6 +94,7 @@ function buildGestionClientData() {
       doEtudeQuestionnaireJson: null,
       titleInitialQuestionnaireJson: null,
       titleEtudeQuestionnaireJson: null,
+      ...(overrides?.user ?? {}),
     },
     documents: [],
     payments: [],
@@ -254,6 +269,76 @@ test.describe("Gestion CRM — Sirene", () => {
     await expect(adresseInput).toHaveValue("10 rue de Paris")
     await expect(codePostalInput).toHaveValue("75001")
     await expect(villeInput).toHaveValue("Paris")
+  })
+
+  test("Fiche client : recherche rapide ouvre une autre fiche client", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    await page.route("**/api/gestion/clients/client_1", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(
+          buildGestionClientData({
+            user: {
+              id: "client_1",
+              email: "client@example.com",
+              raisonSociale: "Alpha BTP",
+            },
+          })
+        ),
+      })
+    })
+
+    await page.route("**/api/gestion/clients/client_2", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(
+          buildGestionClientData({
+            user: {
+              id: "client_2",
+              email: "autre@example.com",
+              raisonSociale: "Beta Conseil",
+              siret: "98765432100012",
+            },
+          })
+        ),
+      })
+    })
+
+    await page.route("**/api/gestion/clients/search**", async (route) => {
+      const url = new URL(route.request().url())
+      const query = url.searchParams.get("q")?.toLowerCase() ?? ""
+      const results = query.includes("beta")
+        ? [
+            {
+              id: "client_2",
+              email: "autre@example.com",
+              raisonSociale: "Beta Conseil",
+              siret: "98765432100012",
+            },
+          ]
+        : []
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ results }),
+      })
+    })
+
+    await page.goto("/gestion/clients/client_1")
+    await expect(page.getByRole("heading", { name: "Fiche client" })).toBeVisible()
+
+    await page.getByLabel("Recherche rapide d'une autre fiche client").fill("Beta")
+    await expect(page.getByRole("link", { name: /Beta Conseil/ })).toBeVisible()
+    await page.getByRole("link", { name: /Beta Conseil/ }).click()
+
+    await expect(page).toHaveURL(/\/gestion\/clients\/client_2/)
+    const emailInput = page.locator("label").filter({ hasText: /^Email \(connexion\)$/ }).first().locator("xpath=..").locator("input")
+    const raisonInput = page.locator("label").filter({ hasText: /^Raison sociale$/ }).first().locator("xpath=..").locator("input")
+    await expect(emailInput).toHaveValue("autre@example.com")
+    await expect(raisonInput).toHaveValue("Beta Conseil")
   })
 })
 

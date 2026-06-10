@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
+import { ClientQuickSearch } from "@/components/gestion/ClientQuickSearch"
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { Toast } from "@/components/Toast"
@@ -546,6 +547,13 @@ export default function ClientDetailPage() {
             Client depuis le {new Date(user.createdAt).toLocaleDateString("fr-FR")} — modifiez les coordonnées compte
             (connexion, facturation) ci-dessous.
           </p>
+          <div className="mb-4 rounded-xl border border-gray-700 bg-[#202020] p-4">
+            <ClientQuickSearch
+              label="Recherche rapide d'une autre fiche client"
+              placeholder="Nom, email ou SIRET"
+              helperText="Ouvre une autre fiche client sans revenir au dashboard."
+            />
+          </div>
           {questionnaireProfilePrefill ? (
             <div className="mb-4 rounded-lg border border-sky-800/60 bg-sky-950/20 p-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

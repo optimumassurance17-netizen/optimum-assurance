@@ -30,6 +30,7 @@ import { getSession, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Toast } from "@/components/Toast"
+import { ClientQuickSearch } from "@/components/gestion/ClientQuickSearch"
 import { InsuranceContractsGestionBlock } from "@/components/gestion/InsuranceContractsGestionBlock"
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
@@ -1777,32 +1778,39 @@ export default function GestionPage() {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-10">
         {data && (
           <>
-            <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <input
-                  type="search"
-                  placeholder="Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant)..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-[29rem]"
-                />
-                {searchQuery.trim() ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-gray-600 text-gray-200 hover:border-gray-500"
-                  >
-                    Effacer
-                  </button>
-                ) : null}
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start">
+              <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <input
+                    type="search"
+                    placeholder="Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant)..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-[29rem]"
+                  />
+                  {searchQuery.trim() ? (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-gray-600 text-gray-200 hover:border-gray-500"
+                    >
+                      Effacer
+                    </button>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDashboardLoadKey((k) => k + 1)}
+                  className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-[#2563eb]/70 text-[#93c5fd] hover:bg-[#2563eb]/20"
+                >
+                  Rafraîchir les données
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setDashboardLoadKey((k) => k + 1)}
-                className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-[#2563eb]/70 text-[#93c5fd] hover:bg-[#2563eb]/20"
-              >
-                Rafraîchir les données
-              </button>
+              <ClientQuickSearch
+                label="Recherche fiche client"
+                placeholder="Nom, email ou SIRET"
+                helperText="Ouvre directement la fiche client sans scroller le dashboard."
+              />
             </div>
             <nav
               className="flex flex-wrap gap-2 items-center rounded-xl border border-gray-700 bg-[#222] px-4 py-3"
