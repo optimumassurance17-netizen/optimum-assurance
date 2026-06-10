@@ -4,6 +4,11 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { isDecennaleAttestationType } from "@/lib/decennale-impaye"
 
+function isPaidStatus(status: string): boolean {
+  const normalized = status.trim().toLowerCase()
+  return normalized === "paid" || normalized === "completed" || normalized === "succeeded"
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -11,7 +16,7 @@ export async function GET() {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const [documents, payments, activeContractsWithCertificate] = await Promise.all([
+    const [documents, payments, lifecyclePayments, activeContractsWithCertificate] = await Promise.all([
       prisma.document.findMany({
         where: { userId: session.user.id },
         select: { type: true, status: true },
@@ -19,7 +24,12 @@ export async function GET() {
       }),
       prisma.payment.findMany({
         where: { userId: session.user.id },
-        select: { amount: true, status: true, paidAt: true },
+        select: { molliePaymentId: true, amount: true, status: true, paidAt: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.contractLifecyclePayment.findMany({
+        where: { contract: { userId: session.user.id } },
+        select: { molliePaymentId: true, amount: true, status: true, paidAt: true, createdAt: true },
         orderBy: { createdAt: "desc" },
       }),
       prisma.insuranceContract.count({
@@ -43,15 +53,36 @@ export async function GET() {
     const suspendedCount = documents.filter(
       (d) => isDecennaleAttestationType(d.type) && d.status === "suspendu"
     ).length
-    const paidTotal = payments.filter((p) => p.status === "paid").reduce((acc, p) => acc + p.amount, 0)
+    const seenMollieIds = new Set<string>()
+    const unifiedPayments = [
+      ...payments.map((row) => {
+        if (row.molliePaymentId) seenMollieIds.add(row.molliePaymentId)
+        return row
+      }),
+      ...lifecyclePayments.filter((row) => !row.molliePaymentId || !seenMollieIds.has(row.molliePaymentId)),
+    ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    const paidPayments = unifiedPayments.filter((p) => isPaidStatus(p.status))
+    const paidTotal = paidPayments.reduce((acc, p) => acc + p.amount, 0)
+    const lastPaidPayment = paidPayments
+      .slice()
+      .sort((a, b) => {
+        const aRef = (a.paidAt ?? a.createdAt).getTime()
+        const bRef = (b.paidAt ?? b.createdAt).getTime()
+        return bRef - aRef
+      })[0]
 
     return NextResponse.json({
       documentsCount: documents.length,
       attestationsCount: attestations.length + activeContractsWithCertificate,
       suspendedCount,
-      paymentsCount: payments.length,
+      paymentsCount: unifiedPayments.length,
       paidTotal,
-      lastPayment: payments.find((p) => p.status === "paid"),
+      lastPayment: lastPaidPayment
+        ? {
+            amount: lastPaidPayment.amount,
+            paidAt: (lastPaidPayment.paidAt ?? lastPaidPayment.createdAt).toISOString(),
+          }
+        : undefined,
     })
   } catch (error) {
     console.error("Erreur summary client:", error)

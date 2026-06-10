@@ -10,13 +10,65 @@ export async function GET() {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
-    const payments = await prisma.payment.findMany({
-      where: { userId: session.user.id },
-      select: { id: true, amount: true, status: true, paidAt: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
-    })
+    const [paymentsRows, lifecycleRows] = await Promise.all([
+      prisma.payment.findMany({
+        where: { userId: session.user.id },
+        select: {
+          id: true,
+          molliePaymentId: true,
+          amount: true,
+          status: true,
+          paidAt: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.contractLifecyclePayment.findMany({
+        where: { contract: { userId: session.user.id } },
+        select: {
+          id: true,
+          molliePaymentId: true,
+          amount: true,
+          status: true,
+          paidAt: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    ])
 
-    return NextResponse.json(payments)
+    const seenMollieIds = new Set<string>()
+    const paymentsNormalized = paymentsRows.map((row) => {
+      if (row.molliePaymentId) seenMollieIds.add(row.molliePaymentId)
+      return {
+        id: row.id,
+        molliePaymentId: row.molliePaymentId,
+        amount: row.amount,
+        status: row.status,
+        paidAt: row.paidAt,
+        createdAt: row.createdAt,
+      }
+    })
+    const unified = [
+      ...paymentsNormalized,
+      ...lifecycleRows
+        .filter((row) => {
+          if (!row.molliePaymentId) return true
+          if (seenMollieIds.has(row.molliePaymentId)) return false
+          seenMollieIds.add(row.molliePaymentId)
+          return true
+        })
+        .map((row) => ({
+          id: `lifecycle-${row.id}`,
+          molliePaymentId: row.molliePaymentId,
+          amount: row.amount,
+          status: row.status,
+          paidAt: row.paidAt,
+          createdAt: row.createdAt,
+        })),
+    ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+    return NextResponse.json(unified)
   } catch (error) {
     console.error("Erreur liste paiements:", error)
     return NextResponse.json(

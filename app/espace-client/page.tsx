@@ -221,15 +221,16 @@ export default function EspaceClientPage() {
 
     const fetchData = async () => {
       try {
+        const noStore = { cache: "no-store" as const }
         const [docsRes, summaryRes, paymentsRes, insRes, doqRes, draftsRes, pendingSignaturesRes, autonomyStatusRes] = await Promise.all([
-          fetch("/api/documents/list"),
-          fetch("/api/client/summary"),
-          fetch("/api/client/payments"),
-          fetch("/api/client/insurance-contracts"),
-          fetch("/api/client/do-questionnaire"),
-          fetch("/api/client/devis-drafts"),
-          fetch("/api/client/pending-signatures"),
-          fetch("/api/client/autonomy-status"),
+          fetch("/api/documents/list", noStore),
+          fetch("/api/client/summary", noStore),
+          fetch("/api/client/payments", noStore),
+          fetch("/api/client/insurance-contracts", noStore),
+          fetch("/api/client/do-questionnaire", noStore),
+          fetch("/api/client/devis-drafts", noStore),
+          fetch("/api/client/pending-signatures", noStore),
+          fetch("/api/client/autonomy-status", noStore),
         ])
         if (docsRes.ok) setDocuments(await docsRes.json())
         if (summaryRes.ok) setSummary(await summaryRes.json())
