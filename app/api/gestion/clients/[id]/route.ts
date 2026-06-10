@@ -2,6 +2,7 @@ import { existsSync } from "fs"
 import { unlink } from "fs/promises"
 import { NextRequest, NextResponse } from "next/server"
 import { createMollieClient } from "@mollie/api-client"
+import { Prisma } from "@/lib/prisma-client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
@@ -411,7 +412,11 @@ export async function DELETE(
     } catch {
       /* empty body */
     }
-    const confirmEmail = typeof body.confirmEmail === "string" ? body.confirmEmail.trim().toLowerCase() : ""
+    const confirmEmailFromBody =
+      typeof body.confirmEmail === "string" ? body.confirmEmail.trim().toLowerCase() : ""
+    const confirmEmailFromQuery =
+      new URL(request.url).searchParams.get("confirmEmail")?.trim().toLowerCase() ?? ""
+    const confirmEmail = confirmEmailFromBody || confirmEmailFromQuery
 
     const target = await prisma.user.findUnique({
       where: { id },
@@ -431,6 +436,16 @@ export async function DELETE(
       where: { userId: id },
       select: { filepath: true },
     })
+    const userDocumentIds = await prisma.userDocument.findMany({
+      where: { userId: id },
+      select: { id: true },
+    })
+    const userDocumentIdList = userDocumentIds.map((row) => row.id)
+    const documentIds = await prisma.document.findMany({
+      where: { userId: id },
+      select: { id: true },
+    })
+    const documentIdList = documentIds.map((row) => row.id)
 
     const sepaMollie = await prisma.sepaSubscription.findUnique({
       where: { userId: id },
@@ -441,6 +456,28 @@ export async function DELETE(
       await tx.pendingSignature.deleteMany({ where: { userId: id } })
       await tx.pdfGenerationLog.updateMany({ where: { userId: id }, data: { userId: null } })
       await tx.devoirConseilLog.updateMany({ where: { userId: id }, data: { userId: null } })
+      await tx.missingSubActivity.updateMany({ where: { userId: id }, data: { userId: null } })
+      await tx.insuranceContract.updateMany({ where: { userId: id }, data: { userId: null } })
+      await tx.whatsappClickLog.updateMany({ where: { userId: id }, data: { userId: null } })
+      if (documentIdList.length > 0) {
+        await tx.resiliationLog.deleteMany({ where: { documentId: { in: documentIdList } } })
+        await tx.resiliationRequest.deleteMany({ where: { documentId: { in: documentIdList } } })
+      }
+      await tx.resiliationRequest.deleteMany({ where: { userId: id } })
+      if (userDocumentIdList.length > 0) {
+        await tx.sinistre.updateMany({
+          where: { userDocumentId: { in: userDocumentIdList } },
+          data: { userDocumentId: null },
+        })
+      }
+      await tx.sinistre.deleteMany({ where: { userId: id } })
+      await tx.userDocument.deleteMany({ where: { userId: id } })
+      await tx.clientNote.deleteMany({ where: { userId: id } })
+      await tx.avenantFee.deleteMany({ where: { userId: id } })
+      await tx.payment.deleteMany({ where: { userId: id } })
+      await tx.passwordResetToken.deleteMany({ where: { userId: id } })
+      await tx.sepaSubscription.deleteMany({ where: { userId: id } })
+      await tx.document.deleteMany({ where: { userId: id } })
       await tx.user.delete({ where: { id } })
     })
 
@@ -493,6 +530,15 @@ export async function DELETE(
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error("Erreur DELETE client:", error)
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      return NextResponse.json(
+        {
+          error:
+            "Suppression bloquée par une contrainte en base. Le nettoyage des données a échoué partiellement, contactez le support technique avec le code P2003.",
+        },
+        { status: 409 }
+      )
+    }
     return NextResponse.json({ error: "Erreur lors de la suppression" }, { status: 500 })
   }
 }

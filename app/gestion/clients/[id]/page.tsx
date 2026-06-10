@@ -1554,11 +1554,15 @@ export default function ClientDetailPage() {
                 onClick={async () => {
                   setDeleteLoading(true)
                   try {
-                    const res = await fetch(`/api/gestion/clients/${clientId}`, {
-                      method: "DELETE",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ confirmEmail: deleteConfirmEmail }),
-                    })
+                    const normalizedConfirmEmail = deleteConfirmEmail.trim().toLowerCase()
+                    const res = await fetch(
+                      `/api/gestion/clients/${clientId}?confirmEmail=${encodeURIComponent(normalizedConfirmEmail)}`,
+                      {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ confirmEmail: normalizedConfirmEmail }),
+                      }
+                    )
                     const json = await readResponseJson<{ error?: string }>(res)
                     if (!res.ok) {
                       setToast({ message: json.error || "Suppression impossible", type: "error" })
