@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from "next"
+import type { NextApiRequest } from "next"
 import { getToken } from "next-auth/jwt"
 
 export async function getCoreApiUserId(req: NextApiRequest): Promise<string | null> {
@@ -20,10 +20,7 @@ export async function getCoreApiUserId(req: NextApiRequest): Promise<string | nu
   }
 }
 
-export async function requireCoreApiUserId(
-  req: NextApiRequest,
-  res: NextApiResponse
-): Promise<string> {
+export async function requireCoreApiUserId(req: NextApiRequest): Promise<string> {
   const userId = await getCoreApiUserId(req)
   if (!userId) {
     throw new Error("UNAUTHENTICATED")
