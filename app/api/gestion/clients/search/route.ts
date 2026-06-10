@@ -98,7 +98,12 @@ export async function GET(request: NextRequest) {
         return b.createdAt.getTime() - a.createdAt.getTime()
       })
       .slice(0, CLIENT_SEARCH_LIMIT)
-      .map(({ createdAt: _createdAt, ...client }) => client)
+      .map((client) => ({
+        id: client.id,
+        email: client.email,
+        raisonSociale: client.raisonSociale,
+        siret: client.siret,
+      }))
 
     return NextResponse.json({ results })
   } catch (error) {
