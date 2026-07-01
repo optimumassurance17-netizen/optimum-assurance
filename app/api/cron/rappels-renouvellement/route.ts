@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { assertCronAuthorized } from "@/lib/cron-auth"
+import { requireManualReminderDispatch } from "@/lib/cron-reminder-mode"
 import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 
 /**
@@ -13,6 +14,8 @@ export async function GET(request: NextRequest) {
   try {
     const denied = assertCronAuthorized(request)
     if (denied) return denied
+    const manualOnly = requireManualReminderDispatch(request, "rappels-renouvellement")
+    if (manualOnly) return manualOnly
 
     const attestations = await prisma.document.findMany({
       where: { type: "attestation", status: "valide" },
