@@ -1217,7 +1217,9 @@ export default function GestionPage() {
       const clientLabel =
         contract.clientName || contract.user?.raisonSociale || contract.user?.email || "Client non renseigné"
       const impayeDocumentId =
-        contract.userId != null ? suspendedAttestationByUserId.get(contract.userId) ?? null : null
+        contract.productType === "decennale" && contract.userId != null
+          ? suspendedAttestationByUserId.get(contract.userId) ?? null
+          : null
       for (const lifecyclePayment of contract.lifecyclePayments) {
         if (lifecyclePayment.status.toLowerCase() === "paid") continue
         const dueDateMs = Date.parse(lifecyclePayment.createdAt)
@@ -1258,7 +1260,9 @@ export default function GestionPage() {
         ageDays,
         status: "approved_unpaid",
         impayeDocumentId:
-          contract.userId != null ? suspendedAttestationByUserId.get(contract.userId) ?? null : null,
+          contract.productType === "decennale" && contract.userId != null
+            ? suspendedAttestationByUserId.get(contract.userId) ?? null
+            : null,
       })
     }
 
@@ -1551,6 +1555,11 @@ export default function GestionPage() {
 
   const handleCreateDevisDo = async (e: React.FormEvent) => {
     e.preventDefault()
+    const adresseOperation = devisDoForm.adresseOperation.trim()
+    if (!adresseOperation) {
+      setToast({ message: "Adresse de l'opération requise pour créer un contrat DO.", type: "error" })
+      return
+    }
     setDevisDoSubmitting(true)
     try {
       const res = await fetch("/api/gestion/contracts/do/create", {
@@ -1561,7 +1570,7 @@ export default function GestionPage() {
           primeAnnuelle: Number(devisDoForm.primeAnnuelle),
           coutConstruction: Number(devisDoForm.coutConstruction) || undefined,
           telephone: devisDoForm.telephone || undefined,
-          adresseOperation: devisDoForm.adresseOperation || undefined,
+          adresseOperation,
           typeConstruction: devisDoForm.typeConstruction || undefined,
           destination: devisDoForm.destination || undefined,
           closCouvert: devisDoForm.closCouvert || undefined,
@@ -4131,12 +4140,13 @@ export default function GestionPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-1">Adresse de l&apos;opération</label>
+              <label className="block text-sm font-medium text-gray-200 mb-1">Adresse de l&apos;opération *</label>
               <input
                 type="text"
+                required
                 value={devisDoForm.adresseOperation}
                 onChange={(e) => setDevisDoForm((f) => ({ ...f, adresseOperation: e.target.value }))}
-                placeholder="Optionnel"
+                placeholder="Adresse complète du chantier"
                 className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
               />
             </div>

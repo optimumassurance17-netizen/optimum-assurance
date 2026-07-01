@@ -122,6 +122,7 @@ interface ClientData {
     titleEtudeQuestionnaireJson?: string | null
   }
   documents: { id: string; type: string; numero: string; status: string; createdAt: string }[]
+  insuranceContracts?: { id: string; contractNumber: string; productType: string; createdAt: string }[]
   payments: { id: string; amount: number; status: string; paidAt: string | null; createdAt: string }[]
   avenantFees: { id: string; amount: number; status: string; createdAt: string }[]
   notes?: { id: string; content: string; adminEmail: string; createdAt: string }[]
@@ -360,6 +361,11 @@ export default function ClientDetailPage() {
   const isOwnAdminAccount = authSession?.user?.id === clientId
   const ddaConsents = data.dda?.consents ?? []
   const ddaEvents = data.dda?.events ?? []
+  const hasDecennaleContract =
+    (data.insuranceContracts ?? []).some((contract) => contract.productType === "decennale") ||
+    documents.some((document) =>
+      ["contrat", "attestation", "attestation_nominative"].includes(document.type)
+    )
   const questionnaireProfilePrefill = buildQuestionnaireProfilePrefill(user)
 
   const handleProfileSireneFill = async () => {
@@ -447,8 +453,14 @@ export default function ClientDetailPage() {
               </button>
               <button
                 type="button"
-                disabled={attestationGenerating}
+                disabled={attestationGenerating || !hasDecennaleContract}
+                title={
+                  hasDecennaleContract
+                    ? undefined
+                    : "Aucun contrat décennale trouvé pour ce client."
+                }
                 onClick={async () => {
+                  if (!hasDecennaleContract) return
                   setAttestationGenerating(true)
                   try {
                     const res = await fetch(
@@ -507,7 +519,9 @@ export default function ClientDetailPage() {
               >
                 {attestationGenerating
                   ? "Génération attestation..."
-                  : "Générer attestation décennale"}
+                  : hasDecennaleContract
+                    ? "Générer attestation décennale"
+                    : "Aucun contrat décennale"}
               </button>
               <button
                 type="button"

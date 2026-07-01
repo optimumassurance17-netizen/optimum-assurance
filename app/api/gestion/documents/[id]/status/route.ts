@@ -14,7 +14,9 @@ function parseDocumentData(value: string): { raisonSociale?: string } {
   }
 }
 
-/** Suspension pour impayé : **attestation décennale** uniquement (`type === "attestation"`). L’attestation DO n’est pas dans ce flux. */
+const DECENNALE_ATTESTATION_TYPES = ["attestation", "attestation_nominative"] as const
+
+/** Suspension pour impayé : attestations décennale uniquement. L’attestation DO n’est pas dans ce flux. */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -46,7 +48,10 @@ export async function PATCH(
     const document = await prisma.document.findFirst({
       where: {
         id,
-        type: status === "resilie" ? { in: ["attestation", "contrat"] } : "attestation",
+        type:
+          status === "resilie"
+            ? { in: [...DECENNALE_ATTESTATION_TYPES, "contrat"] }
+            : { in: [...DECENNALE_ATTESTATION_TYPES] },
       },
       include: { user: true },
     })
@@ -94,7 +99,11 @@ export async function PATCH(
         },
       })
       const data = parseDocumentData(document.data)
-      const typeDoc = document.type === "attestation" ? "attestation" : "contrat"
+      const typeDoc = DECENNALE_ATTESTATION_TYPES.includes(
+        document.type as (typeof DECENNALE_ATTESTATION_TYPES)[number]
+      )
+        ? "attestation"
+        : "contrat"
       const template = EMAIL_TEMPLATES.confirmationResiliation(
         data.raisonSociale || document.user.raisonSociale || document.user.email,
         document.numero,
