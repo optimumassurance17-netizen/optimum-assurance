@@ -210,8 +210,9 @@ test.describe("Gestion CRM — création compte lead", () => {
           raisonSociale: "Lead Exemple",
           accessMode: "created",
           emailSent: false,
+          temporaryPassword: "TempPass123",
           warning:
-            "Compte créé, mais email d'accès non envoyé. Utilisez ensuite 'Créer / renvoyer accès client' depuis la fiche client ou la gestion.",
+            "Compte créé, mais email d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client.",
         }),
       })
     })
@@ -221,10 +222,46 @@ test.describe("Gestion CRM — création compte lead", () => {
 
     await expect(
       page.getByText(
-        "Compte créé, mais email d'accès non envoyé. Utilisez ensuite 'Créer / renvoyer accès client' depuis la fiche client ou la gestion."
+        "Compte créé, mais email d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client. Mot de passe temporaire : TempPass123"
       )
     ).toBeVisible()
     await expect(page.getByRole("link", { name: /Compte existant/ })).toBeVisible()
+  })
+
+  test("Fiche client : renvoi accès affiche le mot de passe si l'email échoue", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    await page.route("**/api/gestion/clients/client_1", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildGestionClientData()),
+      })
+    })
+
+    await page.route("**/api/gestion/clients/client_1/send-client-access", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          sentTo: "client@example.com",
+          emailSent: false,
+          temporaryPassword: "ManualPass789",
+          warning:
+            "Mot de passe temporaire généré, mais email non envoyé. Copiez-le et transmettez-le manuellement au client.",
+        }),
+      })
+    })
+
+    await page.goto("/gestion/clients/client_1")
+    await page.getByRole("button", { name: "Créer / renvoyer accès client" }).click()
+
+    await expect(
+      page.getByText(
+        "Mot de passe temporaire généré, mais email non envoyé. Copiez-le et transmettez-le manuellement au client. Mot de passe temporaire : ManualPass789"
+      )
+    ).toBeVisible()
   })
 })
 

@@ -230,8 +230,9 @@ export async function POST(request: NextRequest) {
           raisonSociale: existing.raisonSociale,
           accessMode: "resent",
           emailSent: false,
+          temporaryPassword: tempPassword,
           warning:
-            "Compte existant détecté, mais email d'accès non envoyé. Utilisez ensuite 'Créer / renvoyer accès client' depuis la fiche client ou la gestion.",
+            "Compte existant détecté, mais email d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client.",
         })
       }
 
@@ -253,6 +254,7 @@ export async function POST(request: NextRequest) {
         raisonSociale: existing.raisonSociale,
         accessMode: "resent",
         emailSent: true,
+        temporaryPassword: tempPassword,
       })
     }
 
@@ -317,8 +319,9 @@ export async function POST(request: NextRequest) {
         raisonSociale: user.raisonSociale,
         accessMode: "created",
         emailSent: false,
+        temporaryPassword: tempPassword,
         warning:
-          "Compte créé, mais email d'accès non envoyé. Utilisez ensuite 'Créer / renvoyer accès client' depuis la fiche client ou la gestion.",
+          "Compte créé, mais email d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client.",
       })
     }
 
@@ -356,6 +359,7 @@ export async function POST(request: NextRequest) {
       raisonSociale: user.raisonSociale,
       accessMode: "created",
       emailSent: true,
+      temporaryPassword: tempPassword,
     })
   } catch (error) {
     console.error("Erreur création compte depuis lead:", error)

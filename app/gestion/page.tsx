@@ -424,19 +424,24 @@ type LeadAccountCreationResponse = {
   raisonSociale?: string | null
   accessMode?: "created" | "resent"
   emailSent?: boolean
+  temporaryPassword?: string
   warning?: string
   error?: string
 }
 
 function getLeadAccountSuccessMessage(
-  response: Pick<LeadAccountCreationResponse, "email" | "accessMode" | "warning">,
+  response: Pick<LeadAccountCreationResponse, "email" | "accessMode" | "warning" | "temporaryPassword" | "emailSent">,
   fallbackEmail?: string
 ): string {
-  if (response.warning?.trim()) return response.warning.trim()
   const email = response.email || fallbackEmail || "ce client"
-  return response.accessMode === "resent"
+  const prefix = response.warning?.trim()
+    ? response.warning.trim()
+    : response.accessMode === "resent"
     ? `Accès client renvoyé à ${email}`
     : `Compte créé pour ${email}`
+  return response.temporaryPassword
+    ? `${prefix}${/[.!?]$/.test(prefix) ? "" : "."} Mot de passe temporaire : ${response.temporaryPassword}`
+    : prefix
 }
 
 type RcFabLeadRow = NonNullable<DashboardData["devisRcFabriquantLeads"]>[number]
@@ -666,11 +671,24 @@ export default function GestionPage() {
       const res = await fetch(`/api/gestion/clients/${userId}/send-client-access`, {
         method: "POST",
       })
-      const json = await readResponseJson<{ error?: string; ok?: boolean; sentTo?: string }>(res)
+      const json = await readResponseJson<{
+        error?: string
+        ok?: boolean
+        sentTo?: string
+        emailSent?: boolean
+        temporaryPassword?: string
+        warning?: string
+      }>(res)
       if (!res.ok || !json.ok) {
         throw new Error(json.error || "Impossible d'envoyer l'accès client")
       }
-      setToast({ message: `Accès client envoyé à ${json.sentTo || email}`, type: "success" })
+      const prefix = json.warning?.trim() || `Accès client ${json.emailSent === false ? "généré" : "envoyé"} à ${json.sentTo || email}`
+      setToast({
+        message: json.temporaryPassword
+          ? `${prefix}${/[.!?]$/.test(prefix) ? "" : "."} Mot de passe temporaire : ${json.temporaryPassword}`
+          : prefix,
+        type: json.emailSent === false ? "error" : "success",
+      })
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : "Erreur envoi accès client", type: "error" })
     } finally {

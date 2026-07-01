@@ -418,13 +418,21 @@ export default function ClientDetailPage() {
                       error?: string
                       ok?: boolean
                       sentTo?: string
+                      emailSent?: boolean
+                      temporaryPassword?: string
+                      warning?: string
                     }>(res)
                     if (!res.ok || !json.ok) {
                       throw new Error(json.error || "Impossible de créer l'accès client.")
                     }
+                    const prefix =
+                      json.warning?.trim() ||
+                      `Accès espace client ${json.emailSent === false ? "généré" : "envoyé"} à ${json.sentTo || user.email}`
                     setToast({
-                      message: `Accès espace client envoyé à ${json.sentTo || user.email}`,
-                      type: "success",
+                      message: json.temporaryPassword
+                        ? `${prefix}${/[.!?]$/.test(prefix) ? "" : "."} Mot de passe temporaire : ${json.temporaryPassword}`
+                        : prefix,
+                      type: json.emailSent === false ? "error" : "success",
                     })
                   } catch (err) {
                     setToast({
