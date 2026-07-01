@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         subject: `Proposition de ressource utile pour vos lecteurs (${input.domain})`,
-        body: `Bonjour,\n\nJe vous contacte car votre contenu sur ${input.niche} est particulièrement pertinent. Nous avons publié sur Optimum Assurance une ressource utile qui peut intéresser votre audience : https://optimum-assurance.fr${input.targetPage}\n\nSi vous jugez le contenu utile, seriez-vous ouvert à l'ajouter comme source complémentaire dans un article existant ou futur ?\n\nMerci pour votre retour,\nL'équipe Optimum Assurance\ncontact@optimum-assurance.fr`,
+        body: `Bonjour,\n\nJe vous contacte car votre contenu sur ${input.niche} est particulièrement pertinent. Nous avons publié sur Optimum Assurance une ressource utile qui peut intéresser votre audience : https://optimum-assurance.fr${input.targetPage}\n\nSi vous jugez le contenu utile, seriez-vous ouvert à l'ajouter comme source complémentaire dans un article existant ou futur ?\n\nMerci pour votre retour,\nL'équipe Optimum Assurance\ninfo@optimum-assurance.eu`,
       },
       { status: 200 }
     )

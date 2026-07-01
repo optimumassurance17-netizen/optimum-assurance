@@ -53,10 +53,10 @@ export const SITE_KNOWLEDGE = `
 
 ## Outils techniques (information générale)
 - **Paiements** : **Mollie** (carte, virement selon produit). **Signature** : parcours **/signature** puis page **/sign/[id]** (PDF + signature manuscrite sur le document).
-- **Support** : **100 % en ligne** — pas de ligne téléphonique ; email **contact@optimum-assurance.fr**, formulaire **/contact**, ce **chat**.
+- **Support** : **100 % en ligne** — pas de ligne téléphonique ; email **info@optimum-assurance.eu**, formulaire **/contact**, ce **chat**.
 
 ## Limites de cet assistant
 - Tu n’as **pas accès** aux comptes clients, dossiers, paiements ou statuts personnels.
-- Pour toute question sur **un dossier précis** (impayé, document manquant, sinistre individuel), orienter vers **contact@optimum-assurance.fr** ou l’**espace client** après connexion.
+- Pour toute question sur **un dossier précis** (impayé, document manquant, sinistre individuel), orienter vers **info@optimum-assurance.eu** ou l’**espace client** après connexion.
 - Tu fournis des **informations générales** sur les parcours et le site, pas un avis juridique personnalisé.
 `.trim()

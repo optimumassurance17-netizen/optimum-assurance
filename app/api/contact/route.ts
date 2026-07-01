@@ -3,6 +3,7 @@ import { rateLimitResponse } from "@/lib/rate-limit"
 import { sendEmail } from "@/lib/email"
 import { asJsonObject } from "@/lib/json-object"
 import { escapeHtmlForEmail } from "@/lib/email-layout"
+import { getContactRecipientEmail } from "@/lib/public-contact-email"
 
 export async function POST(request: NextRequest) {
   const limited = await rateLimitResponse(request, "contact")
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const to = process.env.CONTACT_EMAIL || process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
+    const to = getContactRecipientEmail()
     const nomT = nom.trim()
     const emailT = email.trim()
     const sujetT = sujet?.trim() || "Non précisé"

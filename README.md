@@ -33,7 +33,7 @@ NEXTAUTH_SECRET=xxx
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 RESEND_API_KEY=re_xxx
-EMAIL_FROM=Optimum <noreply@votredomaine.com>
+EMAIL_FROM=Optimum Assurance <info@optimum-assurance.eu>
 ```
 
 ## Lancement

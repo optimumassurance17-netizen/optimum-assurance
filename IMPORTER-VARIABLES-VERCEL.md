@@ -14,14 +14,14 @@ Remplace **chaque** `REMPLACE_PAR_...` par ta vraie valeur :
 | REMPLACE_PAR_SUPABASE_URL | Supabase → Project Settings → API → Project URL |
 | REMPLACE_PAR_SUPABASE_SERVICE_ROLE | Supabase → API → service_role (secret) |
 | REMPLACE_PAR_TON_DOMAINE | Ton domaine (ex: optimum-assurance) |
-| REMPLACE_PAR_TON_EMAIL | Ton email (ex: contact@optimum-assurance.fr) |
+| REMPLACE_PAR_TON_EMAIL | Ton email (ex: info@optimum-assurance.eu) |
 
 **Exemple** après remplissage :
 ```
 DATABASE_URL=postgresql://user:pass@host.neon.tech/db?sslmode=require
 MOLLIE_API_KEY=live_xxxxxxxx
 RESEND_API_KEY=re_xxxxxxxx
-EMAIL_FROM=Optimum <noreply@optimum-assurance.fr>
+EMAIL_FROM=Optimum Assurance <info@optimum-assurance.eu>
 ...
 ```
 

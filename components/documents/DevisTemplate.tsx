@@ -50,7 +50,7 @@ interface DevisTemplateProps {
 const COURTIER = {
   nom: "Optimum Courtage",
   orias: "21001707",
-  email: "contact@optimum-assurance.fr",
+  email: "info@optimum-assurance.eu",
   adresse: "14 Rue Amboise",
   codePostal: "49300",
   ville: "CHOLET",

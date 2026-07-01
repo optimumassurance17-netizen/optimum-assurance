@@ -15,11 +15,11 @@ Renseigner toutes les variables dans `.env` (ou les secrets de la plateforme) :
 | `NEXTAUTH_SECRET` | Secret fort (`npm run generate-secret` ou `openssl rand -base64 32`) | — |
 | `ADMIN_EMAILS` | Emails admin (accès CRM), séparés par des virgules | `admin@optimum-assurance.fr` |
 | `RESEND_API_KEY` | Clé API Resend pour l'envoi d'emails | `re_xxxx` |
-| `EMAIL_FROM` | Email expéditeur (domaine vérifié dans Resend) | `Optimum <noreply@optimum-assurance.fr>` |
+| `EMAIL_FROM` | Email expéditeur (domaine vérifié dans Resend) | `Optimum Assurance <info@optimum-assurance.eu>` |
 | `NEXT_PUBLIC_SUPABASE_URL` | Projet Supabase (Storage + tables `sign_*`) | `https://xxxx.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clé **service role** (serveur uniquement — signature `/api/sign`) | `eyJ...` |
 | `NEXT_PUBLIC_PHONE` | Téléphone affiché sur le site | `01 23 45 67 89` |
-| `NEXT_PUBLIC_EMAIL` | Email de contact | `contact@optimum-assurance.fr` |
+| `NEXT_PUBLIC_EMAIL` | Email de contact | `info@optimum-assurance.eu` |
 | `NEXT_PUBLIC_WHATSAPP` | Numéro WhatsApp (sans espaces) | `33612345678` |
 | `INSEE_API_KEY_INTEGRATION` | Optionnel — pré-remplissage SIRET (gratuit, portail-api.insee.fr) | — |
 | `CRON_SECRET` | **Obligatoire en production** pour que les appels `/api/cron/*` fonctionnent (sinon **503**). Vercel envoie `Authorization: Bearer <CRON_SECRET>` sur les crons planifiés si la variable est définie. | `npm run generate-secret` |

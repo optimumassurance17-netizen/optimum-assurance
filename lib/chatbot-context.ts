@@ -14,7 +14,7 @@ const FAQ_BASE: { q: string; r: string }[] = [
   { q: "payer plusieurs fois prélèvement SEPA mensuel trimestriel", r: "Oui. Paiement en 4 fois par an : 1er trimestre par carte (+ frais de gestion), puis prélèvements SEPA trimestriels automatiques sur l'IBAN (reconduction annuelle)." },
   { q: "résilier contrat lettre recommandée échéance", r: "Les demandes de résiliation doivent être envoyées par lettre recommandée au plus tard 2 mois avant la date d'échéance (31 décembre). Un minimum d'un an de contrat est requis avant toute résiliation à l'échéance." },
   { q: "avenant frais modification", r: "Les avenants de modification sont soumis à des frais de 60 € uniques. Ces frais sont automatiquement reportés sur la prochaine échéance de prélèvement SEPA." },
-  { q: "sinistre déclarer avis maître ouvrage", r: "Contactez-nous par email (contact@optimum-assurance.fr) ou via le chat. Nos experts vous accompagnent pour constituer votre dossier. Prévenez votre assureur dans les 5 jours après réception de l'avis du maître d'ouvrage." },
+  { q: "sinistre déclarer avis maître ouvrage", r: "Contactez-nous par email (info@optimum-assurance.eu) ou via le chat. Nos experts vous accompagnent pour constituer votre dossier. Prévenez votre assureur dans les 5 jours après réception de l'avis du maître d'ouvrage." },
   { q: "reprise du passé rétroactif", r: "La reprise du passé permet de couvrir rétroactivement vos ouvrages des 3 derniers mois, sous réserve de non sinistralité. Elle n'est disponible que si vous n'avez déclaré aucun sinistre sur les 5 dernières années. Une majoration de 40 % s'applique sur ces 3 mois." },
   { q: "dommage ouvrage devis DO", r: "Après envoi de votre demande sur devis-dommage-ouvrage, notre équipe vous transmet le prix définitif sous 24h. Le devis est ensuite ajouté à votre espace client. Vous signez électroniquement le contrat, puis vous payez par virement bancaire via Mollie. L'attestation arrive après réception du virement." },
   { q: "étapes souscription parcours", r: "1) Devis — tarif en 3 minutes (équivalent mensuel, paiement trimestriel) ; 2) Souscription — coordonnées ; 3) Compte — email et mot de passe ; 4) Signature électronique du contrat ; 5) Mandat SEPA — IBAN ; 6) Paiement — 1er trimestre + frais par carte, puis prélèvements SEPA trimestriels automatiques ; 7) Confirmation — attestation dans l'espace client après paiement, contrôle dossier et acceptation du risque." },
@@ -22,7 +22,7 @@ const FAQ_BASE: { q: string; r: string }[] = [
   { q: "signature électronique contrat", r: "Après création de votre compte, vous suivez la page Signature : vous ouvrez le PDF et apposez votre signature électronique. Vous poursuivez ensuite vers le mandat SEPA et le paiement (Mollie)." },
   { q: "moyens paiement Mollie SEPA", r: "1er trimestre par carte bancaire (Mollie), puis prélèvements SEPA trimestriels automatiques sur l'IBAN du mandat (reconduction annuelle)." },
   { q: "après paiement attestation", r: "Dès validation du paiement, votre attestation décennale est disponible dans votre espace client. Vous pouvez la télécharger en PDF et la partager avec vos clients. Un QR code permet de vérifier son authenticité." },
-  { q: "téléphone appeler contact", r: "Nous ne proposons pas de contact téléphonique. Toutes nos réponses se font en ligne : par email (contact@optimum-assurance.fr), via ce chat, ou via le formulaire de contact sur notre site." },
+  { q: "téléphone appeler contact", r: "Nous ne proposons pas de contact téléphonique. Toutes nos réponses se font en ligne : par email (info@optimum-assurance.eu), via ce chat, ou via le formulaire de contact sur notre site." },
   { q: "devis obtenir tarif", r: "Rendez-vous sur /devis pour l'assurance décennale ou /devis-dommage-ouvrage pour le dommage ouvrage. Devis en 3 minutes, sans engagement." },
   {
     q: "rc fabriquant fabricant responsabilité civile produit mise sur le marché",
@@ -39,7 +39,7 @@ const FAQ_BASE: { q: string; r: string }[] = [
   { q: "espace client connexion documents attestation où", r: "Après connexion sur /connexion, ouvrez /espace-client : vous y voyez vos documents (devis, contrats, attestations). Chaque document a une page détail avec téléchargement PDF. Les attestations peuvent être vérifiées publiquement via le QR code ou un lien /v/[token]." },
   { q: "guides pratiques obligation", r: "Les guides détaillés sont sur /guides et /guides/[slug] (ex. obligation décennale, dommage ouvrage, sinistre). La FAQ complète est sur /faq." },
   { q: "conditions générales dommage ouvrage CG DO", r: "Les conditions générales du produit dommage ouvrage sont sur /conditions-generales-dommage-ouvrage (annexées au devis). Les CGV de distribution sont sur /cgv." },
-  { q: "contact formulaire email sans téléphone", r: "Pas de contact téléphone. Utilisez le formulaire /contact, l'email contact@optimum-assurance.fr, ou ce chat. Réponse sous 24h en général pour l'email." },
+  { q: "contact formulaire email sans téléphone", r: "Pas de contact téléphone. Utilisez le formulaire /contact, l'email info@optimum-assurance.eu, ou ce chat. Réponse sous 24h en général pour l'email." },
   { q: "reprendre devis brouillon lien sauvegardé", r: "Si vous avez sauvegardé un devis décennale par email, utilisez le lien reçu : /devis/resume/[token] — valable 7 jours." },
   { q: "étude dossier sinistres devis complexe", r: "Si le formulaire de /devis indique qu'une étude est nécessaire (ex. plusieurs sinistres), vous pouvez être orienté vers /etude pour laisser votre email et être recontacté sous 24 h avec une proposition." },
   { q: "activité pas dans la liste métier domaine introuvable spécial", r: "Si votre activité BTP n'apparaît pas dans la liste du devis, ouvrez la page /etude/domaine : décrivez votre domaine, votre email et éventuellement SIRET et CA. Notre équipe étudie le dossier et recontacte sous 24 h." },
@@ -66,8 +66,8 @@ RÈGLES IMPORTANTES :
 - Pour une demande assurance titre (transaction immobilière, refinancement, risque sur le titre) : dirige vers /assurance-titre — pas de tarif instantané, étude par l’équipe, puis poursuite possible dans /espace-client/assurance-titre
 - Pour une demande RC fabriquant (fabricant, produits, mise sur le marché) : dirige vers /devis-rc-fabriquant — pas de tarif instantané, étude par l’équipe
 - Pour une question sur **où cliquer**, **l’ordre des étapes** ou **une page du site** : utilise la section « Fonctionnement du site » ci-dessous.
-- Pour une question sur **un dossier personnel** (statut, impayé, document manquant) : tu n’y as pas accès — oriente vers contact@optimum-assurance.fr ou l’espace client après connexion.
-- Pour une question complexe ou personnalisée : invite à écrire à contact@optimum-assurance.fr
+- Pour une question sur **un dossier personnel** (statut, impayé, document manquant) : tu n’y as pas accès — oriente vers info@optimum-assurance.eu ou l’espace client après connexion.
+- Pour une question complexe ou personnalisée : invite à écrire à info@optimum-assurance.eu
 
 FONCTIONNEMENT DU SITE OPTIMUM ASSURANCE (navigation, parcours, URLs, limites) :
 ${SITE_KNOWLEDGE}
@@ -91,7 +91,7 @@ INFORMATIONS OPTIMUM ASSURANCE (rappel synthétique) :
 FAQ COMPLÈTE (utilise ces réponses exactes) :
 ${FAQ_TEXTE}
 
-Si la question ne correspond à aucune info ci-dessus, dis : "Je n'ai pas trouvé de réponse précise. Pour une réponse personnalisée, contactez-nous à contact@optimum-assurance.fr ou consultez notre FAQ : /faq"`
+Si la question ne correspond à aucune info ci-dessus, dis : "Je n'ai pas trouvé de réponse précise. Pour une réponse personnalisée, contactez-nous à info@optimum-assurance.eu ou consultez notre FAQ : /faq"`
 
 function normalize(str: string): string {
   return str

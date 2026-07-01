@@ -1,8 +1,9 @@
 import Link from "next/link"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
+import { getPublicContactEmail } from "@/lib/public-contact-email"
 import { buildWhatsAppRedirectPath } from "@/lib/whatsapp"
 
-const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
+const contactEmail = getPublicContactEmail()
 const whatsappUrl = buildWhatsAppRedirectPath({
   source: "footer",
   context: "navigation-footer",

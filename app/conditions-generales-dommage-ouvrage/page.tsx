@@ -8,8 +8,9 @@ import {
   LEGAL_DELEGATION_MANDATORY,
   ORIAS_NUMBER,
 } from "@/lib/legal-branding"
+import { getPublicContactEmail } from "@/lib/public-contact-email"
 
-const CONTACT_EMAIL = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
+const CONTACT_EMAIL = getPublicContactEmail()
 const CG_DO_FULL_PATH = path.resolve("lib/cg-dommage-ouvrage-full.txt")
 
 function loadCgFullText(): string | null {

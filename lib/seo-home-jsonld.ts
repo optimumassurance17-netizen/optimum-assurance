@@ -1,9 +1,9 @@
 import { EQ_MENSUEL_MIN } from "@/lib/decennale-affichage-tarif"
+import { getPublicContactEmail } from "@/lib/public-contact-email"
 import { seoOrgId, seoWebsiteId } from "@/lib/seo-jsonld-helpers"
 import { SITE_URL as baseUrl } from "@/lib/site-url"
 
-const publicContactEmail =
-  process.env.NEXT_PUBLIC_EMAIL?.trim() || "contact@optimum-assurance.fr"
+const publicContactEmail = getPublicContactEmail()
 
 /** Profils sociaux (optionnel) — ex. NEXT_PUBLIC_SEO_SAME_AS="https://linkedin.com/...,https://..." */
 function sameAsFromEnv(): string[] | undefined {

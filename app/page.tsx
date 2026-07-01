@@ -52,6 +52,7 @@ const HomeQrSection = dynamic(
 )
 import { SITE_URL } from "@/lib/site-url"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
+import { getPublicContactEmail } from "@/lib/public-contact-email"
 import {
   EQ_MENSUEL_MIN,
   EQ_MENSUEL_EXEMPLE_NETTOYAGE_TOITURE,
@@ -69,7 +70,7 @@ import {
 } from "@/lib/decennale-affichage-tarif"
 
 const reviewsUrl = process.env.NEXT_PUBLIC_REVIEWS_URL || "/avis"
-const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
+const contactEmail = getPublicContactEmail()
 const HOME_SEO_TITLE = "Assurance décennale BTP en ligne | Devis 3 min et attestation | Optimum Assurance"
 const HOME_DECENNALE_HERO_HREF = buildTrackedHref("/devis", {
   utmSource: "site",

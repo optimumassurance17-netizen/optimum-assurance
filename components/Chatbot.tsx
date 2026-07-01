@@ -6,7 +6,9 @@ import { usePathname } from "next/navigation"
 
 import { readResponseJson } from "@/lib/read-response-json"
 
-const contactEmail = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
+import { getPublicContactEmail } from "@/lib/public-contact-email"
+
+const contactEmail = getPublicContactEmail()
 
 /** Même logique que StickyMobileCta : barre Devis décennale / Devis DO en bas (mobile). */
 const STICKY_DEVIS_PREFIXES = ["/gestion", "/admin", "/v/"]

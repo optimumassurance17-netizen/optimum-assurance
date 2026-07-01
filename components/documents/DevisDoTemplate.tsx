@@ -41,7 +41,7 @@ interface DevisDoTemplateProps {
 
 const COURTIER = {
   nom: COMPANY_BRAND,
-  email: "contact@optimum-assurance.fr",
+  email: "info@optimum-assurance.eu",
   adresse: "14 Rue Amboise",
   codePostal: "49300",
   ville: "CHOLET",

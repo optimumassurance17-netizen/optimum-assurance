@@ -1,5 +1,6 @@
 import { sendEmail } from "@/lib/email"
 import { escapeHtmlForEmail } from "@/lib/email-layout"
+import { normalizePublicContactEmail } from "@/lib/public-contact-email"
 import { SITE_URL } from "@/lib/site-url"
 
 /**
@@ -8,11 +9,12 @@ import { SITE_URL } from "@/lib/site-url"
  */
 export function getDevisAlertRecipientEmails(): string[] {
   const primary = process.env.DEVIS_ALERT_EMAILS?.trim()
+  const publicFallback = normalizePublicContactEmail(
+    process.env.CONTACT_EMAIL?.trim() || process.env.NEXT_PUBLIC_EMAIL?.trim()
+  )
   const fallback =
     process.env.ADMIN_EMAILS?.trim() ||
-    process.env.CONTACT_EMAIL?.trim() ||
-    process.env.NEXT_PUBLIC_EMAIL?.trim() ||
-    ""
+    publicFallback
   const raw = primary || fallback
   const seen = new Set<string>()
   const out: string[] = []

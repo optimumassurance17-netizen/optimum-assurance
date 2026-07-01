@@ -18,7 +18,7 @@ import {
 } from "@/lib/user-documents"
 import { UPLOAD_DOC_TYPES } from "@/lib/user-document-types"
 
-const DEFAULT_TO = "contact@optimum-assurance.fr"
+const DEFAULT_TO = "info@optimum-assurance.eu"
 const MAX_ZIP_SIZE_BYTES = 18 * 1024 * 1024
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export const maxDuration = 60
