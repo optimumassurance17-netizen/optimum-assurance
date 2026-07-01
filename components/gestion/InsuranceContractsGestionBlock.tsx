@@ -302,6 +302,28 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                             Fiche client
                           </Link>
                         ) : null}
+                        {c.productType === "do" && c.status !== CONTRACT_STATUS.rejected ? (
+                          <button
+                            type="button"
+                            disabled={busyId === c.id}
+                            onClick={() =>
+                              run(c.id, async () => {
+                                const res = await fetch(`/api/gestion/insurance-contracts/${c.id}/send-quote`, {
+                                  method: "POST",
+                                })
+                                const j = await readResponseJson<{ error?: string; sentTo?: string }>(res)
+                                if (!res.ok) throw new Error(j.error || "Erreur envoi devis DO")
+                                setToast({
+                                  message: `Devis DO envoyé${j.sentTo ? ` à ${j.sentTo}` : ""}.`,
+                                  type: "success",
+                                })
+                              })
+                            }
+                            className="text-cyan-400 hover:text-cyan-300 text-xs disabled:opacity-50"
+                          >
+                            Envoyer devis DO
+                          </button>
+                        ) : null}
                         {((c.status === CONTRACT_STATUS.approved &&
                           insuranceProductUsesDirectMollieAfterApproval(c.productType)) ||
                           (c.status === CONTRACT_STATUS.active && c.productType === "rc_fabriquant")) ? (
