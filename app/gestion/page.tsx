@@ -2289,7 +2289,7 @@ export default function GestionPage() {
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">Décennale suspendue (impayé)</p>
-                <p className="text-2xl font-bold text-red-400">{filterBySearch(data.documents.filter((d) => d.type === "attestation"), searchQuery).filter((d) => d.status === "suspendu").length}</p>
+                <p className="text-2xl font-bold text-red-400">{filterBySearch(data.documents.filter((d) => d.type === "attestation" || d.type === "attestation_nominative"), searchQuery).filter((d) => d.status === "suspendu").length}</p>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">Résiliés</p>
@@ -3478,11 +3478,11 @@ export default function GestionPage() {
             </div>
           </div>
         )}
-        {data && data.documents.some((d) => d.type === "attestation" && d.status === "suspendu") && (
+        {data && data.documents.some((d) => (d.type === "attestation" || d.type === "attestation_nominative") && d.status === "suspendu") && (
           <div className="p-4 bg-red-900/30 border border-red-700 rounded-xl">
             <p className="font-medium text-red-300">⚠ Impayés décennale</p>
             <p className="text-sm text-red-200 mt-1">
-              {data.documents.filter((d) => d.type === "attestation" && d.status === "suspendu").length} attestation(s){" "}
+              {data.documents.filter((d) => (d.type === "attestation" || d.type === "attestation_nominative") && d.status === "suspendu").length} attestation(s){" "}
               <strong>décennale</strong> suspendue(s). Le DO n’est pas concerné (paiement unique avant attestation). Utilisez « Relancer email » pour renvoyer le lien de régularisation.
             </p>
           </div>
@@ -3609,7 +3609,7 @@ export default function GestionPage() {
                         >
                           Client
                         </Link>
-                        {d.type === "attestation" && d.status === "valide" && (
+                        {(d.type === "attestation" || d.type === "attestation_nominative") && d.status === "valide" && (
                           <>
                             <button
                               onClick={() => handleStatusChange(d.id, "suspendu")}
@@ -3625,7 +3625,7 @@ export default function GestionPage() {
                             </button>
                           </>
                         )}
-                        {d.type === "attestation" && d.status === "suspendu" && (
+                        {(d.type === "attestation" || d.type === "attestation_nominative") && d.status === "suspendu" && (
                           <>
                             <button
                               type="button"
@@ -4323,9 +4323,9 @@ export default function GestionPage() {
                     const dirty =
                       draft.statut !== serverSt || draft.notes.trim() !== serverNotes.trim()
                     const matchedUser =
-                      d.userId && d.userId.trim().length > 0
-                        ? data.users.find((u) => u.id === d.userId) ?? null
-                        : data.users.find((u) => u.email.toLowerCase() === d.email.toLowerCase()) ?? null
+                      d.matchedUser ??
+                      data.users.find((u) => u.email.toLowerCase() === d.email.toLowerCase()) ??
+                      null
                     const propositionCopy = d.copyTrace?.proposition
                     const signatureCopy = d.copyTrace?.signature
                     const leadAgeHours = typeof d.slaHours === "number" ? d.slaHours : null
