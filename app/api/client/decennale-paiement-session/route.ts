@@ -5,6 +5,7 @@ import {
   hasCurrentDecennaleFirstPayment,
   isSepaSubscriptionForCurrentDecennale,
 } from "@/lib/decennale-payment-progress"
+import { isDecennaleContractData, parseJsonObject } from "@/lib/decennale-contract-data"
 import { prisma } from "@/lib/prisma"
 import { buildSignatureSessionFromContrat } from "@/lib/decennale-session-from-contrat"
 
@@ -21,19 +22,19 @@ export async function GET() {
 
     const userId = session.user.id
 
-    const contrat = await prisma.document.findFirst({
+    const contrats = await prisma.document.findMany({
       where: { userId, type: "contrat" },
       orderBy: { createdAt: "desc" },
+      take: 20,
       select: { numero: true, data: true, createdAt: true },
     })
+    const contrat = contrats.find((row) => isDecennaleContractData(row.data))
     if (!contrat) {
-      return NextResponse.json({ available: false, reason: "pas_de_contrat" })
+      return NextResponse.json({ available: false, reason: "pas_de_contrat_decennale" })
     }
 
-    let contratData: Record<string, unknown>
-    try {
-      contratData = JSON.parse(contrat.data || "{}") as Record<string, unknown>
-    } catch {
+    const contratData = parseJsonObject(contrat.data)
+    if (Object.keys(contratData).length === 0 && contrat.data?.trim()) {
       return NextResponse.json({ available: false, reason: "donnees_invalides" })
     }
 

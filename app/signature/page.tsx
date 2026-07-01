@@ -151,7 +151,23 @@ export default function SignaturePage() {
       <Header />
 
       <div className="max-w-2xl mx-auto px-6 py-12">
-        <Breadcrumb items={[{ label: "Accueil", href: "/" }, { label: "Devis", href: "/devis" }, { label: "Souscription", href: "/souscription" }, { label: "Signature" }]} />
+        <Breadcrumb
+          items={
+            souscription.insuranceProduct === "do"
+              ? [
+                  { label: "Accueil", href: "/" },
+                  { label: "Devis DO", href: "/devis-dommage-ouvrage" },
+                  { label: "Souscription DO", href: "/souscription-dommage-ouvrage" },
+                  { label: "Espace client" },
+                ]
+              : [
+                  { label: "Accueil", href: "/" },
+                  { label: "Devis", href: "/devis" },
+                  { label: "Souscription", href: "/souscription" },
+                  { label: "Signature" },
+                ]
+          }
+        />
         <Stepper currentStep="signature" />
         <h1 className="text-3xl font-semibold mb-2 text-black">
           {souscription.insuranceProduct === "do" ? "Prochaine étape" : "Signature numérique"}
@@ -208,9 +224,8 @@ export default function SignaturePage() {
         {souscription.insuranceProduct === "do" ? (
           <div className="bg-[#ebe6e0] border border-[#d4d4d4] rounded-2xl p-6 mb-8">
             <p className="text-sm text-[#171717]">
-              La signature ci-dessous concerne le modèle de contrat historique décennale BTP. Pour le dommage
-              ouvrage, suivez votre contrat et les attestations dans l&apos;espace client après validation assureur et
-              paiement.
+              Le dommage-ouvrage suit un parcours plateforme séparé de la signature décennale. Retrouvez la
+              validation du contrat, le paiement et les attestations directement dans votre espace client.
             </p>
           </div>
         ) : null}
