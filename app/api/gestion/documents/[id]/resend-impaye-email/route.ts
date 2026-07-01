@@ -14,6 +14,8 @@ function parseDocumentData(value: string): { raisonSociale?: string } {
   }
 }
 
+const DECENNALE_ATTESTATION_TYPES = ["attestation", "attestation_nominative"] as const
+
 /** Renvoie l’email de relance impayé (décennale uniquement). */
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -27,7 +29,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     const document = await prisma.document.findFirst({
       where: {
         id,
-        type: "attestation",
+        type: { in: [...DECENNALE_ATTESTATION_TYPES] },
         status: "suspendu",
       },
       include: { user: true },

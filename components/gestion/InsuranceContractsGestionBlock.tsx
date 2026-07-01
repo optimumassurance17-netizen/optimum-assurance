@@ -302,8 +302,9 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                             Fiche client
                           </Link>
                         ) : null}
-                        {c.status === CONTRACT_STATUS.approved &&
-                        insuranceProductUsesDirectMollieAfterApproval(c.productType) ? (
+                        {((c.status === CONTRACT_STATUS.approved &&
+                          insuranceProductUsesDirectMollieAfterApproval(c.productType)) ||
+                          (c.status === CONTRACT_STATUS.active && c.productType === "rc_fabriquant")) ? (
                           <button
                             type="button"
                             disabled={busyId === c.id}

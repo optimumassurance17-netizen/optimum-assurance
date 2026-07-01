@@ -249,6 +249,7 @@ export async function GET(
       user,
       devisAutonomy,
       documents,
+      insuranceContracts,
       payments,
       avenantFees,
       notes,
