@@ -4,12 +4,12 @@ import { rateLimitResponse } from "@/lib/rate-limit"
 import { asJsonObject } from "@/lib/json-object"
 
 const FALLBACK_REPLY =
-  "Je n'ai pas trouvé de réponse précise à votre question. Pour une réponse personnalisée, contactez-nous par email à contact@optimum-assurance.fr — nous répondons sous 24h. Vous pouvez aussi consulter notre FAQ : /faq"
+  "Je n'ai pas trouvé de réponse précise à votre question. Pour une réponse personnalisée, contactez-nous par email à info@optimum-assurance.eu — nous répondons sous 24h. Vous pouvez aussi consulter notre FAQ : /faq"
 
 function getFaqReply(message: string): string | null {
   const reply = findBestFaqMatch(message)
   if (reply) {
-    return reply + "\n\nPour toute question personnalisée, écrivez-nous à contact@optimum-assurance.fr"
+    return reply + "\n\nPour toute question personnalisée, écrivez-nous à info@optimum-assurance.eu"
   }
   return null
 }

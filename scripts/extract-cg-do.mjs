@@ -29,7 +29,7 @@ const { text: raw } = await pdf(buf)
 
 let text = raw
 
-const DISTRIBUTION_BLOCK = `Assureur : Accelerant Insurance. Distribution : Optimum Courtage, immatriculé à l'ORIAS sous le numéro LPS 28931947, 14 rue Amboise, 49300 Cholet, France — contact@optimum-assurance.fr — soumis au contrôle de l'Autorité de contrôle prudentiel et de résolution (ACPR).`
+const DISTRIBUTION_BLOCK = `Assureur : Accelerant Insurance. Distribution : Optimum Courtage, immatriculé à l'ORIAS sous le numéro LPS 28931947, 14 rue Amboise, 49300 Cholet, France — info@optimum-assurance.eu — soumis au contrôle de l'Autorité de contrôle prudentiel et de résolution (ACPR).`
 
 const replacements = [
   [/MARSH\s+INSURANCE/gi, "Accelerant Insurance"],
@@ -40,8 +40,8 @@ const replacements = [
   [/www\.marsh-insurance\.eu/gi, ""],
   [/marsh-insurance\.eu/gi, ""],
   [/MARSH INSURANCE\s*,?\s*Marsh SA est une société anonyme par actions, enregistrée en Belgique sous le numéro\s*d'entreprise 0403\.276\.906 et dont le siège social est situé Avenue Herrmann-Debroux 2, B-1160 Bruxelles, Belgique\.\s*Marsh SA fait partie du groupe Marsh McLennan[^.]*\.\s*Soumise au contrôle de l'Autorité de Contrôle\s*Prudentiel et de Résolution[^.]*\.\s*site web\s*:\s*www\.marsh-insurance\.eu/gi, DISTRIBUTION_BLOCK],
-  [/do@marsh-insurance\.fr/gi, "contact@optimum-assurance.fr"],
-  [/dpo@marsh-insurance\.fr/gi, "contact@optimum-assurance.fr"],
+  [/do@marsh-insurance\.fr/gi, "info@optimum-assurance.eu"],
+  [/dpo@marsh-insurance\.fr/gi, "info@optimum-assurance.eu"],
   [/Par courrier\s*:\s*Marsh Insurance\s*Service réclamation\s*Avenue Herrmann-Debroux 2, B-1160 Bruxelles, Belgique/gi, "Par courrier : Optimum Courtage — Service réclamations — 14 rue Amboise, 49300 Cholet, France"],
   [/Avenue Herrmann-Debroux 2,?\s*B-1160 Bruxelles,?\s*Belgique/gi, "14 rue Amboise, 49300 Cholet, France"],
   [/--\s*\d+\s+of\s+\d+\s+--/g, ""],

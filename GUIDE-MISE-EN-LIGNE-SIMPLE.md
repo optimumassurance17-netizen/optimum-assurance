@@ -227,7 +227,7 @@ npm run generate-secret
 
 **Variable 10**
 - Nom : `ADMIN_EMAILS`
-- Valeur : ton email (ex: contact@optimum-assurance.fr)
+- Valeur : ton email admin (ex: admin@example.com)
 
 **Variable 11**
 - Nom : `CRON_SECRET`

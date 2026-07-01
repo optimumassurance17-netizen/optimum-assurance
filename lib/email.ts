@@ -10,7 +10,12 @@ import {
 } from "@/lib/email-layout"
 import { buildReminderUnsubscribeUrl, type ReminderUnsubscribeType } from "@/lib/reminder-unsubscribe"
 
-const FROM = process.env.EMAIL_FROM || "Optimum Assurance <noreply@optimum-assurance.fr>"
+const DEFAULT_FROM = "Optimum Assurance <info@optimum-assurance.eu>"
+const configuredFrom = process.env.EMAIL_FROM?.trim()
+const FROM =
+  configuredFrom && !configuredFrom.toLowerCase().includes("@optimum-assurance.fr")
+    ? configuredFrom
+    : DEFAULT_FROM
 
 function escapeHtmlForEmail(s: string): string {
   return s

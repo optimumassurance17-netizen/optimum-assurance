@@ -63,7 +63,7 @@ Ajouter ces variables (Production) :
 | `DATABASE_URL` | URL PostgreSQL (Neon, Supabase, Vercel Postgres…) |
 | `ADMIN_EMAILS` | Votre email (accès CRM `/gestion`) |
 | `RESEND_API_KEY` | [resend.com](https://resend.com) → API Keys |
-| `EMAIL_FROM` | `Optimum <noreply@votredomaine.com>` (domaine vérifié dans Resend) |
+| `EMAIL_FROM` | `Optimum Assurance <info@optimum-assurance.eu>` (domaine vérifié dans Resend) |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API → URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → API → service_role (secret) |
 | `CRON_SECRET` | `npm run generate-secret` (en local) |

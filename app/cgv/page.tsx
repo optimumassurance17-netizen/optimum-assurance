@@ -1,7 +1,8 @@
 import Link from "next/link"
 import { Header } from "@/components/Header"
+import { getPublicContactEmail } from "@/lib/public-contact-email"
 
-const CONTACT_EMAIL = process.env.NEXT_PUBLIC_EMAIL || "contact@optimum-assurance.fr"
+const CONTACT_EMAIL = getPublicContactEmail()
 
 export default function CGVPage() {
   return (
