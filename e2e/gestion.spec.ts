@@ -54,6 +54,61 @@ function buildGestionDashboardWithDecennaleLead() {
   }
 }
 
+function buildGestionDashboardWithDoContract() {
+  return {
+    users: [
+      {
+        id: "client_do_1",
+        email: "client-do@example.com",
+        raisonSociale: "Client DO",
+        siret: "12345678901234",
+        createdAt: "2026-06-09T08:00:00.000Z",
+      },
+    ],
+    documents: [],
+    payments: [],
+    avenantFees: [],
+    devisDoLeads: [],
+    devisRcFabriquantLeads: [],
+    devisAssuranceTitreLeads: [],
+    devisEtudeLeads: [],
+    resiliationLogs: [],
+    resiliationRequests: [],
+    adminActivityLogs: [],
+    devisLeads: [],
+    devisDrafts: [],
+    pendingSignatures: [],
+    sepaSubscriptions: [],
+    insuranceContractsCount: 1,
+    insuranceContracts: [
+      {
+        id: "contract_do_1",
+        contractNumber: "DO-2026-001",
+        productType: "do",
+        exclusionsJson: null,
+        clientName: "Client DO",
+        siret: "12345678901234",
+        userId: "client_do_1",
+        premium: 2400,
+        status: "approved",
+        paidAt: null,
+        validUntil: null,
+        createdAt: "2026-06-09T08:00:00.000Z",
+        user: { id: "client_do_1", email: "client-do@example.com", raisonSociale: "Client DO" },
+        lifecyclePayments: [],
+      },
+    ],
+    dashboardActions: [],
+    dashboardActionsSummary: {
+      total: 0,
+      high: 0,
+      medium: 0,
+      overdue72h: 0,
+      dismissedToday: 0,
+    },
+  }
+}
+
 async function mockGestionAuth(page: import("@playwright/test").Page) {
   await page.route("**/api/auth/session", async (route) => {
     await route.fulfill({
@@ -262,6 +317,37 @@ test.describe("Gestion CRM — création compte lead", () => {
         "Mot de passe temporaire généré, mais email non envoyé. Copiez-le et transmettez-le manuellement au client. Mot de passe temporaire : ManualPass789"
       )
     ).toBeVisible()
+  })
+})
+
+test.describe("Gestion CRM — contrats plateforme", () => {
+  test("Contrat DO : bouton envoyer devis appelle l'endpoint email devis", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildGestionDashboardWithDoContract()),
+      })
+    })
+
+    let sendQuoteCalled = false
+    await page.route("**/api/gestion/insurance-contracts/contract_do_1/send-quote", async (route) => {
+      sendQuoteCalled = true
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, sentTo: "client-do@example.com" }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await expect(page.getByText("DO-2026-001", { exact: true })).toBeVisible()
+    await page.getByRole("button", { name: "Envoyer devis DO" }).click()
+
+    expect(sendQuoteCalled).toBe(true)
+    await expect(page.getByText("Devis DO envoyé à client-do@example.com.")).toBeVisible()
   })
 })
 
