@@ -349,6 +349,35 @@ test.describe("Gestion CRM — contrats plateforme", () => {
     expect(sendQuoteCalled).toBe(true)
     await expect(page.getByText("Devis DO envoyé à client-do@example.com.")).toBeVisible()
   })
+
+  test("Contrat DO : bouton demander documents appelle l'endpoint email pièces", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildGestionDashboardWithDoContract()),
+      })
+    })
+
+    let requestDocumentsCalled = false
+    await page.route("**/api/gestion/insurance-contracts/contract_do_1/request-documents", async (route) => {
+      requestDocumentsCalled = true
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, sentTo: "client-do@example.com" }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await expect(page.getByText("DO-2026-001", { exact: true })).toBeVisible()
+    await page.getByRole("button", { name: "Demander documents DO" }).click()
+
+    expect(requestDocumentsCalled).toBe(true)
+    await expect(page.getByText("Demande documents DO envoyée à client-do@example.com.")).toBeVisible()
+  })
 })
 
 test.describe("Gestion CRM — Sirene", () => {
