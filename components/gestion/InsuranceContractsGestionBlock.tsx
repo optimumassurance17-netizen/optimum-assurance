@@ -10,6 +10,7 @@ import {
   insuranceProductHasBundledQuotePolicy,
   insuranceProductHasFic,
   insuranceProductHasSchedule,
+  insuranceProductUsesDirectMollieAfterApproval,
 } from "@/lib/insurance-product"
 
 export type InsuranceContractGestionRow = {
@@ -102,10 +103,11 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
     <section id="contrats-plateforme" className="scroll-mt-24 mb-12">
       <h2 className="text-lg font-semibold text-white mb-2">Contrats plateforme (manuel)</h2>
       <div className="mb-4 p-4 rounded-xl border border-amber-800/60 bg-amber-950/25 text-sm text-amber-100/95">
-        <p className="font-medium text-amber-200 mb-1">RC Fabriquant — cotisation trimestrielle (comme la décennale)</p>
+        <p className="font-medium text-amber-200 mb-1">Paiements plateforme — points d’attention</p>
         <p className="text-amber-100/90">
           <strong>Décennale :</strong> le champ <strong>Prime TTC</strong> = prime <strong>annuelle</strong> (comme au souscription) — le virement Mollie
-          côté client est automatiquement <strong>1/4 (trimestre)</strong>. <strong>RC Fabriquant :</strong> la prime = montant de la{" "}
+          côté client est automatiquement <strong>1/4 (trimestre)</strong>. <strong>DO / Assurance titre :</strong> paiement unique
+          Mollie après validation gestion. <strong>RC Fabriquant :</strong> la prime = montant de la{" "}
           <strong>prochaine échéance</strong> Mollie (souvent annuelle ÷ 4). Entre deux échéances, ajustez via « Modifier prime ». Pas d’automatisation
           SEPA dédiée RC sur ce flux.
         </p>
@@ -299,6 +301,29 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                           <Link href={`/gestion/clients/${clientUserId}`} className="text-[#2563eb] hover:underline text-xs">
                             Fiche client
                           </Link>
+                        ) : null}
+                        {c.status === CONTRACT_STATUS.approved &&
+                        insuranceProductUsesDirectMollieAfterApproval(c.productType) ? (
+                          <button
+                            type="button"
+                            disabled={busyId === c.id}
+                            onClick={() =>
+                              run(c.id, async () => {
+                                const res = await fetch(`/api/gestion/insurance-contracts/${c.id}/request-payment`, {
+                                  method: "POST",
+                                })
+                                const j = await readResponseJson<{ error?: string; sentTo?: string; amount?: number }>(res)
+                                if (!res.ok) throw new Error(j.error || "Erreur demande paiement")
+                                setToast({
+                                  message: `Demande paiement envoyée${j.sentTo ? ` à ${j.sentTo}` : ""}.`,
+                                  type: "success",
+                                })
+                              })
+                            }
+                            className="text-emerald-400 hover:text-emerald-300 text-xs disabled:opacity-50"
+                          >
+                            Demander paiement Mollie
+                          </button>
                         ) : null}
                         {(c.status === CONTRACT_STATUS.approved || c.status === CONTRACT_STATUS.active) && (
                           <button
