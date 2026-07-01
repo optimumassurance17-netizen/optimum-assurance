@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import {
+  isDecennaleContractData,
+  isDecennalePendingSignatureData,
+} from "@/lib/decennale-contract-data"
 import { isDecennaleAttestationType } from "@/lib/decennale-impaye"
 import { prisma } from "@/lib/prisma"
 
@@ -52,7 +56,7 @@ export async function GET() {
     const userId = session.user.id
     const [
       pendingRows,
-      latestDecennaleContract,
+      latestDecennaleContractRows,
       activeDecennaleContract,
       paidPayments,
       sepa,
@@ -69,10 +73,11 @@ export async function GET() {
             contractData: true,
           },
         }),
-        prisma.document.findFirst({
+        prisma.document.findMany({
           where: { userId, type: "contrat" },
           orderBy: { createdAt: "desc" },
-          select: { id: true },
+          take: 20,
+          select: { id: true, data: true },
         }),
         prisma.insuranceContract.findFirst({
           where: {
@@ -101,7 +106,7 @@ export async function GET() {
           },
         }),
         prisma.insuranceContract.count({
-          where: { userId, status: "approved", paidAt: null },
+          where: { userId, productType: "decennale", status: "approved", paidAt: null },
         }),
         prisma.document.findMany({
           where: { userId },
@@ -111,8 +116,11 @@ export async function GET() {
         }),
       ])
 
+    const latestDecennaleContract = latestDecennaleContractRows.find((row) => isDecennaleContractData(row.data)) ?? null
+
     const pendingDecennale = pendingRows
       .map((row) => {
+        if (!isDecennalePendingSignatureData(row.contractData)) return null
         const parsed = parseJsonObject(row.contractData) as PendingContractData
         const customUploadedDevisFlow = parsed.customUploadedDevisFlow === true
         if (customUploadedDevisFlow) return null

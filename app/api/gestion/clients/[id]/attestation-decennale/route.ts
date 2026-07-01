@@ -9,6 +9,7 @@ import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
+import { isDecennaleContractData } from "@/lib/decennale-contract-data"
 import {
   parseActivitiesJson,
   parseExclusionsJson,
@@ -77,8 +78,8 @@ export async function POST(
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
     }
 
-    const [latestContractDocument, latestDecennaleContract] = await Promise.all([
-      prisma.document.findFirst({
+    const [latestContractDocuments, latestDecennaleContract] = await Promise.all([
+      prisma.document.findMany({
         where: {
           userId: id,
           type: "contrat",
@@ -90,6 +91,7 @@ export async function POST(
           status: true,
           createdAt: true,
         },
+        take: 20,
         orderBy: { createdAt: "desc" },
       }),
       prisma.insuranceContract.findFirst({
@@ -111,6 +113,8 @@ export async function POST(
         orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
       }),
     ])
+    const latestContractDocument =
+      latestContractDocuments.find((document) => isDecennaleContractData(document.data)) ?? null
 
     if (!latestContractDocument && !latestDecennaleContract) {
       return NextResponse.json(
