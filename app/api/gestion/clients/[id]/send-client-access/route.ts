@@ -43,10 +43,22 @@ export async function POST(
       mode: "resent",
     })
     if (!sent) {
-      return NextResponse.json(
-        { error: "Envoi email impossible (RESEND_API_KEY / domaine expéditeur)." },
-        { status: 503 }
-      )
+      await logAdminActivity({
+        adminEmail: session.user.email || "admin",
+        action: "user_client_access_email_failed",
+        targetType: "user",
+        targetId: user.id,
+        details: { email: user.email },
+      })
+
+      return NextResponse.json({
+        ok: true,
+        sentTo: user.email,
+        emailSent: false,
+        temporaryPassword: tempPassword,
+        warning:
+          "Mot de passe temporaire généré, mais email non envoyé. Copiez-le et transmettez-le manuellement au client.",
+      })
     }
 
     await logAdminActivity({
@@ -57,7 +69,12 @@ export async function POST(
       details: { email: user.email },
     })
 
-    return NextResponse.json({ ok: true, sentTo: user.email })
+    return NextResponse.json({
+      ok: true,
+      sentTo: user.email,
+      emailSent: true,
+      temporaryPassword: tempPassword,
+    })
   } catch (error) {
     console.error("Erreur envoi accès espace client:", error)
     return NextResponse.json(
