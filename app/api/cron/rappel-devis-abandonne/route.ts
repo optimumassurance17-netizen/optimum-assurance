@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { assertCronAuthorized } from "@/lib/cron-auth"
+import { requireManualReminderDispatch } from "@/lib/cron-reminder-mode"
 import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 
 /**
@@ -13,6 +14,8 @@ export async function GET(request: NextRequest) {
   try {
     const denied = assertCronAuthorized(request)
     if (denied) return denied
+    const manualOnly = requireManualReminderDispatch(request, "rappel-devis-abandonne")
+    if (manualOnly) return manualOnly
 
     const now = new Date()
     const minAge = new Date(now.getTime() - 48 * 60 * 60 * 1000) // 48h

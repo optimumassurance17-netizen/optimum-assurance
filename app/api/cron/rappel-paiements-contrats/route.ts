@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { assertCronAuthorized } from "@/lib/cron-auth"
+import { requireManualReminderDispatch } from "@/lib/cron-reminder-mode"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { SITE_URL } from "@/lib/site-url"
@@ -17,6 +18,8 @@ export async function GET(request: NextRequest) {
   try {
     const denied = assertCronAuthorized(request)
     if (denied) return denied
+    const manualOnly = requireManualReminderDispatch(request, "rappel-paiements-contrats")
+    if (manualOnly) return manualOnly
 
     const now = new Date()
     const lookback = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000)
