@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { asJsonObject } from "@/lib/json-object"
 
+const DECENNALE_ATTESTATION_TYPES = ["attestation", "attestation_nominative"] as const
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
       where: {
         id: attestationId,
         userId: session.user.id,
-        type: "attestation",
+        type: { in: [...DECENNALE_ATTESTATION_TYPES] },
         status: "suspendu",
       },
     })

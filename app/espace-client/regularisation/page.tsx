@@ -35,9 +35,13 @@ export default function RegularisationPage() {
         if (res.ok) {
           const data = await readResponseJson<SuspendedAttestation[]>(res)
           setAttestations(data)
+        } else {
+          const body = await readResponseJson<{ error?: string }>(res)
+          setError(body.error || "Impossible de charger les attestations à régulariser.")
         }
-      } catch {
+      } catch (error) {
         setAttestations([])
+        setError(error instanceof Error ? error.message : "Impossible de charger les attestations à régulariser.")
       } finally {
         setLoading(false)
       }

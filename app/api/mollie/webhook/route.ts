@@ -220,6 +220,48 @@ export async function POST(request: NextRequest) {
             }
           }
         }
+      } else if (metadata.type === "regularisation" && metadata.attestationId) {
+        const doc = await prisma.document.findUnique({
+          where: { id: metadata.attestationId },
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                raisonSociale: true,
+                adresse: true,
+                codePostal: true,
+                ville: true,
+                siret: true,
+              },
+            },
+          },
+        })
+        if (doc) {
+          user = doc.user
+          if (
+            !alreadyProcessed &&
+            (doc.type === "attestation" || doc.type === "attestation_nominative") &&
+            doc.status === "suspendu"
+          ) {
+            await prisma.document.update({
+              where: { id: doc.id },
+              data: { status: "valide" },
+            })
+            await prisma.adminActivityLog.create({
+              data: {
+                adminEmail: "mollie@webhook",
+                action: "regularisation_attestation_restored",
+                targetType: "document",
+                targetId: doc.id,
+                details: JSON.stringify({
+                  molliePaymentId: paymentId,
+                  attestationNumero: doc.numero,
+                }),
+              },
+            })
+          }
+        }
       } else if (metadata.type === "decennale_premier_trimestre") {
         const decennaleUserSelect = {
           id: true,
@@ -390,7 +432,11 @@ export async function POST(request: NextRequest) {
               type: metadata.type,
             })
           }
-        } else if (metadata.type !== "sepa_trimestre" && metadata.type !== "decennale_premier_trimestre") {
+        } else if (
+          metadata.type !== "sepa_trimestre" &&
+          metadata.type !== "decennale_premier_trimestre" &&
+          metadata.type !== "regularisation"
+        ) {
           const template = EMAIL_TEMPLATES.confirmationSouscription(
             metadata.raisonSociale || user.raisonSociale || user.email
           )
