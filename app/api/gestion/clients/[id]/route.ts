@@ -14,6 +14,8 @@ import { createSupabaseServiceClient } from "@/lib/supabase"
 import { GED_SUPABASE_BUCKET } from "@/lib/user-documents"
 import { asJsonObject } from "@/lib/json-object"
 import { fetchUserDocumentReviews } from "@/lib/user-document-review"
+import { isDecennaleContractData, parseJsonObject } from "@/lib/decennale-contract-data"
+import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import {
   CLIENT_DEVIS_AUTONOMY_ACTION,
   getClientDevisAutonomyConfig,
@@ -128,7 +130,7 @@ export async function GET(
       await Promise.all([
       prisma.document.findMany({
         where: { userId: id },
-        select: { id: true, type: true, numero: true, status: true, createdAt: true },
+        select: { id: true, type: true, numero: true, status: true, createdAt: true, data: true },
         orderBy: { createdAt: "desc" },
       }),
       prisma.payment.findMany({
@@ -244,11 +246,25 @@ export async function GET(
       () => fetchUserDocumentReviews(userDocuments.map((d) => d.id)),
       {}
     )
+    const canGenerateDecennaleAttestation =
+      insuranceContracts.some((contract) => contract.productType === "decennale") ||
+      documents.some((document) => {
+        if (document.type !== "contrat" || !isDecennaleContractData(document.data)) return false
+        return extractStructuredActivities(parseJsonObject(document.data)).length > 0
+      })
+    const documentsForClient = documents.map((document) => ({
+      id: document.id,
+      type: document.type,
+      numero: document.numero,
+      status: document.status,
+      createdAt: document.createdAt,
+    }))
 
     return NextResponse.json({
       user,
       devisAutonomy,
-      documents,
+      documents: documentsForClient,
+      canGenerateDecennaleAttestation,
       insuranceContracts,
       payments,
       avenantFees,
@@ -519,6 +535,9 @@ export async function DELETE(
 
     await prisma.$transaction(async (tx) => {
       await tx.pendingSignature.deleteMany({ where: { userId: id } })
+      await tx.insuranceContract.updateMany({ where: { userId: id }, data: { userId: null } })
+      await tx.missingSubActivity.updateMany({ where: { userId: id }, data: { userId: null } })
+      await tx.whatsappClickLog.updateMany({ where: { userId: id }, data: { userId: null } })
       await tx.pdfGenerationLog.updateMany({ where: { userId: id }, data: { userId: null } })
       await tx.devoirConseilLog.updateMany({ where: { userId: id }, data: { userId: null } })
       await tx.user.delete({ where: { id } })

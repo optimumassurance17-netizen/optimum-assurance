@@ -173,6 +173,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                     : 4
                 const rcFabAnnual = c.premium * rcFabInstallments
                 const clientUserId = c.clientUserId ?? c.userId
+                const contractHasLinkedClient = Boolean(c.userId && c.user?.email)
                 return (
                   <tr key={c.id} className="border-b border-gray-700/50">
                     <td className="p-3 sm:p-4">
@@ -306,7 +307,8 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                           <>
                             <button
                               type="button"
-                              disabled={busyId === c.id}
+                              disabled={busyId === c.id || !contractHasLinkedClient}
+                              title={contractHasLinkedClient ? undefined : "Rattachez d'abord un compte client au contrat."}
                               onClick={() =>
                                 run(c.id, async () => {
                                   const res = await fetch(`/api/gestion/insurance-contracts/${c.id}/send-quote`, {
@@ -326,7 +328,8 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                             </button>
                             <button
                               type="button"
-                              disabled={busyId === c.id}
+                              disabled={busyId === c.id || !contractHasLinkedClient}
+                              title={contractHasLinkedClient ? undefined : "Rattachez d'abord un compte client au contrat."}
                               onClick={() =>
                                 run(c.id, async () => {
                                   const res = await fetch(`/api/gestion/insurance-contracts/${c.id}/request-documents`, {
@@ -346,12 +349,14 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                             </button>
                           </>
                         ) : null}
-                        {((c.status === CONTRACT_STATUS.approved &&
+                        {(((c.status === CONTRACT_STATUS.approved &&
                           insuranceProductUsesDirectMollieAfterApproval(c.productType)) ||
-                          (c.status === CONTRACT_STATUS.active && c.productType === "rc_fabriquant")) ? (
+                          (c.status === CONTRACT_STATUS.active && c.productType === "rc_fabriquant")) &&
+                          (!c.paidAt || c.productType === "rc_fabriquant")) ? (
                           <button
                             type="button"
-                            disabled={busyId === c.id}
+                            disabled={busyId === c.id || !contractHasLinkedClient}
+                            title={contractHasLinkedClient ? undefined : "Rattachez d'abord un compte client au contrat."}
                             onClick={() =>
                               run(c.id, async () => {
                                 const res = await fetch(`/api/gestion/insurance-contracts/${c.id}/request-payment`, {

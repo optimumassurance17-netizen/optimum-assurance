@@ -83,10 +83,13 @@ export async function PATCH(
         html: (template as { html?: string }).html,
       })
       if (!sent) {
-        return NextResponse.json(
-          { error: "Envoi email impayé impossible (RESEND_API_KEY / domaine expéditeur)." },
-          { status: 503 }
-        )
+        return NextResponse.json({
+          ok: true,
+          status,
+          emailSent: false,
+          warning:
+            "Statut suspendu enregistré, mais email impayé non envoyé (RESEND_API_KEY / domaine expéditeur).",
+        })
       }
     }
 
@@ -116,14 +119,17 @@ export async function PATCH(
         html: (template as { html?: string }).html,
       })
       if (!sent) {
-        return NextResponse.json(
-          { error: "Envoi email résiliation impossible (RESEND_API_KEY / domaine expéditeur)." },
-          { status: 503 }
-        )
+        return NextResponse.json({
+          ok: true,
+          status,
+          emailSent: false,
+          warning:
+            "Résiliation enregistrée, mais email client non envoyé (RESEND_API_KEY / domaine expéditeur).",
+        })
       }
     }
 
-    return NextResponse.json({ ok: true, status })
+    return NextResponse.json({ ok: true, status, emailSent: status === "valide" ? null : true })
   } catch (error) {
     console.error("Erreur mise à jour statut:", error)
     return NextResponse.json(

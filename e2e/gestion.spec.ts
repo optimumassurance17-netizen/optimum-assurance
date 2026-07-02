@@ -380,6 +380,73 @@ test.describe("Gestion CRM — contrats plateforme", () => {
   })
 })
 
+test.describe("Gestion CRM — fiche client actions sensibles", () => {
+  test("Fiche client : envoi email appelle l'endpoint gestion", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    await page.route("**/api/gestion/clients/client_1", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildGestionClientData()),
+      })
+    })
+
+    let emailPayload: unknown = null
+    await page.route("**/api/gestion/clients/send-email", async (route) => {
+      emailPayload = route.request().postDataJSON()
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, sentTo: "client@example.com" }),
+      })
+    })
+
+    await page.goto("/gestion/clients/client_1")
+    await page.getByRole("button", { name: "Envoyer un email" }).click()
+    await page.getByPlaceholder("Objet de l'email").fill("Information dossier")
+    await page.getByPlaceholder("Votre message...").fill("Bonjour, merci pour votre retour.")
+    await page.getByRole("button", { name: "Envoyer", exact: true }).click()
+
+    expect(emailPayload).toEqual({
+      userId: "client_1",
+      subject: "Information dossier",
+      body: "Bonjour, merci pour votre retour.",
+    })
+    await expect(page.getByText("Email envoyé à client@example.com")).toBeVisible()
+  })
+
+  test("Fiche client : suppression appelle l'endpoint avec confirmation email", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    await page.route("**/api/gestion/clients/client_1", async (route) => {
+      if (route.request().method() === "DELETE") {
+        const payload = route.request().postDataJSON()
+        expect(payload).toEqual({ confirmEmail: "client@example.com" })
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ ok: true }),
+        })
+        return
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildGestionClientData()),
+      })
+    })
+
+    await page.goto("/gestion/clients/client_1")
+    await page.getByRole("button", { name: "Supprimer la fiche et l’espace client" }).click()
+    await page.getByPlaceholder("Email du client").fill("client@example.com")
+    await page.getByRole("button", { name: "Supprimer définitivement" }).click()
+
+    await expect(page).toHaveURL(/\/gestion$/)
+  })
+})
+
 test.describe("Gestion CRM — Sirene", () => {
   test("Fiche client : préremplit la raison sociale et l'adresse via Sirene", async ({ page }) => {
     await mockGestionAuth(page)
