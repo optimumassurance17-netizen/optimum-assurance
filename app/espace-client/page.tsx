@@ -242,6 +242,7 @@ export default function EspaceClientPage() {
   const [profile, setProfile] = useState<{ adresse?: string; codePostal?: string; ville?: string; telephone?: string; siret?: string } | null>(null)
   const [profileEditing, setProfileEditing] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
+  const [profileError, setProfileError] = useState<string | null>(null)
   const [summary, setSummary] = useState<{
     documentsCount: number
     attestationsCount: number
@@ -251,8 +252,10 @@ export default function EspaceClientPage() {
     lastPayment?: { amount: number; paidAt: string }
   } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"documents" | "paiements" | "profil">("documents")
   const [exportingPdf, setExportingPdf] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
   const [insuranceContracts, setInsuranceContracts] = useState<InsuranceContractListItem[]>([])
   const [doEtudeBanner, setDoEtudeBanner] = useState<{ show: boolean; hasSaved: boolean } | null>(null)
   const [caDeclarationByContractId, setCaDeclarationByContractId] = useState<Record<string, string>>({})
@@ -290,10 +293,6 @@ export default function EspaceClientPage() {
           fetch("/api/client/payments"),
           fetch("/api/client/insurance-contracts"),
           fetch("/api/client/do-questionnaire"),
-          fetch("/api/client/devis-drafts"),
-          fetch("/api/client/pending-signatures"),
-          fetch("/api/client/autonomy-status"),
-          fetch("/api/client/title-questionnaire"),
           fetch("/api/client/devis-drafts"),
           fetch("/api/client/pending-signatures"),
           fetch("/api/client/autonomy-status"),
@@ -351,8 +350,9 @@ export default function EspaceClientPage() {
         }
         const profileRes = await fetch("/api/client/profile")
         if (profileRes.ok) setProfile(await profileRes.json())
-      } catch {
+      } catch (error) {
         setDocuments([])
+        setLoadError(error instanceof Error ? error.message : "Erreur lors du chargement de l'espace client.")
       } finally {
         setLoading(false)
       }
@@ -795,18 +795,15 @@ export default function EspaceClientPage() {
                                   method: "POST",
                                   headers: { "Content-Type": "application/json" },
                                   body: JSON.stringify({
-                                    contractId: contract.id,
-                                    declaredChiffreAffaires: declaredCa,
+                                    chiffreAffairesReel: declaredCa,
                                   }),
                                 })
                                 const json = (await res.json().catch(() => ({}))) as {
                                   error?: string
-                                  contractId?: string
-                                  contractNumber?: string
-                                  plannedChiffreAffaires?: number
-                                  declaredChiffreAffaires?: number
+                                  baseline?: { chiffreAffairesPrevu?: number }
+                                  declaredCa?: number
                                   regularisationAmount?: number
-                                  newAnnualPremium?: number
+                                  newPrimeAnnuelle?: number
                                 }
                                 if (!res.ok) {
                                   throw new Error(json.error || "Erreur de calcul de régularisation.")
@@ -814,12 +811,12 @@ export default function EspaceClientPage() {
                                 setCaCalcByContractId((prev) => ({
                                   ...prev,
                                   [contract.id]: {
-                                    contractId: json.contractId || contract.id,
-                                    contractNumber: json.contractNumber || contract.contractNumber,
-                                    plannedCa: Number(json.plannedChiffreAffaires || 0),
-                                    declaredCa: Number(json.declaredChiffreAffaires || declaredCa),
+                                    contractId: contract.id,
+                                    contractNumber: contract.contractNumber,
+                                    plannedCa: Number(json.baseline?.chiffreAffairesPrevu || 0),
+                                    declaredCa: Number(json.declaredCa || declaredCa),
                                     regularisation: Number(json.regularisationAmount || 0),
-                                    newAnnualPremium: Number(json.newAnnualPremium || contract.premium),
+                                    newAnnualPremium: Number(json.newPrimeAnnuelle || contract.premium),
                                   },
                                 }))
                               } catch (error) {
@@ -895,16 +892,21 @@ export default function EspaceClientPage() {
                   const telephone = (form.querySelector('[name="telephone"]') as HTMLInputElement)?.value
                   const siret = (form.querySelector('[name="siret"]') as HTMLInputElement)?.value
                   setProfileSaving(true)
+                  setProfileError(null)
                   try {
                     const res = await fetch("/api/client/profile", {
                       method: "PATCH",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ adresse, codePostal, ville, telephone, siret }),
                     })
-                    if (res.ok) {
-                      setProfile((p) => ({ ...(p || {}), adresse, codePostal, ville, telephone, siret }))
-                      setProfileEditing(false)
+                    const json = (await res.json().catch(() => ({}))) as { error?: string }
+                    if (!res.ok) {
+                      throw new Error(json.error || "Impossible de mettre à jour le profil.")
                     }
+                    setProfile((p) => ({ ...(p || {}), adresse, codePostal, ville, telephone, siret }))
+                    setProfileEditing(false)
+                  } catch (error) {
+                    setProfileError(error instanceof Error ? error.message : "Impossible de mettre à jour le profil.")
                   } finally {
                     setProfileSaving(false)
                   }
@@ -941,6 +943,7 @@ export default function EspaceClientPage() {
                     Annuler
                   </button>
                 </div>
+                {profileError ? <p className="text-sm text-red-700">{profileError}</p> : null}
               </form>
             )}
           </div>
@@ -1085,12 +1088,12 @@ export default function EspaceClientPage() {
               <button
                 type="button"
                 onClick={() => {
-                  const input = document.getElementById("upload-input-releve-sinistralite") as HTMLInputElement | null
+                  const input = document.getElementById("ged-upload-releve_sinistralite") as HTMLInputElement | null
                   if (input) {
                     input.click()
                     return
                   }
-                  const target = document.getElementById("ged-releve-sinistralite")
+                  const target = document.getElementById("ged-doc-releve_sinistralite")
                   if (target) target.scrollIntoView({ behavior: "smooth", block: "center" })
                 }}
                 className="rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
@@ -1100,7 +1103,7 @@ export default function EspaceClientPage() {
               <button
                 type="button"
                 onClick={() => {
-                  const target = document.getElementById("ged-releve-sinistralite")
+                  const target = document.getElementById("ged-doc-releve_sinistralite")
                   if (target) target.scrollIntoView({ behavior: "smooth", block: "center" })
                 }}
                 className="rounded-xl border border-[#d4d4d4] bg-white px-4 py-2.5 text-sm font-semibold text-[#171717] hover:border-[#2563eb]"
@@ -1287,9 +1290,10 @@ export default function EspaceClientPage() {
                     disabled={exportingPdf}
                     onClick={async () => {
                       setExportingPdf(true)
+                      setExportError(null)
                       try {
                         const res = await fetch(`/api/documents/export-all-pdf?assurance=${assurance}`)
-                        if (!res.ok) throw new Error("Erreur")
+                        if (!res.ok) throw new Error("Impossible de générer l’export PDF.")
                         const blob = await res.blob()
                         const url = URL.createObjectURL(blob)
                         const a = document.createElement("a")
@@ -1297,8 +1301,8 @@ export default function EspaceClientPage() {
                         a.download = `documents-optimum-${assurance}-${new Date().toISOString().slice(0, 10)}.pdf`
                         a.click()
                         URL.revokeObjectURL(url)
-                      } catch {
-                        // Erreur silencieuse — l'utilisateur peut réessayer
+                      } catch (error) {
+                        setExportError(error instanceof Error ? error.message : "Impossible de générer l’export PDF.")
                       } finally {
                         setExportingPdf(false)
                       }
@@ -1315,6 +1319,7 @@ export default function EspaceClientPage() {
               </div>
             )}
           </div>
+          {exportError ? <p className="mb-4 text-sm text-red-700">{exportError}</p> : null}
           {loading ? (
             <div className="space-y-3">
               <SkeletonDocumentRow />
@@ -1412,6 +1417,12 @@ export default function EspaceClientPage() {
       </div>
 
       <InstallPrompt />
+
+        {loadError ? (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {loadError}
+          </div>
+        ) : null}
     </main>
   )
 }

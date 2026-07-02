@@ -106,7 +106,7 @@ export async function GET() {
           },
         }),
         prisma.insuranceContract.count({
-          where: { userId, productType: "decennale", status: "approved", paidAt: null },
+          where: { userId, status: "approved", paidAt: null },
         }),
         prisma.document.findMany({
           where: { userId },

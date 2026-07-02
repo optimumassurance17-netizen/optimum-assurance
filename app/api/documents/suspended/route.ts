@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+const DECENNALE_ATTESTATION_TYPES = ["attestation", "attestation_nominative"] as const
+
 /** Liste les attestations **décennale** suspendues (impayé). Le DO (`attestation_do`) est exclu — payé avant délivrance. */
 export async function GET() {
   try {
@@ -14,7 +16,7 @@ export async function GET() {
     const attestations = await prisma.document.findMany({
       where: {
         userId: session.user.id,
-        type: "attestation",
+        type: { in: [...DECENNALE_ATTESTATION_TYPES] },
         status: "suspendu",
       },
       orderBy: { createdAt: "desc" },

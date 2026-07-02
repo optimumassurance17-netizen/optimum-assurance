@@ -99,11 +99,14 @@ export default function ConfirmationPage() {
               setIsRegularisation(true)
               const attestationId = sessionStorage.getItem("mollie_regularisation_attestation")
               if (attestationId) {
-                await fetch("/api/documents/restore", {
+                const restoreRes = await fetch("/api/documents/restore", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ attestationId }),
                 })
+                if (!restoreRes.ok) {
+                  console.warn("[confirmation] restauration attestation non confirmée", await restoreRes.text().catch(() => ""))
+                }
                 sessionStorage.removeItem("mollie_regularisation_attestation")
               }
               await fetch("/api/payments/record", {
