@@ -1475,7 +1475,8 @@ export default function GestionPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus, motif: motif || undefined }),
       })
-      if (!res.ok) throw new Error()
+      const body = await readResponseJson<{ error?: string; warning?: string; emailSent?: boolean }>(res)
+      if (!res.ok) throw new Error(body.error || "Erreur lors de la mise à jour")
       if (data) {
         setData({
           ...data,
@@ -1485,9 +1486,21 @@ export default function GestionPage() {
         })
       }
       setResiliationModal(null)
-      setToast({ message: newStatus === "resilie" ? "Résiliation enregistrée. Email envoyé au client." : "Statut mis à jour", type: "success" })
-    } catch {
-      setToast({ message: "Erreur lors de la mise à jour", type: "error" })
+      setToast({
+        message:
+          body.warning ||
+          (newStatus === "resilie"
+            ? "Résiliation enregistrée. Email envoyé au client."
+            : "Statut mis à jour"),
+        type: body.emailSent === false ? "error" : "success",
+      })
+    } catch (error) {
+      const dashRes = await fetch("/api/gestion/dashboard")
+      if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+      setToast({
+        message: error instanceof Error ? error.message : "Erreur lors de la mise à jour",
+        type: "error",
+      })
     }
   }
 
@@ -2200,23 +2213,23 @@ export default function GestionPage() {
                 onClick={async () => {
                   const file = customDevisPdfInputRef.current?.files?.[0]
                   if (!customDevisUserId) {
-                    setError("Choisissez un client pour le devis PDF.")
+                    setToast({ message: "Choisissez un client pour le devis PDF.", type: "error" })
                     return
                   }
                   if (!file) {
-                    setError("Sélectionnez un fichier PDF.")
+                    setToast({ message: "Sélectionnez un fichier PDF.", type: "error" })
                     return
                   }
                   const primeTtcAnnuel = Number(customDevisPrime.replace(",", "."))
                   if (!Number.isFinite(primeTtcAnnuel) || primeTtcAnnuel <= 0) {
-                    setError("Indiquez une prime annuelle TTC valide (> 0).")
+                    setToast({ message: "Indiquez une prime annuelle TTC valide (> 0).", type: "error" })
                     return
                   }
                   const primeHtTrim = customDevisPrimeHt.trim()
                   const primeHtAnnuel =
                     primeHtTrim.length > 0 ? Number(primeHtTrim.replace(",", ".")) : undefined
                   if (primeHtAnnuel != null && (!Number.isFinite(primeHtAnnuel) || primeHtAnnuel <= 0)) {
-                    setError("Prime annuelle HT invalide.")
+                    setToast({ message: "Prime annuelle HT invalide.", type: "error" })
                     return
                   }
                   const coverageYears =
@@ -2227,11 +2240,10 @@ export default function GestionPage() {
                     customDevisProductType === "assurance_titre" &&
                     (coverageYears == null || !Number.isFinite(coverageYears) || coverageYears <= 0)
                   ) {
-                    setError("Indiquez une durée de validité initiale en années.")
+                    setToast({ message: "Indiquez une durée de validité initiale en années.", type: "error" })
                     return
                   }
                   setCustomDevisSending(true)
-                  setError(null)
                   try {
                     const fd = new FormData()
                     fd.append("pdf", file)
@@ -3440,12 +3452,18 @@ export default function GestionPage() {
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ action: "approve" }),
                           })
-                          if (!res.ok) throw new Error()
-                          setToast({ message: "Résiliation autorisée. Email envoyé au client.", type: "success" })
+                          const json = await readResponseJson<{ error?: string; warning?: string; emailSent?: boolean }>(res)
+                          if (!res.ok) throw new Error(json.error || "Erreur résiliation")
+                          setToast({
+                            message: json.warning || "Résiliation autorisée. Email envoyé au client.",
+                            type: json.emailSent === false ? "error" : "success",
+                          })
                           const dashRes = await fetch("/api/gestion/dashboard")
                           if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
-                        } catch {
-                          setToast({ message: "Erreur", type: "error" })
+                        } catch (error) {
+                          const dashRes = await fetch("/api/gestion/dashboard")
+                          if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                          setToast({ message: error instanceof Error ? error.message : "Erreur", type: "error" })
                         }
                       }}
                       className="text-sm px-3 py-1.5 rounded bg-green-900/50 text-green-300 hover:bg-green-900/70"
@@ -3460,12 +3478,13 @@ export default function GestionPage() {
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ action: "reject" }),
                           })
-                          if (!res.ok) throw new Error()
+                          const json = await readResponseJson<{ error?: string }>(res)
+                          if (!res.ok) throw new Error(json.error || "Erreur refus résiliation")
                           setToast({ message: "Demande refusée", type: "success" })
                           const dashRes = await fetch("/api/gestion/dashboard")
                           if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
-                        } catch {
-                          setToast({ message: "Erreur", type: "error" })
+                        } catch (error) {
+                          setToast({ message: error instanceof Error ? error.message : "Erreur", type: "error" })
                         }
                       }}
                       className="text-sm px-3 py-1.5 rounded bg-red-900/50 text-red-300 hover:bg-red-900/70"

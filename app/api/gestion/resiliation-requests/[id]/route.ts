@@ -100,14 +100,21 @@ export async function PATCH(
         html: (template as { html?: string }).html,
       })
       if (!sent) {
-        return NextResponse.json(
-          { error: "Envoi email client impossible (RESEND_API_KEY / domaine expéditeur)." },
-          { status: 503 }
-        )
+        return NextResponse.json({
+          ok: true,
+          status: "approved",
+          emailSent: false,
+          warning:
+            "Résiliation autorisée, mais email client non envoyé (RESEND_API_KEY / domaine expéditeur).",
+        })
       }
     }
 
-    return NextResponse.json({ ok: true, status: action === "approve" ? "approved" : "rejected" })
+    return NextResponse.json({
+      ok: true,
+      status: action === "approve" ? "approved" : "rejected",
+      emailSent: action === "approve" ? true : null,
+    })
   } catch (error) {
     console.error("Erreur traitement demande résiliation:", error)
     return NextResponse.json(

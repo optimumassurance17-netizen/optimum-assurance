@@ -123,6 +123,7 @@ interface ClientData {
   }
   documents: { id: string; type: string; numero: string; status: string; createdAt: string }[]
   insuranceContracts?: { id: string; contractNumber: string; productType: string; createdAt: string }[]
+  canGenerateDecennaleAttestation?: boolean
   payments: { id: string; amount: number; status: string; paidAt: string | null; createdAt: string }[]
   avenantFees: { id: string; amount: number; status: string; createdAt: string }[]
   notes?: { id: string; content: string; adminEmail: string; createdAt: string }[]
@@ -361,11 +362,7 @@ export default function ClientDetailPage() {
   const isOwnAdminAccount = authSession?.user?.id === clientId
   const ddaConsents = data.dda?.consents ?? []
   const ddaEvents = data.dda?.events ?? []
-  const hasDecennaleContract =
-    (data.insuranceContracts ?? []).some((contract) => contract.productType === "decennale") ||
-    documents.some((document) =>
-      ["contrat", "attestation", "attestation_nominative"].includes(document.type)
-    )
+  const canGenerateDecennaleAttestation = data.canGenerateDecennaleAttestation === true
   const questionnaireProfilePrefill = buildQuestionnaireProfilePrefill(user)
 
   const handleProfileSireneFill = async () => {
@@ -461,14 +458,14 @@ export default function ClientDetailPage() {
               </button>
               <button
                 type="button"
-                disabled={attestationGenerating || !hasDecennaleContract}
+                disabled={attestationGenerating || !canGenerateDecennaleAttestation}
                 title={
-                  hasDecennaleContract
+                  canGenerateDecennaleAttestation
                     ? undefined
                     : "Aucun contrat décennale trouvé pour ce client."
                 }
                 onClick={async () => {
-                  if (!hasDecennaleContract) return
+                  if (!canGenerateDecennaleAttestation) return
                   setAttestationGenerating(true)
                   try {
                     const res = await fetch(
@@ -527,7 +524,7 @@ export default function ClientDetailPage() {
               >
                 {attestationGenerating
                   ? "Génération attestation..."
-                  : hasDecennaleContract
+                  : canGenerateDecennaleAttestation
                     ? "Générer attestation décennale"
                     : "Aucun contrat décennale"}
               </button>
@@ -912,6 +909,16 @@ export default function ClientDetailPage() {
                 type="button"
                 disabled={devisAutonomySaving}
                 onClick={async () => {
+                  if (
+                    devisAutonomyForm.allowForcedActivities &&
+                    !devisAutonomyForm.forcedActivitiesText.trim()
+                  ) {
+                    setToast({
+                      message: "Renseignez au moins une activité forcée, ou décochez le forçage.",
+                      type: "error",
+                    })
+                    return
+                  }
                   setDevisAutonomySaving(true)
                   try {
                     const payload = {
@@ -1421,16 +1428,32 @@ export default function ClientDetailPage() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ content: noteInput }),
                   })
-                  if (res.ok) {
-                    const note = await readResponseJson<{
-                      id: string
-                      content: string
-                      adminEmail: string
-                      createdAt: string
-                    }>(res)
-                    setNotes((n) => [note, ...n])
-                    setNoteInput("")
+                  const note = await readResponseJson<{
+                    id?: string
+                    content?: string
+                    adminEmail?: string
+                    createdAt?: string
+                    error?: string
+                  }>(res)
+                  if (!res.ok || !note.id || !note.content || !note.adminEmail || !note.createdAt) {
+                    throw new Error(note.error || "Impossible d’ajouter la note.")
                   }
+                  setNotes((n) => [
+                    {
+                      id: note.id!,
+                      content: note.content!,
+                      adminEmail: note.adminEmail!,
+                      createdAt: note.createdAt!,
+                    },
+                    ...n,
+                  ])
+                  setNoteInput("")
+                  setToast({ message: "Note ajoutée", type: "success" })
+                } catch (error) {
+                  setToast({
+                    message: error instanceof Error ? error.message : "Impossible d’ajouter la note.",
+                    type: "error",
+                  })
                 } finally {
                   setNoteLoading(false)
                 }
@@ -1543,18 +1566,35 @@ export default function ClientDetailPage() {
                       userDocumentId: sinistreForm.userDocumentId || undefined,
                     }),
                   })
-                  if (res.ok) {
-                    const created = await readResponseJson<{
-                      id: string
-                      dateSinistre: string
-                      montantIndemnisation: number | null
-                      description: string | null
-                      userDocument: { id: string; filename: string; type: string } | null
-                    }>(res)
-                    setSinistres((prev) => [created, ...prev])
-                    setSinistreModal(false)
-                    setSinistreForm({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
+                  const created = await readResponseJson<{
+                    id?: string
+                    dateSinistre?: string
+                    montantIndemnisation?: number | null
+                    description?: string | null
+                    userDocument?: { id: string; filename: string; type: string } | null
+                    error?: string
+                  }>(res)
+                  if (!res.ok || !created.id || !created.dateSinistre) {
+                    throw new Error(created.error || "Impossible d’enregistrer le sinistre.")
                   }
+                  setSinistres((prev) => [
+                    {
+                      id: created.id!,
+                      dateSinistre: created.dateSinistre!,
+                      montantIndemnisation: created.montantIndemnisation ?? null,
+                      description: created.description ?? null,
+                      userDocument: created.userDocument ?? null,
+                    },
+                    ...prev,
+                  ])
+                  setSinistreModal(false)
+                  setSinistreForm({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
+                  setToast({ message: "Sinistre enregistré", type: "success" })
+                } catch (error) {
+                  setToast({
+                    message: error instanceof Error ? error.message : "Impossible d’enregistrer le sinistre.",
+                    type: "error",
+                  })
                 } finally {
                   setSinistreLoading(false)
                 }
@@ -1679,6 +1719,14 @@ export default function ClientDetailPage() {
                     }
                     setDeleteModal(false)
                     router.replace("/gestion")
+                  } catch (error) {
+                    setToast({
+                      message:
+                        error instanceof Error
+                          ? error.message
+                          : "Erreur lors de la suppression de la fiche.",
+                      type: "error",
+                    })
                   } finally {
                     setDeleteLoading(false)
                   }
@@ -1761,6 +1809,14 @@ export default function ClientDetailPage() {
                         type: "error",
                       })
                     }
+                  } catch (error) {
+                    setToast({
+                      message:
+                        error instanceof Error
+                          ? error.message
+                          : "Erreur lors de l’envoi de l’email.",
+                      type: "error",
+                    })
                   } finally {
                     setEmailLoading(false)
                   }
