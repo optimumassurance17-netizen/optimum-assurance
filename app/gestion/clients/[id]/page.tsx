@@ -62,6 +62,10 @@ function stringField(source: Record<string, unknown> | null, key: string): strin
   return typeof value === "string" ? value.trim() : ""
 }
 
+function hasProfileValues(form: ProfileForm): boolean {
+  return Object.values(form).some((value) => value.trim().length > 0)
+}
+
 function buildQuestionnaireProfilePrefill(user: ClientData["user"]): QuestionnaireProfilePrefill | null {
   const initial = parseQuestionnaireJson(user.doInitialQuestionnaireJson)
   const etude = parseQuestionnaireJson(user.doEtudeQuestionnaireJson)
@@ -86,23 +90,41 @@ function buildQuestionnaireProfilePrefill(user: ClientData["user"]): Questionnai
     telephone: stringField(souscripteurEtude, "telephone"),
   }
 
-  const merged: QuestionnaireProfilePrefill = {
-    email: fromEtude.email || fromInitial.email || user.email || "",
-    raisonSociale: fromEtude.raisonSociale || fromInitial.raisonSociale || "",
-    siret: fromInitial.siret,
-    adresse: fromEtude.adresse || fromInitial.adresse || "",
-    codePostal: fromEtude.codePostal || fromInitial.codePostal || "",
-    ville: fromEtude.ville || fromInitial.ville || "",
-    telephone: fromEtude.telephone || fromInitial.telephone || "",
-    sources: [
-      initial ? "premier devis DO" : "",
-      etude ? "questionnaire d'étude DO" : "",
-    ].filter(Boolean),
+  const titleInitial = parseQuestionnaireJson(user.titleInitialQuestionnaireJson)
+  const titleEtude = parseQuestionnaireJson(user.titleEtudeQuestionnaireJson)
+  const fromTitle: ProfileForm = {
+    email: stringField(titleEtude, "email") || stringField(titleInitial, "email"),
+    raisonSociale:
+      stringField(titleEtude, "raisonSociale") ||
+      stringField(titleInitial, "raisonSociale") ||
+      stringField(titleEtude, "nomComplet") ||
+      stringField(titleInitial, "nomComplet"),
+    siret: (stringField(titleEtude, "siret") || stringField(titleInitial, "siret")).replace(/\s/g, ""),
+    adresse: stringField(titleEtude, "adresse") || stringField(titleInitial, "adresse"),
+    codePostal: stringField(titleEtude, "codePostal") || stringField(titleInitial, "codePostal"),
+    ville: stringField(titleEtude, "ville") || stringField(titleInitial, "ville"),
+    telephone: stringField(titleEtude, "telephone") || stringField(titleInitial, "telephone"),
   }
 
-  return Object.entries(merged).some(([key, value]) => key !== "sources" && String(value).trim())
-    ? merged
-    : null
+  const sources = [
+    hasProfileValues(fromInitial) ? "premier devis DO" : "",
+    hasProfileValues(fromEtude) ? "questionnaire d'étude DO" : "",
+    hasProfileValues(fromTitle) ? "questionnaire assurance titre" : "",
+  ].filter(Boolean)
+  if (sources.length === 0) return null
+
+  const merged: QuestionnaireProfilePrefill = {
+    email: fromEtude.email || fromTitle.email || fromInitial.email || user.email || "",
+    raisonSociale: fromEtude.raisonSociale || fromTitle.raisonSociale || fromInitial.raisonSociale || "",
+    siret: fromInitial.siret || fromTitle.siret,
+    adresse: fromEtude.adresse || fromTitle.adresse || fromInitial.adresse || "",
+    codePostal: fromEtude.codePostal || fromTitle.codePostal || fromInitial.codePostal || "",
+    ville: fromEtude.ville || fromTitle.ville || fromInitial.ville || "",
+    telephone: fromEtude.telephone || fromTitle.telephone || fromInitial.telephone || "",
+    sources,
+  }
+
+  return merged
 }
 
 interface ClientData {
@@ -573,7 +595,7 @@ export default function ClientDetailPage() {
               helperText="Ouvre une autre fiche client sans revenir au dashboard."
             />
           </div>
-          {questionnaireProfilePrefill ? (
+          {questionnaireProfilePrefill && questionnaireProfilePrefill.sources.length > 0 ? (
             <div className="mb-4 rounded-lg border border-sky-800/60 bg-sky-950/20 p-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
