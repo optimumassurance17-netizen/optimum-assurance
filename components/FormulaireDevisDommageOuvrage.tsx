@@ -17,6 +17,7 @@ import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
 import { buildDoSouscriptionInsurancePayload } from "@/lib/build-do-souscription-payload"
 import { STORAGE_KEYS } from "@/lib/types"
 import { DevoirConseil } from "@/components/DevoirConseil"
+import { ClientSpaceCreationPanel } from "@/components/ClientSpaceCreationPanel"
 import { AdresseAutocomplete } from "@/components/AdresseAutocomplete"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { readResponseJson } from "@/lib/read-response-json"
@@ -350,6 +351,23 @@ export function FormulaireDevisDommageOuvrage() {
               Finaliser la souscription en ligne
             </Link>
           </div>
+        ) : null}
+        {data.email ? (
+          <ClientSpaceCreationPanel
+            email={data.email}
+            raisonSociale={data.raisonSociale}
+            siret={data.siret}
+            telephone={data.telephone}
+            adresse={data.adresse}
+            codePostal={data.codePostal}
+            ville={data.ville}
+            redirectTo={eligibleOnlineDo ? "/souscription-dommage-ouvrage" : "/espace-client"}
+            intro={
+              eligibleOnlineDo
+                ? "Vous pouvez créer le compte maintenant, puis finaliser la souscription en ligne avec la même adresse."
+                : "Créez votre espace client pour que l’équipe y ajoute le devis et que vous puissiez déposer les pièces."
+            }
+          />
         ) : null}
         <p className="text-sm text-black mb-2">
           Coût prévisionnel déclaré : <strong>{coutTotal.toLocaleString("fr-FR")} €</strong>

@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { hash } from "bcryptjs"
+import { Prisma } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
+
+function isPlausibleEmail(value: string): boolean {
+  return value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
 
 function optionalTrimmed(value: unknown): string | null {
   if (typeof value !== "string") return null
@@ -26,15 +31,21 @@ export async function POST(request: NextRequest) {
     const ville = optionalTrimmed(body.ville)
     const telephone = optionalTrimmed(body.telephone)
 
-    if (!email || !password || password.length < 8) {
+    if (!email || !isPlausibleEmail(email) || !password || password.length < 8) {
       return NextResponse.json(
-        { error: "Email requis et mot de passe minimum 8 caractères" },
+        { error: "Email valide requis et mot de passe minimum 8 caractères" },
         { status: 400 }
       )
     }
 
-    const existing = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+    const existing = await prisma.user.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: "insensitive",
+        },
+      },
+      select: { id: true },
     })
     if (existing) {
       return NextResponse.json(
@@ -90,6 +101,12 @@ export async function POST(request: NextRequest) {
       email: user.email,
     })
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json(
+        { error: "Un compte existe déjà avec cet email" },
+        { status: 400 }
+      )
+    }
     console.error("Erreur inscription:", error)
     return NextResponse.json(
       { error: "Erreur lors de la création du compte" },

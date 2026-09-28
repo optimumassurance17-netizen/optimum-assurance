@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
+import { ClientSpaceCreationPanel } from "@/components/ClientSpaceCreationPanel"
 import { readResponseJson } from "@/lib/read-response-json"
 
 const MIN_DESCRIPTION = 20
@@ -81,6 +82,13 @@ export default function EtudeDomainePage() {
             >
               Retour à l&apos;accueil
             </Link>
+            <ClientSpaceCreationPanel
+              email={email}
+              raisonSociale={raisonSociale}
+              siret={siret}
+              telephone={telephone}
+              intro="Créez votre espace avec cet e-mail pour suivre l’étude de faisabilité et déposer les pièces demandées."
+            />
           </div>
         </div>
       </main>

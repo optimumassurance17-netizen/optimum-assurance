@@ -356,7 +356,15 @@ export function FormulaireAssuranceTitre() {
                   </div>
                   {accountError ? (
                     <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                      {accountError}
+                      <p>{accountError}</p>
+                      {accountError.toLowerCase().includes("existe déjà") ? (
+                        <Link
+                          href={`/connexion?callbackUrl=${encodeURIComponent("/espace-client/assurance-titre")}`}
+                          className="mt-2 inline-block font-semibold text-[#2563eb] hover:underline"
+                        >
+                          Se connecter avec ce compte
+                        </Link>
+                      ) : null}
                     </div>
                   ) : null}
                   <button

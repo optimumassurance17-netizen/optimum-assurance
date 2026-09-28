@@ -153,5 +153,7 @@ test.describe("RC Pro et RC fabriquant", () => {
 
     await expect(page.getByText("Demande envoyée")).toBeVisible()
     await expect(page.getByText(/Nous avons bien reçu votre demande de devis RC Fabriquant/i)).toBeVisible()
+    await expect(page.getByRole("button", { name: "Créer mon espace client" })).toBeVisible()
+    await expect(page.getByText("contact@rc-battery.example")).toBeVisible()
   })
 })

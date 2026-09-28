@@ -106,6 +106,7 @@ test.describe("Parcours opérationnels décennale et dommage ouvrage", () => {
     await submitButton.click()
 
     await expect(page.getByRole("heading", { name: "Demande envoyée" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Créer mon espace client" })).toBeVisible()
     await expect(page.getByRole("link", { name: "Finaliser la souscription en ligne" })).toBeVisible()
 
     await page.getByRole("link", { name: "Finaliser la souscription en ligne" }).click()

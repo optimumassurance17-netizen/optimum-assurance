@@ -9,6 +9,7 @@ import {
   RC_ZONE_DISTRIBUTION_OPTIONS,
 } from "@/lib/rc-fabriquant-questionnaire"
 import { readResponseJson } from "@/lib/read-response-json"
+import { ClientSpaceCreationPanel } from "@/components/ClientSpaceCreationPanel"
 
 const initial: DevisRcFabriquantData = {
   raisonSociale: "",
@@ -172,6 +173,13 @@ export function FormulaireRcFabriquant() {
         <Link href="/" className="text-blue-600 font-semibold hover:underline">
           Retour à l’accueil
         </Link>
+        <ClientSpaceCreationPanel
+          email={email}
+          raisonSociale={data.raisonSociale}
+          siret={data.siret}
+          telephone={data.telephone}
+          intro="Créez votre espace avec l’e-mail de la demande pour déposer les pièces RC Fabriquant et suivre la proposition."
+        />
       </div>
     )
   }

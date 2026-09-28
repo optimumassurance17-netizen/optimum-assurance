@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
+import { signIn, useSession } from "next-auth/react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
 import { Stepper } from "@/components/Stepper"
@@ -15,6 +15,7 @@ import { trackConversion } from "@/lib/conversion-tracking"
 
 export default function CreerComptePage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [data, setData] = useState<
     (SouscriptionData & { signature?: string }) | (DoSouscriptionInsurancePayload & { signature?: string }) | null
   >(null)
@@ -22,6 +23,69 @@ export default function CreerComptePage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const continueAfterAccount = async (
+    payload: (SouscriptionData & { signature?: string }) | (DoSouscriptionInsurancePayload & { signature?: string }),
+    options?: { trackAccount?: boolean }
+  ) => {
+    if (options?.trackAccount) {
+      trackConversion("account_created", {
+        product: isDoSouscriptionPayload(payload) ? "do" : "decennale",
+        source: "create-account",
+      })
+    }
+
+    if (!isDoSouscriptionPayload(payload) && payload.tarif) {
+      const devisRes = await fetch("/api/documents/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "devis",
+          data: {
+            raisonSociale: payload.raisonSociale,
+            siret: payload.siret,
+            adresse: payload.adresse,
+            codePostal: payload.codePostal,
+            ville: payload.ville,
+            activites: payload.activites,
+            chiffreAffaires: payload.chiffreAffaires,
+            primeAnnuelle: payload.tarif.primeAnnuelle,
+            primeMensuelle: payload.tarif.primeMensuelle,
+            primeTrimestrielle: payload.tarif.primeTrimestrielle,
+            franchise: payload.tarif.franchise,
+            plafond: payload.tarif.plafond,
+            dateCreation: new Date().toLocaleDateString("fr-FR"),
+            telephone: payload.telephone,
+            email: payload.email,
+            representantLegal: payload.representantLegal,
+            civilite: payload.civilite,
+            sinistres: payload.sinistres,
+            jamaisAssure: payload.jamaisAssure,
+            resilieNonPaiement: payload.resilieNonPaiement,
+            reprisePasse: payload.reprisePasse,
+          },
+        }),
+      })
+      if (!devisRes.ok) {
+        const devisJson = await readResponseJson<{ error?: string }>(devisRes)
+        console.warn("[creer-compte] devis non enregistré", devisJson.error || devisRes.status)
+      }
+    }
+
+    if (isDoSouscriptionPayload(payload)) {
+      sessionStorage.setItem(STORAGE_KEYS.souscription, JSON.stringify(doPayloadToSouscriptionShim(payload)))
+    }
+
+    const ins = await runInsuranceContractStepAfterSouscription(
+      isDoSouscriptionPayload(payload) ? payload : (payload as SouscriptionData)
+    )
+    if (ins.outcome === "mollie_redirect") {
+      window.location.href = ins.checkoutUrl
+      return
+    }
+
+    router.push("/signature")
+  }
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -52,6 +116,19 @@ export default function CreerComptePage() {
     }
   }, [router])
 
+  const handleContinueLoggedIn = async () => {
+    if (!data?.email) return
+    setError(null)
+    setLoading(true)
+    try {
+      await continueAfterAccount(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -69,94 +146,51 @@ export default function CreerComptePage() {
     setLoading(true)
 
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: data.email,
-          password,
-          raisonSociale: data.raisonSociale,
-          siret: data.siret,
-          adresse: data.adresse,
-          codePostal: data.codePostal,
-          ville: data.ville,
-          telephone: data.telephone,
-        }),
-      })
-
-      const result = await readResponseJson<{ error?: string }>(res)
-
-      if (!res.ok) {
-        throw new Error(result.error || "Erreur lors de la création du compte")
-      }
-
-      const signInResult = await signIn("credentials", {
-        email: data.email,
-        password,
-        redirect: false,
-      })
-
-      if (signInResult?.error) {
-        throw new Error("Compte créé mais connexion échouée")
-      }
-      trackConversion("account_created", {
-        product: isDoSouscriptionPayload(data) ? "do" : "decennale",
-        source: "create-account",
-      })
-
-      // Sauvegarder le devis dans l'espace client (modèle type Optimum) — parcours décennale uniquement
-      if (!isDoSouscriptionPayload(data) && data.tarif) {
-        await fetch("/api/documents/create", {
+        const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            type: "devis",
-            data: {
-              raisonSociale: data.raisonSociale,
-              siret: data.siret,
-              adresse: data.adresse,
-              codePostal: data.codePostal,
-              ville: data.ville,
-              activites: data.activites,
-              chiffreAffaires: data.chiffreAffaires,
-              primeAnnuelle: data.tarif.primeAnnuelle,
-              primeMensuelle: data.tarif.primeMensuelle,
-              primeTrimestrielle: data.tarif.primeTrimestrielle,
-              franchise: data.tarif.franchise,
-              plafond: data.tarif.plafond,
-              dateCreation: new Date().toLocaleDateString("fr-FR"),
-              telephone: data.telephone,
-              email: data.email,
-              representantLegal: data.representantLegal,
-              civilite: data.civilite,
-              sinistres: data.sinistres,
-              jamaisAssure: data.jamaisAssure,
-              resilieNonPaiement: data.resilieNonPaiement,
-              reprisePasse: data.reprisePasse,
-            },
+            email: data.email,
+            password,
+            raisonSociale: data.raisonSociale,
+            siret: data.siret,
+            adresse: data.adresse,
+            codePostal: data.codePostal,
+            ville: data.ville,
+            telephone: data.telephone,
           }),
         })
-      }
 
-      if (isDoSouscriptionPayload(data)) {
-        sessionStorage.setItem(STORAGE_KEYS.souscription, JSON.stringify(doPayloadToSouscriptionShim(data)))
-      }
+        const result = await readResponseJson<{ error?: string }>(res)
 
-      const ins = await runInsuranceContractStepAfterSouscription(
-        isDoSouscriptionPayload(data) ? data : (data as SouscriptionData)
-      )
-      if (ins.outcome === "mollie_redirect") {
-        window.location.href = ins.checkoutUrl
-        return
-      }
+        if (!res.ok) {
+          throw new Error(result.error || "Erreur lors de la création du compte")
+        }
 
-      router.push("/signature")
+        const signInResult = await signIn("credentials", {
+          email: data.email,
+          password,
+          redirect: false,
+        })
+
+        if (signInResult?.error) {
+          throw new Error("Compte créé mais connexion échouée")
+        }
+
+      await continueAfterAccount(data, { trackAccount: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur")
     } finally {
       setLoading(false)
     }
   }
+
+  const sessionEmail = session?.user?.email?.trim().toLowerCase() ?? ""
+  const sameSession = Boolean(data?.email) && status === "authenticated" && sessionEmail === data!.email.trim().toLowerCase()
+  const otherSession = Boolean(data?.email) && status === "authenticated" && !sameSession
+  const loginHref = `/connexion?callbackUrl=${encodeURIComponent(
+    data && isDoSouscriptionPayload(data) ? "/souscription-dommage-ouvrage" : "/souscription"
+  )}`
 
   if (!data) {
     return (
@@ -185,6 +219,35 @@ export default function CreerComptePage() {
           <p className="text-sm text-[#171717] mt-1">{data.raisonSociale}</p>
         </div>
 
+        {sameSession ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+            <p className="text-sm text-emerald-900">
+              Vous êtes déjà connecté avec <strong>{data.email}</strong>. Continuez la souscription sans recréer le compte.
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleContinueLoggedIn()}
+              disabled={loading}
+              className="mt-4 w-full bg-[#2563eb] text-white py-4 rounded-xl hover:bg-[#1d4ed8] transition font-medium disabled:bg-slate-300 disabled:cursor-not-allowed"
+            >
+              {loading ? "Poursuite en cours..." : "Continuer la souscription"}
+            </button>
+          </div>
+        ) : null}
+
+        {otherSession ? (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            Votre session est ouverte avec <strong>{session?.user?.email}</strong>. Le dossier en cours est associé à{" "}
+            <strong>{data.email}</strong>.
+            <div className="mt-3">
+              <Link href={loginHref} className="font-semibold text-[#2563eb] hover:underline">
+                Se connecter avec le bon compte
+              </Link>
+            </div>
+          </div>
+        ) : null}
+
+        {!sameSession ? (
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block mb-2 font-medium text-black">
@@ -217,7 +280,12 @@ export default function CreerComptePage() {
 
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-              {error}
+              <p>{error}</p>
+              {error.toLowerCase().includes("existe déjà") ? (
+                <Link href={loginHref} className="mt-2 inline-block font-semibold text-[#2563eb] hover:underline">
+                  Se connecter pour continuer
+                </Link>
+              ) : null}
             </div>
           )}
 
@@ -229,6 +297,7 @@ export default function CreerComptePage() {
             {loading ? "Création en cours..." : "Créer mon espace et continuer"}
           </button>
         </form>
+        ) : null}
 
         <p className="text-center text-sm text-[#171717] mt-6 space-x-4">
           <Link

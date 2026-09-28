@@ -300,6 +300,20 @@ export async function POST(request: NextRequest) {
       mode: "created",
     })
 
+    const accountCreationAlertSent = await sendAccountCreationSummaryAlert({
+      source: "admin_create_from_lead",
+      createdBy: session.user.email || "admin",
+      leadType,
+      leadId,
+      user: {
+        id: user.id,
+        email: user.email,
+        raisonSociale: user.raisonSociale,
+        siret: siret ?? undefined,
+        telephone: telephone ?? undefined,
+      },
+    })
+
     if (!sent) {
       await logAdminActivity({
         adminEmail: session.user.email || "admin",
@@ -310,6 +324,8 @@ export async function POST(request: NextRequest) {
           email: user.email,
           leadId,
           leadType,
+          accountCreationAlertSent,
+          usedSchemaFallback: usedFallback,
         },
       })
 
@@ -324,20 +340,6 @@ export async function POST(request: NextRequest) {
           "Compte créé, mais email d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client.",
       })
     }
-
-    const accountCreationAlertSent = await sendAccountCreationSummaryAlert({
-      source: "admin_create_from_lead",
-      createdBy: session.user.email || "admin",
-      leadType,
-      leadId,
-      user: {
-        id: user.id,
-        email: user.email,
-        raisonSociale: user.raisonSociale,
-        siret: siret ?? undefined,
-        telephone: telephone ?? undefined,
-      },
-    })
 
     await logAdminActivity({
       adminEmail: session.user.email || "admin",

@@ -210,6 +210,24 @@ test.describe("API validations critiques", () => {
     expect(data.error).toMatch(/JSON invalide|Objet JSON attendu/i)
   })
 
+  test("Inscription: email invalide rejeté en 400", async ({ request }) => {
+    const res = await request.post("/api/auth/register", {
+      data: { email: "pas-un-email", password: "motdepasse1" },
+    })
+    expect(res.status()).toBe(400)
+    const data = (await res.json()) as { error?: string }
+    expect(data.error).toMatch(/Email valide/i)
+  })
+
+  test("Inscription: mot de passe trop court rejeté en 400", async ({ request }) => {
+    const res = await request.post("/api/auth/register", {
+      data: { email: "client@example.com", password: "court" },
+    })
+    expect(res.status()).toBe(400)
+    const data = (await res.json()) as { error?: string }
+    expect(data.error).toMatch(/mot de passe/i)
+  })
+
   test("Reset password: JSON invalide rejeté en 400", async ({ request }) => {
     const res = await request.fetch("/api/auth/reset-password", {
       method: "POST",

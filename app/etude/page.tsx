@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
+import { ClientSpaceCreationPanel } from "@/components/ClientSpaceCreationPanel"
 import { readResponseJson } from "@/lib/read-response-json"
 
 interface DonneesEtude {
@@ -112,6 +113,12 @@ export default function EtudePage() {
             <Link href="/" className="block w-full bg-[#2563eb] text-white py-3 rounded-xl hover:bg-[#1d4ed8] transition text-center font-medium">
               Retour à l&apos;accueil
             </Link>
+            <ClientSpaceCreationPanel
+              email={email}
+              raisonSociale={donnees?.raisonSociale}
+              siret={donnees?.siret}
+              intro="Créez votre espace avec cet e-mail pour recevoir la proposition et déposer le relevé de sinistralité."
+            />
           </div>
         </div>
       </main>
