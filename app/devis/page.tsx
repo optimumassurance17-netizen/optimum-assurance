@@ -73,7 +73,7 @@ function formatActiviteTarifLabel(item: {
 
 function DevisPageContent() {
   const router = useRouter()
-  const { status: sessionStatus } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
   const [fromEspaceClient, setFromEspaceClient] = useState(false)
   const [metierParam, setMetierParam] = useState<string | null>(null)
   const [resumeParam, setResumeParam] = useState<string | null>(null)
@@ -101,7 +101,7 @@ function DevisPageContent() {
   const [trackingContext, setTrackingContext] = useState<ConversionTrackingContext | null>(null)
 
   useEffect(() => {
-    if (sessionStatus !== "authenticated") return
+    if (sessionStatus !== "authenticated" || session?.user?.isAdmin) return
     let active = true
     ;(async () => {
       try {
@@ -134,7 +134,7 @@ function DevisPageContent() {
     return () => {
       active = false
     }
-  }, [sessionStatus])
+  }, [sessionStatus, session?.user?.isAdmin])
 
   useEffect(() => {
     if (typeof window === "undefined") return
