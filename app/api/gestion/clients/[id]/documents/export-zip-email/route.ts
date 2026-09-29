@@ -6,7 +6,7 @@ import { readFile } from "fs/promises"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { sendEmail } from "@/lib/email"
+import { emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { createSupabaseBrowserClient, createSupabaseServiceClient } from "@/lib/supabase"
 import { SITE_URL } from "@/lib/site-url"
@@ -517,10 +517,7 @@ export async function POST(
       skipBranding: true,
     })
     if (!sent) {
-      return NextResponse.json(
-        { error: "Envoi email impossible (Resend indisponible ou rejet pièce jointe)." },
-        { status: 503 }
-      )
+      return NextResponse.json(emailNotSentBody())
     }
 
     await logAdminActivity({

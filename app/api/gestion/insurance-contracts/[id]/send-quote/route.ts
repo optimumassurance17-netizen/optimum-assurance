@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
-import { sendEmail } from "@/lib/email"
+import { emailNotSentBody, sendEmail } from "@/lib/email"
 import { escapeHtmlForEmail } from "@/lib/email-layout"
 import { prisma } from "@/lib/prisma"
 import { logContractAction } from "@/lib/insurance-contract-service"
@@ -91,10 +91,7 @@ export async function POST(
     })
 
     if (!sent) {
-      return NextResponse.json(
-        { error: "Envoi email impossible (Resend ou domaine expéditeur)." },
-        { status: 503 }
-      )
+      return NextResponse.json(emailNotSentBody())
     }
 
     await logContractAction(

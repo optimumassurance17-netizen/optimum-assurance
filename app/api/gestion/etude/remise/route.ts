@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import crypto from "crypto"
-import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 
 import { SITE_URL as APP_URL } from "@/lib/site-url"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
@@ -126,10 +126,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!sent) {
-      return NextResponse.json(
-        { error: "Envoi d'email non configuré (RESEND_API_KEY)" },
-        { status: 503 }
-      )
+      return NextResponse.json(emailNotSentBody())
     }
 
     await prisma.devisEtudeLead.update({

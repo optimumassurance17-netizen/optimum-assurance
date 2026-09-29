@@ -6,7 +6,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
 import { createSupabaseServiceClient } from "@/lib/supabase"
-import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { buildDdaNeedSummary } from "@/lib/dda-compliance"
 import {
@@ -275,10 +275,7 @@ export async function POST(request: NextRequest) {
     })
     if (!sent) {
       await prisma.pendingSignature.deleteMany({ where: { signatureRequestId: signRequestId } })
-      return NextResponse.json(
-        { error: "Envoi e-mail impossible (RESEND_API_KEY / domaine expéditeur)" },
-        { status: 503 }
-      )
+      return NextResponse.json(emailNotSentBody())
     }
     const copySent = await sendRcFabriquantEmailCopy({
       originalTo: user.email,

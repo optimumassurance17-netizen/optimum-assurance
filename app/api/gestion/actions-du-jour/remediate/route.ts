@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
-import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { SITE_URL } from "@/lib/site-url"
 import { prisma } from "@/lib/prisma"
@@ -184,6 +184,9 @@ export async function POST(request: NextRequest) {
         replyTo,
       })
       if (singleResult.status === "failed") {
+        if (singleResult.statusCode === 503) {
+          return NextResponse.json(emailNotSentBody())
+        }
         return NextResponse.json(
           { error: singleResult.error },
           { status: singleResult.statusCode }

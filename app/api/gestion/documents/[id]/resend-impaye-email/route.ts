@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 
 function parseDocumentData(value: string): { raisonSociale?: string } {
@@ -53,10 +53,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       html: (template as { html?: string }).html,
     })
     if (!sent) {
-      return NextResponse.json(
-        { error: "Envoi impossible (RESEND_API_KEY / domaine expéditeur)." },
-        { status: 503 }
-      )
+      return NextResponse.json(emailNotSentBody())
     }
 
     await logAdminActivity({

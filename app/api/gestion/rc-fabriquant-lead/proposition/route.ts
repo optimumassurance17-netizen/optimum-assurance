@@ -4,7 +4,7 @@ import { hash } from "bcryptjs"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { buildDdaNeedSummary, buildDdaSuitabilityStatement } from "@/lib/dda-compliance"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
@@ -165,10 +165,15 @@ export async function POST(request: NextRequest) {
     })
 
     if (!sent) {
-      return NextResponse.json(
-        { error: "Envoi impossible (RESEND_API_KEY / domaine expéditeur)" },
-        { status: 503 }
-      )
+      const notSent = emailNotSentBody()
+      if (createdClientSpace && tempPassword) {
+        return NextResponse.json({
+          ...notSent,
+          temporaryPassword: tempPassword,
+          warning: `${notSent.warning} Espace client créé pour ${user.email}. Mot de passe temporaire : ${tempPassword}`,
+        })
+      }
+      return NextResponse.json(notSent)
     }
     const copySent = await sendRcFabriquantEmailCopy({
       originalTo: email,

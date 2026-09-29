@@ -40,7 +40,7 @@ type Props = {
   contracts: InsuranceContractGestionRow[]
   searchQuery: string
   onRefresh: () => Promise<void>
-  setToast: (t: { message: string; type?: "success" | "error" }) => void
+  setToast: (t: { message: string; type?: "success" | "warning" | "error" }) => void
 }
 
 function rcFabInstallmentsFromExclusionsJson(raw: string | null | undefined): number {
@@ -314,8 +314,20 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                                   const res = await fetch(`/api/gestion/insurance-contracts/${c.id}/send-quote`, {
                                     method: "POST",
                                   })
-                                  const j = await readResponseJson<{ error?: string; sentTo?: string }>(res)
+                                  const j = await readResponseJson<{
+                                    error?: string
+                                    sentTo?: string
+                                    emailSent?: boolean
+                                    warning?: string
+                                  }>(res)
                                   if (!res.ok) throw new Error(j.error || "Erreur envoi devis DO")
+                                  if (j.emailSent === false) {
+                                    setToast({
+                                      message: j.warning || "Email non envoyé.",
+                                      type: "warning",
+                                    })
+                                    return
+                                  }
                                   setToast({
                                     message: `Devis DO envoyé${j.sentTo ? ` à ${j.sentTo}` : ""}.`,
                                     type: "success",
@@ -335,8 +347,20 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                                   const res = await fetch(`/api/gestion/insurance-contracts/${c.id}/request-documents`, {
                                     method: "POST",
                                   })
-                                  const j = await readResponseJson<{ error?: string; sentTo?: string }>(res)
+                                  const j = await readResponseJson<{
+                                    error?: string
+                                    sentTo?: string
+                                    emailSent?: boolean
+                                    warning?: string
+                                  }>(res)
                                   if (!res.ok) throw new Error(j.error || "Erreur demande documents DO")
+                                  if (j.emailSent === false) {
+                                    setToast({
+                                      message: j.warning || "Email non envoyé.",
+                                      type: "warning",
+                                    })
+                                    return
+                                  }
                                   setToast({
                                     message: `Demande documents DO envoyée${j.sentTo ? ` à ${j.sentTo}` : ""}.`,
                                     type: "success",
@@ -362,8 +386,21 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                                 const res = await fetch(`/api/gestion/insurance-contracts/${c.id}/request-payment`, {
                                   method: "POST",
                                 })
-                                const j = await readResponseJson<{ error?: string; sentTo?: string; amount?: number }>(res)
+                                const j = await readResponseJson<{
+                                  error?: string
+                                  sentTo?: string
+                                  amount?: number
+                                  emailSent?: boolean
+                                  warning?: string
+                                }>(res)
                                 if (!res.ok) throw new Error(j.error || "Erreur demande paiement")
+                                if (j.emailSent === false) {
+                                  setToast({
+                                    message: j.warning || "Email non envoyé.",
+                                    type: "warning",
+                                  })
+                                  return
+                                }
                                 setToast({
                                   message: `Demande paiement envoyée${j.sentTo ? ` à ${j.sentTo}` : ""}.`,
                                   type: "success",

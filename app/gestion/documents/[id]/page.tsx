@@ -36,7 +36,7 @@ export default function GestionDocumentPage() {
   } | null>(null)
   const [loading, setLoading] = useState(true)
   const [signatureSendLoading, setSignatureSendLoading] = useState(false)
-  const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
+  const [toast, setToast] = useState<{ message: string; type?: "success" | "warning" | "error" } | null>(null)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -117,8 +117,17 @@ export default function GestionDocumentPage() {
                       error?: string
                       ok?: boolean
                       contractNumero?: string
+                      emailSent?: boolean
+                      warning?: string
                     }>(res)
                     if (!res.ok) throw new Error(json.error || "Erreur")
+                    if (json.emailSent === false) {
+                      setToast({
+                        message: json.warning || "Email non envoyé.",
+                        type: "warning",
+                      })
+                      return
+                    }
                     setToast({
                       message: `Contrat ${json.contractNumero ?? ""} — lien de signature envoyé à l’email du client.`,
                       type: "success",

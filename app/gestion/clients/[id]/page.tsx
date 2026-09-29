@@ -308,7 +308,7 @@ export default function ClientDetailPage() {
   })
   const [attestationGenerating, setAttestationGenerating] = useState(false)
   const [clientAccessLoading, setClientAccessLoading] = useState(false)
-  const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
+  const [toast, setToast] = useState<{ message: string; type?: "success" | "warning" | "error" } | null>(null)
   const [deleteModal, setDeleteModal] = useState(false)
   const [deleteConfirmEmail, setDeleteConfirmEmail] = useState("")
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -451,7 +451,7 @@ export default function ClientDetailPage() {
                       message: json.temporaryPassword
                         ? `${prefix}${/[.!?]$/.test(prefix) ? "" : "."} Mot de passe temporaire : ${json.temporaryPassword}`
                         : prefix,
-                      type: json.emailSent === false ? "error" : "success",
+                      type: json.emailSent === false ? "warning" : "success",
                     })
                   } catch (err) {
                     setToast({
@@ -528,7 +528,7 @@ export default function ClientDetailPage() {
                       message: json.warning
                         ? `${emailInfo} ${json.warning}`
                         : `Attestation ${json.document.numero} générée. ${emailInfo}`,
-                      type: json.emailSent ? "success" : "error",
+                      type: json.emailSent ? "success" : "warning",
                     })
                   } catch (err) {
                     setToast({
@@ -1815,8 +1815,15 @@ export default function ClientDetailPage() {
                       ok?: boolean
                       sentTo?: string
                       error?: string
+                      emailSent?: boolean
+                      warning?: string
                     }>(res)
-                    if (res.ok && json.ok) {
+                    if (res.ok && json.emailSent === false) {
+                      setToast({
+                        message: json.warning || "Email non envoyé.",
+                        type: "warning",
+                      })
+                    } else if (res.ok && json.ok) {
                       setEmailModal(false)
                       setEmailSubject("")
                       setEmailBody("")

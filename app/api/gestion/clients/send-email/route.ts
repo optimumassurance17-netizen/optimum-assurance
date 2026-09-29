@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { sendEmail } from "@/lib/email"
+import { emailNotSentBody, sendEmail } from "@/lib/email"
 import { escapeHtmlForEmail } from "@/lib/email-layout"
 import { logAdminActivity } from "@/lib/admin-activity"
 
@@ -75,13 +75,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!sent) {
-      return NextResponse.json(
-        {
-          error:
-            "Envoi impossible (Resend). Vérifiez RESEND_API_KEY sur Vercel, le domaine d’expédition vérifié sur resend.com, et EMAIL_FROM. En mode test Resend, seuls certains destinataires sont autorisés : vérifiez la doc « testing » sur resend.com.",
-        },
-        { status: 503 }
-      )
+      return NextResponse.json(emailNotSentBody())
     }
 
     await logAdminActivity({

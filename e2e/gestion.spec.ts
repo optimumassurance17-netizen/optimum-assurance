@@ -276,10 +276,11 @@ test.describe("Gestion CRM — création compte lead", () => {
     await page.getByRole("button", { name: "Créer le compte" }).click()
 
     await expect(
-      page.getByText(
+      page.getByRole("status").getByText(
         "Compte créé, mais email d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client. Mot de passe temporaire : TempPass123"
       )
     ).toBeVisible()
+    await expect(page.getByRole("alert").filter({ hasText: "Compte créé, mais email d'accès non envoyé" })).toHaveCount(0)
     await expect(page.getByRole("link", { name: /Compte existant/ })).toBeVisible()
   })
 
@@ -313,10 +314,13 @@ test.describe("Gestion CRM — création compte lead", () => {
     await page.getByRole("button", { name: "Créer / renvoyer accès client" }).click()
 
     await expect(
-      page.getByText(
+      page.getByRole("status").getByText(
         "Mot de passe temporaire généré, mais email non envoyé. Copiez-le et transmettez-le manuellement au client. Mot de passe temporaire : ManualPass789"
       )
     ).toBeVisible()
+    await expect(
+      page.getByRole("alert").filter({ hasText: "Mot de passe temporaire généré, mais email non envoyé" })
+    ).toHaveCount(0)
   })
 })
 
@@ -377,6 +381,40 @@ test.describe("Gestion CRM — contrats plateforme", () => {
 
     expect(requestDocumentsCalled).toBe(true)
     await expect(page.getByText("Demande documents DO envoyée à client-do@example.com.")).toBeVisible()
+  })
+
+  test("Contrat DO : email non parti n'affiche pas d'alerte rouge", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildGestionDashboardWithDoContract()),
+      })
+    })
+
+    await page.route("**/api/gestion/insurance-contracts/contract_do_1/request-documents", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          emailSent: false,
+          warning: "Email non envoyé (Resend ou domaine expéditeur). Aucun message n'est parti.",
+        }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await page.getByRole("button", { name: "Demander documents DO" }).click()
+
+    await expect(
+      page.getByRole("status").getByText("Email non envoyé (Resend ou domaine expéditeur). Aucun message n'est parti.")
+    ).toBeVisible()
+    await expect(
+      page.getByRole("alert").filter({ hasText: "Email non envoyé (Resend ou domaine expéditeur)" })
+    ).toHaveCount(0)
   })
 })
 

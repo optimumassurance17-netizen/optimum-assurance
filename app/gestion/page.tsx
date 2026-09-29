@@ -531,7 +531,7 @@ export default function GestionPage() {
     "all" | "custom_pdf" | "decennale" | "repair_eligible"
   >("all")
   const [rcFabFilter, setRcFabFilter] = useState<"all" | "a_traiter" | "sla72h">("all")
-  const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
+  const [toast, setToast] = useState<{ message: string; type?: "success" | "warning" | "error" } | null>(null)
   const [resiliationModal, setResiliationModal] = useState<{ docId: string; motif: string } | null>(null)
   const [editModal, setEditModal] = useState<{
     docId: string
@@ -647,7 +647,7 @@ export default function GestionPage() {
       }
       setToast({
         message: getLeadAccountSuccessMessage(json),
-        type: json.warning ? "error" : "success",
+        type: json.warning || json.emailSent === false ? "warning" : "success",
       })
       const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
       if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
@@ -687,7 +687,7 @@ export default function GestionPage() {
         message: json.temporaryPassword
           ? `${prefix}${/[.!?]$/.test(prefix) ? "" : "."} Mot de passe temporaire : ${json.temporaryPassword}`
           : prefix,
-        type: json.emailSent === false ? "error" : "success",
+        type: json.emailSent === false ? "warning" : "success",
       })
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : "Erreur envoi accès client", type: "error" })
@@ -1457,8 +1457,16 @@ export default function GestionPage() {
   const handleResendImpayeEmail = async (docId: string) => {
     try {
       const res = await fetch(`/api/gestion/documents/${docId}/resend-impaye-email`, { method: "POST" })
-      const body = (await res.json().catch(() => ({}))) as { error?: string }
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string
+        emailSent?: boolean
+        warning?: string
+      }
       if (!res.ok) throw new Error(body.error || "")
+      if (body.emailSent === false) {
+        setToast({ message: body.warning || "Email non envoyé.", type: "warning" })
+        return
+      }
       setToast({ message: "Email de relance impayé (décennale) envoyé au client", type: "success" })
     } catch (e) {
       setToast({
@@ -1492,7 +1500,7 @@ export default function GestionPage() {
           (newStatus === "resilie"
             ? "Résiliation enregistrée. Email envoyé au client."
             : "Statut mis à jour"),
-        type: body.emailSent === false ? "error" : "success",
+        type: body.emailSent === false ? "warning" : "success",
       })
     } catch (error) {
       const dashRes = await fetch("/api/gestion/dashboard")
@@ -2265,8 +2273,17 @@ export default function GestionPage() {
                       method: "POST",
                       body: fd,
                     })
-                    const j = await res.json().catch(() => ({}))
+                    const j = (await res.json().catch(() => ({}))) as {
+                      error?: string
+                      message?: string
+                      emailSent?: boolean
+                      warning?: string
+                    }
                     if (!res.ok) throw new Error(j.error || res.statusText)
+                    if (j.emailSent === false) {
+                      setToast({ message: j.warning || "Email non envoyé.", type: "warning" })
+                      return
+                    }
                     setToast({ message: j.message || "Invitation envoyée.", type: "success" })
                     if (customDevisPdfInputRef.current) customDevisPdfInputRef.current.value = ""
                     setCustomDevisSourceLeadType(null)
@@ -2914,7 +2931,7 @@ export default function GestionPage() {
                           if (s) {
                             setToast({
                               message: `Remédiation DDA en lot : ${s.sent} envoyée(s), ${s.alreadySent} déjà envoyée(s), ${s.failed} en échec.`,
-                              type: s.failed > 0 ? "error" : "success",
+                              type: s.failed > 0 ? "warning" : "success",
                             })
                           } else {
                             setToast({ message: "Remédiation DDA en lot terminée.", type: "success" })
@@ -2980,8 +2997,17 @@ export default function GestionPage() {
                                       remediation: a.remediation,
                                     }),
                                   })
-                                  const j = await readResponseJson<{ error?: string; alreadySent?: boolean }>(res)
+                                  const j = await readResponseJson<{
+                                    error?: string
+                                    alreadySent?: boolean
+                                    emailSent?: boolean
+                                    warning?: string
+                                  }>(res)
                                   if (!res.ok) throw new Error(j.error || "Impossible d'envoyer la relance DDA.")
+                                  if (j.emailSent === false) {
+                                    setToast({ message: j.warning || "Email non envoyé.", type: "warning" })
+                                    return
+                                  }
 
                                   const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
                                   if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
@@ -3456,7 +3482,7 @@ export default function GestionPage() {
                           if (!res.ok) throw new Error(json.error || "Erreur résiliation")
                           setToast({
                             message: json.warning || "Résiliation autorisée. Email envoyé au client.",
-                            type: json.emailSent === false ? "error" : "success",
+                            type: json.emailSent === false ? "warning" : "success",
                           })
                           const dashRes = await fetch("/api/gestion/dashboard")
                           if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
@@ -5422,8 +5448,17 @@ export default function GestionPage() {
                         afterSignNextPath: "/espace-client",
                       }),
                     })
-                    const json = await readResponseJson<{ error?: string; message?: string }>(res)
+                    const json = await readResponseJson<{
+                      error?: string
+                      message?: string
+                      emailSent?: boolean
+                      warning?: string
+                    }>(res)
                     if (!res.ok) throw new Error(json.error || "Erreur")
+                    if (json.emailSent === false) {
+                      setToast({ message: json.warning || "Email non envoyé.", type: "warning" })
+                      return
+                    }
                     setToast({
                       message: json.message || "Dossier étude RC Fabriquant envoyé en signature.",
                       type: "success",
@@ -5535,8 +5570,16 @@ export default function GestionPage() {
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify(body),
                     })
-                    const json = await readResponseJson<{ error?: string }>(res)
+                    const json = await readResponseJson<{
+                      error?: string
+                      emailSent?: boolean
+                      warning?: string
+                    }>(res)
                     if (!res.ok) throw new Error(json.error || "Erreur")
+                    if (json.emailSent === false) {
+                      setToast({ message: json.warning || "Email non envoyé.", type: "warning" })
+                      return
+                    }
                     setToast({ message: "E-mail de proposition envoyé au prospect.", type: "success" })
                     setRcFabPropositionModal(null)
                     setRcFabPropositionMessage("")
@@ -5596,8 +5639,16 @@ export default function GestionPage() {
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ etudeLeadId: etudeMiseModal.id, primeAnnuelle: prime }),
                     })
-                    const json = await readResponseJson<{ error?: string }>(res)
+                    const json = await readResponseJson<{
+                      error?: string
+                      emailSent?: boolean
+                      warning?: string
+                    }>(res)
                     if (!res.ok) throw new Error(json.error || "Erreur")
+                    if (json.emailSent === false) {
+                      setToast({ message: json.warning || "Email non envoyé.", type: "warning" })
+                      return
+                    }
                     setToast({ message: "Remise envoyée au client par email.", type: "success" })
                     setEtudeMiseModal(null)
                     const dashRes = await fetch("/api/gestion/dashboard")

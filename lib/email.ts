@@ -99,6 +99,18 @@ export async function sendEmail(params: {
   return res.ok
 }
 
+/** Réponse HTTP 200 quand l'action gestion est valide mais que Resend n'a pas délivré l'email. */
+export const EMAIL_NOT_SENT_MESSAGE =
+  "Email non envoyé (Resend ou domaine expéditeur). Aucun message n'est parti."
+
+export function emailNotSentBody() {
+  return {
+    ok: true as const,
+    emailSent: false as const,
+    warning: EMAIL_NOT_SENT_MESSAGE,
+  }
+}
+
 export const EMAIL_TEMPLATES = {
   /** Devis / proposition PDF uploadé par la gestion — signature puis paiement depuis l’espace client. */
   invitationSignatureDevisPersonnalise: (

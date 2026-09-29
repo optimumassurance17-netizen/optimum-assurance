@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
-import { EMAIL_TEMPLATES, sendEmail } from "@/lib/email"
+import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import {
   logContractAction,
   mollieExpectedAmountForInsuranceContract,
@@ -89,10 +89,7 @@ export async function POST(
       html: template.html,
     })
     if (!sent) {
-      return NextResponse.json(
-        { error: "Envoi email impossible (Resend ou domaine expéditeur)." },
-        { status: 503 }
-      )
+      return NextResponse.json(emailNotSentBody())
     }
 
     await logContractAction(

@@ -14,7 +14,7 @@ import {
 } from "@/lib/gestion-contract-from-devis"
 import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
 import { createSupabaseServiceClient } from "@/lib/supabase"
-import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { validateSignatureQualityGate } from "@/lib/signature-quality-gates"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
@@ -212,10 +212,7 @@ export async function POST(request: NextRequest) {
     })
     if (!sent) {
       await prisma.pendingSignature.deleteMany({ where: { signatureRequestId: signRequestId } })
-      return NextResponse.json(
-        { error: "Envoi e-mail impossible (RESEND_API_KEY / domaine expéditeur)" },
-        { status: 503 }
-      )
+      return NextResponse.json(emailNotSentBody())
     }
 
     await logAdminActivity({
