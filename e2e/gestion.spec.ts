@@ -416,6 +416,39 @@ test.describe("Gestion CRM — contrats plateforme", () => {
       page.getByRole("alert").filter({ hasText: "Email non envoyé (Resend ou domaine expéditeur)" })
     ).toHaveCount(0)
   })
+
+  test("Invitation PDF en échec laisse le tableau de bord affiché", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildGestionDashboardWithDoContract()),
+      })
+    })
+    await page.route("**/api/gestion/sign/send-custom-devis-pdf", async (route) => {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Signature électronique non configurée." }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await page.getByRole("combobox").first().selectOption("client_do_1")
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "devis.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.1\n%%EOF"),
+    })
+    await page.getByPlaceholder("ex. 2400 (annuel TTC)").fill("1200")
+    await page.getByRole("button", { name: "Envoyer l’invitation de signature" }).click()
+
+    await expect(page.getByRole("heading", { name: "Gestion CRM" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Réessayer" })).toHaveCount(0)
+    await expect(page.getByRole("alert").filter({ hasText: "Signature électronique non configurée." })).toBeVisible()
+  })
 })
 
 test.describe("Gestion CRM — fiche client actions sensibles", () => {

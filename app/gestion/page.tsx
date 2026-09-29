@@ -2291,7 +2291,10 @@ export default function GestionPage() {
                     const dashRes = await fetch("/api/gestion/dashboard")
                     if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : "Envoi impossible.")
+                    setToast({
+                      message: e instanceof Error ? e.message : "Envoi impossible.",
+                      type: "error",
+                    })
                   } finally {
                     setCustomDevisSending(false)
                   }
