@@ -21,7 +21,7 @@ Remplace **chaque** `REMPLACE_PAR_...` par ta vraie valeur :
 DATABASE_URL=postgresql://user:pass@host.neon.tech/db?sslmode=require
 MOLLIE_API_KEY=live_xxxxxxxx
 RESEND_API_KEY=re_xxxxxxxx
-EMAIL_FROM=Optimum Assurance <info@optimum-assurance.eu>
+EMAIL_FROM=Optimum Assurance <noreply@optimum-assurance.fr>
 ...
 ```
 

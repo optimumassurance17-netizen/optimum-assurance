@@ -9,13 +9,30 @@ import {
   wrapTransactionalEmailHtml,
 } from "@/lib/email-layout"
 import { buildReminderUnsubscribeUrl, type ReminderUnsubscribeType } from "@/lib/reminder-unsubscribe"
+import { getPublicContactEmail } from "@/lib/public-contact-email"
 
-const DEFAULT_FROM = "Optimum Assurance <info@optimum-assurance.eu>"
-const configuredFrom = process.env.EMAIL_FROM?.trim()
-const FROM =
-  configuredFrom && !configuredFrom.toLowerCase().includes("@optimum-assurance.fr")
-    ? configuredFrom
-    : DEFAULT_FROM
+/**
+ * Resend n'accepte que le domaine vérifié optimum-assurance.fr
+ * (DKIM resend._domainkey + SPF/MX sur send.). Le .eu est la boîte de réponse,
+ * pas l'expéditeur : l'envoyer en From fait rejeter l'API.
+ */
+const VERIFIED_FROM = "Optimum Assurance <noreply@optimum-assurance.fr>"
+
+function emailDomain(value: string): string | null {
+  const bracket = value.match(/<([^>]+)>/)
+  const raw = (bracket?.[1] ?? value).trim().toLowerCase()
+  const at = raw.lastIndexOf("@")
+  if (at < 0) return null
+  return raw.slice(at + 1).replace(/[>\s]+$/g, "")
+}
+
+function resolveFromAddress(): string {
+  const configured = process.env.EMAIL_FROM?.trim()
+  if (configured && emailDomain(configured) === "optimum-assurance.fr") return configured
+  return VERIFIED_FROM
+}
+
+const FROM = resolveFromAddress()
 
 function escapeHtmlForEmail(s: string): string {
   return s
@@ -76,7 +93,7 @@ export async function sendEmail(params: {
       subject: params.subject,
       text: textOut,
       ...(htmlOut && { html: htmlOut }),
-      ...(params.replyTo?.trim() && { reply_to: params.replyTo.trim() }),
+      reply_to: params.replyTo?.trim() || getPublicContactEmail(),
       ...(params.attachments &&
         params.attachments.length > 0 && {
           attachments: params.attachments.map((a) => ({
