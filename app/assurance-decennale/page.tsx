@@ -193,6 +193,12 @@ export default function AssuranceDecennaleIndexPage() {
             Devis decennale
           </Link>
           <Link
+            href="/assurance-decennale/activites"
+            className="inline-block border-2 border-[#2563eb] text-[#2563eb] px-8 py-4 rounded-2xl hover:bg-[#eff6ff] font-semibold transition-all"
+          >
+            Descriptifs et exclusions
+          </Link>
+          <Link
             href="/guides/obligation-decennale"
             className="inline-block border-2 border-[#2563eb] text-[#2563eb] px-8 py-4 rounded-2xl hover:bg-[#eff6ff] font-semibold transition-all"
           >

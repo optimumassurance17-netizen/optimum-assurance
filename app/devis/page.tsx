@@ -738,7 +738,10 @@ function DevisPageContent() {
               </button>
             </div>
             <p className="text-xs text-slate-600 mb-3">
-              {activitesCategorieSelectionnee.length} activité(s) trouvée(s)
+              {activitesCategorieSelectionnee.length} activité(s) trouvée(s).{" "}
+              <Link href="/assurance-decennale/activites" className="text-blue-700 font-medium hover:underline">
+                Voir le descriptif et les exclusions de chaque activité
+              </Link>
             </p>
             <div className="space-y-2">
               {activites.map((act, index) => (

@@ -40,6 +40,7 @@ export function buildStaticSitemapEntries(): SitemapEntry[] {
       priority: 1,
     },
     { url: `${baseUrl}/assurance-decennale`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.92 },
+    { url: `${baseUrl}/assurance-decennale/activites`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.84 },
     { url: `${baseUrl}/dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.88 },
     {
       url: `${baseUrl}/devis-assurance-decennale-en-ligne`,
