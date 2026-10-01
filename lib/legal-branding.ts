@@ -14,7 +14,9 @@ export const LEGAL_DELEGATION_MANDATORY =
 
 export const LEGAL_ORIAS_LINE = `${COMPANY_BRAND} – ORIAS ${ORIAS_NUMBER}`
 
-export const LEGAL_FOOTER_LINES = [LEGAL_ORIAS_LINE, LEGAL_DELEGATION_MANDATORY] as const
+export const LEGAL_POSTAL_ADDRESS = "14 rue d'Amboise, 49300 Cholet, France"
+
+export const LEGAL_FOOTER_LINES = [LEGAL_ORIAS_LINE, LEGAL_DELEGATION_MANDATORY, LEGAL_POSTAL_ADDRESS] as const
 
 /** Libellé facture acquittée — conforme au mandat / échéancier */
 export const INVOICE_PAYMENT_METHOD_PRIMARY = "Prélèvement SEPA"

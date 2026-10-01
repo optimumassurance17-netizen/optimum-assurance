@@ -15,7 +15,7 @@ Renseigner toutes les variables dans `.env` (ou les secrets de la plateforme) :
 | `NEXTAUTH_SECRET` | Secret fort (`npm run generate-secret` ou `openssl rand -base64 32`) | — |
 | `ADMIN_EMAILS` | Emails admin (accès CRM), séparés par des virgules | `admin@optimum-assurance.fr` |
 | `RESEND_API_KEY` | Clé API Resend pour l'envoi d'emails | `re_xxxx` |
-| `EMAIL_FROM` | Email expéditeur (domaine vérifié dans Resend : optimum-assurance.fr). Les réponses vont vers info@optimum-assurance.eu. | `Optimum Assurance <noreply@optimum-assurance.fr>` |
+| `EMAIL_FROM` | Email expéditeur (domaine vérifié dans Resend : optimum-assurance.fr, pas de noreply). Les réponses vont vers info@optimum-assurance.eu. Ajouter le TXT `_dmarc.optimum-assurance.fr` = `v=DMARC1; p=none; rua=mailto:info@optimum-assurance.eu; adkim=r; aspf=r`. | `Optimum Assurance <contact@optimum-assurance.fr>` |
 | `NEXT_PUBLIC_SUPABASE_URL` | Projet Supabase (Storage + tables `sign_*`) | `https://xxxx.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clé **service role** (serveur uniquement — signature `/api/sign`) | `eyJ...` |
 | `NEXT_PUBLIC_PHONE` | Téléphone affiché sur le site | `01 23 45 67 89` |

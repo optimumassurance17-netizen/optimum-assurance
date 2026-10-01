@@ -15,8 +15,10 @@ import { getPublicContactEmail } from "@/lib/public-contact-email"
  * Resend n'accepte que le domaine vérifié optimum-assurance.fr
  * (DKIM resend._domainkey + SPF/MX sur send.). Le .eu est la boîte de réponse,
  * pas l'expéditeur : l'envoyer en From fait rejeter l'API.
+ * contact@ plutôt que noreply@ : une adresse qui n'accepte pas de réponse
+ * est un signal de spam pour Gmail.
  */
-const VERIFIED_FROM = "Optimum Assurance <noreply@optimum-assurance.fr>"
+const VERIFIED_FROM = "Optimum Assurance <contact@optimum-assurance.fr>"
 
 function emailDomain(value: string): string | null {
   const bracket = value.match(/<([^>]+)>/)
@@ -28,8 +30,28 @@ function emailDomain(value: string): string | null {
 
 function resolveFromAddress(): string {
   const configured = process.env.EMAIL_FROM?.trim()
-  if (configured && emailDomain(configured) === "optimum-assurance.fr") return configured
+  const localPart = configured?.match(/([^\s<]+)@/i)?.[1]?.toLowerCase()
+  if (
+    configured &&
+    emailDomain(configured) === "optimum-assurance.fr" &&
+    localPart &&
+    localPart !== "noreply" &&
+    localPart !== "no-reply"
+  ) {
+    return configured
+  }
   return VERIFIED_FROM
+}
+
+/** En-têtes de désabonnement en un clic, uniquement si le message contient déjà le lien signé. */
+function listUnsubscribeHeaders(text: string): Record<string, string> | undefined {
+  const match = text.match(/https?:\/\/[^\s<>"]+\/api\/email\/unsubscribe\?token=[^\s<>"]+/)
+  if (!match) return undefined
+  const url = match[0].replace(/[),.;]+$/, "")
+  return {
+    "List-Unsubscribe": `<${url}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  }
 }
 
 const FROM = resolveFromAddress()
@@ -81,6 +103,7 @@ export async function sendEmail(params: {
       : params.html
   const textOut = params.skipBranding ? params.text : appendTransactionalEmailTextFooter(params.text)
 
+  const unsubscribeHeaders = listUnsubscribeHeaders(textOut)
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -93,6 +116,7 @@ export async function sendEmail(params: {
       subject: params.subject,
       text: textOut,
       ...(htmlOut && { html: htmlOut }),
+      ...(unsubscribeHeaders && { headers: unsubscribeHeaders }),
       reply_to: params.replyTo?.trim() || getPublicContactEmail(),
       ...(params.attachments &&
         params.attachments.length > 0 && {

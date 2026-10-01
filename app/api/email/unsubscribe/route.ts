@@ -14,19 +14,40 @@ const LABELS: Record<ReminderUnsubscribeKind, string> = {
   all_reminders: "toutes les relances",
 }
 
+async function unsubscribeFromToken(token: string) {
+  if (!token) return null
+  const payload = parseReminderUnsubscribeToken(token)
+  if (!payload) return null
+  const status = await markReminderUnsubscribed(payload.email, payload.kind)
+  return { payload, status }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const token = (new URL(request.url).searchParams.get("token") || "").trim()
+    const applied = await unsubscribeFromToken(token)
+    if (!applied) {
+      return NextResponse.json({ error: "Lien invalide ou expiré" }, { status: 400 })
+    }
+    return new NextResponse("ok", {
+      status: 200,
+      headers: { "Cache-Control": "no-store" },
+    })
+  } catch (error) {
+    console.error("[api/email/unsubscribe] POST", error)
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const token = (searchParams.get("token") || "").trim()
-    if (!token) {
-      return NextResponse.json({ error: "Lien invalide" }, { status: 400 })
-    }
-    const payload = parseReminderUnsubscribeToken(token)
-    if (!payload) {
+    const applied = await unsubscribeFromToken(token)
+    if (!applied) {
       return NextResponse.json({ error: "Lien invalide ou expiré" }, { status: 400 })
     }
-
-    const status = await markReminderUnsubscribed(payload.email, payload.kind)
+    const { payload, status } = applied
     const label = LABELS[payload.kind]
     const body =
       status === "already"
