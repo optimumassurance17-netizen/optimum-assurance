@@ -9,43 +9,19 @@ import {
   wrapTransactionalEmailHtml,
 } from "@/lib/email-layout"
 import { buildReminderUnsubscribeUrl, type ReminderUnsubscribeType } from "@/lib/reminder-unsubscribe"
+import { DEFAULT_PUBLIC_CONTACT_EMAIL } from "@/lib/public-contact-email"
 
 /**
- * Resend n'accepte que le domaine vérifié optimum-assurance.fr
- * (DKIM resend._domainkey + SPF/MX sur send.).
- * contact@ plutôt que noreply@ : une adresse qui n'accepte pas de réponse
- * est un signal de spam pour Gmail.
- * Le Reply-To reprend cette même adresse : un Reply-To en .eu
- * s'affiche comme expéditeur dans la messagerie.
+ * Émission et réponses : info@optimum-assurance.eu.
+ * Resend n'accepte ce From que si le domaine .eu est vérifié.
+ * Sinon repli sur contact@optimum-assurance.fr (domaine déjà vérifié),
+ * en gardant la réponse sur info@.
  */
-const VERIFIED_FROM = "Optimum Assurance <contact@optimum-assurance.fr>"
-
-function emailDomain(value: string): string | null {
-  const bracket = value.match(/<([^>]+)>/)
-  const raw = (bracket?.[1] ?? value).trim().toLowerCase()
-  const at = raw.lastIndexOf("@")
-  if (at < 0) return null
-  return raw.slice(at + 1).replace(/[>\s]+$/g, "")
-}
+const PUBLIC_FROM = `Optimum Assurance <${DEFAULT_PUBLIC_CONTACT_EMAIL}>`
+const FALLBACK_FROM = "Optimum Assurance <contact@optimum-assurance.fr>"
 
 function resolveFromAddress(): string {
-  const configured = process.env.EMAIL_FROM?.trim()
-  const localPart = configured?.match(/([^\s<]+)@/i)?.[1]?.toLowerCase()
-  if (
-    configured &&
-    emailDomain(configured) === "optimum-assurance.fr" &&
-    localPart &&
-    localPart !== "noreply" &&
-    localPart !== "no-reply"
-  ) {
-    return configured
-  }
-  return VERIFIED_FROM
-}
-
-function mailboxFromHeader(header: string): string {
-  const bracket = header.match(/<([^>]+)>/)
-  return (bracket?.[1] ?? header).trim()
+  return PUBLIC_FROM
 }
 
 /** En-têtes de désabonnement en un clic, uniquement si le message contient déjà le lien signé. */
@@ -106,22 +82,17 @@ export async function sendEmail(params: {
       : params.html
   const textOut = params.skipBranding ? params.text : appendTransactionalEmailTextFooter(params.text)
 
-  const from = resolveFromAddress()
   const unsubscribeHeaders = listUnsubscribeHeaders(textOut)
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  const replyTo = params.replyTo?.trim() || DEFAULT_PUBLIC_CONTACT_EMAIL
+  const payloadFor = (from: string) =>
+    JSON.stringify({
       from,
       to: params.to,
       subject: params.subject,
       text: textOut,
       ...(htmlOut && { html: htmlOut }),
       ...(unsubscribeHeaders && { headers: unsubscribeHeaders }),
-      reply_to: params.replyTo?.trim() || mailboxFromHeader(from),
+      reply_to: replyTo,
       ...(params.attachments &&
         params.attachments.length > 0 && {
           attachments: params.attachments.map((a) => ({
@@ -129,8 +100,35 @@ export async function sendEmail(params: {
             content: Buffer.isBuffer(a.content) ? a.content.toString("base64") : a.content,
           })),
         }),
-    }),
-  })
+    })
+
+  const post = (from: string) =>
+    fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: payloadFor(from),
+    })
+
+  const from = resolveFromAddress()
+  let res = await post(from)
+  if (!res.ok && from !== FALLBACK_FROM) {
+    const text = await res.text()
+    const domainRefused = res.status === 403 || /not verified|domain/i.test(text)
+    if (domainRefused) {
+      console.error("Resend refuse l'expéditeur .eu, repli .fr:", res.status)
+      res = await post(FALLBACK_FROM)
+    } else {
+      try {
+        console.error("Resend API:", res.status, JSON.parse(text))
+      } catch {
+        console.error("Resend API:", res.status, text)
+      }
+      return false
+    }
+  }
 
   if (!res.ok) {
     const text = await res.text()
