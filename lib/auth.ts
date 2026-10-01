@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { compare } from "bcryptjs"
 import { prisma } from "./prisma"
 import { isAdmin } from "./admin"
+import { notifyClientSpaceLogin } from "./client-login-alert"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -63,6 +64,19 @@ export const authOptions: NextAuthOptions = {
         } as Parameters<typeof isAdmin>[0])
       }
       return session
+    },
+  },
+  events: {
+    async signIn({ user }) {
+      try {
+        await notifyClientSpaceLogin({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        })
+      } catch (error) {
+        console.error("[client-login-alert]", error)
+      }
     },
   },
 }
