@@ -5,7 +5,7 @@ import { SITE_KNOWLEDGE } from "./site-knowledge"
 
 // Base FAQ pour le matching (mots-clés → réponse)
 const FAQ_BASE: { q: string; r: string }[] = [
-  { q: "assurance décennale obligatoire loi Spinetta", r: "Oui. Depuis la loi Spinetta (1978), tout professionnel du BTP ayant un contrat direct avec le maître d'ouvrage doit souscrire une assurance décennale. Sans elle, vous risquez jusqu'à 75 000 € d'amende et 6 mois d'emprisonnement." },
+  { q: "assurance décennale obligatoire loi Spinetta", r: "Oui. Depuis la loi Spinetta (1978), tout professionnel du BTP ayant un contrat direct avec le maître d'ouvrage doit souscrire une assurance décennale. L'article L. 243-3 punit ce défaut, comme l'absence de dommage ouvrage, de 75 000 € d'amende et de 6 mois d'emprisonnement, ou de l'une de ces deux peines seulement. Le particulier qui construit pour s'y loger, lui ou sa famille proche, n'est pas visé." },
   { q: "QBE retrait fin décennale 2027 remplacement reprise contrat", r: "QBE France arrête la souscription de la garantie décennale et vise une sortie de ce portefeuille au 31 décembre 2026. Les chantiers déjà couverts par une police QBE restent garantis par ce contrat. Pour les travaux à venir, Optimum Assurance étudie le remplacement avant le 1er janvier 2027 : ce n'est pas un transfert automatique. Faites un devis sur /devis ou lisez /guides/fin-assurance-decennale-qbe-2027." },
   { q: "combien coûte prix tarif prime cotisation", r: "Le prix dépend de votre chiffre d'affaires, de vos activités et de votre historique. Chez Optimum, la cotisation minimale est de 600 €/an (soit environ 50 €/mois en équivalent). Les cotisations sont prélevées par trimestre (1er trimestre par carte + frais, puis SEPA). Utilisez notre simulateur sur la page d'accueil pour une estimation gratuite." },
   { q: "chiffre affaires CA déclarer contrôle greffe impôts régularisation", r: "Les déclarations de CA sont contrôlées chaque année auprès du greffe et des impôts. Donc autant bien indiquer le bon chiffre dès le départ — ça évite les régularisations et les mauvaises surprises !" },
@@ -33,7 +33,7 @@ const FAQ_BASE: { q: string; r: string }[] = [
     q: "assurance titre immobilier transaction acquisition refinancement titre propriété servitude hypothèque fraude",
     r: "L’assurance titre immobilière est proposée sur étude via /assurance-titre. Elle vise à sécuriser certaines transactions ou refinancements quand un risque sur le titre, les charges, servitudes, empiètements, erreurs documentaires ou la fraude doit être analysé. Il n’y a pas de tarif instantané : vous décrivez le dossier et notre équipe revient en général sous 24 à 48 h ouvrées. Après l’envoi, vous pouvez créer votre espace client pour compléter le questionnaire d’étude et déposer vos pièces.",
   },
-  { q: "nettoyage toiture couvreur", r: "Oui. Nous avons une offre dédiée pour le nettoyage toiture et peinture résine (I3 à I5). Sociétés résiliées acceptées. Taux 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)." },
+  { q: "nettoyage toiture couvreur", r: "Oui. Le menu de devis porte l'intitulé commercial « Nettoyage toiture et peinture résine (I3 à I5) ». Les classes officielles de revêtement de façade (DTU 42.1 et nomenclature France Assureurs, activité 3.4) sont I1, I2, I3 et I4 : il n'existe pas de classe I5. Sociétés résiliées acceptées. Taux 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)." },
   { q: "plombier électricien peintre maçon carreleur", r: "Tous les corps de métier du BTP sont couverts : plombiers, électriciens, peintres, maçons, couvreurs, charpentiers, carreleurs, menuisiers, BET, architectes. Devis en 3 minutes sur /devis." },
   { q: "franchise plafond", r: "Franchise décennale : 1 000 € (toutes activités). Plafond de garantie : 2× le chiffre d'affaires. Pour le dommage ouvrage : aucune franchise (garantie obligatoire). Pour la RC Fabriquant : franchise 3 000 €." },
   { q: "minimum CA 40000", r: "Le chiffre d'affaires minimum déclaratif est de 40 000 €. En dessous, contactez-nous pour une étude personnalisée." },
@@ -79,7 +79,7 @@ INFORMATIONS OPTIMUM ASSURANCE (rappel synthétique) :
 - Attestation disponible dans l'espace client après paiement, contrôle dossier et acceptation du risque
 - Devis en 3 minutes, signature électronique du contrat, 1er trimestre + frais par carte (Mollie), puis prélèvements SEPA trimestriels automatiques sur l’IBAN du mandat
 - Sociétés résiliées pour non-paiement acceptées (+10 % majoration)
-- Nettoyage toiture et peinture résine (I3 à I5) : offre dédiée, taux 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)
+- Nettoyage toiture et peinture résine : intitulé commercial du devis « I3 à I5 ». Classes officielles de façade I1, I2, I3 et I4 seulement (pas de classe I5). Taux 1.7% (CA ≤ 250k€) / 2% (CA > 250k€)
 - Dommage ouvrage : devis sous 24h, auto-construction, garantie clos et couvert
 - Assurance titre : formulaire sur /assurance-titre, étude manuelle du dossier, pas de tarificateur public ; poursuite digitale possible dans /espace-client/assurance-titre avec questionnaire d’étude et dépôt de pièces
 - RC fabriquant : formulaire sur /devis-rc-fabriquant, réponse après étude (pas de tarificateur en ligne)

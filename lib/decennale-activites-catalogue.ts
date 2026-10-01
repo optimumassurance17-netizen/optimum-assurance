@@ -22,8 +22,8 @@ export function activiteAnchorId(activite: string): string {
  */
 export const ACTIVITE_CATALOGUE: Record<string, ActiviteFiche> = {
   "Maçonnerie générale": {
-    description: "Élévation des murs, reprises de maçonnerie, ouvertures et ouvrages courants en béton ou en blocs, hors lots techniques séparés.",
-    exclusions: ["Murs de soutènement autonomes de plus de 2,5 m", "Revêtements muraux agrafés ou collés", "Fours et cheminées industriels"],
+    description: "Maçonnerie et béton armé courant, fondations superficielles, dallages, enduits hydrauliques et ouvertures. Correspond à l'activité 2.2 de la nomenclature France Assureurs.",
+    exclusions: ["Parois de soutènement autonomes de plus de 2,5 m", "Revêtements muraux agrafés, attachés ou collés", "Fours et cheminées industriels"],
   },
   "Béton armé": {
     description: "Coulage et mise en œuvre de béton armé pour poteaux, poutres, planchers et voiles, selon les plans de ferraillage.",
@@ -42,8 +42,8 @@ export const ACTIVITE_CATALOGUE: Record<string, ActiviteFiche> = {
     exclusions: ["Lots non déclarés sur l'attestation (électricité, plomberie, étanchéité)", "Dommage ouvrage du maître d'ouvrage", "Maisons hors référentiel technique ou sans plans"],
   },
   "Charpente bois": {
-    description: "Taille et pose de charpentes traditionnelles ou industrielles en bois, y compris pannes, chevrons et contreventements.",
-    exclusions: ["Couverture et étanchéité de toiture-terrasse", "Façades-rideaux", "Traitement curatif du bois s'il n'est pas déclaré à part"],
+    description: "Charpentes et structures en bois. Le traitement préventif et curatif du bois en fait partie. La couverture n'est garantie avec ce lot que si elle reste accessoire au marché de charpente.",
+    exclusions: ["Façades-rideaux", "Étanchéité de toiture-terrasse", "Couverture lorsqu'elle fait l'objet d'un marché de travaux distinct"],
   },
   "Charpente métallique": {
     description: "Fabrication et pose d'ossatures et de charpentes en acier pour bâtiments, auvents et portiques.",
@@ -86,8 +86,8 @@ export const ACTIVITE_CATALOGUE: Record<string, ActiviteFiche> = {
     exclusions: ["Façades-rideaux, semi-rideaux et façades-panneaux", "Étanchéité à l'air relevant d'un autre lot", "Isolation thermique par l'extérieur si elle n'est pas déclarée"],
   },
   "Façade ravalement": {
-    description: "Nettoyage, réparation d'enduit et ravalement de façades, y compris les protections d'imperméabilité courantes.",
-    exclusions: ["Isolation thermique par l'extérieur", "Reprise structurelle des murs", "Étanchéité de toiture"],
+    description: "Enduits de façade, ravalement et revêtements d'imperméabilité à base de polymères de classes I1, I2, I3, ainsi que les systèmes d'étanchéité de classe I4. Il n'existe pas de classe I5.",
+    exclusions: ["Isolation thermique par l'extérieur", "Reprise structurelle des murs", "Systèmes présentés hors classes I1 à I4"],
   },
   "Isolation thermique extérieure": {
     description: "Isolation des façades par l'extérieur, avec enduit ou parement collé, selon un système sous avis technique.",
@@ -98,28 +98,28 @@ export const ACTIVITE_CATALOGUE: Record<string, ActiviteFiche> = {
     exclusions: ["Isolation par l'extérieur", "Isolation frigorifique de chambres froides", "Étanchéité et pare-vapeur de toiture-terrasse"],
   },
   "Électricité générale": {
-    description: "Installations électriques du bâtiment : tableaux, circuits, prises, éclairage et raccordements, dans la limite des activités déclarées.",
-    exclusions: ["Pose de capteurs solaires et onduleurs", "Appareils simplement branchés et dissociables du bâti", "Postes de transformation et réseaux publics"],
+    description: "Réseaux électriques du bâtiment, chauffage électrique, raccordement des appareils, parafoudre et VMC posée avec ce lot. La nomenclature (activité 5.5) y inclut aussi la domotique et la gestion technique du bâtiment.",
+    exclusions: ["Pose de capteurs solaires photovoltaïques", "Postes sources et réseaux publics de transport d'électricité"],
   },
   "Courants faibles": {
     description: "Câblage et raccordement des réseaux de communication, d'alarme et de contrôle d'accès du bâtiment.",
     exclusions: ["Infrastructures publiques de télécommunications", "Équipements nomades non fixés à l'ouvrage", "Courants forts s'ils ne sont pas déclarés"],
   },
   Domotique: {
-    description: "Installation des automatismes du logement reliés au bâti : pilotage de volets, éclairage et chauffage intégrés.",
-    exclusions: ["Objets connectés amovibles", "Supervision industrielle", "Modification de la puissance électrique sans lot électricité"],
+    description: "Automatismes et gestion technique du bâtiment. Dans la nomenclature, ce lot est déjà compris dans l'électricité (5.5) ; cette ligne sert l'entreprise qui ne déclare que la domotique.",
+    exclusions: ["Supervision de process industriel", "Réseaux publics de télécommunications", "Modification de l'installation électrique de puissance si le lot électricité n'est pas déclaré"],
   },
   Photovoltaïque: {
-    description: "Pose de modules photovoltaïques en toiture ou en intégration, avec cheminement de câbles jusqu'au tableau.",
-    exclusions: ["Étanchéité de toiture si elle n'est pas reprise dans le lot", "Centrales au sol et ouvrages de production d'énergie", "Couverture tuiles ou zinc non déclarée"],
+    description: "Installations photovoltaïques en toiture ou au sol, avec branchements électriques, stockage et raccordement. Le raccord d'étanchéité et l'écran sous-toiture restent accessoires.",
+    exclusions: ["Fondations spéciales", "Modification de la structure porteuse", "Étanchéité complète de toiture, qui est un lot distinct"],
   },
   "Bornes recharge": {
     description: "Pose de bornes de recharge pour véhicules, raccordées à l'installation électrique du bâtiment.",
     exclusions: ["Voirie et génie civil de parking public", "Réseau public de distribution", "Bornes simplement posées sans raccordement fixe"],
   },
   "Plomberie sanitaire": {
-    description: "Alimentations, évacuations et appareils sanitaires reliés aux réseaux du bâtiment.",
-    exclusions: ["Production de chauffage", "Géothermie et capteurs solaires", "Réseaux enterrés extérieurs et assainissement autonome"],
+    description: "Eau chaude et froide sanitaires, appareils, réseaux de fluide ou de gaz, distribution de chauffage par eau y compris les radiateurs, gouttières, descentes d'eaux pluviales et solins. Les tranchées de raccordement sont accessoires.",
+    exclusions: ["Appareils de production de chauffage (chaudière, pompe à chaleur, poêle)", "Installations de géothermie", "Capteurs solaires intégrés"],
   },
   "Chauffage central": {
     description: "Production et distribution de chauffage à eau chaude, radiateurs ou planchers, et eau chaude sanitaire associée.",
@@ -230,12 +230,12 @@ export const ACTIVITE_CATALOGUE: Record<string, ActiviteFiche> = {
     exclusions: ["Sols techniques surélevés", "Étanchéité", "Revêtements de sols sportifs de grands ouvrages"],
   },
   "Peinture intérieure": {
-    description: "Peintures et préparations des supports intérieurs, murs et plafonds.",
-    exclusions: ["Imperméabilisation et étanchéité", "Sols coulés", "Désordres purement esthétiques sans atteinte à l'ouvrage"],
+    description: "Peintures, RPE, RSE, RME et préparations des supports, murs et plafonds. L'activité 4.7 de la nomenclature ne comprend pas l'imperméabilisation.",
+    exclusions: ["Imperméabilisation et étanchéité", "Sols coulés"],
   },
   "Peinture extérieure": {
-    description: "Peintures de façade et protections filmogènes, hors système d'isolation.",
-    exclusions: ["Isolation thermique par l'extérieur", "Ravalement avec reprise d'enduit structurel", "Anticorrosion de charpente métallique si lot séparé"],
+    description: "Peintures de façade et ravalement en peinture, sans revêtement d'imperméabilité. Les classes I1 à I4 relèvent du ravalement (activité 3.4), pas de la peinture.",
+    exclusions: ["Revêtements d'imperméabilité et d'étanchéité de façade (I1 à I4)", "Isolation thermique par l'extérieur", "Sols coulés"],
   },
   "Revêtement mural": {
     description: "Pose de papiers peints, toiles et revêtements muraux décoratifs collés.",
@@ -378,20 +378,20 @@ export const ACTIVITE_CATALOGUE: Record<string, ActiviteFiche> = {
     exclusions: ["Métiers absents de l'attestation", "Ouvrages exclus du régime obligatoire (routes, ports, énergie)", "Conception pure sans exécution"],
   },
   "Maintenance bâtiment": {
-    description: "Entretien et petites interventions sur un bâtiment existant, sans reprise d'ouvrage neuf non déclarée.",
-    exclusions: ["Travaux neufs de structure", "Simple entretien sans atteinte à l'ouvrage", "Contrats de facility management hors bâtiment"],
+    description: "Entretien et réparations d'un bâtiment existant. Dans la nomenclature, l'entretien est déjà inclus dans la réalisation du métier : cette ligne vise l'entreprise dont le marché est seulement la maintenance.",
+    exclusions: ["Création d'ouvrage neuf non déclarée sous l'activité de pose", "Contrats de facility management hors bâtiment"],
   },
   "Maintenance chauffage": {
-    description: "Dépannage et maintien en état des installations de chauffage déjà posées.",
-    exclusions: ["Installation neuve complète si elle n'est pas déclarée", "Ramonage seul", "Réseaux gaz en voirie"],
+    description: "Entretien et dépannage d'installations de chauffage existantes. Une pose neuve se déclare sous l'activité chauffage correspondante.",
+    exclusions: ["Installation neuve non déclarée au lot chauffage", "Réseaux gaz en voirie", "Captage géothermique"],
   },
   "Maintenance climatisation": {
-    description: "Entretien et dépannage des systèmes de climatisation existants.",
-    exclusions: ["Pose d'une installation neuve non déclarée", "Fluides industriels", "Géothermie"],
+    description: "Entretien et dépannage de systèmes de climatisation existants. Une pose neuve se déclare sous l'activité climatisation.",
+    exclusions: ["Installation neuve non déclarée au lot climatisation", "Captage géothermique", "Capteurs solaires intégrés"],
   },
   "Maintenance plomberie": {
-    description: "Recherche de fuite, remplacement d'appareils et maintien des réseaux sanitaires existants.",
-    exclusions: ["Création de réseaux neufs non déclarée", "Assainissement collectif", "Chauffage"],
+    description: "Entretien, recherche de fuite et maintien des réseaux sanitaires existants, y compris la distribution de chauffage par eau déjà en place. Une création neuve se déclare en plomberie.",
+    exclusions: ["Création de réseaux neufs non déclarée en plomberie", "Appareils de production de chauffage", "Installations de géothermie"],
   },
   Architecte: {
     description: "Missions de conception et de direction de l'exécution des travaux, dans le périmètre du contrat de maîtrise d'œuvre.",
@@ -474,8 +474,8 @@ export const ACTIVITE_CATALOGUE: Record<string, ActiviteFiche> = {
     exclusions: ["Pose des isolants et menuiseries", "Études de structure", "Salles de spectacle hors mission écrite"],
   },
   "Nettoyage toiture et peinture résine (I3 à I5)": {
-    description: "Nettoyage de toiture et application de revêtements ou peintures résine des classes I3 à I5, sans se substituer à une étanchéité.",
-    exclusions: ["Isolation thermique par l'extérieur", "Polymères hors classes déclarées", "Réfection de charpente et remplacement de couverture"],
+    description: "Nettoyage de couverture et revêtements de façade à base de polymères. Les classes officielles (DTU 42.1 et nomenclature, activité 3.4) sont I1, I2, I3 et I4. Il n'existe pas de classe I5 : le menu de devis conserve cet intitulé commercial. Ces travaux ne remplacent pas une étanchéité ni une réfection de couverture.",
+    exclusions: ["Isolation thermique par l'extérieur", "Revêtements hors classes I1, I2, I3 et I4", "Réfection de charpente et remplacement de la couverture", "Étanchéité de toiture-terrasse"],
   },
 }
 

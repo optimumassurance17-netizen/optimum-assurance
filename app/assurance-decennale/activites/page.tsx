@@ -91,6 +91,12 @@ export default function ActivitesDecennalePage() {
           indique le périmètre habituel du métier. Les exclusions sont celles que l&apos;on retrouve dans la
           nomenclature France Assureurs et dans les contrats décennale du marché.
         </p>
+        <p className="text-sm text-[#171717] leading-relaxed mb-4">
+          Dans la nomenclature, le mot « réalisation » comprend déjà la pose, la réparation et l&apos;entretien.
+          Un travail indiqué comme accessoire n&apos;est garanti que s&apos;il ne fait pas l&apos;objet d&apos;un
+          marché séparé. Les classes de revêtement de façade sont I1, I2, I3 et I4 : il n&apos;existe pas de
+          classe I5.
+        </p>
         <p className="text-sm text-[#171717] leading-relaxed mb-8">
           Seules les activités cochées au contrat sont garanties. Cette page ne remplace pas les conditions
           particulières ni l&apos;attestation. Un métier absent de la liste se demande via{" "}

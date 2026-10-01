@@ -361,14 +361,12 @@ export const ACTIVITE_EXCLUSIONS: Record<string, string[]> = {
   ],
   Électricité: [
     "Pose de capteurs solaires",
-    "Éléments détachables du bâti (non indissociables)",
   ],
   Carrelage: [
     "Étanchéité sous carrelage de toiture-terrasse, piscine ou cuvelage",
     "Techniques d'agrafage ou d'attaches (lot 4.10)",
   ],
   Peinture: [
-    "Travaux purement esthétiques (fissures superficielles sans impact solidité)",
     "Travaux d'imperméabilisation et d'étanchéité",
     "Sols coulés",
   ],
@@ -391,7 +389,7 @@ export const ACTIVITE_EXCLUSIONS: Record<string, string[]> = {
 
   // Spécialités
   Ascenseurs: ["Modifications de la structure porteuse du bâtiment"],
-  "Électricité spéciale": ["Éléments dissociables du bâti"],
+  "Électricité spéciale": ["Pose de capteurs solaires"],
   "Réseaux secs": [],
   Assainissement: [],
   "Travaux publics": [
@@ -403,8 +401,8 @@ export const ACTIVITE_EXCLUSIONS: Record<string, string[]> = {
   "Pose de revêtements": ["Sols coulés"],
   Métallerie: ["Charpentes métalliques", "Vérandas"],
   "Peinture en bâtiment": [
-    "Peinture décorative pure (sans impact solidité)",
-    "Sauf : revêtement imperméabilisation, isolation acoustique/thermique, anticorrosion",
+    "Travaux d'imperméabilisation et d'étanchéité",
+    "Sols coulés",
   ],
   Ravalement: ["Isolation thermique par l'extérieur"],
   "Étanchéité toiture": [],
@@ -558,7 +556,7 @@ export const DO_ELEMENTS_OUVRAGE = {
     libelle: "Équipement génie climatique",
     lots: ["Plomberie", "Chauffage", "Climatisation", "VMC", "Électricité"],
     siteTerm: "second œuvre",
-    exclusions: ["Éléments d'équipement dissociables (GBF 2 ans)", "Géothermie", "Capteurs solaires intégrés"],
+    exclusions: ["Géothermie", "Capteurs solaires intégrés"],
   },
   /** 9 : Autre équipement */
   autreEquipement: {

@@ -140,8 +140,9 @@ export default function Home() {
       <section className="relative z-0 bg-slate-900 text-white px-4 sm:px-6 py-5 sm:py-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6">
           <p className="font-semibold text-sm md:text-base text-center sm:text-left text-slate-100">
-            Obligatoire pour tous les professionnels du BTP (loi Spinetta 1978) — sans assurance décennale : jusqu&apos;à
-            75 000 € d&apos;amende et 6 mois d&apos;emprisonnement
+            Obligatoire pour les professionnels du BTP (loi Spinetta 1978) — sans assurance décennale ou dommage
+            ouvrage : jusqu&apos;à 75 000 € d&apos;amende et 6 mois d&apos;emprisonnement, ou l&apos;une de ces deux
+            peines (art. L. 243-3)
           </p>
           <Link
             href="/faq"
@@ -531,7 +532,7 @@ export default function Home() {
             <div className="bg-white rounded-2xl p-6 border-2 border-blue-600/40 shadow-lg shadow-blue-600/10 transition-all group">
               <span className="inline-block bg-blue-50 text-blue-800 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">Offre dédiée</span>
               <h3 className="font-semibold text-slate-900 mb-2">Nettoyage toiture & peinture résine</h3>
-              <p className="text-[#171717] text-sm mb-4">Activités I3 à I5. Sociétés résiliées acceptées.</p>
+              <p className="text-[#171717] text-sm mb-4">Revêtements de façade I1 à I4. Pas de classe I5. Sociétés résiliées acceptées.</p>
               <p className="text-blue-600 font-semibold mb-4">
                 dès {formatEurosFR(EQ_MENSUEL_EXEMPLE_NETTOYAGE_TOITURE, { minFrac: 2, maxFrac: 2 })} €/mois{" "}
                 <span className="text-[#171717] font-normal text-sm block mt-1">

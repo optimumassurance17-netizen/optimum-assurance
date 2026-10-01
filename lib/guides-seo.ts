@@ -77,7 +77,7 @@ export const GUIDES_SEO = [
       },
       {
         type: "p",
-        text: "Sans assurance décennale, vous risquez jusqu'à 75 000 € d'amende et 6 mois d'emprisonnement. De plus, vous ne pouvez pas exercer légalement : aucun maître d'ouvrage n'acceptera de vous confier un chantier sans attestation.",
+        text: "L'article L. 243-3 du Code des assurances punit le défaut d'assurance décennale et le défaut de dommage ouvrage de six mois d'emprisonnement et de 75 000 € d'amende, ou de l'une de ces deux peines seulement. Cette sanction ne vise pas la personne physique qui construit un logement pour l'occuper elle-même ou le faire occuper par son conjoint, ses ascendants, ses descendants ou ceux de son conjoint. En pratique, un maître d'ouvrage exige l'attestation avant de confier le chantier.",
       },
       {
         type: "h2",
