@@ -1,5 +1,62 @@
 export const GUIDES_SEO = [
   {
+    slug: "fin-assurance-decennale-qbe-2027",
+    title: "Fin de l'assurance décennale QBE en 2027 : faire reprendre son contrat",
+    description:
+      "QBE arrête la souscription décennale et vise une sortie de portefeuille au 31 décembre 2026. Optimum Assurance étudie le remplacement des entreprises du BTP avant le 1er janvier 2027.",
+    h1: "QBE arrête la décennale : comment faire reprendre son contrat avant 2027",
+    shortAnswer:
+      "QBE France a confirmé l'arrêt de la souscription en garantie décennale, avec une sortie du portefeuille visée au 31 décembre 2026. Les ouvrages déjà couverts restent garantis. Pour les chantiers à venir, il faut un nouveau contrat. Optimum Assurance étudie la reprise de ces entreprises avant le 1er janvier 2027.",
+    datePublished: "2026-10-01T08:00:00+02:00",
+    dateModified: "2026-10-01T08:00:00+02:00",
+    content: [
+      {
+        type: "p",
+        text: "QBE France cesse la souscription de la garantie décennale. L'assureur a confirmé un objectif de sortie totale de ce portefeuille au 31 décembre 2026, dans le cadre d'un recentrage vers les grandes entreprises et les ETI. La CAPEB a relayé une résiliation du portefeuille RC décennale à compter du 1er janvier 2027. Les entreprises du BTP encore assurées chez QBE doivent donc préparer un contrat de remplacement avant cette date.",
+      },
+      {
+        type: "h2",
+        text: "Ce qui reste couvert après le retrait",
+      },
+      {
+        type: "p",
+        text: "Un contrat en cours reste valable jusqu'à son échéance. Les ouvrages déjà réalisés et relevant d'une police QBE déjà souscrite ne perdent pas leur garantie du jour au lendemain : l'assureur reste tenu des sinistres qui entrent dans ce contrat, y compris après son retrait du marché. Le point de vigilance, ce sont les devis, factures et chantiers à ouvrir une fois le contrat non reconduit.",
+      },
+      {
+        type: "h2",
+        text: "Pourquoi il faut un nouvel assureur avant 2027",
+      },
+      {
+        type: "p",
+        text: "Sans attestation décennale à jour, une entreprise ne peut pas présenter une offre valable ni facturer sereinement un maître d'ouvrage. L'assurance décennale reste obligatoire pour le professionnel lié directement au maître d'ouvrage. Attendre janvier 2027 expose à un trou de couverture sur les futurs travaux, et à un marché plus sélectif au moment où de nombreux dossiers chercheront une solution en même temps.",
+      },
+      {
+        type: "h2",
+        text: "Optimum Assurance reprend l'étude des clients QBE",
+      },
+      {
+        type: "p",
+        text: "Optimum Assurance étudie le remplacement des contrats décennale qui ne seront pas reconduits par QBE. Le transfert n'est pas automatique : chaque entreprise est regardée selon son activité, son chiffre d'affaires, son historique et la date d'échéance de son attestation. Si le dossier est accepté, la souscription se fait en ligne, avec signature électronique et attestation après paiement, contrôle du dossier et acceptation du risque.",
+      },
+      {
+        type: "h2",
+        text: "Quelles pièces préparer",
+      },
+      {
+        type: "p",
+        text: "Préparez l'attestation QBE en cours, le SIRET, le chiffre d'affaires, la liste des activités réellement exercées, les sinistres des dernières années et la date d'échéance. Ne résiliez pas l'ancien contrat avant d'avoir une prise d'effet claire sur le nouveau : l'objectif est d'enchaîner les deux couvertures sans jour sans assurance.",
+      },
+      {
+        type: "h2",
+        text: "Lancer le remplacement",
+      },
+      {
+        type: "p",
+        text: "Le devis décennale se fait sur le site, en indiquant votre activité et votre chiffre d'affaires. Pour un dossier déjà assuré chez QBE, précisez la date de fin de contrat afin de caler le nouveau départ. Une question sur un chantier en cours ou une activité particulière peut aussi être posée via le formulaire de contact : info@optimum-assurance.eu.",
+      },
+    ],
+  },
+  {
     slug: "obligation-decennale",
     title: "L'obligation d'assurance décennale pour les professionnels du BTP",
     description:

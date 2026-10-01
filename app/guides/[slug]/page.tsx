@@ -23,7 +23,7 @@ function isDommageOuvrageGuide(slug: string): boolean {
 function getRelatedGuides(slug: string) {
   const relatedSlugs = isDommageOuvrageGuide(slug)
     ? ["obligation-dommage-ouvrage", "dommage-ouvrage-auto-construction", "garantie-clos-couvert"]
-    : ["obligation-decennale", "declaration-sinistre", "resiliation-decennale"]
+    : ["fin-assurance-decennale-qbe-2027", "obligation-decennale", "resiliation-decennale", "declaration-sinistre"]
 
   return GUIDES_SEO.filter((guide) => relatedSlugs.includes(guide.slug) && guide.slug !== slug)
 }
@@ -80,6 +80,8 @@ export default async function GuidePage({
     title: data.title,
     description: data.description,
     h1: data.h1,
+    datePublished: "datePublished" in data ? data.datePublished : undefined,
+    dateModified: "dateModified" in data ? data.dateModified : undefined,
   })
 
   return (

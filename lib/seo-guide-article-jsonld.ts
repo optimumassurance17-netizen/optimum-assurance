@@ -15,6 +15,8 @@ type GuideMeta = {
   title: string
   description: string
   h1: string
+  datePublished?: string
+  dateModified?: string
 }
 
 export function buildGuideArticleJsonLdGraph(data: GuideMeta) {
@@ -55,8 +57,8 @@ export function buildGuideArticleJsonLdGraph(data: GuideMeta) {
     url,
     inLanguage: "fr-FR",
     articleSection: "Guides assurance construction",
-    datePublished: GUIDE_DATE_PUBLISHED,
-    dateModified: GUIDE_DATE_MODIFIED,
+    datePublished: data.datePublished ?? GUIDE_DATE_PUBLISHED,
+    dateModified: data.dateModified ?? GUIDE_DATE_MODIFIED,
     author: { "@id": seoOrgId },
     publisher: { "@id": seoOrgId },
     image: `${seoBaseUrl}/opengraph-image`,

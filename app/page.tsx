@@ -674,9 +674,13 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">Guides décennale et dommage ouvrage</h2>
           <p className="text-[#171717] text-center mb-8 max-w-xl mx-auto">
-            Obligation, résiliation, sinistre, auto-construction, clos et couvert.
+            Obligation, résiliation, sinistre, sortie QBE 2027, auto-construction, clos et couvert.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link href="/guides/fin-assurance-decennale-qbe-2027" className="p-5 bg-[var(--background)] rounded-xl border border-[#e5e5e5] hover:border-blue-600/40 hover:bg-blue-50 transition-all group">
+              <p className="font-semibold text-slate-900 group-hover:text-blue-600">Fin de la décennale QBE en 2027</p>
+              <p className="text-sm text-[#171717] mt-1">Sortie du portefeuille au 31 décembre 2026, reprise du contrat</p>
+            </Link>
             <Link href="/guides/obligation-decennale" className="p-5 bg-[var(--background)] rounded-xl border border-[#e5e5e5] hover:border-blue-600/40 hover:bg-blue-50 transition-all group">
               <p className="font-semibold text-slate-900 group-hover:text-blue-600">L&apos;obligation décennale</p>
               <p className="text-sm text-[#171717] mt-1">Loi Spinetta, sanctions, qui doit souscrire</p>

@@ -90,6 +90,17 @@ export default function AssuranceDecennaleIndexPage() {
           facade, isolation, exterieur, maintenance et prestations intellectuelles du batiment.
         </p>
 
+        <aside className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <p className="text-sm font-bold uppercase tracking-wide text-amber-800">Décennale QBE</p>
+          <p className="mt-2 text-[#0a0a0a] leading-relaxed">
+            QBE vise une sortie de la garantie décennale au 31 décembre 2026. Optimum Assurance étudie la reprise des
+            entreprises concernées avant le 1er janvier 2027.
+          </p>
+          <Link href="/guides/fin-assurance-decennale-qbe-2027" className="mt-3 inline-block font-semibold text-[#2563eb] hover:underline">
+            Lire le guide de remplacement
+          </Link>
+        </aside>
+
         <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6 mb-10">
           <h2 className="text-xl font-bold text-[#0a0a0a] mb-3">Trouver votre activite</h2>
           <div className="grid gap-5 lg:grid-cols-[1.4fr_0.9fr] lg:items-center">

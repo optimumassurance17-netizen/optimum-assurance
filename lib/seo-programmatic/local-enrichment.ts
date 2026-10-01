@@ -102,6 +102,7 @@ export function buildDecennaleLocalEnrichment(input: {
       { href: `/devis?from=seo-local-${input.villeSlug}`, label: `Devis décennale ${input.metierNom}` },
       { href: `/dommage-ouvrage/particulier/${input.villeSlug}`, label: `Dommage ouvrage à ${input.villeNom}` },
       { href: "/guides/obligation-decennale", label: "Guide obligation décennale" },
+      { href: "/guides/fin-assurance-decennale-qbe-2027", label: "Reprise décennale après QBE" },
     ],
   }
 }
