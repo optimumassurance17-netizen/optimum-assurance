@@ -368,43 +368,70 @@ export async function getDoLocalPage(slug: string, villeSlug: string): Promise<D
   }
 }
 
+function fallbackVilleLinks(pathPrefix: string, currentVilleSlug: string, limit: number): InternalLink[] {
+  return Object.entries(FALLBACK_VILLE_BY_SLUG)
+    .filter(([slug]) => slug !== currentVilleSlug)
+    .sort((a, b) => b[1].population - a[1].population)
+    .slice(0, limit)
+    .map(([slug, ville]) => ({
+      href: `${pathPrefix}/${slug}`,
+      label: ville.nom,
+    }))
+}
+
+function fallbackMetierLinks(villeSlug: string, currentMetierSlug: string, limit: number): InternalLink[] {
+  const cityPage = villeSlug in FALLBACK_VILLE_BY_SLUG
+  return METIERS_SEO.filter((m) => m.slug !== currentMetierSlug)
+    .slice(0, limit)
+    .map((m) => ({
+      href: cityPage ? `/assurance-decennale/${m.slug}/${villeSlug}` : `/assurance-decennale/${m.slug}`,
+      label: `Décennale ${m.nom}`,
+    }))
+}
+
+function mergeInternalLinks(primary: InternalLink[], extra: InternalLink[], limit: number): InternalLink[] {
+  const seen = new Set<string>()
+  const out: InternalLink[] = []
+  for (const link of [...primary, ...extra]) {
+    if (seen.has(link.href)) continue
+    seen.add(link.href)
+    out.push(link)
+    if (out.length >= limit) break
+  }
+  return out
+}
+
+function readNamedEmbed(row: Record<string, unknown>, key: string): { slug: string; nom: string } | null {
+  const value = row[key]
+  const one = Array.isArray(value) ? value[0] : value
+  if (!one || typeof one !== "object") return null
+  const record = one as { slug?: unknown; nom?: unknown }
+  if (typeof record.slug !== "string" || typeof record.nom !== "string") return null
+  return { slug: record.slug, nom: record.nom }
+}
+
 /** Maillage interne : autres métiers pour la même ville. */
 export async function fetchDecennaleSiblingMetiers(
   villeSlug: string,
   currentMetierSlug: string,
   limit = 6
 ): Promise<InternalLink[]> {
+  const fallback = fallbackMetierLinks(villeSlug, currentMetierSlug, limit)
   const sb = createSupabaseServerClient()
-  if (!sb) {
-    return METIERS_SEO.filter((m) => m.slug !== currentMetierSlug)
-      .slice(0, limit)
-      .map((m) => ({
-        href: `/assurance-decennale/${m.slug}/${villeSlug}`,
-        label: `Décennale ${m.nom}`,
-      }))
-  }
+  if (!sb) return fallback
 
-  const { data: villeRow } = await sb.from("villes").select("id").eq("slug", villeSlug).maybeSingle()
-  if (!villeRow?.id) return []
-
-  const { data } = await sb
+  const { data, error } = await sb
     .from("seo_decennale_ville")
-    .select(
-      `
-      metiers ( slug, nom )
-    `
-    )
-    .eq("ville_id", villeRow.id)
+    .select("metiers!inner(slug, nom), villes!inner(slug)")
+    .eq("villes.slug", villeSlug)
     .eq("indexable", true)
-    .limit(48)
+    .limit(24)
 
-  if (!data?.length) return []
+  if (error || !data?.length) return fallback
 
-  return data
+  const fromDb = data
     .map((row) => {
-      const met = embedOne(
-        row.metiers as unknown as { slug: string; nom: string } | null
-      )
+      const met = readNamedEmbed(row as Record<string, unknown>, "metiers")
       if (!met || met.slug === currentMetierSlug) return null
       return {
         href: `/assurance-decennale/${met.slug}/${villeSlug}`,
@@ -412,7 +439,8 @@ export async function fetchDecennaleSiblingMetiers(
       }
     })
     .filter((x): x is InternalLink => x != null)
-    .slice(0, limit)
+
+  return mergeInternalLinks(fromDb, fallback, limit)
 }
 
 /** Maillage interne : autres villes pour le même métier. */
@@ -421,37 +449,22 @@ export async function fetchDecennaleSiblingVilles(
   currentVilleSlug: string,
   limit = 8
 ): Promise<InternalLink[]> {
+  const fallback = fallbackVilleLinks(`/assurance-decennale/${metierSlug}`, currentVilleSlug, limit)
   const sb = createSupabaseServerClient()
-  if (!sb) {
-    return Object.keys(FALLBACK_VILLE_BY_SLUG)
-      .filter((s) => s !== currentVilleSlug)
-      .map((s) => ({
-        href: `/assurance-decennale/${metierSlug}/${s}`,
-        label: FALLBACK_VILLE_BY_SLUG[s].nom,
-      }))
-  }
+  if (!sb) return fallback
 
-  const { data: metierRow } = await sb.from("metiers").select("id").eq("slug", metierSlug).maybeSingle()
-  if (!metierRow?.id) return []
-
-  const { data } = await sb
+  const { data, error } = await sb
     .from("seo_decennale_ville")
-    .select(
-      `
-      villes ( slug, nom )
-    `
-    )
-    .eq("metier_id", metierRow.id)
+    .select("villes!inner(slug, nom, population), metiers!inner(slug)")
+    .eq("metiers.slug", metierSlug)
     .eq("indexable", true)
-    .limit(48)
+    .limit(40)
 
-  if (!data?.length) return []
+  if (error || !data?.length) return fallback
 
-  return data
+  const fromDb = data
     .map((row) => {
-      const ville = embedOne(
-        row.villes as unknown as { slug: string; nom: string } | null
-      )
+      const ville = readNamedEmbed(row as Record<string, unknown>, "villes")
       if (!ville || ville.slug === currentVilleSlug) return null
       return {
         href: `/assurance-decennale/${metierSlug}/${ville.slug}`,
@@ -459,7 +472,8 @@ export async function fetchDecennaleSiblingVilles(
       }
     })
     .filter((x): x is InternalLink => x != null)
-    .slice(0, limit)
+
+  return mergeInternalLinks(fromDb, fallback, limit)
 }
 
 /** Maillage interne : autres villes pour le même type DO. */
@@ -468,37 +482,22 @@ export async function fetchDoSiblingVilles(
   currentVilleSlug: string,
   limit = 8
 ): Promise<InternalLink[]> {
+  const fallback = fallbackVilleLinks(`/dommage-ouvrage/${slug}`, currentVilleSlug, limit)
   const sb = createSupabaseServerClient()
-  if (!sb) {
-    return Object.keys(FALLBACK_VILLE_BY_SLUG)
-      .filter((s) => s !== currentVilleSlug)
-      .map((s) => ({
-        href: `/dommage-ouvrage/${slug}/${s}`,
-        label: FALLBACK_VILLE_BY_SLUG[s].nom,
-      }))
-  }
+  if (!sb) return fallback
 
-  const { data: typeRow } = await sb.from("types_projets").select("id").eq("slug", slug).maybeSingle()
-  if (!typeRow?.id) return []
-
-  const { data } = await sb
+  const { data, error } = await sb
     .from("seo_do_ville")
-    .select(
-      `
-      villes ( slug, nom )
-    `
-    )
-    .eq("type_projet_id", typeRow.id)
+    .select("villes!inner(slug, nom), types_projets!inner(slug)")
+    .eq("types_projets.slug", slug)
     .eq("indexable", true)
-    .limit(48)
+    .limit(40)
 
-  if (!data?.length) return []
+  if (error || !data?.length) return fallback
 
-  return data
+  const fromDb = data
     .map((row) => {
-      const ville = embedOne(
-        row.villes as unknown as { slug: string; nom: string } | null
-      )
+      const ville = readNamedEmbed(row as Record<string, unknown>, "villes")
       if (!ville || ville.slug === currentVilleSlug) return null
       return {
         href: `/dommage-ouvrage/${slug}/${ville.slug}`,
@@ -506,7 +505,8 @@ export async function fetchDoSiblingVilles(
       }
     })
     .filter((x): x is InternalLink => x != null)
-    .slice(0, limit)
+
+  return mergeInternalLinks(fromDb, fallback, limit)
 }
 
 /** Limite les URLs programmatiques dans le sitemap (évite timeout serverless / réponse trop lourde). */

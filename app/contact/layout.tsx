@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
 import { SITE_URL } from "@/lib/site-url"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 
 const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
-  title: "Contact assurance décennale, dommage ouvrage et sinistre | Optimum Assurance",
+  title: absoluteBrandTitle("Contact assurance décennale, dommage ouvrage et sinistre"),
   description: truncateForDescription(
     "Contact Optimum Assurance : question sur devis décennale, dommage ouvrage, attestation, sinistre ou dossier en cours. Réponse sous 24 h via formulaire et assistant.",
     158

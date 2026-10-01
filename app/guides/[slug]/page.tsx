@@ -4,6 +4,7 @@ import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { GUIDES_SEO } from "@/lib/guides-seo"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { buildGuideArticleJsonLdGraph } from "@/lib/seo-guide-article-jsonld"
 import { SITE_URL } from "@/lib/site-url"
 import { notFound } from "next/navigation"
@@ -42,7 +43,7 @@ export async function generateMetadata({
   const description = truncateForDescription(data.description, 158)
 
   return {
-    title: `${data.title} | Optimum Assurance`,
+    title: absoluteBrandTitle(data.title),
     description,
     alternates: { canonical: `${baseUrl}/guides/${data.slug}` },
     openGraph: {

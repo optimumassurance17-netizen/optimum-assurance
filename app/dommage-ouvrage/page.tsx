@@ -10,12 +10,13 @@ import {
 } from "@/lib/seo-jsonld-helpers"
 import { SITE_URL } from "@/lib/site-url"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { buildTrackedHref } from "@/lib/conversion-tracking"
 
 const baseUrl = SITE_URL
 
 export const metadata = {
-  title: "Dommage ouvrage | Profils couverts et devis en ligne | Optimum Assurance",
+  title: absoluteBrandTitle("Dommage ouvrage | Profils couverts et devis en ligne"),
   description: truncateForDescription(
     "Assurance dommage ouvrage : auto-construction, particulier faisant construire, constructeur-promoteur et garantie clos et couvert. Comparez les profils couverts et demandez votre devis.",
     158

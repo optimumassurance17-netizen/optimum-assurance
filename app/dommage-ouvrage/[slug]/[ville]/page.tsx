@@ -21,6 +21,7 @@ import {
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
 import { buildProgrammaticMetaDescription } from "@/lib/seo-metadata-utils"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 
 const FaqSEO = dynamic(() =>
@@ -46,7 +47,7 @@ export async function generateMetadata({
   if (!data) return {}
 
   const path = `/dommage-ouvrage/${data.slug}/${data.villeSlug}`
-  const title = `Assurance dommage ouvrage ${data.nom} à ${data.villeNom} | Devis | Optimum`
+  const title = absoluteBrandTitle(`Assurance dommage ouvrage ${data.nom} à ${data.villeNom}`).absolute
   const description = buildProgrammaticMetaDescription(
     `Assurance dommage ouvrage ${data.nom} à ${data.villeNom} : obligation, garanties et devis sous 24 h.`,
     data.description,
@@ -54,7 +55,7 @@ export async function generateMetadata({
   )
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: `${baseUrl}${path}` },
     robots: data.indexable ? { index: true, follow: true } : { index: false, follow: true },

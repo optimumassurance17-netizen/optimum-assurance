@@ -12,6 +12,7 @@ import {
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 import { notFound } from "next/navigation"
 import { buildTrackedHref } from "@/lib/conversion-tracking"
@@ -34,7 +35,7 @@ export async function generateMetadata({
   const description = truncateForDescription(data.description, 158)
 
   return {
-    title: `Assurance décennale ${data.nom} | Devis en ligne | Optimum`,
+    title: absoluteBrandTitle(`Assurance décennale ${data.nom}`),
     description,
     keywords: [
       `assurance décennale ${data.nom.toLowerCase()}`,

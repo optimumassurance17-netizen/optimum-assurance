@@ -9,6 +9,7 @@ import {
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 import { notFound } from "next/navigation"
 import { buildTrackedHref } from "@/lib/conversion-tracking"
@@ -31,7 +32,7 @@ export async function generateMetadata({
   const description = truncateForDescription(data.description, 158)
 
   return {
-    title: `Assurance dommage ouvrage ${data.nom} | Devis & guide | Optimum`,
+    title: absoluteBrandTitle(`Assurance dommage ouvrage ${data.nom}`),
     description,
     keywords: [
       `dommage ouvrage ${data.nom.toLowerCase()}`,

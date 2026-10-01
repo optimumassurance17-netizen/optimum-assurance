@@ -10,6 +10,7 @@ import {
   NATURAL_ANCHOR_SUGGESTIONS,
 } from "@/lib/linkpilot/constants"
 import { checkRateLimitMemory, getClientIp } from "@/lib/rate-limit"
+import { SITE_URL } from "@/lib/site-url"
 
 const payloadSchema = z.object({
   domain: z.string().min(3),
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     `URL prospect: ${input.url}`,
     `Catégorie: ${input.category}`,
     `Niche: ${input.niche}`,
-    `Page cible Optimum Assurance: https://optimum-assurance.fr${input.targetPage}`,
+    `Page cible Optimum Assurance: ${SITE_URL}${input.targetPage}`,
     `Ancres naturelles autorisées: ${NATURAL_ANCHOR_SUGGESTIONS.join(", ")}`,
     "Ne jamais proposer d'échange agressif, ni d'automatisation, ni de publication en masse.",
     "Objectif: proposer une ressource utile pour leur audience et demander une mention éditoriale naturelle.",
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         subject: `Proposition de ressource utile pour vos lecteurs (${input.domain})`,
-        body: `Bonjour,\n\nJe vous contacte car votre contenu sur ${input.niche} est particulièrement pertinent. Nous avons publié sur Optimum Assurance une ressource utile qui peut intéresser votre audience : https://optimum-assurance.fr${input.targetPage}\n\nSi vous jugez le contenu utile, seriez-vous ouvert à l'ajouter comme source complémentaire dans un article existant ou futur ?\n\nMerci pour votre retour,\nL'équipe Optimum Assurance\ninfo@optimum-assurance.eu`,
+        body: `Bonjour,\n\nJe vous contacte car votre contenu sur ${input.niche} est particulièrement pertinent. Nous avons publié sur Optimum Assurance une ressource utile qui peut intéresser votre audience : ${SITE_URL}${input.targetPage}\n\nSi vous jugez le contenu utile, seriez-vous ouvert à l'ajouter comme source complémentaire dans un article existant ou futur ?\n\nMerci pour votre retour,\nL'équipe Optimum Assurance\ninfo@optimum-assurance.eu`,
       },
       { status: 200 }
     )
