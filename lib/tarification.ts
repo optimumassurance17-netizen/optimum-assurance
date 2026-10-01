@@ -97,7 +97,7 @@ export function calculerTarif(input: DevisInput): DevisResult {
       primeMensuelle: Math.round((primeAnnuelleRounded / 12) * 100) / 100,
       primeTrimestrielle,
       franchise: FRANCHISE_DECENNALE_EUR,
-      plafond: Math.max(chiffreAffaires * 2, 100000),
+      plafond: chiffreAffaires * 2,
       reprisePasse: reprisePasse && sinistres === 0,
       supplementReprisePasse,
       details: {
@@ -132,7 +132,7 @@ export function calculerTarif(input: DevisInput): DevisResult {
       primeMensuelle: Math.round((primeAnnuelleRounded / 12) * 100) / 100,
       primeTrimestrielle,
       franchise: FRANCHISE_DECENNALE_EUR,
-      plafond: Math.max(chiffreAffaires * 2, 100000),
+      plafond: chiffreAffaires * 2,
       reprisePasse: reprisePasse && sinistres === 0,
       supplementReprisePasse,
       details: {

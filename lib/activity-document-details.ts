@@ -1,3 +1,4 @@
+import { ACTIVITE_CATALOGUE } from "@/lib/decennale-activites-catalogue"
 import {
   ACTIVITE_EXCLUSIONS,
   ACTIVITE_TO_NOMENCLATURE,
@@ -246,11 +247,31 @@ function mapFromNomenclatureItem(
   }
 }
 
+function detailFromCatalogue(activityLabel: string): ActivityDocumentDetail | null {
+  const fiche = ACTIVITE_CATALOGUE[activityLabel]
+  if (!fiche) return null
+  return {
+    key: `catalogue:${normalizeText(activityLabel)}`,
+    activityLabel,
+    definition: fiche.description,
+    exclusions:
+      fiche.exclusions.length > 0 ? fiche.exclusions : [ACTIVITY_DETAILS_FALLBACK_EXCLUSION],
+  }
+}
+
 function resolveActivityDetail(rawLine: string): ActivityDocumentDetail | null {
   const activityLabel = rawLine.trim()
   if (!activityLabel) return null
 
+  const fromCatalogue = detailFromCatalogue(activityLabel)
+  if (fromCatalogue) return fromCatalogue
+
   const { code, name } = splitCodeAndName(activityLabel)
+  const fromNamedCatalogue = detailFromCatalogue(name)
+  if (fromNamedCatalogue) {
+    return { ...fromNamedCatalogue, activityLabel, key: `catalogue:${normalizeText(activityLabel)}` }
+  }
+
   if (isHierarchyGroupLine(activityLabel, code)) {
     return null
   }

@@ -4,7 +4,11 @@ import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { ActivitesCatalogueList } from "@/components/ActivitesCatalogueList"
 import { ACTIVITES_AVEC_TARIFS } from "@/lib/activites-btp"
-import { ACTIVITE_CATALOGUE, activiteAnchorId } from "@/lib/decennale-activites-catalogue"
+import {
+  ACTIVITE_CATALOGUE,
+  activiteAnchorId,
+  assertActiviteCatalogueComplet,
+} from "@/lib/decennale-activites-catalogue"
 import {
   EXCLUSIONS_LEGALES_COMMUNES,
   OUVRAGES_EXCLUS_DECENNALE,
@@ -12,6 +16,8 @@ import {
 import { absoluteBrandTitle } from "@/lib/seo-title"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
 import { seoBaseUrl, seoBreadcrumbListNode, seoJsonLdGraph, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
+
+assertActiviteCatalogueComplet(ACTIVITES_AVEC_TARIFS)
 
 const description = truncateForDescription(
   "Liste des activités du devis décennale : descriptif de chaque métier du menu et exclusions usuelles du marché, alignées sur la nomenclature France Assureurs.",

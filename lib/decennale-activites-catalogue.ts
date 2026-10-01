@@ -1,5 +1,3 @@
-import { ACTIVITES_AVEC_TARIFS } from "@/lib/activites-btp"
-
 export type ActiviteFiche = {
   description: string
   exclusions: string[]
@@ -479,9 +477,9 @@ export const ACTIVITE_CATALOGUE: Record<string, ActiviteFiche> = {
   },
 }
 
-const missing = ACTIVITES_AVEC_TARIFS.filter((item) => !ACTIVITE_CATALOGUE[item.activite]).map(
-  (item) => item.activite
-)
-if (missing.length > 0) {
-  throw new Error(`Catalogue décennale incomplet : ${missing.join(", ")}`)
+export function assertActiviteCatalogueComplet(activites: readonly { activite: string }[]): void {
+  const missing = activites.filter((item) => !ACTIVITE_CATALOGUE[item.activite]).map((item) => item.activite)
+  if (missing.length > 0) {
+    throw new Error(`Catalogue décennale incomplet : ${missing.join(", ")}`)
+  }
 }
