@@ -8,6 +8,7 @@ import { OpenChatbotButton } from "@/components/OpenChatbotButton"
 import { buildHomePageJsonLdGraph } from "@/lib/seo-home-jsonld"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
 import { buildTrackedHref } from "@/lib/conversion-tracking"
+import { GUIDES_SEO } from "@/lib/guides-seo"
 
 /** Simulateur en chunk séparé : moins de JS critique sur le fil d’hydratation du hero / LCP (H1). */
 const SimulateurPrime = dynamic(
@@ -674,37 +675,15 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">Guides décennale et dommage ouvrage</h2>
           <p className="text-[#171717] text-center mb-8 max-w-xl mx-auto">
-            Obligation, résiliation, sinistre, sortie QBE 2027, auto-construction, clos et couvert.
+            Couverture, attestation, prix, différence avec la dommage ouvrage, pièces du dossier.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Link href="/guides/fin-assurance-decennale-qbe-2027" className="p-5 bg-[var(--background)] rounded-xl border border-[#e5e5e5] hover:border-blue-600/40 hover:bg-blue-50 transition-all group">
-              <p className="font-semibold text-slate-900 group-hover:text-blue-600">Fin de la décennale QBE en 2027</p>
-              <p className="text-sm text-[#171717] mt-1">Sortie du portefeuille au 31 décembre 2026, reprise du contrat</p>
-            </Link>
-            <Link href="/guides/obligation-decennale" className="p-5 bg-[var(--background)] rounded-xl border border-[#e5e5e5] hover:border-blue-600/40 hover:bg-blue-50 transition-all group">
-              <p className="font-semibold text-slate-900 group-hover:text-blue-600">L&apos;obligation décennale</p>
-              <p className="text-sm text-[#171717] mt-1">Loi Spinetta, sanctions, qui doit souscrire</p>
-            </Link>
-            <Link href="/guides/resiliation-decennale" className="p-5 bg-[var(--background)] rounded-xl border border-[#e5e5e5] hover:border-blue-600/40 hover:bg-blue-50 transition-all group">
-              <p className="font-semibold text-slate-900 group-hover:text-blue-600">Résilier sa décennale</p>
-              <p className="text-sm text-[#171717] mt-1">Délais, lettre recommandée, changement d&apos;assureur</p>
-            </Link>
-            <Link href="/guides/declaration-sinistre" className="p-5 bg-[var(--background)] rounded-xl border border-[#e5e5e5] hover:border-blue-600/40 hover:bg-blue-50 transition-all group">
-              <p className="font-semibold text-slate-900 group-hover:text-blue-600">Déclarer un sinistre</p>
-              <p className="text-sm text-[#171717] mt-1">Procédure, délais, documents à fournir</p>
-            </Link>
-            <Link href="/guides/obligation-dommage-ouvrage" className="p-5 bg-[var(--background)] rounded-xl border border-[#e5e5e5] hover:border-blue-600/40 hover:bg-blue-50 transition-all group">
-              <p className="font-semibold text-slate-900 group-hover:text-blue-600">Obligation dommage ouvrage</p>
-              <p className="text-sm text-[#171717] mt-1">Maîtres d&apos;ouvrage, constructeurs, promoteurs</p>
-            </Link>
-            <Link href="/guides/dommage-ouvrage-auto-construction" className="p-5 bg-[var(--background)] rounded-xl border border-[#e5e5e5] hover:border-blue-600/40 hover:bg-blue-50 transition-all group">
-              <p className="font-semibold text-slate-900 group-hover:text-blue-600">DO auto-construction</p>
-              <p className="text-sm text-[#171717] mt-1">Particulier qui fait construire sa maison</p>
-            </Link>
-            <Link href="/guides/garantie-clos-couvert" className="p-5 bg-[var(--background)] rounded-xl border border-[#e5e5e5] hover:border-blue-600/40 hover:bg-blue-50 transition-all group">
-              <p className="font-semibold text-slate-900 group-hover:text-blue-600">Garantie clos et couvert</p>
-              <p className="text-sm text-[#171717] mt-1">Définition, lots couverts, avantages</p>
-            </Link>
+            {GUIDES_SEO.map((guide) => (
+              <Link key={guide.slug} href={`/guides/${guide.slug}`} className="p-5 bg-[var(--background)] rounded-xl border border-[#e5e5e5] hover:border-blue-600/40 hover:bg-blue-50 transition-all group">
+                <p className="font-semibold text-slate-900 group-hover:text-blue-600">{guide.title}</p>
+                <p className="text-sm text-[#171717] mt-1">{guide.description}</p>
+              </Link>
+            ))}
           </div>
           <p className="text-center mt-6">
             <Link href="/guides" className="text-blue-600 font-semibold hover:underline">Voir tous les guides →</Link>

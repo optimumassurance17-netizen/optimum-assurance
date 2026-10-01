@@ -87,7 +87,7 @@ export default function GuidesPage() {
             <span className="bg-[#eff6ff] text-[#2563eb] px-2 py-0.5 rounded text-sm">Décennale BTP</span>
           </h2>
           <div className="space-y-6">
-            {GUIDES_SEO.filter((g) => ["fin-assurance-decennale-qbe-2027", "obligation-decennale", "resiliation-decennale", "declaration-sinistre"].includes(g.slug)).map((guide) => (
+            {GUIDES_SEO.filter((g) => g.topic === "decennale").map((guide) => (
               <Link
                 key={guide.slug}
                 href={`/guides/${guide.slug}`}
@@ -112,7 +112,7 @@ export default function GuidesPage() {
             <span className="bg-[#eff6ff] text-[#2563eb] px-2 py-0.5 rounded text-sm">Dommage ouvrage</span>
           </h2>
           <div className="space-y-6">
-            {GUIDES_SEO.filter((g) => ["obligation-dommage-ouvrage", "dommage-ouvrage-auto-construction", "garantie-clos-couvert"].includes(g.slug)).map((guide) => (
+            {GUIDES_SEO.filter((g) => g.topic === "dommage-ouvrage").map((guide) => (
               <Link
                 key={guide.slug}
                 href={`/guides/${guide.slug}`}

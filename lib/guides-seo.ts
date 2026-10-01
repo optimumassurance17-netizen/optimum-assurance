@@ -1,5 +1,6 @@
 export const GUIDES_SEO = [
   {
+    topic: "decennale",
     slug: "fin-assurance-decennale-qbe-2027",
     title: "Fin de l'assurance décennale QBE en 2027 : faire reprendre son contrat",
     description:
@@ -57,6 +58,7 @@ export const GUIDES_SEO = [
     ],
   },
   {
+    topic: "decennale",
     slug: "obligation-decennale",
     title: "L'obligation d'assurance décennale pour les professionnels du BTP",
     description:
@@ -112,6 +114,7 @@ export const GUIDES_SEO = [
     ],
   },
   {
+    topic: "decennale",
     slug: "resiliation-decennale",
     title: "Comment résilier son assurance décennale ?",
     description:
@@ -167,6 +170,7 @@ export const GUIDES_SEO = [
     ],
   },
   {
+    topic: "decennale",
     slug: "declaration-sinistre",
     title: "Déclarer un sinistre décennale : démarches et délais",
     description:
@@ -222,6 +226,7 @@ export const GUIDES_SEO = [
     ],
   },
   {
+    topic: "dommage-ouvrage",
     slug: "obligation-dommage-ouvrage",
     title: "L'obligation d'assurance dommage ouvrage pour les maîtres d'ouvrage",
     description:
@@ -244,6 +249,7 @@ export const GUIDES_SEO = [
     ],
   },
   {
+    topic: "dommage-ouvrage",
     slug: "dommage-ouvrage-auto-construction",
     title: "Assurance dommage ouvrage auto-construction : guide complet",
     description:
@@ -264,6 +270,7 @@ export const GUIDES_SEO = [
     ],
   },
   {
+    topic: "dommage-ouvrage",
     slug: "garantie-clos-couvert",
     title: "Garantie clos et couvert : définition et avantages",
     description:
@@ -281,6 +288,258 @@ export const GUIDES_SEO = [
       { type: "p", text: "La formule clos et couvert n'inclut pas les lots de second œuvre comme la plomberie, l'électricité, le chauffage, le carrelage ou la peinture. Ces interventions restent couvertes par les assurances décennales propres à chaque artisan ou entreprise intervenante." },
       { type: "h2", text: "Dans quels cas cette formule est-elle pertinente ?" },
       { type: "p", text: "Elle est souvent retenue pour les petits budgets, l'auto-construction ou les projets où le maître d'ouvrage souhaite concentrer la couverture sur la structure du bâtiment. Avant de choisir cette formule, il faut bien vérifier quels intervenants couvrent les autres lots et si ce niveau de protection répond à votre objectif patrimonial." },
+    ],
+  },
+  {
+    topic: "decennale",
+    slug: "que-couvre-assurance-decennale",
+    title: "Que couvre l'assurance décennale ?",
+    description:
+      "Dommages couverts par la décennale après réception : solidité, impropriété à destination, équipements indissociables. Ce que la garantie ne prend pas en charge.",
+    h1: "Que couvre vraiment l'assurance décennale ?",
+    shortAnswer:
+      "La décennale couvre, pendant dix ans après la réception, les dommages qui compromettent la solidité de l'ouvrage ou le rendent impropre à son usage. Elle ne couvre ni l'usure, ni un simple défaut esthétique.",
+    datePublished: "2026-10-01T09:00:00+02:00",
+    dateModified: "2026-10-01T09:00:00+02:00",
+    content: [
+      {
+        type: "p",
+        text: "L'assurance décennale garantit la responsabilité du constructeur après la réception des travaux. Le point de départ du délai de dix ans est cette réception, pas la date du devis ni celle de la facture. La garantie vise les dommages graves, ceux qui touchent la solidité de l'ouvrage ou qui le rendent impropre à sa destination.",
+      },
+      {
+        type: "h2",
+        text: "Exemples de dommages qui peuvent relever de la décennale",
+      },
+      {
+        type: "p",
+        text: "Une charpente qui se déforme, une toiture qui ne tient plus l'eau, des fondations qui tassent, une façade dont l'étanchéité est défaillante, ou un équipement indissociable de l'ouvrage qui empêche de l'utiliser normalement. Chaque sinistre se lit avec le contrat, la nature des travaux et la preuve que le désordre existait ou trouve son origine avant la fin du délai.",
+      },
+      {
+        type: "h2",
+        text: "Ce que la décennale ne remplace pas",
+      },
+      {
+        type: "p",
+        text: "Un défaut purement esthétique, l'entretien courant, l'usure normale ou un dommage causé volontairement ne sont pas le cœur de la garantie décennale. Les éléments d'équipement dissociables relèvent plutôt de la garantie de bon fonctionnement, d'une durée de deux ans. La responsabilité civile professionnelle, elle, vise d'autres dommages causés aux tiers pendant l'activité, avant ou en dehors de cette garantie décennale.",
+      },
+      {
+        type: "h2",
+        text: "Pourquoi l'activité déclarée compte",
+      },
+      {
+        type: "p",
+        text: "L'attestation ne couvre que les activités souscrites. Un plombier qui réalise aussi de l'étanchéité, ou un électricien qui pose des panneaux, doit déclarer ces travaux. Un chantier hors activités garanties peut rester à la charge de l'entreprise, même si une attestation est affichée sur le devis.",
+      },
+    ],
+  },
+  {
+    topic: "decennale",
+    slug: "attestation-assurance-decennale",
+    title: "Attestation d'assurance décennale : à quoi elle sert",
+    description:
+      "Mentions de l'attestation décennale, obligation de la joindre au devis et à la facture, et vérification du document avant de démarrer un chantier.",
+    h1: "À quoi sert l'attestation d'assurance décennale ?",
+    shortAnswer:
+      "L'attestation prouve que l'entreprise est assurée pour les activités qu'elle déclare. Elle doit pouvoir être présentée avec le devis et la facture. Sans elle, le maître d'ouvrage peut refuser de signer.",
+    datePublished: "2026-10-01T09:10:00+02:00",
+    dateModified: "2026-10-01T09:10:00+02:00",
+    content: [
+      {
+        type: "p",
+        text: "L'attestation décennale est le document que le client, le maître d'œuvre ou le banquier demande avant de vous confier un chantier. Elle indique l'assureur, la période de validité, l'entreprise assurée et les activités couvertes. Une attestation périmée ou trop étroite par rapport aux travaux réels ne suffit pas.",
+      },
+      {
+        type: "h2",
+        text: "Où elle doit apparaître",
+      },
+      {
+        type: "p",
+        text: "Le professionnel la communique avec ses devis et ses factures. Sur un marché privé comme sur un marché où un particulier fait construire, l'absence d'attestation bloque souvent la signature, le paiement de l'acompte ou l'ouverture du chantier. Gardez aussi une copie à jour dans vos pièces d'entreprise : elle change à chaque échéance ou avenant.",
+      },
+      {
+        type: "h2",
+        text: "Ce qu'il faut vérifier avant de l'envoyer",
+      },
+      {
+        type: "p",
+        text: "Contrôlez la raison sociale, le SIRET, les dates de validité et la liste des activités. Si vous avez ajouté un métier en cours d'année, l'attestation précédente ne le couvre pas tant qu'un avenant n'a pas été accepté. En cas de doute, le maître d'ouvrage peut demander à vérifier l'authenticité du document plutôt que de se fier à un simple scan.",
+      },
+      {
+        type: "h2",
+        text: "Comment l'obtenir chez Optimum Assurance",
+      },
+      {
+        type: "p",
+        text: "Après le devis, la signature du contrat et le paiement du premier trimestre, le dossier est contrôlé. L'attestation est mise à disposition dans l'espace client une fois le risque accepté. Le document comporte un QR code de vérification. Elle n'est pas délivrée tant que le paiement et le contrôle ne sont pas terminés.",
+      },
+    ],
+  },
+  {
+    topic: "decennale",
+    slug: "prix-assurance-decennale",
+    title: "Prix de l'assurance décennale : ce qui fait varier la prime",
+    description:
+      "La prime décennale dépend du chiffre d'affaires, des activités et des antécédents. Chez Optimum, le minimum est de 600 € par an, payé par trimestre.",
+    h1: "Combien coûte une assurance décennale ?",
+    shortAnswer:
+      "Il n'y a pas un prix unique. La prime suit le chiffre d'affaires, les métiers exercés et l'historique de sinistres. Chez Optimum Assurance, la cotisation minimale est de 600 € par an, avec un prélèvement trimestriel.",
+    datePublished: "2026-10-01T09:20:00+02:00",
+    dateModified: "2026-10-01T09:20:00+02:00",
+    content: [
+      {
+        type: "p",
+        text: "Deux entreprises du même département peuvent payer des cotisations très différentes. L'assureur regarde d'abord ce que vous faites, le volume d'activité et la façon dont les chantiers se sont passés les années précédentes. Un métier plus exposé, comme le gros œuvre ou l'étanchéité, n'est pas tarifé comme de la peinture intérieure.",
+      },
+      {
+        type: "h2",
+        text: "Les critères qui pèsent le plus",
+      },
+      {
+        type: "p",
+        text: "Le chiffre d'affaires déclaré, la liste exacte des activités, l'ancienneté de l'entreprise, les résiliations et les sinistres. Sous-déclarer le chiffre d'affaires pour faire baisser la prime expose à une régularisation, parce que les déclarations sont recoupées. Mieux vaut indiquer le bon montant dès le devis.",
+      },
+      {
+        type: "h2",
+        text: "Le tarif chez Optimum Assurance",
+      },
+      {
+        type: "p",
+        text: "La cotisation minimale est de 600 € par an. Le site affiche un équivalent mensuel pour comparer, mais le paiement réel est trimestriel : le premier trimestre et les frais de gestion se règlent par carte, puis les échéances suivantes sont prévues en prélèvement SEPA. Le montant affiché au devis reste indicatif tant que le dossier n'est pas accepté.",
+      },
+      {
+        type: "h2",
+        text: "Comment obtenir une estimation",
+      },
+      {
+        type: "p",
+        text: "Le parcours en ligne demande l'activité et le chiffre d'affaires, puis affiche un tarif pour les profils éligibles. Une activité absente de la liste, ou un dossier avec plusieurs sinistres, part en étude. Dans ce cas, aucun prix définitif n'est promis avant lecture du dossier.",
+      },
+    ],
+  },
+  {
+    topic: "dommage-ouvrage",
+    slug: "decennale-ou-dommage-ouvrage",
+    title: "Décennale ou dommage ouvrage : qui souscrit quoi ?",
+    description:
+      "La décennale est l'assurance du constructeur. La dommage ouvrage est celle du maître d'ouvrage. Les deux se complètent et ne se remplacent pas.",
+    h1: "Faut-il une décennale ou une dommage ouvrage ?",
+    shortAnswer:
+      "L'entreprise qui réalise les travaux souscrit la décennale. La personne qui fait construire ou qui vend l'ouvrage souscrit la dommage ouvrage. L'une ne remplace pas l'autre.",
+    datePublished: "2026-10-01T09:30:00+02:00",
+    dateModified: "2026-10-01T09:30:00+02:00",
+    content: [
+      {
+        type: "p",
+        text: "Ces deux assurances portent sur les mêmes grands désordres de construction, mais elles ne protègent pas la même personne. La décennale couvre la responsabilité du professionnel du bâtiment. La dommage ouvrage permet au maître d'ouvrage d'être indemnisé pour la réparation, sans attendre que les responsabilités soient tranchées entre les intervenants.",
+      },
+      {
+        type: "h2",
+        text: "Côté entreprise",
+      },
+      {
+        type: "p",
+        text: "Artisan, société de bâtiment, architecte ou bureau d'études lié au maître d'ouvrage : c'est la décennale qu'il faut présenter. Elle suit l'entreprise sur ses chantiers. Elle ne se transforme pas en dommage ouvrage pour le client particulier qui fait construire sa maison.",
+      },
+      {
+        type: "h2",
+        text: "Côté maître d'ouvrage",
+      },
+      {
+        type: "p",
+        text: "Particulier qui fait construire, vendeur d'un immeuble à construire, constructeur de maison individuelle ou promoteur : la dommage ouvrage est en principe obligatoire avant l'ouverture du chantier. En cas de désordre grave après réception, elle finance les travaux de réparation, puis l'assureur se retourne vers les responsables et leurs assureurs décennaux.",
+      },
+      {
+        type: "h2",
+        text: "Pourquoi les deux existent ensemble",
+      },
+      {
+        type: "p",
+        text: "Sans dommage ouvrage, le propriétaire peut rester bloqué le temps d'un débat sur la responsabilité. Sans décennale, l'entreprise n'a pas le droit d'intervenir et la dommage ouvrage devient plus difficile à placer. Sur un même chantier, les attestations des entreprises et le contrat dommage ouvrage se lisent ensemble.",
+      },
+    ],
+  },
+  {
+    topic: "dommage-ouvrage",
+    slug: "quand-souscrire-dommage-ouvrage",
+    title: "Quand souscrire l'assurance dommage ouvrage ?",
+    description:
+      "La dommage ouvrage se prépare avant l'ouverture du chantier. Permis, coût des travaux et intervenants doivent être assez avancés pour lancer l'étude.",
+    h1: "À quel moment souscrire la dommage ouvrage ?",
+    shortAnswer:
+      "La dommage ouvrage se souscrit avant l'ouverture du chantier, dès que le projet, le coût et les intervenants sont suffisamment connus. Attendre la fin du gros œuvre complique le placement et peut retarder les travaux.",
+    datePublished: "2026-10-01T09:40:00+02:00",
+    dateModified: "2026-10-01T09:40:00+02:00",
+    content: [
+      {
+        type: "p",
+        text: "L'assurance dommage ouvrage doit être en place avant le démarrage des travaux. Ce n'est pas une formalité à régler le jour de la réception. Plus le dossier arrive tôt, plus il reste de temps pour rassembler les pièces techniques et répondre aux questions du porteur de risque.",
+      },
+      {
+        type: "h2",
+        text: "Le bon moment dans le projet",
+      },
+      {
+        type: "p",
+        text: "Dès que le permis ou l'autorisation est engagé, que le coût de construction se précise et que les principaux intervenants sont identifiés. Une maison individuelle, une extension, une rénovation lourde ou une opération de promotion ne se présentent pas avec les mêmes pièces, mais le principe reste le même : aucun trou entre le premier coup de pelle et la garantie.",
+      },
+      {
+        type: "h2",
+        text: "Ce qui se passe si le chantier a déjà commencé",
+      },
+      {
+        type: "p",
+        text: "Un chantier déjà ouvert est plus difficile à assurer. L'étude peut être refusée, ou demandée avec des justificatifs supplémentaires sur ce qui a déjà été réalisé. Il ne faut pas compter sur une attestation immédiate : chez Optimum Assurance, le prix définitif arrive après étude, en général sous 24 heures lorsque le dossier est exploitable.",
+      },
+      {
+        type: "h2",
+        text: "Après l'accord",
+      },
+      {
+        type: "p",
+        text: "Le contrat se signe électroniquement. Le règlement de la dommage ouvrage se fait par virement. L'attestation est délivrée après réception des fonds, pas au moment de la simple demande de devis. Le maître d'ouvrage peut ensuite la remettre à la banque, au notaire ou aux entreprises.",
+      },
+    ],
+  },
+  {
+    topic: "dommage-ouvrage",
+    slug: "dossier-dommage-ouvrage",
+    title: "Dossier dommage ouvrage : les pièces à préparer",
+    description:
+      "Permis, plans, coût des travaux, étude de sol et attestations des entreprises : les pièces qui permettent d'étudier une dommage ouvrage sans retard.",
+    h1: "Quelles pièces préparer pour une dommage ouvrage ?",
+    shortAnswer:
+      "Un dossier dommage ouvrage décrit l'opération, son coût, le terrain et les intervenants. Permis, plans, étude de sol et attestations décennales des entreprises évitent les allers-retours.",
+    datePublished: "2026-10-01T09:50:00+02:00",
+    dateModified: "2026-10-01T09:50:00+02:00",
+    content: [
+      {
+        type: "p",
+        text: "La dommage ouvrage n'est pas tarifée comme un produit instantané. L'étude a besoin de savoir ce qui est construit, pour quel montant, par qui, et sur quel terrain. Un dossier incomplet n'est pas refusé d'office, mais il allonge le délai avant un prix ferme.",
+      },
+      {
+        type: "h2",
+        text: "Les pièces les plus utiles",
+      },
+      {
+        type: "p",
+        text: "Le permis de construire ou l'autorisation équivalente, les plans, le descriptif des lots, le montant des travaux, l'étude de sol lorsqu'elle existe, et les conventions de maîtrise d'œuvre ou de contrôle technique. Pour une maison, le contrat de construction et le nom du constructeur comptent autant que la surface.",
+      },
+      {
+        type: "h2",
+        text: "Les assurances des intervenants",
+      },
+      {
+        type: "p",
+        text: "Joignez les attestations décennales des entreprises qui réalisent les lots structurels, avec des activités cohérentes avec le chantier. Une entreprise non assurée pour le lot qu'elle exécute fragilise l'ensemble du dossier. La formule clos et couvert, lorsqu'elle est adaptée, se concentre sur ces lots structurels et laisse le second œuvre aux attestations des artisans.",
+      },
+      {
+        type: "h2",
+        text: "Où déposer les documents",
+      },
+      {
+        type: "p",
+        text: "La demande se lance sur le formulaire dommage ouvrage. Après création du compte, les pièces se déposent dans l'espace client. Le questionnaire d'étude reprend l'opération, l'ouvrage, les coûts et les éléments techniques. Le prix définitif est communiqué après cette lecture, pas à partir du seul formulaire de départ.",
+      },
     ],
   },
 ] as const

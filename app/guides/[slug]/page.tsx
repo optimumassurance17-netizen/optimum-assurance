@@ -12,20 +12,10 @@ import { notFound } from "next/navigation"
 const baseUrl = SITE_URL
 const defaultOgImage = { url: `${baseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance" }
 
-function isDommageOuvrageGuide(slug: string): boolean {
-  return (
-    slug === "obligation-dommage-ouvrage" ||
-    slug === "dommage-ouvrage-auto-construction" ||
-    slug === "garantie-clos-couvert"
-  )
-}
-
 function getRelatedGuides(slug: string) {
-  const relatedSlugs = isDommageOuvrageGuide(slug)
-    ? ["obligation-dommage-ouvrage", "dommage-ouvrage-auto-construction", "garantie-clos-couvert"]
-    : ["fin-assurance-decennale-qbe-2027", "obligation-decennale", "resiliation-decennale", "declaration-sinistre"]
-
-  return GUIDES_SEO.filter((guide) => relatedSlugs.includes(guide.slug) && guide.slug !== slug)
+  const current = GUIDES_SEO.find((guide) => guide.slug === slug)
+  if (!current) return []
+  return GUIDES_SEO.filter((guide) => guide.topic === current.topic && guide.slug !== slug).slice(0, 4)
 }
 
 export async function generateStaticParams() {
@@ -73,7 +63,7 @@ export default async function GuidePage({
   const data = GUIDES_SEO.find((g) => g.slug === slug)
   if (!data) notFound()
   const relatedGuides = getRelatedGuides(data.slug)
-  const isDoGuide = isDommageOuvrageGuide(data.slug)
+  const isDoGuide = data.topic === "dommage-ouvrage"
 
   const guideJsonLd = buildGuideArticleJsonLdGraph({
     slug: data.slug,

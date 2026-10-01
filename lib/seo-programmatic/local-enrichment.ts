@@ -102,6 +102,7 @@ export function buildDecennaleLocalEnrichment(input: {
       { href: `/devis?from=seo-local-${input.villeSlug}`, label: `Devis décennale ${input.metierNom}` },
       { href: `/dommage-ouvrage/particulier/${input.villeSlug}`, label: `Dommage ouvrage à ${input.villeNom}` },
       { href: "/guides/obligation-decennale", label: "Guide obligation décennale" },
+      { href: "/guides/que-couvre-assurance-decennale", label: "Que couvre la décennale" },
       { href: "/guides/fin-assurance-decennale-qbe-2027", label: "Reprise décennale après QBE" },
     ],
   }
@@ -129,6 +130,7 @@ export function buildDoLocalEnrichment(input: {
       { href: `/devis-dommage-ouvrage?from=seo-local-${input.villeSlug}`, label: "Demander un devis DO" },
       { href: `/assurance-decennale/macon/${input.villeSlug}`, label: `Décennale maçon à ${input.villeNom}` },
       { href: "/guides/obligation-dommage-ouvrage", label: "Guide obligation DO" },
+      { href: "/guides/quand-souscrire-dommage-ouvrage", label: "Quand souscrire la dommage ouvrage" },
     ],
   }
 }
