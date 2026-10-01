@@ -9,14 +9,14 @@ import {
   wrapTransactionalEmailHtml,
 } from "@/lib/email-layout"
 import { buildReminderUnsubscribeUrl, type ReminderUnsubscribeType } from "@/lib/reminder-unsubscribe"
-import { getPublicContactEmail } from "@/lib/public-contact-email"
 
 /**
  * Resend n'accepte que le domaine vérifié optimum-assurance.fr
- * (DKIM resend._domainkey + SPF/MX sur send.). Le .eu est la boîte de réponse,
- * pas l'expéditeur : l'envoyer en From fait rejeter l'API.
+ * (DKIM resend._domainkey + SPF/MX sur send.).
  * contact@ plutôt que noreply@ : une adresse qui n'accepte pas de réponse
  * est un signal de spam pour Gmail.
+ * Le Reply-To reprend cette même adresse : un Reply-To en .eu
+ * s'affiche comme expéditeur dans la messagerie.
  */
 const VERIFIED_FROM = "Optimum Assurance <contact@optimum-assurance.fr>"
 
@@ -43,6 +43,11 @@ function resolveFromAddress(): string {
   return VERIFIED_FROM
 }
 
+function mailboxFromHeader(header: string): string {
+  const bracket = header.match(/<([^>]+)>/)
+  return (bracket?.[1] ?? header).trim()
+}
+
 /** En-têtes de désabonnement en un clic, uniquement si le message contient déjà le lien signé. */
 function listUnsubscribeHeaders(text: string): Record<string, string> | undefined {
   const match = text.match(/https?:\/\/[^\s<>"]+\/api\/email\/unsubscribe\?token=[^\s<>"]+/)
@@ -53,8 +58,6 @@ function listUnsubscribeHeaders(text: string): Record<string, string> | undefine
     "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
   }
 }
-
-const FROM = resolveFromAddress()
 
 function escapeHtmlForEmail(s: string): string {
   return s
@@ -103,6 +106,7 @@ export async function sendEmail(params: {
       : params.html
   const textOut = params.skipBranding ? params.text : appendTransactionalEmailTextFooter(params.text)
 
+  const from = resolveFromAddress()
   const unsubscribeHeaders = listUnsubscribeHeaders(textOut)
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -111,13 +115,13 @@ export async function sendEmail(params: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: FROM,
+      from,
       to: params.to,
       subject: params.subject,
       text: textOut,
       ...(htmlOut && { html: htmlOut }),
       ...(unsubscribeHeaders && { headers: unsubscribeHeaders }),
-      reply_to: params.replyTo?.trim() || getPublicContactEmail(),
+      reply_to: params.replyTo?.trim() || mailboxFromHeader(from),
       ...(params.attachments &&
         params.attachments.length > 0 && {
           attachments: params.attachments.map((a) => ({
