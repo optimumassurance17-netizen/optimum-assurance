@@ -26,7 +26,7 @@ interface DevisTemplateProps {
     codePostal?: string
     ville?: string
     activites: string[]
-    chiffreAffaires: number
+    chiffreAffaires?: number
     primeAnnuelle: number
     /** Si absent, dérivé prime annuelle ÷ 12 */
     primeMensuelle?: number
@@ -118,7 +118,9 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
           <tbody>
             <tr>
               <td className="py-1 pr-4">Chiffre d&apos;affaires HT du dernier exercice fiscal</td>
-              <td className="text-right font-medium">{data.chiffreAffaires.toLocaleString("fr-FR")} €</td>
+              <td className="text-right font-medium">
+                {data.chiffreAffaires != null ? `${data.chiffreAffaires.toLocaleString("fr-FR")} €` : "—"}
+              </td>
             </tr>
             <tr>
               <td className="py-1 pr-4">Contrat d&apos;assurance RCD/RCP en cours</td>

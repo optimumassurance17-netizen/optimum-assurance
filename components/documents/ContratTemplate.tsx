@@ -24,7 +24,7 @@ interface ContratTemplateProps {
     representantLegal?: string
     civilite?: string
     activites: string[]
-    chiffreAffaires: number
+    chiffreAffaires?: number
     primeAnnuelle: number
     primeMensuelle?: number
     primeTrimestrielle?: number
@@ -131,7 +131,10 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
 
         <section>
           <h3 className="font-semibold mb-2">Article 5 - Déclaration</h3>
-          <p>Chiffre d&apos;affaires annuel déclaré : {data.chiffreAffaires.toLocaleString("fr-FR")} €</p>
+          <p>
+            Chiffre d&apos;affaires annuel déclaré :{" "}
+            {data.chiffreAffaires != null ? `${data.chiffreAffaires.toLocaleString("fr-FR")} €` : "—"}
+          </p>
         </section>
 
         <section>
