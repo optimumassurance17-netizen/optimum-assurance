@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-import { hash } from "bcryptjs"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
-import { Prisma } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
-import { generateTempPassword, sendClientAccessEmail } from "@/lib/client-access"
+import {
+  clientAccessErrorMessage,
+  generateTempPassword,
+  hashTemporaryPassword,
+  replaceUserPasswordHash,
+  sendClientAccessEmail,
+} from "@/lib/client-access"
 
 /**
  * Depuis la fiche client : (re)génère un accès espace client
@@ -32,14 +36,8 @@ export async function POST(
     }
 
     const tempPassword = generateTempPassword()
-    const passwordHash = await hash(tempPassword, 12)
-    // select id : un update sans select fait RETURNING de toutes les colonnes User.
-    // En prod, les colonnes questionnaire titre peuvent manquer (P2022) alors que la fiche s'ouvre encore.
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash },
-      select: { id: true },
-    })
+    const passwordHash = hashTemporaryPassword(tempPassword)
+    await replaceUserPasswordHash(user.id, passwordHash)
 
     const sent = await sendClientAccessEmail({
       email: user.email,
@@ -81,16 +79,6 @@ export async function POST(
     })
   } catch (error) {
     console.error("Erreur envoi accès espace client:", error)
-    const schemaDrift =
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      (error.code === "P2021" || error.code === "P2022")
-    return NextResponse.json(
-      {
-        error: schemaDrift
-          ? "La base n'a pas toutes les colonnes du compte. L'accès n'a pas été régénéré."
-          : "Erreur lors de la génération de l'accès client",
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: clientAccessErrorMessage(error) }, { status: 500 })
   }
 }

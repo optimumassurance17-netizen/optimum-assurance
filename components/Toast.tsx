@@ -10,10 +10,13 @@ interface ToastProps {
 }
 
 export function Toast({ message, type = "success", onClose, duration = 4000 }: ToastProps) {
+  const holdsPassword = message.includes("Mot de passe temporaire")
+  const visibleFor = holdsPassword ? 120000 : duration
+
   useEffect(() => {
-    const t = setTimeout(onClose, duration)
+    const t = setTimeout(onClose, visibleFor)
     return () => clearTimeout(t)
-  }, [onClose, duration])
+  }, [onClose, visibleFor])
 
   const tone =
     type === "error"
@@ -28,6 +31,11 @@ export function Toast({ message, type = "success", onClose, duration = 4000 }: T
       role={type === "error" ? "alert" : "status"}
     >
       <p className="font-medium">{message}</p>
+      {holdsPassword ? (
+        <button type="button" onClick={onClose} className="mt-2 text-xs underline">
+          Fermer
+        </button>
+      ) : null}
     </div>
   )
 }

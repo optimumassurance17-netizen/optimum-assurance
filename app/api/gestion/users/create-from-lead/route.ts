@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-import { hash } from "bcryptjs"
 import { Prisma } from "@/lib/prisma-client"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
@@ -8,7 +7,13 @@ import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
 import { extractClientIdentityFromRecord, mergeClientIdentity } from "@/lib/client-identity-extract"
-import { generateTempPassword, sendClientAccessEmail } from "@/lib/client-access"
+import {
+  clientAccessErrorMessage,
+  generateTempPassword,
+  hashTemporaryPassword,
+  replaceUserPasswordHash,
+  sendClientAccessEmail,
+} from "@/lib/client-access"
 
 type SupportedLeadType =
   | "dommage_ouvrage"
@@ -199,13 +204,8 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       const tempPassword = generateTempPassword()
-      const passwordHash = await hash(tempPassword, 12)
-      // Même garde que l'envoi d'accès : ne pas RETURNING les colonnes absentes en prod.
-      await prisma.user.update({
-        where: { id: existing.id },
-        data: { passwordHash },
-        select: { id: true },
-      })
+      const passwordHash = hashTemporaryPassword(tempPassword)
+      await replaceUserPasswordHash(existing.id, passwordHash)
 
       const sent = await sendClientAccessEmail({
         email: existing.email,
@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
     }
 
     const tempPassword = generateTempPassword()
-    const passwordHash = await hash(tempPassword, 12)
+    const passwordHash = hashTemporaryPassword(tempPassword)
 
     const leadData = "data" in lead ? parseLeadData(lead.data) : {}
     const leadIdentity = mergeClientIdentity(
@@ -367,9 +367,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Erreur création compte depuis lead:", error)
-    return NextResponse.json(
-      { error: "Erreur lors de la création du compte" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: clientAccessErrorMessage(error) }, { status: 500 })
   }
 }
