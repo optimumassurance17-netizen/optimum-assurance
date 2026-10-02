@@ -200,9 +200,11 @@ export async function POST(request: NextRequest) {
     if (existing) {
       const tempPassword = generateTempPassword()
       const passwordHash = await hash(tempPassword, 12)
+      // Même garde que l'envoi d'accès : ne pas RETURNING les colonnes absentes en prod.
       await prisma.user.update({
         where: { id: existing.id },
         data: { passwordHash },
+        select: { id: true },
       })
 
       const sent = await sendClientAccessEmail({

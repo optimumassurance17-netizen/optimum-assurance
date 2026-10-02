@@ -419,6 +419,7 @@ export async function PATCH(
       await prisma.user.update({
         where: { id },
         data,
+        select: { id: true },
       })
     }
     const updated = await fetchClientUserWithOptionalTitleQuestionnaires(id)
