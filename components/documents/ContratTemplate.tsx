@@ -71,7 +71,7 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
         <section>
           <ActivityDetailsBlock
             activities={activities}
-            title="Article 2 bis - Definition et exclusions par activite declaree"
+            title="Article 2 bis — Définition et exclusions par activité déclarée"
           />
         </section>
 

@@ -89,13 +89,13 @@ export function appendDecennaleActivityDetailsAnnex(
       font,
       fontBold,
       title,
-      "Definitions et exclusions par activite declaree",
+      "Définitions et exclusions par activité déclarée",
       accelerantLogo
     )
     if (!isContinuation) {
       y = drawWrappedText(
         page,
-        "Cette annexe reproduit la definition nomenclature et les exclusions specifiques de chaque activite declaree.",
+        "Cette annexe reproduit la définition de la nomenclature et les exclusions spécifiques de chaque activité déclarée.",
         PDF_PAGE.marginX,
         y,
         PDF_PAGE.contentWidth,

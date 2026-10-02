@@ -101,7 +101,7 @@ test.describe("RC Pro et RC fabriquant", () => {
     await dismissCookieBanner(page)
 
     await expect(page).toHaveURL(/\/devis\/rcpro\/result\?id=rcpro_quote_123&price=987\.65/)
-    await expect(page.getByRole("heading", { name: "Devis RC Pro — Resultat" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Devis RC Pro — Résultat" })).toBeVisible()
     await expect(page.getByText(/assurance RC Pro/i)).toBeVisible()
     await expect(page.getByText(/niveau de risque et options/i)).toBeVisible()
   })

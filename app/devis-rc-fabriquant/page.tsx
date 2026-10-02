@@ -9,18 +9,18 @@ import { truncateForDescription } from "@/lib/seo-metadata-utils"
 const canonical = `${SITE_URL}/devis-rc-fabriquant`
 
 export const metadata: Metadata = {
-  title: "Devis RC Fabriquant | Etude sous 24 a 48 h | Optimum Assurance",
+  title: "Devis RC Fabriquant | Étude sous 24 à 48 h | Optimum Assurance",
   description: truncateForDescription(
-    "Devis RC Fabriquant pour fabricants, industriels et distributeurs : demande en ligne, analyse du risque et retour sous 24 a 48 h ouvrées.",
+    "Devis RC Fabriquant pour fabricants, industriels et distributeurs : demande en ligne, analyse du risque et retour sous 24 à 48 h ouvrées.",
     158
   ),
   alternates: { canonical },
   openGraph: {
     type: "website",
     url: canonical,
-    title: "Devis RC Fabriquant | Etude rapide | Optimum Assurance",
+    title: "Devis RC Fabriquant | Étude rapide | Optimum Assurance",
     description:
-      "Responsabilite civile du fabricant : decrivez votre activite, vos produits et recevez un retour sous 24 a 48 h.",
+      "Responsabilité civile du fabricant : décrivez votre activité, vos produits et recevez un retour sous 24 à 48 h.",
     locale: "fr_FR",
     siteName: "Optimum Assurance",
   },

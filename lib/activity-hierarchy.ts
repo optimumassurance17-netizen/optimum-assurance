@@ -70,13 +70,13 @@ type CandidateScore = {
 const GROUPS: GroupDefinition[] = [
   {
     code: "1",
-    name: "Preparation et amenagement du site",
-    definition: "1. Preparation et amenagement du site",
+    name: "Préparation et aménagement du site",
+    definition: "1. Préparation et aménagement du site",
   },
   {
     code: "2",
-    name: "Structure et gros oeuvre",
-    definition: "2. Structure et gros oeuvre",
+    name: "Structure et gros œuvre",
+    definition: "2. Structure et gros œuvre",
   },
   {
     code: "3",
@@ -85,18 +85,18 @@ const GROUPS: GroupDefinition[] = [
   },
   {
     code: "4",
-    name: "Divisions - Amenagements - Finitions",
-    definition: "4. Divisions - Amenagements - Finitions",
+    name: "Divisions - Aménagements - Finitions",
+    definition: "4. Divisions - Aménagements - Finitions",
   },
   {
     code: "5",
-    name: "Lots techniques et activites specifiques",
-    definition: "5. Lots techniques et activites specifiques",
+    name: "Lots techniques et activités spécifiques",
+    definition: "5. Lots techniques et activités spécifiques",
   },
   {
     code: "PI",
-    name: "Professions intellectuelles du batiment",
-    definition: "Professions intellectuelles du batiment",
+    name: "Professions intellectuelles du bâtiment",
+    definition: "Professions intellectuelles du bâtiment",
   },
 ]
 
@@ -106,8 +106,8 @@ const SUB_ACTIVITY_SEED: SubActivityDefinition[] = [
     activityCode: "2.1",
     groupCode: "2",
     name: "Pieux",
-    description: "Realisation de pieux et fondations profondes.",
-    includedWorks: ["Pieux battus", "Pieux fores", "Fondations profondes"],
+    description: "Réalisation de pieux et fondations profondes.",
+    includedWorks: ["Pieux battus", "Pieux forés", "Fondations profondes"],
     excludedWorks: [],
     relatedActivities: ["2.1.2"],
     aliases: ["pieux", "fondations profondes"],
@@ -128,7 +128,7 @@ const SUB_ACTIVITY_SEED: SubActivityDefinition[] = [
     activityCode: "2.2",
     groupCode: "2",
     name: "Dallage",
-    description: "Dallage beton arme et planchers bas.",
+    description: "Dallage béton armé et planchers bas.",
     includedWorks: ["Dallage", "Planchers bas"],
     excludedWorks: [],
     relatedActivities: ["2.2.2"],
@@ -139,8 +139,8 @@ const SUB_ACTIVITY_SEED: SubActivityDefinition[] = [
     activityCode: "2.2",
     groupCode: "2",
     name: "Mur porteur",
-    description: "Murs porteurs en maconnerie et beton arme.",
-    includedWorks: ["Mur porteur", "Maconnerie structurelle"],
+    description: "Murs porteurs en maçonnerie et béton armé.",
+    includedWorks: ["Mur porteur", "Maçonnerie structurelle"],
     excludedWorks: [],
     relatedActivities: ["2.2.1"],
     aliases: ["mur porteur", "murs porteurs", "maconnerie structurelle"],
@@ -189,17 +189,17 @@ const CODE_DEFINITION_OVERRIDES: Record<
   }
 > = {
   "2.1": {
-    definition: "Fondations et parois speciales.",
-    includedWorks: ["Fondations profondes", "Parois speciales", "Reprises en sous-oeuvre"],
+    definition: "Fondations et parois spéciales.",
+    includedWorks: ["Fondations profondes", "Parois spéciales", "Reprises en sous-œuvre"],
     excludedWorks: [],
   },
   "2.2": {
-    definition: "Maconnerie et beton arme.",
-    includedWorks: ["Dallage", "Murs porteurs", "Ouvrages en beton arme"],
+    definition: "Maçonnerie et béton armé.",
+    includedWorks: ["Dallage", "Murs porteurs", "Ouvrages en béton armé"],
     excludedWorks: [],
   },
   "3.1": {
-    definition: "Couverture des batiments.",
+    definition: "Couverture des bâtiments.",
     includedWorks: ["Toiture tuiles", "Toiture ardoises", "Refection couverture"],
     excludedWorks: ["Couvertures textiles"],
   },
@@ -448,10 +448,10 @@ export function buildActivityHierarchyExampleJson(): Record<string, unknown> {
     examples: {
       input: ["fondations beton", "dalles beton", "toiture tuiles"],
       outputHierarchy: [
-        "2 - Structure et gros oeuvre",
-        "2.1 Fondations et parois speciales",
+        "2 - Structure et gros œuvre",
+        "2.1 Fondations et parois spéciales",
         "2.1.1 Pieux",
-        "2.2 Maconnerie et beton arme",
+        "2.2 Maçonnerie et béton armé",
         "2.2.1 Dallage",
         "3 - Clos et couvert",
         "3.1 Couverture",
@@ -459,9 +459,9 @@ export function buildActivityHierarchyExampleJson(): Record<string, unknown> {
       ],
     },
     note:
-      "Si une sous-activite est selectionnee, le groupe et l'activite parente sont affiches automatiquement.",
+      "Si une sous-activité est sélectionnée, le groupe et l'activité parente sont affichés automatiquement.",
     defaultGroup:
-      groupMap.get("2")?.name ?? "Structure et gros oeuvre",
+      groupMap.get("2")?.name ?? "Structure et gros œuvre",
   }
 }
 

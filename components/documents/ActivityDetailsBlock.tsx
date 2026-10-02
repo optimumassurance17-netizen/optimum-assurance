@@ -9,7 +9,7 @@ type ActivityDetailsBlockProps = {
 
 export function ActivityDetailsBlock({
   activities,
-  title = "Definition et exclusions par activite",
+  title = "Définition et exclusions par activité",
 }: ActivityDetailsBlockProps) {
   const details = buildActivityDocumentDetails(activities)
   if (details.length === 0) return null

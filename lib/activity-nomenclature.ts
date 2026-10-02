@@ -43,12 +43,12 @@ export type ActivityResolution = {
 const DEFAULT_VERSION = "france-assureurs-2019"
 
 const GROUP_LABELS: Record<string, string> = {
-  "1": "Preparation et amenagement du site",
-  "2": "Structure et gros oeuvre",
+  "1": "Préparation et aménagement du site",
+  "2": "Structure et gros œuvre",
   "3": "Clos et couvert",
-  "4": "Divisions - Amenagements - Finitions",
-  "5": "Lots techniques et activites specifiques",
-  PI: "Professions intellectuelles du batiment",
+  "4": "Divisions - Aménagements - Finitions",
+  "5": "Lots techniques et activités spécifiques",
+  PI: "Professions intellectuelles du bâtiment",
 }
 
 const CODE_DEFINITION_OVERRIDES: Record<string, string> = {

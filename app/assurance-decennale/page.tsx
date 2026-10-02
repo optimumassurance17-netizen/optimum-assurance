@@ -86,8 +86,8 @@ export default function AssuranceDecennaleIndexPage() {
           Assurance décennale par activité du BTP
         </h1>
         <p className="text-lg text-[#171717] mb-8 leading-relaxed">
-          Optimum Assurance couvre plus de 100 activites du BTP : second oeuvre, gros oeuvre, structure, toiture,
-          facade, isolation, exterieur, maintenance et prestations intellectuelles du batiment.
+          Optimum Assurance couvre plus de 100 activités du BTP : second œuvre, gros œuvre, structure, toiture,
+          façade, isolation, extérieur, maintenance et prestations intellectuelles du bâtiment.
         </p>
 
         <aside className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-5">
@@ -102,36 +102,36 @@ export default function AssuranceDecennaleIndexPage() {
         </aside>
 
         <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6 mb-10">
-          <h2 className="text-xl font-bold text-[#0a0a0a] mb-3">Trouver votre activite</h2>
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-3">Trouver votre activité</h2>
           <div className="grid gap-5 lg:grid-cols-[1.4fr_0.9fr] lg:items-center">
             <div>
               <p className="text-sm text-[#171717] leading-relaxed">
-                Choisissez la page la plus proche de votre metier pour acceder a un contenu adapte, aux liens utiles et
-                au devis en ligne pre-rempli selon votre activite.
+                Choisissez la page la plus proche de votre métier pour accéder à un contenu adapté, aux liens utiles et
+                au devis en ligne prérempli selon votre activité.
               </p>
               <ul className="mt-4 space-y-2 text-sm text-[#171717]">
-                <li>• SIRET, CA et activite principale suffisent pour lancer une premiere estimation.</li>
-                <li>• Tarif indicatif immediat pour les profils eligibles.</li>
-                <li>• Sauvegarde du devis par email disponible apres calcul du tarif.</li>
+                <li>• SIRET, CA et activité principale suffisent pour lancer une première estimation.</li>
+                <li>• Tarif indicatif immédiat pour les profils éligibles.</li>
+                <li>• Sauvegarde du devis par email disponible après calcul du tarif.</li>
               </ul>
             </div>
             <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
-              <p className="text-sm font-semibold text-[#0a0a0a] mb-2">Pret a demander votre tarif ?</p>
+              <p className="text-sm font-semibold text-[#0a0a0a] mb-2">Prêt à demander votre tarif ?</p>
               <p className="text-sm text-[#171717] mb-4">
-                Lancez directement le devis si vous connaissez deja votre activite principale.
+                Lancez directement le devis si vous connaissez déjà votre activité principale.
               </p>
               <Link
                 href={DECENNALE_HUB_QUOTE_HREF}
                 className="inline-flex items-center justify-center rounded-2xl bg-[#2563eb] px-5 py-3 font-semibold text-white transition-all hover:bg-[#1d4ed8]"
               >
-                Lancer mon devis decennale
+                Lancer mon devis décennale
               </Link>
             </div>
           </div>
         </div>
 
         <section className="mb-10">
-          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Activites les plus recherchees</h2>
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Activités les plus recherchées</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {featured.map((metier) => (
               <Link
@@ -139,7 +139,7 @@ export default function AssuranceDecennaleIndexPage() {
                 href={`/assurance-decennale/${metier.slug}`}
                 className="rounded-2xl border border-[#e5e5e5] bg-white p-5 hover:border-blue-600/30 hover:bg-blue-50 transition-all"
               >
-                <p className="font-semibold text-[#0a0a0a]">Assurance decennale {metier.nom}</p>
+                <p className="font-semibold text-[#0a0a0a]">Assurance décennale {metier.nom}</p>
                 <p className="mt-2 text-sm text-[#171717]">{metier.description}</p>
               </Link>
             ))}
@@ -147,7 +147,7 @@ export default function AssuranceDecennaleIndexPage() {
         </section>
 
         <section className="mb-10">
-          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Activites classees par categorie</h2>
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Activités classées par catégorie</h2>
           <div className="space-y-6">
             {categories.map(([categorie, items]) => (
               <div key={categorie} className="rounded-2xl border border-[#e5e5e5] bg-white p-6">
@@ -170,7 +170,7 @@ export default function AssuranceDecennaleIndexPage() {
 
         {secondary.length > 0 && (
           <section className="mb-10">
-            <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Autres activites couvertes</h2>
+            <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Autres activités couvertes</h2>
             <div className="flex flex-wrap gap-3">
               {secondary.map((metier) => (
                 <Link
@@ -190,7 +190,7 @@ export default function AssuranceDecennaleIndexPage() {
             href={DECENNALE_HUB_QUOTE_HREF}
             className="inline-block bg-[#2563eb] text-white px-8 py-4 rounded-2xl hover:bg-[#1d4ed8] font-semibold transition-all"
           >
-            Devis decennale
+            Devis décennale
           </Link>
           <Link
             href="/assurance-decennale/activites"
@@ -202,7 +202,7 @@ export default function AssuranceDecennaleIndexPage() {
             href="/guides/obligation-decennale"
             className="inline-block border-2 border-[#2563eb] text-[#2563eb] px-8 py-4 rounded-2xl hover:bg-[#eff6ff] font-semibold transition-all"
           >
-            Guide obligation decennale
+            Guide obligation décennale
           </Link>
         </div>
       </div>

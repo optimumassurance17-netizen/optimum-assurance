@@ -23,9 +23,9 @@ function RcProResultContent() {
     <main className="min-h-screen bg-[var(--background)]">
       <Header />
       <div className="mx-auto max-w-3xl px-4 py-12">
-        <h1 className="mb-2 text-2xl font-bold text-[#0a0a0a]">Devis RC Pro — Resultat</h1>
+        <h1 className="mb-2 text-2xl font-bold text-[#0a0a0a]">Devis RC Pro — Résultat</h1>
         <p className="mb-8 text-sm text-[#475569]">
-          Responsabilite Civile Professionnelle (hors batiment)
+          Responsabilité civile professionnelle (hors bâtiment)
         </p>
 
         <section className="rounded-xl border border-[#d4d4d8] bg-white p-6 shadow-sm">

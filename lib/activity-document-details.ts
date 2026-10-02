@@ -22,99 +22,99 @@ type CanonicalActivityByCode = {
 
 const CODE_DEFINITIONS: Record<string, string> = {
   "1.1":
-    "Demolition ou deconstruction totale ou partielle d'ouvrages par moyens manuels ou mecaniques (hors desamiantage).",
+    "Démolition ou déconstruction totale ou partielle d'ouvrages par moyens manuels ou mécaniques (hors désamiantage).",
   "1.2":
-    "Demolition ou deconstruction totale ou partielle d'ouvrages avec utilisation d'explosifs (hors desamiantage).",
+    "Démolition ou déconstruction totale ou partielle d'ouvrages avec utilisation d'explosifs (hors désamiantage).",
   "1.3":
-    "Travaux de terrassement : deblai, fouilles, remblaiement, enrochement non lie et gabions (hors comblement des carrieres).",
+    "Travaux de terrassement : déblai, fouilles, remblaiement, enrochement non lié et gabions (hors comblement des carrières).",
   "1.6":
-    "Realisation de voiries et reseaux divers (VRD), canalisations, assainissement autonome et amenagements exterieurs associes.",
+    "Réalisation de voiries et réseaux divers (VRD), canalisations, assainissement autonome et aménagements extérieurs associés.",
   "1.11":
-    "Traitement des murs contre les remontees d'humidite par capillarite, avec travaux preparatoires et parements associes.",
+    "Traitement des murs contre les remontées d'humidité par capillarité, avec travaux préparatoires et parements associés.",
   "2.1":
-    "Realisation de fondations et parois speciales, y compris pieux, micropieux, barrettes, palplanches et reprises en sous-oeuvre.",
+    "Réalisation de fondations et parois spéciales, y compris pieux, micropieux, barrettes, palplanches et reprises en sous-œuvre.",
   "2.2":
-    "Maconnerie et beton arme en infrastructure et superstructure, hors parois de soutenement structurellement autonomes > 2,5 m.",
-  "2.3": "Mise en oeuvre de beton arme precontraint mis en tension sur chantier.",
-  "2.4": "Realisation de charpentes et structures a base de bois (hors facades-rideaux).",
+    "Maçonnerie et béton armé en infrastructure et superstructure, hors parois de soutènement structurellement autonomes > 2,5 m.",
+  "2.3": "Mise en œuvre de béton armé précontraint mis en tension sur chantier.",
+  "2.4": "Réalisation de charpentes et structures à base de bois (hors façades-rideaux).",
   "2.5":
-    "Constructions a ossature bois, hors fondations, structures maconnees et etancheite des toitures-terrasses.",
-  "2.6": "Realisation de charpentes et structures metalliques (hors facades-rideaux).",
+    "Constructions à ossature bois, hors fondations, structures maçonnées et étanchéité des toitures-terrasses.",
+  "2.6": "Réalisation de charpentes et structures métalliques (hors façades-rideaux).",
   "3.1":
-    "Realisation de couvertures en tous materiaux, y compris zinguerie et accessoires, hors couvertures textiles et etancheite de toitures-terrasses.",
+    "Réalisation de couvertures en tous matériaux, y compris zinguerie et accessoires, hors couvertures textiles et étanchéité de toitures-terrasses.",
   "3.2":
-    "Etancheite de toiture, terrasse et plancher interieur par materiaux bitumineux ou de synthese.",
+    "Étanchéité de toiture, terrasse et plancher intérieur par matériaux bitumineux ou de synthèse.",
   "3.3":
-    "Etancheite et impermeabilisation de cuvelages, reservoirs et piscines en beton arme ou precontraint.",
+    "Étanchéité et imperméabilisation de cuvelages, réservoirs et piscines en béton armé ou précontraint.",
   "3.4":
-    "Revetements de facades par enduits, ravalements et protections d'impermeabilite/etancheite de facade.",
-  "3.5": "Isolation thermique par l'exterieur (ITE) avec enduit ou parement colle.",
-  "3.6": "Realisation de bardages de facade (hors facades-rideaux, semi-rideaux et panneaux).",
+    "Revêtements de façades par enduits, ravalements et protections d'imperméabilité/étanchéité de façade.",
+  "3.5": "Isolation thermique par l'extérieur (ITE) avec enduit ou parement collé.",
+  "3.6": "Réalisation de bardages de façade (hors façades-rideaux, semi-rideaux et panneaux).",
   "3.7":
-    "Realisation de facades-rideaux, facades-semi-rideaux et facades-panneaux, avec elements de remplissage.",
+    "Réalisation de façades-rideaux, façades-semi-rideaux et façades-panneaux, avec éléments de remplissage.",
   "3.9":
-    "Menuiseries exterieures en tous materiaux (hors verrieres, verandas et facades-rideaux).",
+    "Menuiseries extérieures en tous matériaux (hors verrières, vérandas et façades-rideaux).",
   "3.10":
-    "Realisation de verrieres et verandas en tous materiaux (hors fondations et structures maconnees).",
-  "4.1": "Menuiseries interieures et amenagements associes (hors elements structurels ou porteurs).",
+    "Réalisation de verrières et vérandas en tous matériaux (hors fondations et structures maçonnées).",
+  "4.1": "Menuiseries intérieures et aménagements associés (hors éléments structurels ou porteurs).",
   "4.4":
-    "Platrerie, staff, stuc et gypserie : cloisonnement et faux plafonds en interieur.",
-  "4.5": "Serrurerie et metallerie (hors charpentes metalliques et verandas).",
+    "Plâtrerie, staff, stuc et gypserie : cloisonnement et faux plafonds en intérieur.",
+  "4.5": "Serrurerie et métallerie (hors charpentes métalliques et vérandas).",
   "4.6":
-    "Vitrerie et miroiterie, hors techniques de vitrage exterieur colle (VEC) ou attache (VEA).",
+    "Vitrerie et miroiterie, hors techniques de vitrage extérieur collé (VEC) ou attaché (VEA).",
   "4.7":
-    "Travaux de peinture et revetements associes, hors impermeabilisation, etancheite et sols coules.",
+    "Travaux de peinture et revêtements associés, hors imperméabilisation, étanchéité et sols coulés.",
   "4.8":
-    "Revetements interieurs en materiaux souples et parquets, hors sols coules.",
+    "Revêtements intérieurs en matériaux souples et parquets, hors sols coulés.",
   "4.9":
-    "Revetement de surfaces en materiaux durs, chapes et sols coules, hors etancheite sous carrelage de toiture-terrasse/piscine/cuvelage.",
+    "Revêtement de surfaces en matériaux durs, chapes et sols coulés, hors étanchéité sous carrelage de toiture-terrasse/piscine/cuvelage.",
   "4.10":
-    "Revetement vertical en materiaux durs agrafes ou attaches, avec travaux associes d'isolation par l'exterieur.",
-  "4.11": "Isolation interieure thermique et acoustique.",
-  "4.12": "Isolation frigorifique des locaux, circuits et equipements.",
+    "Revêtement vertical en matériaux durs agrafés ou attachés, avec travaux associés d'isolation par l'extérieur.",
+  "4.11": "Isolation intérieure thermique et acoustique.",
+  "4.12": "Isolation frigorifique des locaux, circuits et équipements.",
   "5.1":
-    "Plomberie : installation de production/distribution/evacuation d'eau et reseaux associes (hors production de chauffage, geothermie et capteurs solaires integres).",
+    "Plomberie : installation de production/distribution/évacuation d'eau et réseaux associés (hors production de chauffage, géothermie et capteurs solaires intégrés).",
   "5.2":
     "Chauffages et installations thermiques, incluant production/distribution de chauffage et eau chaude sanitaire.",
   "5.4":
-    "Installations d'aeraulique, climatisation et conditionnement d'air (production, distribution, evacuation).",
+    "Installations d'aéraulique, climatisation et conditionnement d'air (production, distribution, évacuation).",
   "5.5":
-    "Electricite et telecommunications : reseaux de courant, raccordements et installations electriques du batiment.",
+    "Électricité et télécommunications : réseaux de courant, raccordements et installations électriques du bâtiment.",
   "5.6":
-    "Realisation d'ascenseurs, monte-charge, monte-personne, escaliers mecaniques et trottoirs roulants.",
-  "5.7": "Realisation de piscines et de leurs organes/equipements.",
+    "Réalisation d'ascenseurs, monte-charge, monte-personne, escaliers mécaniques et trottoirs roulants.",
+  "5.7": "Réalisation de piscines et de leurs organes/équipements.",
   "5.8":
-    "Installations de chauffage/rafraichissement/eau chaude sanitaire par geothermie, y compris captage.",
+    "Installations de chauffage/rafraîchissement/eau chaude sanitaire par géothermie, y compris captage.",
   "5.9":
-    "Installations photovoltaiques, branchements electriques associes et raccordement reseau.",
-  "5.10": "Installations eoliennes terrestres et equipements associes.",
-  "5.11": "Construction de fours et cheminees industriels.",
+    "Installations photovoltaïques, branchements électriques associés et raccordement réseau.",
+  "5.10": "Installations éoliennes terrestres et équipements associés.",
+  "5.11": "Construction de fours et cheminées industriels.",
   "PI-ARCH":
-    "Mission de maitrise d'oeuvre de conception et/ou de direction d'execution des travaux pour operations de construction.",
+    "Mission de maîtrise d'œuvre de conception et/ou de direction d'exécution des travaux pour opérations de construction.",
   "PI-ARCH-INT":
-    "Mission complete ou partielle de conception et/ou direction d'execution pour amenagement interieur et agencement, sans intervention sur la structure.",
+    "Mission complète ou partielle de conception et/ou direction d'exécution pour aménagement intérieur et agencement, sans intervention sur la structure.",
   "PI-MOE":
-    "Maitrise d'oeuvre de conception et de realisation, avec coordination technique de l'operation.",
+    "Maîtrise d'œuvre de conception et de réalisation, avec coordination technique de l'opération.",
   "PI-ECON":
-    "Missions d'economiste de la construction : metrage, estimation, suivi economique et participation au CCTP.",
+    "Missions d'économiste de la construction : métré, estimation, suivi économique et participation au CCTP.",
   "PI-METRE":
-    "Missions de metrage et verification quantitative des travaux.",
+    "Missions de métré et vérification quantitative des travaux.",
   "PI-SPS":
-    "Coordination securite et protection de la sante sur operation de batiment.",
+    "Coordination sécurité et protection de la santé sur opération de bâtiment.",
   "PI-DIAG":
-    "Diagnostics techniques reglementaires du batiment selon perimetre missionne.",
+    "Diagnostics techniques réglementaires du bâtiment selon périmètre missionné.",
   "PI-GEO":
-    "Missions de geometre-topographe : releves metriques et etablissements de plans.",
+    "Missions de géomètre-topographe : relevés métriques et établissement de plans.",
   "PI-BET-STR":
-    "Bureau d'etudes techniques structure : conception, notes de calcul, plans d'execution structurels.",
+    "Bureau d'études techniques structure : conception, notes de calcul, plans d'exécution structurels.",
   "PI-BET-FLU":
-    "Bureau d'etudes techniques fluides : CVC, plomberie, electricite et genie climatique.",
+    "Bureau d'études techniques fluides : CVC, plomberie, électricité et génie climatique.",
   "PI-BET":
-    "Bureau d'etudes techniques tous corps d'etat : etudes de conception et verifications de conformite.",
+    "Bureau d'études techniques tous corps d'état : études de conception et vérifications de conformité.",
 }
 
 const ACTIVITY_DETAILS_FALLBACK_EXCLUSION =
-  "Aucune exclusion specifique supplementaire (hors exclusions legales et clauses generales)."
+  "Aucune exclusion spécifique supplémentaire (hors exclusions légales et clauses générales)."
 
 const CODE_PATTERN = /^((?:\d+(?:\.\d+){0,2})|(?:PI(?:-[A-Z0-9]+){0,4}))\b/i
 

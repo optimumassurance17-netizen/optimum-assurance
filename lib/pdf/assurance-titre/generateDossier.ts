@@ -246,7 +246,7 @@ export async function generateAssuranceTitreCertificatePdf(
       font,
       fontBold,
       "ATTESTATION DE GARANTIE — Assurance titre",
-      "Document emis apres signature et enregistrement du paiement",
+      "Document émis après signature et enregistrement du paiement",
       accelerantLogo
     ),
   }

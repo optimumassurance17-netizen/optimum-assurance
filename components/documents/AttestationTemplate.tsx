@@ -90,7 +90,7 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
 
       <ActivityDetailsBlock
         activities={activityLines}
-        title="Definition et exclusions par activite assuree"
+        title="Définition et exclusions par activité assurée"
       />
 
       <p className="text-sm text-[#171717] mb-6">
