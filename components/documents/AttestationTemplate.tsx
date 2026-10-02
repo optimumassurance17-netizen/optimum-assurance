@@ -7,6 +7,8 @@ import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 import { ActivityDetailsBlock } from "@/components/documents/ActivityDetailsBlock"
 import { DecennaleGarantiesTable } from "@/components/documents/DecennaleGarantiesTable"
+import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
+import { DECENNALE_CP_CADRE } from "@/lib/conditions-particulieres"
 import { COMPANY_BRAND } from "@/lib/legal-branding"
 
 interface AttestationTemplateProps {
@@ -83,6 +85,7 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
           Garantie de la responsabilité décennale conformément aux articles L.241-1 et L.241-2 du Code des assurances.
         </p>
         <DecennaleGarantiesTable data={data} />
+        <ConditionsParticulieresNotes lines={DECENNALE_CP_CADRE} />
       </div>
 
       <ActivityDetailsBlock

@@ -114,7 +114,7 @@ export function FactureDoTemplate({ numero, data }: FactureDoTemplateProps) {
       </div>
 
       <p className="text-xs text-[#171717]">
-        TVA non applicable, article 293 B du CGI. {COMPANY_BRAND} — Assurance dommage ouvrage.
+        TVA non applicable, article 293 B du CGI. {COMPANY_BRAND} — Assurance dommage ouvrage. Les garanties et l&apos;absence de franchise sur la garantie obligatoire sont celles des conditions particulières.
       </p>
       <p className="text-xs text-[#171717] mt-3">
         <a href={`${SITE_URL}/cgv`} className="text-[#2563eb] underline">

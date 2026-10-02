@@ -13,6 +13,8 @@ import {
 import { COMPANY_BRAND, INSURER_NAME, LEGAL_ORIAS_LINE } from "@/lib/legal-branding"
 import { DEVOIR_CONSEIL_TEXTE_BY_PRODUCT } from "@/lib/devoir-conseil"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
+import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
+import { DO_CP_CADRE } from "@/lib/conditions-particulieres"
 
 /**
  * Template de proposition d'assurance dommage ouvrage.
@@ -222,6 +224,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
             </tr>
           </tbody>
         </table>
+        <ConditionsParticulieresNotes lines={DO_CP_CADRE} />
         {data.closCouvert === true && (
           <div className="text-xs text-[#171717] mb-2 p-2 bg-[#dbeafe] rounded">
             <p className="font-medium mb-1">Option clos et couvert : lots couverts</p>

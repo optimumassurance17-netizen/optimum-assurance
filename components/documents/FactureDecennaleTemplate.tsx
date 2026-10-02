@@ -104,7 +104,7 @@ export function FactureDecennaleTemplate({ numero, data }: FactureDecennaleTempl
       </div>
 
       <p className="text-xs text-[#171717]">
-        TVA non applicable, article 293 B du CGI. {COMPANY_BRAND} — assurance décennale (Assureur : {INSURER_NAME}).
+        TVA non applicable, article 293 B du CGI. {COMPANY_BRAND} — assurance décennale (Assureur : {INSURER_NAME}). Les garanties, la franchise et les plafonds sont ceux des conditions particulières du contrat.
       </p>
       <p className="text-xs text-[#171717] mt-3">
         <a href={`${SITE_URL}/cgv`} className="text-[#2563eb] underline">

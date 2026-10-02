@@ -21,7 +21,12 @@ interface AvenantTemplateProps {
 
 export function AvenantTemplate({ numero, data }: AvenantTemplateProps) {
   const modifications: string[] = []
-  if (data.chiffreAffaires != null) modifications.push(`Chiffre d'affaires : ${data.chiffreAffaires.toLocaleString("fr-FR")} €`)
+  if (data.chiffreAffaires != null) {
+    modifications.push(`Chiffre d'affaires : ${data.chiffreAffaires.toLocaleString("fr-FR")} €`)
+    modifications.push(
+      `Plafond de la responsabilité civile décennale : ${(data.chiffreAffaires * 2).toLocaleString("fr-FR")} € par sinistre (deux fois le chiffre d'affaires déclaré)`
+    )
+  }
   if (data.primeAnnuelle != null) modifications.push(`Prime annuelle : ${data.primeAnnuelle.toLocaleString("fr-FR")} €`)
   if (data.activites?.length) modifications.push(`Activités : ${data.activites.join(", ")}`)
 
@@ -46,6 +51,9 @@ export function AvenantTemplate({ numero, data }: AvenantTemplateProps) {
           {modifications.length > 0 ? modifications.map((m, i) => <li key={i}>{m}</li>) : <li>Aucune modification détaillée</li>}
         </ul>
         <p className="text-sm">Date de l&apos;avenant : {data.dateAvenant || new Date().toLocaleDateString("fr-FR")}</p>
+        <p className="text-sm mt-3">
+          Les conditions particulières du contrat restent applicables. Seuls les points listés ci-dessus sont modifiés. En cas de divergence, les conditions particulières prévalent sur les conditions générales.
+        </p>
         <p className="text-sm font-medium mt-4 text-[#2563eb]">
           Frais d&apos;avenant : 60 € (reportés automatiquement sur la prochaine échéance de prélèvement)
         </p>

@@ -11,6 +11,8 @@ import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { appendDecennaleActivityDetailsAnnex } from "./activityDetailsAnnex"
+import { decennaleConditionsParticulieresLines } from "@/lib/conditions-particulieres"
+import { drawClausesPaginated } from "../shared/drawClauses"
 
 const QUOTE_VALIDITY_DAYS = 30
 
@@ -206,15 +208,22 @@ export async function generateDecennaleQuotePolicyBundle(
     `Activités garanties : ${data.activities!.join(", ")}.`,
     `Prime annuelle TTC : ${formatEuro(data.premium)}.`,
     "Paiement : prélèvement SEPA selon mandat et échéances contractuelles.",
+    ...decennaleConditionsParticulieresLines(),
     `Devoir de conseil : ${DEVOIR_CONSEIL_DECENNALE_PDF}`,
     "Le souscripteur atteste l’exactitude de ses déclarations. Signature et paiement valent engagement sous réserve d’acceptation du risque par l’assureur.",
     `Conditions générales et attestations : ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`,
   ]
 
-  for (const c of clauses) {
-    y = drawWrappedText(page2, c, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 9, 12)
-    y -= 8
-  }
+  drawClausesPaginated({
+    pdfDoc,
+    page: page2,
+    y,
+    font,
+    fontBold,
+    logo: accelerantLogo,
+    clauses,
+    continuationTitle: "CONDITIONS PARTICULIÈRES (suite)",
+  })
 
   if (mode === "contrat") {
     let ap = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])

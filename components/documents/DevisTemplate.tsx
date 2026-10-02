@@ -1,6 +1,8 @@
 "use client"
 
 import { DecennaleGarantiesTable } from "@/components/documents/DecennaleGarantiesTable"
+import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
+import { DECENNALE_CP_CADRE } from "@/lib/conditions-particulieres"
 import {
   EXCLUSIONS_LEGALES_COMMUNES,
   DECHANCE_REGLE_ART,
@@ -159,6 +161,7 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
           conformément aux articles L.241-1 et L.241-2 du Code des assurances.
         </p>
         <DecennaleGarantiesTable data={data} />
+        <ConditionsParticulieresNotes lines={DECENNALE_CP_CADRE} />
       </div>
 
       {/* Exclusions */}

@@ -11,6 +11,8 @@ import { embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
+import { DECENNALE_CP_CADRE } from "@/lib/conditions-particulieres"
+import { drawClausesPaginated } from "../shared/drawClauses"
 import { appendDecennaleActivityDetailsAnnex } from "./activityDetailsAnnex"
 
 /**
@@ -33,7 +35,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
 
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
-  const page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+  let page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
 
   const verifyUrl = `${SITE_URL}/verify/${encodeURIComponent(data.contractNumber)}`
   const qrImage = await embedVerificationQr(pdfDoc, verifyUrl)
@@ -189,6 +191,20 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
       11
     )
     y -= 4
+  }
+  {
+    const continued = drawClausesPaginated({
+      pdfDoc,
+      page,
+      y,
+      font,
+      fontBold,
+      logo: accelerantLogo,
+      clauses: DECENNALE_CP_CADRE,
+      continuationTitle: "ATTESTATION — conditions particulières (suite)",
+    })
+    page = continued.page
+    y = continued.y
   }
   y -= 10
 

@@ -10,6 +10,8 @@ import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../s
 import { embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
+import { DO_CP_CADRE } from "@/lib/conditions-particulieres"
+import { drawClausesPaginated } from "../shared/drawClauses"
 
 /**
  * Attestation DO — projet, adresse, nature construction, QR.
@@ -23,7 +25,7 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
 
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
-  const page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+  let page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
 
   const verifyUrl = `${SITE_URL}/verify/${encodeURIComponent(data.contractNumber)}`
   const qrImage = await embedVerificationQr(pdfDoc, verifyUrl)
@@ -181,6 +183,20 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
     12,
     PDF_COLORS.muted
   )
+  {
+    const continued = drawClausesPaginated({
+      pdfDoc,
+      page,
+      y,
+      font,
+      fontBold,
+      logo: accelerantLogo,
+      clauses: DO_CP_CADRE,
+      continuationTitle: "ATTESTATION — conditions particulières (suite)",
+    })
+    page = continued.page
+    y = continued.y
+  }
   y -= 18
 
   drawTextPdf(page, "Conditions d'effet", {

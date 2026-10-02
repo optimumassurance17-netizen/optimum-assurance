@@ -10,6 +10,7 @@ import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
+import { DECENNALE_CP_CADRE, DO_CP_CADRE } from "@/lib/conditions-particulieres"
 
 function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
   const rows = decennaleGarantieRows(data)
@@ -35,6 +36,18 @@ function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
           </View>
         ))}
       </View>
+    </View>
+  )
+}
+
+function CpLines({ lines }: { lines: readonly string[] }) {
+  return (
+    <View style={{ marginTop: 8 }}>
+      {lines.map((line) => (
+        <Text key={line} style={pdfTheme.p}>
+          • {line}
+        </Text>
+      ))}
     </View>
   )
 }
@@ -124,6 +137,8 @@ export function ContratPDFPage({
             <Text style={pdfTheme.cellRight}>{(d.plafond ?? 0).toLocaleString("fr-FR")} €</Text>
           </View>
         </View>
+        <DecennaleGarantiesPdf data={data} />
+        <CpLines lines={DECENNALE_CP_CADRE} />
       </View>
     </Page>
   )
@@ -182,6 +197,7 @@ export function AttestationPDFPage({
         </Text>
         <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         <DecennaleGarantiesPdf data={data} />
+        <CpLines lines={DECENNALE_CP_CADRE} />
         {d.verificationQrDataUri && (
           <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
             {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
@@ -278,6 +294,7 @@ export function AttestationNominativePDFPage({
         </Text>
         <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         <DecennaleGarantiesPdf data={data} />
+        <CpLines lines={DECENNALE_CP_CADRE} />
       </View>
 
       <View style={pdfTheme.section}>
@@ -353,6 +370,7 @@ export function AttestationDoPDFPage({
         </Text>
         <Text style={pdfTheme.p}>Prime : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         <DoGarantiesPdf />
+        <CpLines lines={DO_CP_CADRE} />
         {d.verificationQrDataUri && (
           <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
             {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
@@ -436,7 +454,7 @@ export function FactureDecennalePDFPage({
       </View>
       <Text style={[pdfTheme.p, { marginTop: 10, fontSize: 8, color: "#64748b" }]}>
         Prime annuelle de référence : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € (échéances suivantes selon
-        mandat).
+        mandat). Les garanties, la franchise et les plafonds sont ceux des conditions particulières du contrat.
       </Text>
       <Text style={[pdfTheme.legalText, { marginTop: 16 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
@@ -490,6 +508,9 @@ export function FactureDoPDFPage({
           <Text style={pdfTheme.cellRight}>{(d.totalTTC ?? d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} €</Text>
         </View>
       </View>
+      <Text style={[pdfTheme.p, { marginTop: 10, fontSize: 8, color: "#64748b" }]}>
+        Les garanties et l&apos;absence de franchise sur la garantie obligatoire sont celles des conditions particulières.
+      </Text>
       <Text style={[pdfTheme.legalText, { marginTop: 16 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
         Optimum Courtage agit par délégation de Accelerant Insurance.

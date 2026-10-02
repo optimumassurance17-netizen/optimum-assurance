@@ -12,6 +12,8 @@ import { DEVOIR_CONSEIL_TEXT, DEVOIR_CONSEIL_USEFUL_LINKS_LINE } from "@/lib/dev
 import { DECENNALE_CLAUSE_BLOCS } from "@/lib/decennale-legal-clauses"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { appendDecennaleActivityDetailsAnnex } from "@/lib/pdf/decennale/activityDetailsAnnex"
+import { decennaleConditionsParticulieresLines } from "@/lib/conditions-particulieres"
+import { drawClausesPaginated } from "../shared/drawClauses"
 
 const QUOTE_VALIDITY_DAYS = 30
 
@@ -167,7 +169,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
   )
 
   // Page 2 : annexe informative pour détailler le devis
-  const page2 = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+  let page2 = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
   let y2 = drawOptimumHeader(
     page2,
     font,
@@ -190,7 +192,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
     "1) Portée de la proposition : ce devis est indicatif et établi sur la base des informations déclarées par le souscripteur.",
     "2) Activités couvertes : seules les activités mentionnées au devis sont prises en compte lors de l’émission du contrat.",
     "3) Exclusions : les activités non déclarées, exclusions techniques prévues aux conditions générales, et sinistres hors champ légal ne sont pas couverts.",
-    "4) Franchise et plafonds : fixés aux conditions particulières lors de l’émission du contrat après validation du risque.",
+    "4) Garanties, franchises et plafonds : ceux indiqués ci-dessous, repris aux conditions particulières lors de l’émission du contrat après validation du risque.",
     "5) Paiement : le contrat n’est effectif qu’après signature électronique et encaissement selon le parcours de paiement prévu.",
     "6) Pièces et conformité : des justificatifs complémentaires peuvent être exigés avant l’émission définitive (Kbis, identité, antécédents, etc.).",
     "7) Déclaration du risque : toute information inexacte ou omission significative peut entraîner révision, exclusion, résiliation ou nullité selon le cadre contractuel.",
@@ -198,9 +200,19 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
     "9) Protection juridique : garantie défense/recours incluse selon les conditions contractuelles applicables.",
   ]
 
-  for (const line of details) {
-    y2 = drawWrappedText(page2, line, PDF_PAGE.marginX, y2, PDF_PAGE.contentWidth, font, 9, 12)
-    y2 -= 8
+  {
+    const continued = drawClausesPaginated({
+      pdfDoc,
+      page: page2,
+      y: y2,
+      font,
+      fontBold,
+      logo: accelerantLogo,
+      clauses: [...details, ...decennaleConditionsParticulieresLines()],
+      continuationTitle: "DEVIS — Annexe (suite)",
+    })
+    page2 = continued.page
+    y2 = continued.y
   }
 
   y2 -= 2

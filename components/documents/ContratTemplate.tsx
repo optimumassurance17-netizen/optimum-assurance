@@ -6,6 +6,9 @@ import { DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSE_TEXT } from "@/lib/decennale-
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
+import { DecennaleGarantiesTable } from "@/components/documents/DecennaleGarantiesTable"
+import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
+import { DECENNALE_CP_CADRE } from "@/lib/conditions-particulieres"
 import { ActivityDetailsBlock } from "@/components/documents/ActivityDetailsBlock"
 import { INSURER_NAME } from "@/lib/legal-branding"
 
@@ -119,16 +122,11 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
                   )}
                 </>
               )}
-              <tr className="border-b">
-                <td className="py-2">Franchise</td>
-                <td className="text-right">{(data.franchise ?? 0).toLocaleString("fr-FR")} €</td>
-              </tr>
-              <tr className="border-b">
-                <td className="py-2">Plafond de garantie</td>
-                <td className="text-right">{(data.plafond ?? 0).toLocaleString("fr-FR")} €</td>
-              </tr>
             </tbody>
           </table>
+          <h4 className="font-semibold mt-4 mb-2">Garanties, montants et franchises</h4>
+          <DecennaleGarantiesTable data={data} />
+          <ConditionsParticulieresNotes lines={DECENNALE_CP_CADRE} />
         </section>
 
         <section>

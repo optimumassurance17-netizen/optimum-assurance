@@ -7,11 +7,13 @@ import { loadAccelerantLogoImage } from "../shared/accelerantLogo"
 import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
-import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { drawTextPdf, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { getDevoirConseilText, getDevoirConseilLinksLine } from "@/lib/devoir-conseil"
 import { DECENNALE_LEGAL_CLAUSES } from "@/lib/decennale-legal-clauses"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { appendDecennaleActivityDetailsAnnex } from "./activityDetailsAnnex"
+import { decennaleConditionsParticulieresLines } from "@/lib/conditions-particulieres"
+import { drawClausesPaginated } from "../shared/drawClauses"
 
 /**
  * Conditions particulières — contrat décennale (pdf-lib).
@@ -72,8 +74,7 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
     `Prime annuelle TTC : ${formatEuro(data.premium)}.`,
     "Paiement : prélèvement SEPA selon mandat et échéances contractuelles.",
     "Périmètre de garantie : responsabilité civile décennale de l’assuré pour les dommages matériels compromettant la solidité de l’ouvrage ou le rendant impropre à sa destination, dans la limite des conditions générales et particulières.",
-    "Protection juridique : défense/recours et assistance juridique selon les conditions générales.",
-    "Franchise et plafonds : applicables selon les conditions particulières signées et les conditions générales en vigueur à la date du sinistre.",
+    ...decennaleConditionsParticulieresLines(),
     "Obligations déclaratives : toute modification substantielle de l’activité, du chiffre d’affaires, du mode d’exécution des travaux ou de la situation juridique doit être déclarée sans délai.",
     "Sinistre : déclaration écrite dès connaissance du fait dommageable, avec pièces justificatives (référence chantier, nature des dommages, date d’apparition, éléments techniques disponibles).",
     "Résiliation : conformément aux conditions contractuelles, notamment en cas de non-paiement, de fausse déclaration ou à l’échéance selon préavis prévu.",
@@ -90,10 +91,16 @@ export async function generateDecennalePolicy(data: InsuranceData): Promise<Uint
     clauses.push(`Ne sont pas couverts : ${optimizedExclusions.join(" ; ")}`)
   }
 
-  for (const c of clauses) {
-    y = drawWrappedText(page, c, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 9, 12)
-    y -= 8
-  }
+  drawClausesPaginated({
+    pdfDoc,
+    page,
+    y,
+    font,
+    fontBold,
+    logo: accelerantLogo,
+    clauses,
+    continuationTitle: "CONDITIONS PARTICULIÈRES (suite)",
+  })
 
   appendDecennaleActivityDetailsAnnex({
     pdfDoc,
