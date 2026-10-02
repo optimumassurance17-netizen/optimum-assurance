@@ -41,25 +41,28 @@ export async function GET(
     let buffer: Buffer
     if (readTarget.kind === "supabase") {
       const supabase = createSupabaseServiceClient()
-      if (!supabase) {
-        return NextResponse.json({ error: "Stockage GED indisponible" }, { status: 503 })
-      }
       let downloaded: Blob | null = null
-      for (const candidate of readTarget.candidates) {
-        const { data, error } = await supabase.storage.from(candidate.bucket).download(candidate.path)
-        if (!error && data) {
-          downloaded = data
-          break
+      if (supabase) {
+        for (const candidate of readTarget.candidates) {
+          const { data, error } = await supabase.storage.from(candidate.bucket).download(candidate.path)
+          if (!error && data) {
+            downloaded = data
+            break
+          }
         }
       }
       if (downloaded) {
         buffer = Buffer.from(await downloaded.arrayBuffer())
       } else {
-        // Fallback legacy: certains fichiers ont été migrés avec un filepath "type Supabase"
-        // mais résident encore localement.
+        // Un chemin relatif est classé Supabase, y compris le fichier local
+        // `userId_type_timestamp.ext` déposé sans bucket. On le lit sur disque
+        // avant de conclure que le stockage est indisponible.
         const localCandidates = getLocalGedPathCandidates(doc.filepath)
         const existingLocalPath = localCandidates.find((candidate) => existsSync(candidate))
         if (!existingLocalPath) {
+          if (!supabase) {
+            return NextResponse.json({ error: "Stockage GED indisponible" }, { status: 503 })
+          }
           return NextResponse.json(
             {
               error:
@@ -121,6 +124,7 @@ export async function DELETE(
     }
 
     const storageTarget = resolveGedFileStorageTarget(doc.filepath)
+    const { unlink } = await import("fs/promises")
     if (storageTarget.kind === "supabase") {
       const supabase = createSupabaseServiceClient()
       if (supabase) {
@@ -138,12 +142,12 @@ export async function DELETE(
           // Suppression best-effort
         }
       }
-    } else {
-      const { unlink } = await import("fs/promises")
-      for (const fullPath of storageTarget.paths) {
-        if (existsSync(fullPath)) {
-          await unlink(fullPath).catch(() => {})
-        }
+    }
+    const localPaths =
+      storageTarget.kind === "local" ? storageTarget.paths : getLocalGedPathCandidates(doc.filepath)
+    for (const fullPath of localPaths) {
+      if (existsSync(fullPath)) {
+        await unlink(fullPath).catch(() => {})
       }
     }
 

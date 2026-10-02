@@ -12,6 +12,7 @@ import {
   MAX_FILE_SIZE,
   GED_SUPABASE_BUCKET,
   resolveGedFileStorageTarget,
+  getLocalGedPathCandidates,
   buildGedStoragePath,
   detectUploadMimeAndExt,
   ensureUploadDir,
@@ -172,8 +173,15 @@ export async function POST(request: NextRequest) {
             // Suppression best-effort
           }
         }
-      } else if (existsSync(join(UPLOAD_DIR, existing.filepath))) {
-        await unlink(join(UPLOAD_DIR, existing.filepath)).catch(() => {})
+      }
+      const localPaths =
+        storageTarget.kind === "local"
+          ? storageTarget.paths
+          : getLocalGedPathCandidates(existing.filepath)
+      for (const fullPath of localPaths) {
+        if (existsSync(fullPath)) {
+          await unlink(fullPath).catch(() => {})
+        }
       }
     }
 
