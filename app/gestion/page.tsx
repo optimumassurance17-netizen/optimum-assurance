@@ -555,6 +555,7 @@ export default function GestionPage() {
   const [remediatingActionId, setRemediatingActionId] = useState<string | null>(null)
   const [bulkRemediatingDda, setBulkRemediatingDda] = useState(false)
   const [sendingComptaRelanceId, setSendingComptaRelanceId] = useState<string | null>(null)
+  const [sendingSepaCarteId, setSendingSepaCarteId] = useState<string | null>(null)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
   const [creatingLeadAccountId, setCreatingLeadAccountId] = useState<string | null>(null)
   const [sendingClientAccessId, setSendingClientAccessId] = useState<string | null>(null)
@@ -1318,6 +1319,8 @@ export default function GestionPage() {
           userId: sub.userId,
           userEmail: sub.user?.email ?? null,
           status: sub.status,
+          mollieMandateId: sub.mollieMandateId,
+          lastError: sub.lastError,
           clientLabel: sub.user?.raisonSociale || sub.user?.email || "Client non renseigné",
           daysUntil,
           estimatedAmount,
@@ -2782,6 +2785,10 @@ export default function GestionPage() {
                                 {new Date(row.date).toLocaleDateString("fr-FR")} · {row.estimatedAmount.toLocaleString("fr-FR")} € ·{" "}
                                 {row.daysUntil < 0 ? `${Math.abs(row.daysUntil)}j de retard` : `J-${row.daysUntil}`}
                               </p>
+                              <p className="text-[11px] text-gray-400 mt-0.5">
+                                Mandat Mollie : {row.mollieMandateId || "pas encore créé"} · {row.status}
+                                {row.lastError ? ` · ${row.lastError}` : ""}
+                              </p>
                               <div className="mt-1.5 flex flex-wrap gap-1.5">
                                 {row.userId ? (
                                   <Link
@@ -2804,6 +2811,51 @@ export default function GestionPage() {
                                     Filtrer email
                                   </button>
                                 ) : null}
+                                <button
+                                  type="button"
+                                  disabled={sendingSepaCarteId === row.id}
+                                  onClick={async () => {
+                                    setSendingSepaCarteId(row.id)
+                                    try {
+                                      const res = await fetch(`/api/gestion/sepa/${row.id}/relance-carte`, {
+                                        method: "POST",
+                                      })
+                                      const body = (await res.json().catch(() => ({}))) as {
+                                        error?: string
+                                        emailSent?: boolean
+                                        warning?: string
+                                        sentTo?: string
+                                        checkoutUrl?: string
+                                      }
+                                      if (!res.ok && !body.checkoutUrl) {
+                                        throw new Error(body.error || "Impossible d'ouvrir le paiement carte.")
+                                      }
+                                      if (body.emailSent === false) {
+                                        setToast({
+                                          message: body.checkoutUrl
+                                            ? `Email non envoyé. Lien carte : ${body.checkoutUrl}`
+                                            : body.warning || "Email non envoyé.",
+                                          type: "warning",
+                                        })
+                                        return
+                                      }
+                                      setToast({
+                                        message: `Lien de paiement carte envoyé à ${body.sentTo || row.userEmail || "le client"}`,
+                                        type: "success",
+                                      })
+                                    } catch (e) {
+                                      setToast({
+                                        message: e instanceof Error ? e.message : "Erreur lors de la relance carte",
+                                        type: "error",
+                                      })
+                                    } finally {
+                                      setSendingSepaCarteId(null)
+                                    }
+                                  }}
+                                  className="text-[11px] px-2 py-1 rounded border border-emerald-700/70 text-emerald-100 hover:bg-emerald-900/30 disabled:opacity-50"
+                                >
+                                  {sendingSepaCarteId === row.id ? "Envoi..." : "Relancer par carte"}
+                                </button>
                               </div>
                             </div>
                           ))}

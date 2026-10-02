@@ -3,6 +3,7 @@ import { createMollieClient } from "@mollie/api-client"
 import { assertCronAuthorized } from "@/lib/cron-auth"
 import {
   createSepaTrimestrePayment,
+  onSepaTrimestrePaid,
   refreshMandateStatus,
 } from "@/lib/mollie-sepa"
 import { primeTrimestrielle } from "@/lib/premium"
@@ -74,6 +75,24 @@ export async function GET(request: NextRequest) {
     const errors: string[] = []
 
     for (const sub of due) {
+      if (sub.sepaPendingPaymentId) {
+        try {
+          const existing = await mollie.payments.get(sub.sepaPendingPaymentId)
+          const stillOpen = existing.status === "open" || existing.status === "pending" || existing.status === "authorized"
+          if (stillOpen) continue
+          if (existing.status === "paid") {
+            await onSepaTrimestrePaid(sub.id)
+            continue
+          }
+        } catch {
+          // Paiement introuvable : on libère le verrou et on peut relancer.
+        }
+        await prisma.sepaSubscription.update({
+          where: { id: sub.id },
+          data: { sepaPendingPaymentId: null },
+        })
+      }
+
       if (!sub.mollieMandateId) {
         errors.push(`${sub.id}: pas de mandateId`)
         continue
