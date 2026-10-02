@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { ensureUserTitleQuestionnaireColumns } from "@/lib/ensure-user-title-columns"
 import { getSireneEnvStatus } from "@/lib/sirene"
 
 /** Toujours à jour (monitoring / Vercel), pas de cache edge statique. */
@@ -59,10 +60,12 @@ export async function GET() {
   const sirene = getSireneEnvStatus()
   try {
     await prisma.$queryRaw`SELECT 1`
+    const titleQuestionnaireColumns = await ensureUserTitleQuestionnaireColumns()
     return NextResponse.json({
       status: "ok",
       timestamp: new Date().toISOString(),
       database: "connected",
+      titleQuestionnaireColumns,
       email: {
         resend: resendConfigured() ? "configured" : "missing",
         from: emailFromConfigured() ? "configured" : "missing",

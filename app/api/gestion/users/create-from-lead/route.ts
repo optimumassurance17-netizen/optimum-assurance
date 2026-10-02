@@ -4,6 +4,7 @@ import { Prisma } from "@/lib/prisma-client"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { ensureUserTitleQuestionnaireColumns } from "@/lib/ensure-user-title-columns"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
 import { extractClientIdentityFromRecord, mergeClientIdentity } from "@/lib/client-identity-extract"
@@ -278,6 +279,10 @@ export async function POST(request: NextRequest) {
     const adresse = leadIdentity.adresse ?? null
     const codePostal = leadIdentity.codePostal ?? null
     const ville = leadIdentity.ville ?? null
+
+    if (leadType === "assurance_titre") {
+      await ensureUserTitleQuestionnaireColumns()
+    }
 
     const { user, usedFallback } = await createLeadUserWithSchemaFallback({
       email: normalizedEmail,

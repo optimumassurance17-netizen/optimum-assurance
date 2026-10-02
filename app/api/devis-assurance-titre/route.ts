@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
+import { ensureUserTitleQuestionnaireColumns } from "@/lib/ensure-user-title-columns"
 import { authOptions } from "@/lib/auth"
 import { EMAIL_TEMPLATES, sendEmail } from "@/lib/email"
 import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
@@ -209,6 +210,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     const emailNorm = email.trim().toLowerCase()
     if (session?.user?.id && session.user.email?.trim().toLowerCase() === emailNorm) {
+      await ensureUserTitleQuestionnaireColumns()
       await prisma.user.update({
         where: { id: session.user.id },
         data: {
@@ -217,6 +219,7 @@ export async function POST(request: NextRequest) {
           ...(data.siret ? { siret: data.siret } : {}),
           telephone: data.telephone,
         },
+        select: { id: true },
       })
     }
   } catch (error) {

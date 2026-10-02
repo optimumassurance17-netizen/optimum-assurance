@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { ensureUserTitleQuestionnaireColumns } from "@/lib/ensure-user-title-columns"
 import { asJsonObject } from "@/lib/json-object"
 import type { AssuranceTitreData } from "@/lib/assurance-titre-types"
 import {
@@ -90,6 +91,7 @@ export async function GET() {
     }
 
     const emailNorm = session.user.email.trim().toLowerCase()
+    await ensureUserTitleQuestionnaireColumns()
     const initial = await getInitialForUser(session.user.id, emailNorm)
     const titleEtudeQuestionnaireJson = await readTitleEtudeJson(session.user.id)
 
@@ -140,6 +142,14 @@ export async function PUT(request: Request) {
     const emailClient = session.user.email?.trim()
     if (!emailClient) {
       return NextResponse.json({ error: "Email de session manquant" }, { status: 400 })
+    }
+
+    const columnsReady = await ensureUserTitleQuestionnaireColumns()
+    if (columnsReady === "failed") {
+      return NextResponse.json(
+        { error: "La base n'a pas toutes les colonnes du dossier. Le questionnaire n'a pas été enregistré." },
+        { status: 503 }
+      )
     }
 
     const before = await readTitleEtudeJson(session.user.id)
