@@ -11,6 +11,7 @@ import {
   type OuiNon,
 } from "@/lib/do-etude-questionnaire-types"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
+import { mergeDoEtudeForm } from "@/lib/do-etude-prefill"
 import { readResponseJson } from "@/lib/read-response-json"
 
 const inputClass = `w-full rounded-xl px-4 py-3 font-medium ${inputFieldBg} ${inputTextDark}`
@@ -77,7 +78,7 @@ export function FormulaireDoEtudeEspaceClient() {
           setLoading(false)
           return
         }
-        if (j.form && !cancelled) setForm(j.form)
+        if (j.form && !cancelled) setForm(mergeDoEtudeForm(emptyDoEtudeQuestionnaire(), j.form))
       } catch (e) {
         if (!cancelled) setLoadError(e instanceof Error ? e.message : "Erreur")
       } finally {

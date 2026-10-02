@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
         await prisma.user.update({
           where: { id: session.user.id },
           data: { doInitialQuestionnaireJson: JSON.stringify(data) },
+          select: { id: true },
         })
       } catch (e) {
         console.error("[devis-dommage-ouvrage] save user initial JSON:", e)

@@ -13,17 +13,45 @@ import {
 } from "@/lib/assurance-titre-etude-questionnaire-types"
 import { sendAssuranceTitreEtudeSavedAlert } from "@/lib/devis-alert"
 
+function isMissingColumnError(error: unknown): boolean {
+  const code = error && typeof error === "object" && "code" in error ? String((error as { code: unknown }).code) : ""
+  return code === "P2021" || code === "P2022"
+}
+
+async function readTitleInitialJson(userId: string): Promise<string | null> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { titleInitialQuestionnaireJson: true },
+    })
+    return user?.titleInitialQuestionnaireJson ?? null
+  } catch (error) {
+    if (isMissingColumnError(error)) return null
+    throw error
+  }
+}
+
+async function readTitleEtudeJson(userId: string): Promise<string | null> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { titleEtudeQuestionnaireJson: true },
+    })
+    return user?.titleEtudeQuestionnaireJson ?? null
+  } catch (error) {
+    if (isMissingColumnError(error)) return null
+    throw error
+  }
+}
+
 async function getInitialForUser(
   userId: string,
   emailNorm: string
 ): Promise<(Partial<AssuranceTitreData> & { email?: string | null }) | null> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { titleInitialQuestionnaireJson: true },
-  })
-  if (user?.titleInitialQuestionnaireJson) {
+  const titleInitialQuestionnaireJson = await readTitleInitialJson(userId)
+  if (titleInitialQuestionnaireJson) {
     try {
-      return JSON.parse(user.titleInitialQuestionnaireJson) as Partial<AssuranceTitreData> & { email?: string | null }
+      return JSON.parse(titleInitialQuestionnaireJson) as Partial<AssuranceTitreData> & { email?: string | null }
     } catch {
       /* ignore */
     }
@@ -38,10 +66,16 @@ async function getInitialForUser(
       await prisma.user.update({
         where: { id: userId },
         data: { titleInitialQuestionnaireJson: lead.data },
+        select: { id: true },
       })
       return JSON.parse(lead.data) as Partial<AssuranceTitreData> & { email?: string | null }
-    } catch {
-      /* ignore */
+    } catch (error) {
+      console.error("[title-questionnaire] copie demande initiale:", error)
+      try {
+        return JSON.parse(lead.data) as Partial<AssuranceTitreData> & { email?: string | null }
+      } catch {
+        return null
+      }
     }
   }
 
@@ -57,15 +91,12 @@ export async function GET() {
 
     const emailNorm = session.user.email.trim().toLowerCase()
     const initial = await getInitialForUser(session.user.id, emailNorm)
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { titleEtudeQuestionnaireJson: true },
-    })
+    const titleEtudeQuestionnaireJson = await readTitleEtudeJson(session.user.id)
 
     let savedEtude: Partial<AssuranceTitreEtudeQuestionnaireV1> | null = null
-    if (user?.titleEtudeQuestionnaireJson) {
+    if (titleEtudeQuestionnaireJson) {
       try {
-        savedEtude = JSON.parse(user.titleEtudeQuestionnaireJson) as Partial<AssuranceTitreEtudeQuestionnaireV1>
+        savedEtude = JSON.parse(titleEtudeQuestionnaireJson) as Partial<AssuranceTitreEtudeQuestionnaireV1>
       } catch {
         /* ignore */
       }
@@ -82,7 +113,7 @@ export async function GET() {
     return NextResponse.json({
       useEspaceClientOnly: initial != null,
       hasInitial: initial != null,
-      hasEtudeSaved: Boolean(user?.titleEtudeQuestionnaireJson?.trim()),
+      hasEtudeSaved: Boolean(titleEtudeQuestionnaireJson?.trim()),
       form,
     })
   } catch (error) {
@@ -111,15 +142,13 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Email de session manquant" }, { status: 400 })
     }
 
-    const before = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { titleEtudeQuestionnaireJson: true },
-    })
-    const isUpdate = Boolean(before?.titleEtudeQuestionnaireJson?.trim())
+    const before = await readTitleEtudeJson(session.user.id)
+    const isUpdate = Boolean(before?.trim())
 
     await prisma.user.update({
       where: { id: session.user.id },
       data: { titleEtudeQuestionnaireJson: JSON.stringify(body.form) },
+      select: { id: true },
     })
 
     void sendAssuranceTitreEtudeSavedAlert({

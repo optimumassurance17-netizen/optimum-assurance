@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import type { DevisDommageOuvrageData } from "@/lib/dommage-ouvrage-types"
 import { sendDoEtudeSavedAlert } from "@/lib/devis-alert"
-import { mergeDoEtudeForm, prefillDoEtudeFromInitial } from "@/lib/do-etude-prefill"
+import { mergeDoEtudeForm, prefillDoEtudeFromInitial, sanitizeDoEtudeForm } from "@/lib/do-etude-prefill"
 import { DO_ETUDE_VERSION, emptyDoEtudeQuestionnaire, type DoEtudeQuestionnaireV1 } from "@/lib/do-etude-questionnaire-types"
 import { asJsonObject } from "@/lib/json-object"
 
@@ -32,13 +32,27 @@ async function getInitialForUser(
       await prisma.user.update({
         where: { id: userId },
         data: { doInitialQuestionnaireJson: lead.data },
+        select: { id: true },
       })
+    } catch (error) {
+      console.error("[do-questionnaire] copie demande initiale:", error)
+    }
+    try {
       return JSON.parse(lead.data) as Partial<DevisDommageOuvrageData>
     } catch {
-      /* ignore */
+      return null
     }
   }
   return null
+}
+
+function saveErrorMessage(error: unknown): string {
+  const code =
+    error && typeof error === "object" && "code" in error ? String((error as { code: unknown }).code) : ""
+  if (code === "P2021" || code === "P2022") {
+    return "La base n'a pas toutes les colonnes du dossier. Le questionnaire n'a pas été enregistré."
+  }
+  return "Enregistrement impossible"
 }
 
 /**
@@ -66,7 +80,7 @@ export async function GET() {
       }
     }
     const prefilled = initial ? prefillDoEtudeFromInitial(initial) : emptyDoEtudeQuestionnaire()
-    const form = mergeDoEtudeForm(prefilled, savedEtude)
+    const form = sanitizeDoEtudeForm(mergeDoEtudeForm(prefilled, savedEtude))
 
     return NextResponse.json({
       useEspaceClientOnly: initial != null,
@@ -88,7 +102,12 @@ export async function PUT(request: Request) {
     }
     const rawBody = await request.json().catch(() => null)
     const body = rawBody ? asJsonObject<{ form?: DoEtudeQuestionnaireV1 }>(rawBody) : null
-    if (!body?.form || body.form.version !== DO_ETUDE_VERSION) {
+    const incoming = body?.form
+    const form =
+      incoming && typeof incoming === "object"
+        ? sanitizeDoEtudeForm({ ...emptyDoEtudeQuestionnaire(), ...incoming, version: DO_ETUDE_VERSION })
+        : null
+    if (!form) {
       return NextResponse.json({ error: "Formulaire invalide" }, { status: 400 })
     }
     const emailClient = session.user.email?.trim()
@@ -104,11 +123,12 @@ export async function PUT(request: Request) {
 
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { doEtudeQuestionnaireJson: JSON.stringify(body.form) },
+      data: { doEtudeQuestionnaireJson: JSON.stringify(form) },
+      select: { id: true },
     })
 
-    const nom = body.form.souscripteur?.nomRaisonSociale?.trim()
-    const villeChantier = body.form.operation?.ville?.trim()
+    const nom = form.souscripteur.nomRaisonSociale.trim()
+    const villeChantier = form.operation.ville.trim()
     void sendDoEtudeSavedAlert({
       clientEmail: emailClient,
       souscripteurNom: nom || undefined,
@@ -119,6 +139,6 @@ export async function PUT(request: Request) {
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error("[do-questionnaire PUT]", e)
-    return NextResponse.json({ error: "Erreur" }, { status: 500 })
+    return NextResponse.json({ error: saveErrorMessage(e) }, { status: 500 })
   }
 }

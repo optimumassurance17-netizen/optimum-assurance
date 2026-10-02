@@ -12,6 +12,164 @@ function boolToOuiNon(v: boolean | undefined): OuiNon {
   return ""
 }
 
+function asText(value: unknown): string {
+  if (typeof value === "string") return value
+  if (typeof value === "number" && Number.isFinite(value)) return String(value)
+  return ""
+}
+
+function asOuiNon(value: unknown): OuiNon {
+  return value === "oui" || value === "non" ? value : ""
+}
+
+/** Les champs date HTML n'acceptent que aaaa-mm-jj. Une autre valeur bloque l'envoi. */
+function asDateInput(value: unknown): string {
+  const text = asText(value).trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text
+  const iso = text.match(/^(\d{4}-\d{2}-\d{2})T/)
+  if (iso) return iso[1]
+  const fr = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  if (fr) return `${fr[3]}-${fr[2]}-${fr[1]}`
+  return ""
+}
+
+function asStringList(value: unknown, fallback: string[]): string[] {
+  if (!Array.isArray(value)) return fallback
+  return value.filter((item): item is string => typeof item === "string")
+}
+
+const EMPTY_LOT: DoEtudeQuestionnaireV1["lots"][number] = {
+  lot: "",
+  entreprise: "",
+  assureur: "",
+  police: "",
+  siren: "",
+  montant: "",
+}
+
+function asLots(value: unknown, fallback: DoEtudeQuestionnaireV1["lots"]): DoEtudeQuestionnaireV1["lots"] {
+  if (!Array.isArray(value) || value.length === 0) return fallback
+  return value.map((row) => {
+    const item = row && typeof row === "object" ? (row as Record<string, unknown>) : {}
+    return {
+      lot: asText(item.lot),
+      entreprise: asText(item.entreprise),
+      assureur: asText(item.assureur),
+      police: asText(item.police),
+      siren: asText(item.siren),
+      montant: asText(item.montant),
+    }
+  })
+}
+
+function asChoice<T extends string>(value: unknown, allowed: readonly T[]): T | "" {
+  return typeof value === "string" && allowed.includes(value as T) ? (value as T) : ""
+}
+
+/** Garantit des chaînes et des tableaux : un JSON partiel ne doit pas faire planter le formulaire. */
+export function sanitizeDoEtudeForm(form: DoEtudeQuestionnaireV1): DoEtudeQuestionnaireV1 {
+  const empty = emptyDoEtudeQuestionnaire()
+  const s = form.souscripteur ?? empty.souscripteur
+  const o = form.operation ?? empty.operation
+  const tp = form.typeProjet ?? empty.typeProjet
+  const c = form.cout ?? empty.cout
+  const t = form.tech ?? empty.tech
+  const env = form.environnement ?? empty.environnement
+  const ts = form.travauxSpecifiques ?? empty.travauxSpecifiques
+  const g = form.garanties ?? empty.garanties
+  const iv = form.intervenants ?? empty.intervenants
+  const v = form.validation ?? empty.validation
+
+  return {
+    version: DO_ETUDE_VERSION,
+    souscripteur: {
+      nomRaisonSociale: asText(s.nomRaisonSociale),
+      adresse: asText(s.adresse),
+      codePostal: asText(s.codePostal),
+      ville: asText(s.ville),
+      telephone: asText(s.telephone),
+      email: asText(s.email),
+      maitreOuvrageEstSouscripteur: asOuiNon(s.maitreOuvrageEstSouscripteur),
+      qualiteMaitreOuvrage: asChoice(s.qualiteMaitreOuvrage, ["particulier", "promoteur", "sci", "autre"] as const),
+      qualiteAutre: asText(s.qualiteAutre),
+    },
+    operation: {
+      adresseChantier: asText(o.adresseChantier),
+      codePostal: asText(o.codePostal),
+      ville: asText(o.ville),
+      permisNumero: asText(o.permisNumero),
+      dateDoc: asDateInput(o.dateDoc),
+      dateDebutTravaux: asDateInput(o.dateDebutTravaux),
+      dateFinTravaux: asDateInput(o.dateFinTravaux),
+    },
+    typeProjet: {
+      typeBatiment: asChoice(tp.typeBatiment, ["maison", "immeuble", "autre"] as const),
+      typeBatimentAutre: asText(tp.typeBatimentAutre),
+      destination: asChoice(tp.destination, ["vente", "location", "personnel"] as const),
+      superficieM2: asText(tp.superficieM2),
+      nbBatiments: asText(tp.nbBatiments),
+      nbEtages: asText(tp.nbEtages),
+      nbGarages: asText(tp.nbGarages),
+      nbCaves: asText(tp.nbCaves),
+      piscine: asOuiNon(tp.piscine),
+      photovoltaiques: asOuiNon(tp.photovoltaiques),
+    },
+    cout: {
+      coutTotalTtc: asText(c.coutTotalTtc),
+      dontTravaux: asText(c.dontTravaux),
+      dontHonorairesMO: asText(c.dontHonorairesMO),
+      dontEtudeSol: asText(c.dontEtudeSol),
+      dontControleTechnique: asText(c.dontControleTechnique),
+    },
+    tech: {
+      typeFondation: asChoice(t.typeFondation, ["semelles", "radier", "pieux", "autre"] as const),
+      typeFondationAutre: asText(t.typeFondationAutre),
+      etudeBetonArme: asOuiNon(t.etudeBetonArme),
+      techniqueCourante: asOuiNon(t.techniqueCourante),
+      produitsAtex: asOuiNon(t.produitsAtex),
+      porteeSup7m: asOuiNon(t.porteeSup7m),
+    },
+    environnement: {
+      zoneInondable: asOuiNon(env.zoneInondable),
+      solRemblai: asOuiNon(env.solRemblai),
+      argileGonflante: asOuiNon(env.argileGonflante),
+      nappeElevee: asOuiNon(env.nappeElevee),
+      penteSup15: asOuiNon(env.penteSup15),
+    },
+    travauxSpecifiques: {
+      travauxSurExistant: asOuiNon(ts.travauxSurExistant),
+      etancheiteSpecifique: asOuiNon(ts.etancheiteSpecifique),
+      interventionStructure: asOuiNon(ts.interventionStructure),
+      surelevation: asOuiNon(ts.surelevation),
+      desamiantage: asOuiNon(ts.desamiantage),
+    },
+    garanties: {
+      do: g.do === true,
+      trc: g.trc === true,
+      rcmo: g.rcmo === true,
+      dommagesExistants: g.dommagesExistants === true,
+    },
+    intervenants: {
+      maitriseOeuvreNom: asText(iv.maitriseOeuvreNom),
+      maitriseOeuvreAssureur: asText(iv.maitriseOeuvreAssureur),
+      maitriseOeuvrePolice: asText(iv.maitriseOeuvrePolice),
+      maitriseOeuvreMontantMission: asText(iv.maitriseOeuvreMontantMission),
+      bureauControleNom: asText(iv.bureauControleNom),
+      etudeSolSociete: asText(iv.etudeSolSociete),
+    },
+    lots: asLots(form.lots, empty.lots.length ? empty.lots : [EMPTY_LOT]),
+    documents: {
+      avant: asStringList(form.documents?.avant, empty.documents.avant),
+      apres: asStringList(form.documents?.apres, empty.documents.apres),
+    },
+    validation: {
+      faitA: asText(v.faitA),
+      le: asDateInput(v.le),
+      nom: asText(v.nom),
+    },
+  }
+}
+
 function mapQualite(
   q: DevisDommageOuvrageData["qualiteMaitreOuvrage"],
   autre?: string
@@ -140,7 +298,7 @@ export function prefillDoEtudeFromInitial(initial: Partial<DevisDommageOuvrageDa
     desamiantage: boolToOuiNon(initial.existantsRetraitAmiantePlomb),
   }
 
-  const g = (initial.garanties as string[]) || []
+  const g = Array.isArray(initial.garanties) ? initial.garanties.map(String) : []
   e.garanties = {
     do: g.includes("do"),
     trc: g.includes("trc"),
@@ -157,13 +315,13 @@ export function prefillDoEtudeFromInitial(initial: Partial<DevisDommageOuvrageDa
     etudeSolSociete: initial.etudeSol ? "Oui (à préciser)" : "",
   }
 
-  return e
+  return sanitizeDoEtudeForm(e)
 }
 
 /** Fusion profonde superficielle : `saved` écrase `base` pour les champs définis. */
 export function mergeDoEtudeForm(base: DoEtudeQuestionnaireV1, saved: Partial<DoEtudeQuestionnaireV1> | null): DoEtudeQuestionnaireV1 {
-  if (!saved || saved.version !== DO_ETUDE_VERSION) return base
-  return {
+  if (!saved || saved.version !== DO_ETUDE_VERSION) return sanitizeDoEtudeForm(base)
+  return sanitizeDoEtudeForm({
     ...base,
     version: DO_ETUDE_VERSION,
     souscripteur: { ...base.souscripteur, ...saved.souscripteur },
@@ -181,5 +339,5 @@ export function mergeDoEtudeForm(base: DoEtudeQuestionnaireV1, saved: Partial<Do
       apres: saved.documents?.apres ?? base.documents.apres,
     },
     validation: { ...base.validation, ...saved.validation },
-  }
+  })
 }
