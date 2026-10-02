@@ -30,6 +30,10 @@ Le script `npm run dev:setup` copie `.env.example` → `.env`, génère `NEXTAUT
 - **Tests E2E** : `npm run test:e2e` (nécessite `npm run e2e:seed-admin` d'abord + Playwright installé via `npx playwright install --with-deps chromium`)
 - **Health check** : `curl http://localhost:3000/api/health`
 
+### Environnement Cloud Agent
+
+L'image de base contient Docker (`fuse-overlayfs`, iptables legacy) et l'image `postgres:16-alpine`. Au démarrage, le script `start` lance `dockerd` s'il est arrêté, exécute `docker compose up -d`, attend Postgres, crée `.env` depuis `.env.example` si besoin, remplace le placeholder `NEXTAUTH_SECRET`, puis aligne le schéma avec `npx prisma db push --skip-generate --accept-data-loss`. Lancer ensuite `npm run dev` (port 3000). Les clés Mollie, Resend, Supabase et OpenAI restent optionnelles pour l'accueil, le devis et `GET /api/health`.
+
 ### Gotchas
 
 - Le `postinstall` de `package.json` exécute `prisma generate` automatiquement — pas besoin de le relancer manuellement après `npm install`.
