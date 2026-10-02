@@ -556,6 +556,7 @@ export default function GestionPage() {
   const [bulkRemediatingDda, setBulkRemediatingDda] = useState(false)
   const [sendingComptaRelanceId, setSendingComptaRelanceId] = useState<string | null>(null)
   const [sendingSepaCarteId, setSendingSepaCarteId] = useState<string | null>(null)
+  const [sendingAttestationCarteId, setSendingAttestationCarteId] = useState<string | null>(null)
   const [dashboardLoadKey, setDashboardLoadKey] = useState(0)
   const [creatingLeadAccountId, setCreatingLeadAccountId] = useState<string | null>(null)
   const [sendingClientAccessId, setSendingClientAccessId] = useState<string | null>(null)
@@ -1309,11 +1310,16 @@ export default function GestionPage() {
 
     const sepaDueRows = sepaSubscriptions
       .map((sub) => {
-        if (!sub.nextSepaDue) return null
-        const dueMs = Date.parse(sub.nextSepaDue)
-        if (!Number.isFinite(dueMs)) return null
+        const dueMs = sub.nextSepaDue ? Date.parse(sub.nextSepaDue) : Number.NaN
+        const hasDue = Number.isFinite(dueMs)
+        const needsAction =
+          hasDue ||
+          sub.status === "failed" ||
+          sub.status === "pending_mandate" ||
+          Boolean(sub.lastError)
+        if (!needsAction) return null
         const estimatedAmount = Math.max(0, sub.primeAnnuelle / 4)
-        const daysUntil = Math.floor((dueMs - now) / DAY_MS)
+        const daysUntil = hasDue ? Math.floor((dueMs - now) / DAY_MS) : 0
         return {
           id: sub.id,
           userId: sub.userId,
@@ -1323,8 +1329,9 @@ export default function GestionPage() {
           lastError: sub.lastError,
           clientLabel: sub.user?.raisonSociale || sub.user?.email || "Client non renseigné",
           daysUntil,
+          hasDue,
           estimatedAmount,
-          date: sub.nextSepaDue,
+          date: hasDue ? sub.nextSepaDue! : sub.updatedAt,
         }
       })
       .filter((row): row is NonNullable<typeof row> => row !== null)
@@ -1476,6 +1483,43 @@ export default function GestionPage() {
         message: e instanceof Error ? e.message : "Erreur lors de l’envoi de l’email",
         type: "error",
       })
+    }
+  }
+
+  const handleRelanceCarteAttestation = async (docId: string) => {
+    setSendingAttestationCarteId(docId)
+    try {
+      const res = await fetch(`/api/gestion/documents/${docId}/relance-carte`, { method: "POST" })
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string
+        emailSent?: boolean
+        warning?: string
+        sentTo?: string
+        checkoutUrl?: string
+      }
+      if (!res.ok && !body.checkoutUrl) {
+        throw new Error(body.error || "Impossible d'ouvrir le paiement carte.")
+      }
+      if (body.emailSent === false) {
+        setToast({
+          message: body.checkoutUrl
+            ? `Email non envoyé. Lien carte : ${body.checkoutUrl}`
+            : body.warning || "Email non envoyé.",
+          type: "warning",
+        })
+        return
+      }
+      setToast({
+        message: `Lien de paiement carte envoyé à ${body.sentTo || "le client"}`,
+        type: "success",
+      })
+    } catch (e) {
+      setToast({
+        message: e instanceof Error ? e.message : "Erreur lors de la relance carte",
+        type: "error",
+      })
+    } finally {
+      setSendingAttestationCarteId(null)
     }
   }
 
@@ -2772,7 +2816,10 @@ export default function GestionPage() {
                         Échéancier SEPA (prochaines échéances)
                       </h4>
                       {comptabiliteV2.recentSepaDueRows.length === 0 ? (
-                        <p className="text-xs text-gray-300">Aucune échéance SEPA à afficher.</p>
+                        <p className="text-xs text-gray-300">
+                          Aucun prélèvement programmé. Le bouton Relancer par carte des impayés est sur chaque
+                          attestation suspendue, plus bas dans la page.
+                        </p>
                       ) : (
                         <div className="space-y-1.5">
                           {comptabiliteV2.recentSepaDueRows.map((row) => (
@@ -2783,7 +2830,11 @@ export default function GestionPage() {
                               <p className="text-xs text-white">{row.clientLabel}</p>
                               <p className="text-[11px] text-gray-300">
                                 {new Date(row.date).toLocaleDateString("fr-FR")} · {row.estimatedAmount.toLocaleString("fr-FR")} € ·{" "}
-                                {row.daysUntil < 0 ? `${Math.abs(row.daysUntil)}j de retard` : `J-${row.daysUntil}`}
+                                {!row.hasDue
+                                  ? "échéance non datée"
+                                  : row.daysUntil < 0
+                                    ? `${Math.abs(row.daysUntil)}j de retard`
+                                    : `J-${row.daysUntil}`}
                               </p>
                               <p className="text-[11px] text-gray-400 mt-0.5">
                                 Mandat Mollie : {row.mollieMandateId || "pas encore créé"} · {row.status}
@@ -3583,8 +3634,27 @@ export default function GestionPage() {
             <p className="font-medium text-red-300">⚠ Impayés décennale</p>
             <p className="text-sm text-red-200 mt-1">
               {data.documents.filter((d) => (d.type === "attestation" || d.type === "attestation_nominative") && d.status === "suspendu").length} attestation(s){" "}
-              <strong>décennale</strong> suspendue(s). Le DO n’est pas concerné (paiement unique avant attestation). Utilisez « Relancer email » pour renvoyer le lien de régularisation.
+              <strong>décennale</strong> suspendue(s). Le bouton vert envoie un lien de paiement carte. « Relancer email » renvoie seulement le message de relance.
             </p>
+            <div className="mt-3 space-y-2">
+              {data.documents
+                .filter((d) => (d.type === "attestation" || d.type === "attestation_nominative") && d.status === "suspendu")
+                .map((d) => (
+                  <div key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-red-950/40 px-3 py-2">
+                    <p className="text-sm text-red-100">
+                      {d.user.raisonSociale || d.user.email} · {d.numero}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={sendingAttestationCarteId === d.id}
+                      onClick={() => handleRelanceCarteAttestation(d.id)}
+                      className="text-sm px-3 py-1.5 rounded bg-emerald-700 text-white hover:bg-emerald-600 disabled:opacity-50"
+                    >
+                      {sendingAttestationCarteId === d.id ? "Envoi..." : "Relancer par carte"}
+                    </button>
+                  </div>
+                ))}
+            </div>
           </div>
         )}
         {data && (data.avenantFees?.length ?? 0) > 0 && (
@@ -3727,6 +3797,15 @@ export default function GestionPage() {
                         )}
                         {(d.type === "attestation" || d.type === "attestation_nominative") && d.status === "suspendu" && (
                           <>
+                            <button
+                              type="button"
+                              disabled={sendingAttestationCarteId === d.id}
+                              onClick={() => handleRelanceCarteAttestation(d.id)}
+                              className="text-emerald-400 hover:text-emerald-300 text-sm min-h-[44px] inline-flex items-center -m-1 px-2 disabled:opacity-50"
+                              title="Envoyer un lien de paiement carte"
+                            >
+                              {sendingAttestationCarteId === d.id ? "Envoi..." : "Relancer par carte"}
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleResendImpayeEmail(d.id)}
