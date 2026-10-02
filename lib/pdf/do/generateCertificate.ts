@@ -9,6 +9,7 @@ import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
 
 /**
  * Attestation DO — projet, adresse, nature construction, QR.
@@ -146,7 +147,29 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
     10,
     13
   )
-  y -= 12
+  y -= 14
+  drawTextPdf(page, "Garanties", {
+    x: PDF_PAGE.marginX,
+    y,
+    size: 11,
+    font: fontBold,
+    color: PDF_COLORS.text,
+  })
+  y -= 14
+  for (const row of [DO_GARANTIES_LEGALES.I1, DO_GARANTIES_LEGALES.I2, DO_GARANTIES_LEGALES.I3]) {
+    y = drawWrappedText(
+      page,
+      `${row.libelle} — ${row.duree}. ${row.description}`,
+      PDF_PAGE.marginX,
+      y,
+      PDF_PAGE.contentWidth,
+      font,
+      8,
+      11
+    )
+    y -= 4
+  }
+  y -= 6
   y = drawWrappedText(
     page,
     "Franchise : aucune (garantie obligatoire dommages-ouvrage).",

@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react"
 import { SITE_URL } from "@/lib/site-url"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 import { COMPANY_BRAND } from "@/lib/legal-branding"
+import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
 
 interface AttestationDoTemplateProps {
   numero: string
@@ -55,7 +56,37 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
         <p className="mb-2 text-sm text-[#171717]">
           La garantie couvre les dommages matériels affectant la solidité du bâtiment pendant la construction et jusqu&apos;à 10 ans après réception.
         </p>
+        <p className="mb-2 text-sm">Franchise : aucune (garantie obligatoire)</p>
         <p>Prime : {data.primeAnnuelle.toLocaleString("fr-FR")} € TTC</p>
+      </div>
+
+      <div className="mb-8">
+        <h3 className="font-bold text-black mb-2 uppercase text-xs">Garanties</h3>
+        <p className="text-xs text-[#171717] mb-3">
+          DOMMAGES – OUVRAGE : garantie obligatoire. Habitation : à hauteur du coût de réparation des dommages. Hors
+          habitation : à hauteur du coût de réparation des dommages dans la limite du coût total de construction déclaré.
+        </p>
+        <p className="text-xs text-[#171717] mb-3">
+          Protection juridique : défense/recours en cas de litige garanti, selon les conditions contractuelles applicables.
+        </p>
+        <table className="w-full border-collapse border border-[#e5e5e5]">
+          <thead>
+            <tr className="bg-[#dbeafe]">
+              <th className="border border-[#e5e5e5] p-2 text-left text-xs">Garantie</th>
+              <th className="border border-[#e5e5e5] p-2 text-left text-xs">Durée</th>
+              <th className="border border-[#e5e5e5] p-2 text-left text-xs">Objet</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(["I1", "I2", "I3"] as const).map((key) => (
+              <tr key={key}>
+                <td className="border border-[#e5e5e5] p-2 text-xs font-medium">{DO_GARANTIES_LEGALES[key].libelle}</td>
+                <td className="border border-[#e5e5e5] p-2 text-xs">{DO_GARANTIES_LEGALES[key].duree}</td>
+                <td className="border border-[#e5e5e5] p-2 text-xs text-[#171717]">{DO_GARANTIES_LEGALES[key].description}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <p className="text-sm text-[#171717] mb-6">

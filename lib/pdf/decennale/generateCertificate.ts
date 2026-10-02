@@ -10,6 +10,7 @@ import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../s
 import { embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
+import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { appendDecennaleActivityDetailsAnnex } from "./activityDetailsAnnex"
 
 /**
@@ -167,7 +168,29 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     10,
     13
   )
-  y -= 18
+  y -= 14
+  drawTextPdf(page, "Garanties, montants et franchise", {
+    x: PDF_PAGE.marginX,
+    y,
+    size: 11,
+    font: fontBold,
+    color: PDF_COLORS.text,
+  })
+  y -= 14
+  for (const row of decennaleGarantieRows({})) {
+    y = drawWrappedText(
+      page,
+      `${row.nom} — plafond ${row.plafond} — franchise ${row.franchise}. ${row.description}`,
+      PDF_PAGE.marginX,
+      y,
+      PDF_PAGE.contentWidth,
+      font,
+      8,
+      11
+    )
+    y -= 4
+  }
+  y -= 10
 
   drawTextPdf(page, "Conditions d'effet", {
     x: PDF_PAGE.marginX,

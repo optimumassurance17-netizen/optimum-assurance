@@ -6,6 +6,7 @@ import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 import { ActivityDetailsBlock } from "@/components/documents/ActivityDetailsBlock"
+import { DecennaleGarantiesTable } from "@/components/documents/DecennaleGarantiesTable"
 import { COMPANY_BRAND } from "@/lib/legal-branding"
 
 interface AttestationTemplateProps {
@@ -21,6 +22,9 @@ interface AttestationTemplateProps {
     primeAnnuelle: number
     dateEffet: string
     dateEcheance: string
+    franchise?: number
+    plafond?: number
+    chiffreAffaires?: number
   }
 }
 
@@ -72,6 +76,15 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
         <p className="mb-2 text-sm text-[#171717]">Renouvelable automatiquement du 01/01 au 31/12 des années suivantes.</p>
         <p>Prime annuelle : {data.primeAnnuelle.toLocaleString("fr-FR")} € TTC</p>
       </div>
+
+      <div className="mb-8">
+        <h3 className="font-bold text-black mb-2 uppercase text-xs">Objet des garanties, montants & franchises</h3>
+        <p className="text-xs text-[#171717] mb-3">
+          Garantie de la responsabilité décennale conformément aux articles L.241-1 et L.241-2 du Code des assurances.
+        </p>
+        <DecennaleGarantiesTable data={data} />
+      </div>
+
       <ActivityDetailsBlock
         activities={activityLines}
         title="Definition et exclusions par activite assuree"

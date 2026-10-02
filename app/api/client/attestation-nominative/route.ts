@@ -6,6 +6,7 @@ import { getNextNumero } from "@/lib/documents"
 import { parseActivitiesJson } from "@/lib/insurance-contract-activities"
 import { prisma } from "@/lib/prisma"
 import { buildOptimizedExclusionSummary, extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
+import { resolveDecennaleFranchisePlafond } from "@/lib/decennale-garanties-affichage"
 
 type CreateNominativeBody = {
   beneficiaireNom?: string
@@ -160,6 +161,7 @@ export async function POST(request: NextRequest) {
           }
         : buildOptimizedExclusionSummary(activites)
 
+    const montants = resolveDecennaleFranchisePlafond(sourceAttestationData ?? {})
     const numero = await getNextNumero("attestation_nominative")
     const dateEffet = toFrDate(
       parseFlexibleDate(sourceAttestationData?.dateEffet) ?? fallbackContract?.validFrom ?? null
@@ -192,6 +194,12 @@ export async function POST(request: NextRequest) {
         typeof sourceAttestationData?.primeAnnuelle === "number"
           ? sourceAttestationData.primeAnnuelle
           : Number(fallbackContract?.premium || 0),
+      chiffreAffaires:
+        typeof sourceAttestationData?.chiffreAffaires === "number"
+          ? sourceAttestationData.chiffreAffaires
+          : undefined,
+      franchise: montants.franchise,
+      plafond: montants.plafond ?? undefined,
       dateEffet,
       dateEcheance,
       attestationNominative: true,

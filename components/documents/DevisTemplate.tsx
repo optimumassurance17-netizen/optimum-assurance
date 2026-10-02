@@ -1,8 +1,6 @@
 "use client"
 
-import {
-  garantiesDecennale,
-} from "@/lib/garanties-data"
+import { DecennaleGarantiesTable } from "@/components/documents/DecennaleGarantiesTable"
 import {
   EXCLUSIONS_LEGALES_COMMUNES,
   DECHANCE_REGLE_ART,
@@ -160,42 +158,7 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
           La présente proposition a pour objet d&apos;offrir la garantie de la responsabilité décennale du souscripteur
           conformément aux articles L.241-1 et L.241-2 du Code des assurances.
         </p>
-        <table className="w-full border-collapse border border-[#e5e5e5]">
-          <thead>
-            <tr className="bg-[#dbeafe]">
-              <th className="border border-[#e5e5e5] p-2 text-left text-xs">Garanties</th>
-              <th className="border border-[#e5e5e5] p-2 text-left text-xs">Description</th>
-              <th className="border border-[#e5e5e5] p-2 text-right text-xs">Plafond</th>
-              <th className="border border-[#e5e5e5] p-2 text-right text-xs">Franchise</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="border border-[#e5e5e5] p-2 text-xs font-medium">{garantiesDecennale[0].nom}</td>
-              <td className="border border-[#e5e5e5] p-2 text-xs text-[#171717]">{garantiesDecennale[0].description}</td>
-              <td className="border border-[#e5e5e5] p-2 text-right font-medium">{data.plafond.toLocaleString("fr-FR")} €</td>
-              <td className="border border-[#e5e5e5] p-2 text-right">{data.franchise.toLocaleString("fr-FR")} €</td>
-            </tr>
-            <tr>
-              <td className="border border-[#e5e5e5] p-2 text-xs font-medium">{garantiesDecennale[1].nom}</td>
-              <td className="border border-[#e5e5e5] p-2 text-xs text-[#171717]">{garantiesDecennale[1].description}</td>
-              <td className="border border-[#e5e5e5] p-2 text-right">{garantiesDecennale[1].plafond}</td>
-              <td className="border border-[#e5e5e5] p-2 text-right">{garantiesDecennale[1].franchise}</td>
-            </tr>
-            <tr>
-              <td className="border border-[#e5e5e5] p-2 text-xs font-medium">{garantiesDecennale[2].nom}</td>
-              <td className="border border-[#e5e5e5] p-2 text-xs text-[#171717]">{garantiesDecennale[2].description}</td>
-              <td className="border border-[#e5e5e5] p-2 text-right">{garantiesDecennale[2].plafond}</td>
-              <td className="border border-[#e5e5e5] p-2 text-right">{garantiesDecennale[2].franchise}</td>
-            </tr>
-            <tr>
-              <td className="border border-[#e5e5e5] p-2 text-xs font-medium">{garantiesDecennale[3].nom}</td>
-              <td className="border border-[#e5e5e5] p-2 text-xs text-[#171717]">{garantiesDecennale[3].description}</td>
-              <td className="border border-[#e5e5e5] p-2 text-right">{garantiesDecennale[3].plafond}</td>
-              <td className="border border-[#e5e5e5] p-2 text-right">{garantiesDecennale[3].franchise}</td>
-            </tr>
-          </tbody>
-        </table>
+        <DecennaleGarantiesTable data={data} />
       </div>
 
       {/* Exclusions */}

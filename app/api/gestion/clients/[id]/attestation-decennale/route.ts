@@ -10,6 +10,7 @@ import { logAdminActivity } from "@/lib/admin-activity"
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { isDecennaleContractData } from "@/lib/decennale-contract-data"
+import { resolveDecennaleFranchisePlafond } from "@/lib/decennale-garanties-affichage"
 import {
   parseActivitiesJson,
   parseExclusionsJson,
@@ -159,6 +160,7 @@ export async function POST(
       asPositiveNumber(contractData.primeAnnuelle) ??
       asPositiveNumber(latestDecennaleContract?.premium) ??
       0
+    const montants = resolveDecennaleFranchisePlafond(contractData)
 
     const payload = {
       raisonSociale:
@@ -184,6 +186,9 @@ export async function POST(
       activityExclusions: exclusionsOptimisees,
       exclusions: exclusionsOptimisees,
       primeAnnuelle,
+      chiffreAffaires: asPositiveNumber(contractData.chiffreAffaires) ?? undefined,
+      franchise: montants.franchise,
+      plafond: montants.plafond ?? undefined,
       dateEffet:
         asCleanString(contractData.dateEffet) ||
         formatDateFr(latestDecennaleContract?.validFrom),

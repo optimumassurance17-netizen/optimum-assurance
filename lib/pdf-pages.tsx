@@ -8,6 +8,54 @@ import { pdfLegalLinksLine } from "@/lib/pdf-legal-links"
 import { pdfTheme, PdfBrandHeader } from "@/lib/pdf/react-pdf-brand"
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
+import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
+import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
+
+function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
+  const rows = decennaleGarantieRows(data)
+  return (
+    <View style={{ marginTop: 10 }}>
+      <Text style={pdfTheme.h3}>Garanties, montants et franchise</Text>
+      <View style={pdfTheme.tableCard}>
+        <View style={[pdfTheme.tableHeader, { flexDirection: "row" }]}>
+          <Text style={[pdfTheme.tableHeaderText, { width: "60%" }]}>Garantie</Text>
+          <Text style={[pdfTheme.tableHeaderText, { width: "22%", textAlign: "right" }]}>Plafond</Text>
+          <Text style={[pdfTheme.tableHeaderText, { width: "18%", textAlign: "right" }]}>Franchise</Text>
+        </View>
+        {rows.map((row, index) => (
+          <View key={row.nom} style={index === rows.length - 1 ? pdfTheme.rowLast : pdfTheme.row}>
+            <View style={{ width: "60%" }}>
+              <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: "#0f172a" }}>{row.nom}</Text>
+              <Text style={{ fontSize: 7, color: "#475569", marginTop: 1 }}>{row.description}</Text>
+            </View>
+            <Text style={{ width: "22%", fontSize: 8, textAlign: "right", color: "#0f172a" }}>{row.plafond}</Text>
+            <Text style={{ width: "18%", fontSize: 8, textAlign: "right", fontFamily: "Helvetica-Bold", color: "#0f172a" }}>
+              {row.franchise}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  )
+}
+
+function DoGarantiesPdf() {
+  const rows = [DO_GARANTIES_LEGALES.I1, DO_GARANTIES_LEGALES.I2, DO_GARANTIES_LEGALES.I3]
+  return (
+    <View style={{ marginTop: 10 }}>
+      <Text style={pdfTheme.h3}>Garanties</Text>
+      <Text style={pdfTheme.p}>Franchise : aucune (garantie obligatoire)</Text>
+      <Text style={pdfTheme.p}>
+        Protection juridique : défense/recours selon les conditions contractuelles applicables.
+      </Text>
+      {rows.map((row) => (
+        <Text key={row.code} style={pdfTheme.p}>
+          {row.libelle} — {row.duree}. {row.description}
+        </Text>
+      ))}
+    </View>
+  )
+}
 
 export function ContratPDFPage({
   numero,
@@ -133,6 +181,7 @@ export function AttestationPDFPage({
           Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}
         </Text>
         <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+        <DecennaleGarantiesPdf data={data} />
         {d.verificationQrDataUri && (
           <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
             {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
@@ -228,6 +277,7 @@ export function AttestationNominativePDFPage({
           Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}
         </Text>
         <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+        <DecennaleGarantiesPdf data={data} />
       </View>
 
       <View style={pdfTheme.section}>
@@ -302,6 +352,7 @@ export function AttestationDoPDFPage({
           Validité : du {d.dateSignature ?? "—"} au {d.dateEcheance ?? "—"} (10 ans, non résiliable)
         </Text>
         <Text style={pdfTheme.p}>Prime : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+        <DoGarantiesPdf />
         {d.verificationQrDataUri && (
           <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
             {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
