@@ -65,6 +65,78 @@ const LOCAL_PROFILES: Record<string, LocalProfile> = {
     riskContext:
       "Les risques liés à l’humidité, aux interfaces entre lots et aux travaux en mitoyenneté nécessitent une description précise des activités assurées.",
   },
+  nice: {
+    label: "Nice et Côte d'Azur",
+    nearby: ["Antibes", "Cannes", "Cagnes-sur-Mer", "Grasse", "Menton"],
+    constructionContext:
+      "Sur la Côte d'Azur, les chantiers se heurtent souvent à des contraintes de terrain en restanques ou forte pente, à l'exposition au sel marin et au vent, ainsi qu'aux rénovations de villas et copropriétés d'architecture belle époque ou contemporaine.",
+    riskContext:
+      "L'accent est mis sur les travaux d'étanchéité de toiture-terrasse, de cuvelage, de maçonnerie de soutènement et de menuiseries extérieures résistantes aux intempéries marines.",
+  },
+  nantes: {
+    label: "Nantes et Loire-Atlantique",
+    nearby: ["Saint-Herblain", "Rezé", "Orvault", "Vertou", "Carquefou"],
+    constructionContext:
+      "Dans l'agglomération nantaise, le dynamisme démographique génère de nombreux chantiers neufs en écoquartiers ainsi que des réhabilitations d'immeubles de centre-ville et de maisons individuelles.",
+    riskContext:
+      "Les sols humides du bassin de la Loire et les exigences de performance thermique imposent une rigueur particulière sur le terrassement, le drainage, l'isolation et la pose des réseaux.",
+  },
+  montpellier: {
+    label: "Montpellier et Hérault",
+    nearby: ["Castelnau-le-Lez", "Lattes", "Mauguio", "Saint-Jean-de-Védas", "Juvignac"],
+    constructionContext:
+      "À Montpellier, l'urbanisation rapide entraîne d'importants programmes neufs, des extensions pavillonnaires et des chantiers soumis à de fortes chaleurs estivales et à des épisodes cévenols violents.",
+    riskContext:
+      "La gestion des eaux pluviales, la protection des façades contre les chocs thermiques et l'étanchéité des toitures constituent des points de vigilance décennale capitaux.",
+  },
+  strasbourg: {
+    label: "Strasbourg et Eurométropole",
+    nearby: ["Schiltigheim", "Illkirch-Graffenstaden", "Lingolsheim", "Bischheim", "Ostwald"],
+    constructionContext:
+      "À Strasbourg, les artisans interviennent sur un bâti traditionnel alsacien (colombages, tuiles plates) aussi bien que sur des immeubles contemporains et des opérations de rénovation énergétique globale.",
+    riskContext:
+      "Le climat continental aux hivers rigoureux et la présence d'une nappe phréatique affleurante nécessitent un soin strict sur l'isolation thermique extérieure, la couverture et l'étanchéité des sous-sols.",
+  },
+  rennes: {
+    label: "Rennes et Ille-et-Vilaine",
+    nearby: ["Cesson-Sévigné", "Saint-Jacques-de-la-Lande", "Betton", "Chantepie", "Pacé"],
+    constructionContext:
+      "Dans le bassin rennais, la forte construction neuve côtoie la réhabilitation de maisons en schiste ou en pans de bois et la densification urbaine près des axes de transport.",
+    riskContext:
+      "Les interfaces de second œuvre, la charpente, la couverture ardoise et la conformité des installations électriques et thermiques sont fréquemment vérifiées par les maîtres d'ouvrage.",
+  },
+  reims: {
+    label: "Reims et Grand Est",
+    nearby: ["Tinqueux", "Bétheny", "Cormontreuil", "Saint-Brice-Courcelles", "Épernay"],
+    constructionContext:
+      "Dans le secteur rémois, les chantiers concernent la réfection d'immeubles Art déco et en pierre calcaire, les extensions de pavillons et la construction de hangars ou bâtiments tertiaires et viticoles.",
+    riskContext:
+      "La sensibilité des sols crayeux à l'humidité et les amplitudes thermiques saisonnières imposent des garanties solides en fondations, maçonnerie, ravalement et toiture.",
+  },
+  "saint-etienne": {
+    label: "Saint-Étienne et Loire",
+    nearby: ["Saint-Chamond", "Firminy", "Rive-de-Gier", "Le Chambon-Feugerolles", "Roche-la-Molière"],
+    constructionContext:
+      "Dans le bassin stéphanois, la reconversion urbaine et la topographie vallonnée imposent des chantiers techniques de rénovation thermique, d'accès escarpés et de reprise d'immeubles anciens.",
+    riskContext:
+      "L'historique des terrains et la rigueur hivernale du relief exigent un contrôle rigoureux des fondations, de la stabilité des maçonneries et de l'isolation de toiture.",
+  },
+  "le-havre": {
+    label: "Le Havre et estuaire de la Seine",
+    nearby: ["Montivilliers", "Gonfreville-l'Orcher", "Harfleur", "Sainte-Adresse", "Octeville-sur-Mer"],
+    constructionContext:
+      "Au Havre, la reconstruction en béton armé Perret classée à l'UNESCO et le climat maritime de la Manche structurent les chantiers de rénovation, de ravalement et d'aménagement.",
+    riskContext:
+      "L'exposition aux embruns, aux fortes pluies battantes et au vent marin rend critiques les garanties sur les enduits d'imperméabilité de façade, les menuiseries et l'étanchéité.",
+  },
+  grenoble: {
+    label: "Grenoble et vallée alpine",
+    nearby: ["Échirolles", "Saint-Martin-d'Hères", "Fontaine", "Meylan", "Voiron"],
+    constructionContext:
+      "Dans l'agglomération grenobloise, la cuvette alpine impose des exigences parasismiques accrues et de fortes variations de température entre été caniculaire et hiver alpin.",
+    riskContext:
+      "Les normes parasismiques sur les structures, l'isolation thermique performante et l'étanchéité des toitures plates ou en pente constituent les critères essentiels pour les assureurs et les maîtres d'ouvrage.",
+  },
 }
 
 function getLocalProfile(villeSlug: string): LocalProfile {

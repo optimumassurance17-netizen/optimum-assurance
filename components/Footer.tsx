@@ -32,6 +32,53 @@ export function Footer() {
             </a>
           </div>
         </div>
+        <div className="mb-8 border-b border-slate-200/80 pb-6">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+            Métiers décennale les plus demandés
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+            <Link href="/assurance-decennale/plombier" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Plombier
+            </Link>
+            <Link href="/assurance-decennale/electricien" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Électricien
+            </Link>
+            <Link href="/assurance-decennale/macon" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Maçon
+            </Link>
+            <Link href="/assurance-decennale/peintre" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Peintre
+            </Link>
+            <Link href="/assurance-decennale/couvreur" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Couvreur
+            </Link>
+            <Link href="/assurance-decennale/menuisier" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Menuisier
+            </Link>
+            <Link href="/assurance-decennale/charpentier" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Charpentier
+            </Link>
+            <Link href="/assurance-decennale/carreleur" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Carreleur
+            </Link>
+            <Link href="/assurance-decennale/etancheite" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Étanchéité
+            </Link>
+            <Link href="/assurance-decennale/terrassement" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Terrassement
+            </Link>
+            <Link href="/assurance-decennale/maitre-d-oeuvre" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Maître d&apos;œuvre
+            </Link>
+            <Link href="/assurance-decennale/architecte" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Architecte
+            </Link>
+            <Link href="/assurance-decennale" className="text-blue-600 font-medium hover:underline">
+              Tous les métiers →
+            </Link>
+          </div>
+        </div>
+
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <nav className="flex flex-wrap justify-center gap-4 sm:gap-6 text-sm">
             <Link href="/devis" className="flex min-h-[44px] items-center py-2 text-slate-700 transition-colors hover:text-blue-600">
