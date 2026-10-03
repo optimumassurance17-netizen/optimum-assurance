@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
 
 const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
-  title: "Demande d'étude décennale | Optimum Assurance",
+  title: absoluteBrandTitle("Demande d'étude décennale"),
   description: truncateForDescription(
     "Demande d'étude personnalisée pour dossier décennale avec sinistralité, activité complexe ou analyse manuelle. Réponse par notre équipe sous 24 h ouvrées.",
     158

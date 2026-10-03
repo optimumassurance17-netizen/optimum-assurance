@@ -3,13 +3,14 @@ import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { ComparisonTable } from "@/components/ComparisonTable"
 import { JsonLd } from "@/components/JsonLd"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 import { seoBreadcrumbListNode, seoJsonLdGraph, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
 
 const baseUrl = SITE_URL
 
 export const metadata = {
-  title: "Documents pour assurance décennale : liste et conseils | Optimum Assurance",
+  title: absoluteBrandTitle("Documents pour assurance décennale : liste et conseils"),
   description:
     "Liste des documents à préparer pour souscrire une assurance décennale : SIRET, KBIS, pièce d’identité, justificatifs, sinistralité et reprise du passé.",
   alternates: { canonical: `${baseUrl}/documents-assurance-decennale` },

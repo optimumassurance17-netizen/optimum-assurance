@@ -2,13 +2,14 @@ import Link from "next/link"
 import { Header } from "@/components/Header"
 import { JsonLd } from "@/components/JsonLd"
 import { COMPANY_BRAND, INSURER_NAME, ORIAS_NUMBER } from "@/lib/legal-branding"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 import { seoBreadcrumbListNode, seoJsonLdGraph, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
 
 const baseUrl = SITE_URL
 
 export const metadata = {
-  title: "À propos d'Optimum Assurance | Courtier assurance construction",
+  title: absoluteBrandTitle("À propos | Courtier assurance construction"),
   description:
     "Optimum Assurance accompagne les professionnels du BTP et maîtres d'ouvrage : décennale, dommage ouvrage, RC fabricant, signature électronique et espace client.",
   alternates: { canonical: `${baseUrl}/a-propos` },

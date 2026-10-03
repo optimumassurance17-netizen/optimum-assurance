@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 
 const baseUrl = SITE_URL
@@ -8,7 +9,7 @@ export default function CGDOLayout({ children }: { children: React.ReactNode }) 
 }
 
 export const metadata: Metadata = {
-  title: "Conditions générales dommage ouvrage | Optimum Assurance",
+  title: absoluteBrandTitle("Conditions générales dommage ouvrage"),
   description:
     "Conditions générales du contrat d'assurance dommages-ouvrage distribué par Optimum Courtage (Accelerant Insurance). Document contractuel de référence avec le devis.",
   alternates: { canonical: `${baseUrl}/conditions-generales-dommage-ouvrage` },

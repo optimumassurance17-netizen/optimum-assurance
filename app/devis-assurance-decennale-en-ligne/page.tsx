@@ -10,6 +10,7 @@ import {
   seoJsonLdGraph,
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
 
@@ -50,7 +51,7 @@ const pageJsonLd = seoJsonLdGraph([
 ])
 
 export const metadata: Metadata = {
-  title: "Devis assurance décennale en ligne | Sans engagement | Optimum Assurance",
+  title: absoluteBrandTitle("Devis assurance décennale en ligne | Sans engagement"),
   description: truncateForDescription(
     `Obtenez un devis assurance décennale en ligne pour artisans et entreprises du BTP. Tarif immédiat pour profils éligibles, sans engagement. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
     158

@@ -5,13 +5,14 @@ import { Breadcrumb } from "@/components/Breadcrumb"
 import { DevisDommageOuvrageClientGate } from "@/components/DevisDommageOuvrageClientGate"
 import { FormulaireDevisDommageOuvrage } from "@/components/FormulaireDevisDommageOuvrage"
 import { seoBreadcrumbListNode, seoJsonLdGraph, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
 
 const baseUrl = SITE_URL
 
 export const metadata = {
-  title: "Devis dommage ouvrage en ligne | Réponse sous 24 h | Optimum Assurance",
+  title: absoluteBrandTitle("Devis dommage ouvrage en ligne | Réponse sous 24 h"),
   description: truncateForDescription(
     "Devis assurance dommage ouvrage pour particuliers, constructeurs et promoteurs : auto-construction acceptée, garantie clos et couvert possible, étude personnalisée sous 24 h.",
     158

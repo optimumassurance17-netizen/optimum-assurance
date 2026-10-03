@@ -5,11 +5,12 @@ import { Breadcrumb } from "@/components/Breadcrumb"
 import { Header } from "@/components/Header"
 import { ASSURANCE_TITRE_REFERENCE_REPORT } from "@/lib/assurance-titre-reference-report"
 import { seoBaseUrl } from "@/lib/seo-jsonld-helpers"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 
 const canonical = `${seoBaseUrl}/assurance-titre/referentiel-couverture`
 
 export const metadata: Metadata = {
-  title: "Référentiel Assurance titre : garanties, exclusions et normes ALTA | Optimum Assurance",
+  title: absoluteBrandTitle("Référentiel Assurance titre : garanties, exclusions et normes ALTA"),
   description:
     "Rapport détaillé sur l'assurance titre : police propriétaire, police prêteur, garanties de couverture, exclusions standard, exceptions Schedule B, enhanced policies et meilleures pratiques.",
   alternates: { canonical },

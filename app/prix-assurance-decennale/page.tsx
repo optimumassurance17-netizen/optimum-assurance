@@ -8,13 +8,14 @@ import {
   LEGENDE_PAIEMENT_TRIMESTRIEL,
   PRIME_MIN_ANNUELLE,
 } from "@/lib/decennale-affichage-tarif"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 import { seoBreadcrumbListNode, seoJsonLdGraph, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
 
 const baseUrl = SITE_URL
 
 export const metadata = {
-  title: "Prix assurance décennale : tarifs, calcul et exemples | Optimum Assurance",
+  title: absoluteBrandTitle("Prix assurance décennale : tarifs, calcul et exemples"),
   description:
     "Comprendre le prix d’une assurance décennale : critères de calcul, prime minimale, paiement trimestriel, exemples BTP et devis en ligne.",
   alternates: { canonical: `${baseUrl}/prix-assurance-decennale` },

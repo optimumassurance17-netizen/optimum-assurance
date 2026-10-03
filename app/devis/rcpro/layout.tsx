@@ -1,10 +1,11 @@
 import type { Metadata } from "next"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 
 const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
-  title: "Devis RC Pro hors bâtiment | Simulation en ligne | Optimum Assurance",
+  title: absoluteBrandTitle("Devis RC Pro hors bâtiment | Simulation en ligne"),
   description:
     "Simulation RC Pro hors bâtiment : obtenez un tarif indicatif en ligne pour votre activité professionnelle hors construction.",
   alternates: {

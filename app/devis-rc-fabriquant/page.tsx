@@ -3,13 +3,14 @@ import Link from "next/link"
 import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { FormulaireRcFabriquant } from "@/components/FormulaireRcFabriquant"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
 
 const canonical = `${SITE_URL}/devis-rc-fabriquant`
 
 export const metadata: Metadata = {
-  title: "Devis RC Fabriquant | Étude sous 24 à 48 h | Optimum Assurance",
+  title: absoluteBrandTitle("Devis RC Fabriquant | Étude sous 24 à 48 h"),
   description: truncateForDescription(
     "Devis RC Fabriquant pour fabricants, industriels et distributeurs : demande en ligne, analyse du risque et retour sous 24 à 48 h ouvrées.",
     158

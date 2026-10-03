@@ -1,13 +1,14 @@
 import Link from "next/link"
 import { JsonLd } from "@/components/JsonLd"
 import { Header } from "@/components/Header"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { seoJsonLdGraph, seoOrgId } from "@/lib/seo-jsonld-helpers"
 import { SITE_URL } from "@/lib/site-url"
 
 const baseUrl = SITE_URL
 
 export const metadata = {
-  title: "Avis clients Optimum Assurance | Décennale BTP & dommage ouvrage",
+  title: absoluteBrandTitle("Avis clients | Décennale BTP et dommage ouvrage"),
   description:
     "Découvrez les avis clients Optimum Assurance sur la décennale BTP et le dommage ouvrage : attestation rapide, parcours simple, tarifs compétitifs et accompagnement réactif.",
   keywords: ["avis assurance décennale", "témoignages décennale", "Optimum Assurance avis"],

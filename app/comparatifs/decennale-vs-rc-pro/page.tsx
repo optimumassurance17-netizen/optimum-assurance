@@ -3,13 +3,14 @@ import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
 import { ComparisonTable } from "@/components/ComparisonTable"
 import { JsonLd } from "@/components/JsonLd"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 import { seoBreadcrumbListNode, seoJsonLdGraph, seoWebPageNode } from "@/lib/seo-jsonld-helpers"
 
 const baseUrl = SITE_URL
 
 export const metadata = {
-  title: "Décennale ou RC Pro : quelles différences ? | Optimum Assurance",
+  title: absoluteBrandTitle("Décennale ou RC Pro : quelles différences ?"),
   description:
     "Comparatif clair entre assurance décennale et RC Pro : obligation, durée, risques couverts, attestation, prix et cas d’usage pour les professionnels du BTP.",
   alternates: { canonical: `${baseUrl}/comparatifs/decennale-vs-rc-pro` },

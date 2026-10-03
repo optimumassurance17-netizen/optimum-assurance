@@ -12,6 +12,7 @@ import {
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 
 const canonical = `${seoBaseUrl}/assurance-titre`
 const pageDescription = truncateForDescription(
@@ -32,7 +33,7 @@ const assuranceTitreJsonLd = seoJsonLdGraph([
 ])
 
 export const metadata: Metadata = {
-  title: "Assurance titre immobilière | Étude sur dossier | Optimum Assurance",
+  title: absoluteBrandTitle("Assurance titre immobilière | Étude sur dossier"),
   description: pageDescription,
   alternates: { canonical },
   openGraph: {

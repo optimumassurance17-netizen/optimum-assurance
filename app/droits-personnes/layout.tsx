@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 import { truncateForDescription } from "@/lib/seo-metadata-utils"
 
 const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
-  title: "Droits RGPD et données personnelles | Optimum Assurance",
+  title: absoluteBrandTitle("Droits RGPD et données personnelles"),
   description: truncateForDescription(
     "Vos droits RGPD chez Optimum Assurance : accès, rectification, effacement, limitation, portabilité et réclamation CNIL. Procédure pour exercer vos droits.",
     158

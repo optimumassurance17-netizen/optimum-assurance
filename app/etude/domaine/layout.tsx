@@ -1,10 +1,11 @@
 import type { Metadata } from "next"
+import { absoluteBrandTitle } from "@/lib/seo-title"
 import { SITE_URL } from "@/lib/site-url"
 
 const baseUrl = SITE_URL
 
 export const metadata: Metadata = {
-  title: "Activité non listée — demande d'étude | Optimum Assurance",
+  title: absoluteBrandTitle("Activité non listée — demande d'étude"),
   description:
     "Votre domaine d'activité BTP n'apparaît pas dans notre liste ? Décrivez votre métier : notre équipe étudie votre dossier et vous recontacte sous 24 h.",
   alternates: { canonical: `${baseUrl}/etude/domaine` },
