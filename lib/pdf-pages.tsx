@@ -366,8 +366,18 @@ export function AttestationDoPDFPage({
         )}
         <Text style={pdfTheme.p}>Type de garantie : {typeGarantie}</Text>
         <Text style={pdfTheme.p}>
-          Validité : du {d.dateSignature ?? "—"} au {d.dateEcheance ?? "—"} (10 ans, non résiliable)
+          Validité : du {d.dateSignature ?? "—"} au {d.dateEcheance ?? "—"}. La garantie obligatoire court dix ans à
+          compter de la réception et n&apos;est pas résiliable.
         </Text>
+        <Text style={pdfTheme.p}>
+          Habitation : coût de réparation des dommages. Hors habitation : dans la limite du coût total de construction
+          déclaré. Franchise : aucune sur la garantie obligatoire.
+        </Text>
+        {d.closCouvert ? (
+          <Text style={pdfTheme.p}>
+            Garantie limitée au clos et couvert. Cette limitation est indiquée aux acquéreurs et figure sur les actes.
+          </Text>
+        ) : null}
         <Text style={pdfTheme.p}>Prime : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         <DoGarantiesPdf />
         <CpLines lines={DO_CP_CADRE} />
@@ -509,7 +519,9 @@ export function FactureDoPDFPage({
         </View>
       </View>
       <Text style={[pdfTheme.p, { marginTop: 10, fontSize: 8, color: "#64748b" }]}>
-        Les garanties et l&apos;absence de franchise sur la garantie obligatoire sont celles des conditions particulières.
+        Seule la garantie obligatoire est acquise, sauf mention contraire aux conditions particulières. Franchise :
+        aucune sur cette garantie. Habitation : coût de réparation. Hors habitation : dans la limite du coût total de
+        construction déclaré.
       </Text>
       <Text style={[pdfTheme.legalText, { marginTop: 16 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>

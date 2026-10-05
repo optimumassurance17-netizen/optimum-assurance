@@ -52,12 +52,18 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
           <strong>Type de garantie :</strong> {typeGarantie}
         </p>
         <p className="mb-2">
-          <strong>Validité :</strong> unique de 10 ans à partir de la signature — du{" "}
-          <strong>{data.dateSignature}</strong> au <strong>{data.dateEcheance}</strong>. Non résiliable.
+          <strong>Validité :</strong> du <strong>{data.dateSignature}</strong> au <strong>{data.dateEcheance}</strong>.
+          La garantie obligatoire court dix ans à compter de la réception et n&apos;est pas résiliable.
         </p>
         <p className="mb-2 text-sm text-[#171717]">
-          La garantie couvre les dommages matériels affectant la solidité du bâtiment pendant la construction et jusqu&apos;à 10 ans après réception.
+          Habitation : indemnisation à hauteur du coût de réparation des dommages. Hors habitation : à hauteur du coût
+          de réparation, dans la limite du coût total de construction déclaré.
         </p>
+        {data.closCouvert && (
+          <p className="mb-2 text-sm text-[#171717]">
+            Garantie limitée au clos et couvert. Cette limitation est indiquée aux acquéreurs et figure sur les actes.
+          </p>
+        )}
         <p className="mb-2 text-sm">Franchise : aucune (garantie obligatoire)</p>
         <p>Prime : {data.primeAnnuelle.toLocaleString("fr-FR")} € TTC</p>
       </div>

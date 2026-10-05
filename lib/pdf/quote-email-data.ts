@@ -4,6 +4,7 @@ import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
 import type { InsuranceData } from "@/lib/pdf/types"
 import { PdfValidationError } from "@/lib/pdf/errors"
 import { buildOptimizedExclusionSummary } from "@/lib/optimized-exclusions"
+import { buildDoOperationLines } from "@/lib/do-operation-lines"
 
 function isoAddYears(iso: string, years: number): string {
   const d = new Date(iso)
@@ -108,6 +109,7 @@ export function insuranceDataFromDoQuestionnaire(
     projectName,
     projectAddress,
     constructionNature: typeLabel,
+    activities: buildDoOperationLines(data, coutTotal),
     premium: tarif.primeAnnuelle,
     createdAt: createdAtIso,
     startDate: start,

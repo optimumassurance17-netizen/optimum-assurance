@@ -22,6 +22,18 @@ function asPositiveNumber(value: unknown): number | null {
   return null
 }
 
+function uniqueDoLines(lines: Array<string | undefined>): string[] {
+  const seen = new Set<string>()
+  const unique: string[] = []
+  for (const line of lines) {
+    const normalized = line?.trim()
+    if (!normalized || seen.has(normalized)) continue
+    seen.add(normalized)
+    unique.push(normalized)
+  }
+  return unique
+}
+
 function asOptionalNonNegativeNumber(value: unknown): number | undefined {
   if (value == null || value === "") return undefined
   if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value
@@ -56,6 +68,14 @@ export async function POST(request: NextRequest) {
     const projectAddress = asTrimmedString(raw.adresseOperation)
     const constructionNature = asTrimmedString(raw.typeConstruction)
     const destination = asTrimmedString(raw.destination)
+    const telephone = asTrimmedString(raw.telephone)
+    const fraisGestion = asOptionalNonNegativeNumber(raw.fraisGestion)
+    const fraisCourtage = asOptionalNonNegativeNumber(raw.fraisCourtage)
+    const operationLines = Array.isArray(raw.operationLines)
+      ? raw.operationLines
+          .filter((line): line is string => typeof line === "string" && line.trim().length > 0)
+          .map((line) => line.trim())
+      : []
     const closCouvertRaw = raw.closCouvert
     const closCouvert =
       closCouvertRaw === true || closCouvertRaw === "oui"
@@ -88,12 +108,18 @@ export async function POST(request: NextRequest) {
     const clientAddress =
       [user.adresse, user.codePostal, user.ville].filter(Boolean).join(" ").trim() || projectAddress
     const projectName = constructionNature || "Projet dommage ouvrage"
-    const activities = [
+    const activities = uniqueDoLines([
       constructionNature,
       destination ? `Destination : ${destination}` : undefined,
       closCouvert != null ? (closCouvert ? "Garantie clos et couvert" : "Dommage ouvrage complète") : undefined,
-      coutConstruction != null ? `Coût construction : ${coutConstruction.toLocaleString("fr-FR")} €` : undefined,
-    ].filter((value): value is string => Boolean(value?.trim()))
+      coutConstruction != null ? `Coût construction : ${coutConstruction.toLocaleString("fr-FR")} EUR` : undefined,
+      telephone ? `Téléphone : ${telephone}` : undefined,
+      fraisGestion != null && fraisGestion > 0 ? `Frais de gestion : ${fraisGestion.toLocaleString("fr-FR")} EUR` : undefined,
+      fraisCourtage != null && fraisCourtage > 0
+        ? `Frais de courtage : ${fraisCourtage.toLocaleString("fr-FR")} EUR`
+        : undefined,
+      ...operationLines,
+    ])
 
     const { contract, risk } = await createInsuranceContract({
       productType: "do",

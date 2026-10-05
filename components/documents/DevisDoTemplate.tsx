@@ -14,7 +14,16 @@ import { COMPANY_BRAND, INSURER_NAME, LEGAL_ORIAS_LINE } from "@/lib/legal-brand
 import { DEVOIR_CONSEIL_TEXTE_BY_PRODUCT } from "@/lib/devoir-conseil"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
-import { DO_CP_CADRE } from "@/lib/conditions-particulieres"
+import {
+  DO_COUT_MAX_PROPOSITION_LABEL,
+  DO_CP_CADRE,
+  DO_GARANTIE_OBLIGATOIRE_LIGNE,
+  DO_GARANTIES_NON_SOUSCRITES,
+  DO_MISSIONS_OBLIGATOIRES,
+  DO_PIECES_APRES_RECEPTION,
+  DO_PIECES_AVANT_CHANTIER,
+  DO_QUOTE_VALIDITY_DAYS,
+} from "@/lib/conditions-particulieres"
 
 /**
  * Template de proposition d'assurance dommage ouvrage.
@@ -38,6 +47,7 @@ interface DevisDoTemplateProps {
     closCouvert?: boolean
     fraisGestion?: number
     fraisCourtage?: number
+    caracteristiques?: string[]
   }
 }
 
@@ -63,7 +73,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
       <div className="mb-6">
         <h1 className="text-xl font-bold text-[#2563eb]">PROPOSITION D&apos;ASSURANCE</h1>
         <p className="font-medium text-black mt-2">
-          Proposition n° {numero} — valable 90 jours à partir du {dateCreation}
+          Proposition n° {numero} — valable {DO_QUOTE_VALIDITY_DAYS} jours à partir du {dateCreation}
         </p>
         <p className="text-xs text-[#171717] mt-1 uppercase">Assurance dommages - ouvrage</p>
         <p className="text-xs text-[#171717] mt-0.5">
@@ -78,8 +88,9 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
           édictée aux articles L.242-1 et L.242-2 du Code des assurances exclusivement pour l&apos;ouvrage désigné ci-dessous.
         </p>
         <p className="mt-2">
-          La garantie est conditionnée cumulativement : à la remise du questionnaire d&apos;étude complet, au retour des
-          Conditions particulières signées ainsi qu&apos;à l&apos;encaissement effectif de la prime.
+          Seule l&apos;assurance obligatoire est proposée, sauf mention contraire. La garantie est conditionnée
+          cumulativement : à la remise du questionnaire d&apos;étude complet, au retour des conditions particulières
+          signées ainsi qu&apos;à l&apos;encaissement effectif de la prime. Ce document n&apos;a aucune valeur contractuelle.
         </p>
       </div>
 
@@ -87,7 +98,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
       <div className="mb-6">
         <h3 className="font-bold text-black mb-2 uppercase text-xs">Conditions de la proposition</h3>
         <ul className="list-disc list-inside text-xs text-[#171717] space-y-1">
-          <li>Le coût total de la construction ne dépasse pas 1 000 000 € TTC (honoraires et existants inclus)</li>
+          <li>Le coût total de la construction ne dépasse pas {DO_COUT_MAX_PROPOSITION_LABEL}</li>
           <li>La souscription du contrat se réalise avant la réception de l&apos;ouvrage</li>
         </ul>
       </div>
@@ -151,6 +162,11 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
                   <td className="border border-[#e5e5e5] p-2">{data.tranche}</td>
                 </tr>
               )}
+              {data.caracteristiques?.map((line) => (
+                <tr key={line}>
+                  <td className="border border-[#e5e5e5] p-2 text-[#171717]" colSpan={2}>{line}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -189,10 +205,12 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
       {/* Garanties proposées */}
       <div className="mb-6">
         <h3 className="font-bold text-black mb-2 uppercase text-xs">Garanties proposées</h3>
-        <p className="text-xs text-[#171717] mb-3">
-          DOMMAGES – OUVRAGE : Garantie obligatoire DO — Habitation : à hauteur du coût de réparation des dommages.
-          Hors habitation : à hauteur du coût de réparation des dommages dans la limite du coût total de construction déclaré.
-        </p>
+        <p className="text-xs text-[#171717] mb-3">{DO_GARANTIE_OBLIGATOIRE_LIGNE}</p>
+        <ul className="list-disc list-inside text-xs text-[#171717] space-y-1 mb-3">
+          {DO_GARANTIES_NON_SOUSCRITES.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
         <p className="text-xs text-[#171717] mb-3">
           Protection juridique : défense/recours en cas de litige garanti, selon les conditions contractuelles applicables.
         </p>
@@ -235,6 +253,31 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
         <p className="text-xs text-[#171717] italic">{ELEMENTS_DISSOCIABLES_NOTE}</p>
       </div>
 
+      <div className="mb-6">
+        <h3 className="font-bold text-black mb-2 uppercase text-xs">Missions exigées</h3>
+        <ul className="list-disc list-inside text-xs text-[#171717] space-y-1">
+          {DO_MISSIONS_OBLIGATOIRES.map((mission) => (
+            <li key={mission}>{mission}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mb-6">
+        <h3 className="font-bold text-black mb-2 uppercase text-xs">Pièces du dossier</h3>
+        <p className="text-xs font-medium text-black mb-1">Avant l&apos;ouverture du chantier</p>
+        <ul className="list-disc list-inside text-xs text-[#171717] space-y-1 mb-3">
+          {DO_PIECES_AVANT_CHANTIER.map((piece) => (
+            <li key={piece}>{piece}</li>
+          ))}
+        </ul>
+        <p className="text-xs font-medium text-black mb-1">Dans le mois suivant l&apos;achèvement</p>
+        <ul className="list-disc list-inside text-xs text-[#171717] space-y-1">
+          {DO_PIECES_APRES_RECEPTION.map((piece) => (
+            <li key={piece}>{piece}</li>
+          ))}
+        </ul>
+      </div>
+
       {/* Ajustement prime */}
       <div className="mb-6 text-xs text-[#171717]">
         <p>
@@ -271,8 +314,8 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
       {/* Territorialité */}
       <div className="mb-6 text-xs text-[#171717]">
         <p>
-          L&apos;assurance s&apos;applique aux dommages concernant des opérations de construction situées en France
-          métropolitaine, Guadeloupe, Martinique, la Guyane et la Réunion.
+          L&apos;assurance s&apos;applique aux opérations situées en France métropolitaine, en Corse, en Guadeloupe, en
+          Martinique, en Guyane et à La Réunion.
         </p>
       </div>
 
@@ -297,9 +340,10 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
       <div className="mb-6 text-xs text-[#171717]">
         <h3 className="font-bold text-black mb-2 uppercase">Déclarations du souscripteur</h3>
         <p className="mb-2">
-          Pour l&apos;établissement de cette proposition, vous reconnaissez agir en qualité de Maître d&apos;ouvrage et que les
-          déclarations faites sont conformes à la réalité. Ces éléments sont essentiels et déterminants du consentement
-          de l&apos;Assureur.
+          Pour l&apos;établissement de cette proposition, vous reconnaissez agir en qualité de maître d&apos;ouvrage, que
+          chaque intervenant justifie d&apos;une assurance de responsabilité civile décennale, et que les déclarations
+          faites sont conformes à la réalité. Ces éléments sont essentiels et déterminants du consentement de
+          l&apos;assureur. Toute omission ou inexactitude relève des articles L.113-8 et L.113-9 du Code des assurances.
         </p>
         <p>
           Le candidat déclare avoir reçu et pris connaissance des{" "}
@@ -341,8 +385,8 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
       <div className="border-t border-[#e5e5e5] pt-4 text-xs text-[#171717]">
         <h3 className="font-bold text-black mb-2 uppercase">Conditions de validité</h3>
         <p className="mb-2">
-          Cette proposition est valable 90 jours. Si cette offre vous satisfait, merci de nous la retourner datée et signée
-          avec la mention « BON POUR ACCORD », accompagnée du règlement à l&apos;ordre de OPTIMUM COURTAGE.
+          Cette proposition est valable {DO_QUOTE_VALIDITY_DAYS} jours. Si cette offre vous satisfait, merci de nous la
+          retourner datée, paraphée et signée avec la mention « BON POUR ACCORD », accompagnée du règlement.
         </p>
         <p>
           Dès réception du règlement et des pièces constituant le dossier de base, nous vous adresserons la (les) note(s)
@@ -361,6 +405,10 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
             Conditions d&apos;émission et de validité des attestations
           </a>
         </p>
+        <div className="mt-4 border border-[#e5e5e5] rounded-lg p-3">
+          <p className="font-medium text-black">Mention manuscrite : « BON POUR ACCORD »</p>
+          <p className="mt-2">Date et signature du souscripteur</p>
+        </div>
       </div>
       <p className="text-[10px] text-[#333333] mt-4 leading-tight">
         En application du 2° de l&apos;article 261 C du CGI, sont exonérées de la taxe sur la valeur ajoutée (TVA) les opérations d&apos;assurance, de réassurance ainsi que les prestations de services afférentes à ces opérations effectuées par les courtiers et intermédiaires d&apos;assurance.

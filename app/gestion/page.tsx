@@ -35,6 +35,8 @@ import { InsuranceContractsGestionBlock } from "@/components/gestion/InsuranceCo
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { extractClientIdentityFromRecord } from "@/lib/client-identity-extract"
+import { buildDoOperationLines } from "@/lib/do-operation-lines"
+import type { DevisDommageOuvrageData } from "@/lib/dommage-ouvrage-types"
 import {
   RC_FABRIQUANT_LEAD_STATUT_LABELS,
   RC_FABRIQUANT_LEAD_STATUT_VALUES,
@@ -504,6 +506,7 @@ export default function GestionPage() {
     closCouvert: "",
     fraisGestion: "",
     fraisCourtage: "",
+    operationLines: [] as string[],
   })
   const [avenantSubmitting, setAvenantSubmitting] = useState(false)
   const [devisDoSubmitting, setDevisDoSubmitting] = useState(false)
@@ -1662,6 +1665,7 @@ export default function GestionPage() {
           closCouvert: devisDoForm.closCouvert || undefined,
           fraisGestion: Number(devisDoForm.fraisGestion) || undefined,
           fraisCourtage: Number(devisDoForm.fraisCourtage) || undefined,
+          operationLines: devisDoForm.operationLines,
         }),
       })
       const result = await readResponseJson<{
@@ -1674,7 +1678,7 @@ export default function GestionPage() {
         message: `Contrat DO ${result.contract?.contractNumber ?? ""} créé (${result.contract?.status ?? "statut inconnu"}). Devis + CP disponibles dans l’espace client.${result.emailSent === false ? " Email client non envoyé." : ""}`,
         type: "success",
       })
-      setDevisDoForm({ leadId: "", userId: "", primeAnnuelle: "", coutConstruction: "", telephone: "", adresseOperation: "", typeConstruction: "", destination: "", closCouvert: "", fraisGestion: "", fraisCourtage: "" })
+      setDevisDoForm({ leadId: "", userId: "", primeAnnuelle: "", coutConstruction: "", telephone: "", adresseOperation: "", typeConstruction: "", destination: "", closCouvert: "", fraisGestion: "", fraisCourtage: "", operationLines: [] })
       const dashRes = await fetch("/api/gestion/dashboard")
       if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
     } catch (err) {
@@ -4257,6 +4261,10 @@ export default function GestionPage() {
                         typeConstruction = mapTypeOuvrageToConstruction(leadData.typeOuvrage)
                         destination = mapDestinationConstruction(leadData.destinationConstruction)
                         closCouvert = leadData.operationClosCouvert === true ? "oui" : leadData.operationClosCouvert === false ? "non" : ""
+                        next.operationLines = buildDoOperationLines(
+                          leadData as Partial<DevisDommageOuvrageData>,
+                          lead.coutTotal ?? undefined
+                        )
                       } catch {
                         /* ignore */
                       }

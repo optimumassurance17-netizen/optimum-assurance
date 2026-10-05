@@ -10,10 +10,12 @@ import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { DEVOIR_CONSEIL_DO } from "@/lib/devoir-conseil"
-import { doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
+import {
+  DO_QUOTE_VALIDITY_DAYS,
+  doConditionsParticulieresLines,
+  doPropositionDetailLines,
+} from "@/lib/conditions-particulieres"
 import { drawClausesPaginated } from "../shared/drawClauses"
-
-const QUOTE_VALIDITY_DAYS = 30
 
 export type DoQuotePolicyBundleMode = "proposition" | "contrat"
 
@@ -150,7 +152,7 @@ export async function generateDOQuotePolicyBundle(
   y -= 20
 
   if (mode === "proposition") {
-    drawTextPdf(page1, `Validité du devis : ${QUOTE_VALIDITY_DAYS} jours à compter de la date d'émission.`, {
+    drawTextPdf(page1, `Validité du devis : ${DO_QUOTE_VALIDITY_DAYS} jours à compter de la date d'émission.`, {
       x: PDF_PAGE.marginX,
       y,
       size: 9,
@@ -208,6 +210,17 @@ export async function generateDOQuotePolicyBundle(
   })
   y -= 12
   y = drawWrappedText(page1, DEVOIR_CONSEIL_DO.contenu, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 8, 11, PDF_COLORS.muted)
+  y -= 8
+  drawClausesPaginated({
+    pdfDoc,
+    page: page1,
+    y,
+    font,
+    fontBold,
+    logo: accelerantLogo,
+    clauses: doPropositionDetailLines({ activities: data.activities, mode }),
+    continuationTitle: mode === "contrat" ? "CONTRAT — opération (suite)" : "DEVIS — opération (suite)",
+  })
 
   const page2 = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
   const cpTitle =

@@ -20,6 +20,16 @@ const DEVOIR_CONSEIL_ONLY: MentionCheck[] = [
   { label: "mention devoir de conseil", regex: /devoir\s+de\s+conseil/i },
 ]
 
+const DO_QUOTE_MENTIONS: MentionCheck[] = [
+  ...DEVOIR_CONSEIL_ONLY,
+  { label: "article L.242-1", regex: /L\.?\s*242-1/i },
+  { label: "validité 90 jours", regex: /90 jours/i },
+  { label: "ajustement de prime au-delà de 10 %", regex: /10\s*%/ },
+  { label: "mention Bon pour accord", regex: /Bon pour accord/i },
+  { label: "questionnaire d'étude", regex: /questionnaire d'.tude/i },
+  { label: "pièces de fin de chantier", regex: /d.claration d'ach.vement/i },
+]
+
 const RC_FAB_MENTIONS: MentionCheck[] = [
   { label: "mention protection juridique", regex: /protection\s+juridique/i },
   { label: "montant protection juridique 20 000", regex: /20[\s\u00a0\u202f]*000/i },
@@ -188,7 +198,7 @@ async function main(): Promise<void> {
   const assuranceTitreCertificateText = await extractPdfText(assuranceTitreCertificatePdf)
 
   assertMentions(decText, "devis+conditions particulières décennale", DEVOIR_CONSEIL_ONLY)
-  assertMentions(doText, "devis+conditions particulières dommage-ouvrage", DEVOIR_CONSEIL_ONLY)
+  assertMentions(doText, "devis+conditions particulières dommage-ouvrage", DO_QUOTE_MENTIONS)
   assertMentions(rcFabText, "conditions RC Fabriquant", RC_FAB_MENTIONS)
   assertMentions(rcFabFicText, "FIC RC Fabriquant", RC_FAB_MENTIONS)
   assertMentions(

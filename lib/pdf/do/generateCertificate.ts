@@ -130,7 +130,7 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
   y -= 14
   y = drawWrappedText(
     page,
-    `Validité : du ${data.startDate} au ${data.endDate}.`,
+    `Validité affichée : du ${data.startDate} au ${data.endDate}. La garantie obligatoire court dix ans à compter de la réception et n'est pas résiliable.`,
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,
@@ -138,6 +138,19 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
     10,
     13
   )
+  if (data.activities?.some((line) => /clos et couvert/i.test(line))) {
+    y -= 8
+    y = drawWrappedText(
+      page,
+      "Garantie limitée au clos et couvert. Cette limitation est indiquée aux acquéreurs et figure sur les actes.",
+      PDF_PAGE.marginX,
+      y,
+      PDF_PAGE.contentWidth,
+      font,
+      10,
+      13
+    )
+  }
   y -= 12
   y = drawWrappedText(
     page,
