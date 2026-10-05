@@ -32,6 +32,17 @@ const DO_QUOTE_MENTIONS: MentionCheck[] = [
   { label: "prescription L.114-1", regex: /L\.114-1/ },
   { label: "contrôle ACPR", regex: /ACPR/ },
   { label: "délai de position sinistre", regex: /60 jours/ },
+  { label: "sanction L.243-3", regex: /L\.243-3/ },
+  { label: "réception article 1792-6", regex: /1792-6/ },
+  { label: "intérêts au double du taux légal", regex: /double du taux de l'int.r.t l.gal/i },
+  { label: "subrogation", regex: /subrog/i },
+  { label: "clauses types A.243-1", regex: /A\.243-1/ },
+  { label: "déclaration réputée constituée", regex: /r.put.e constitu.e/i },
+  { label: "délai supplémentaire 135 jours", regex: /cent trente-cinq/i },
+  { label: "récusation de l'expert", regex: /r.cuser/i },
+  { label: "L.113-16 inapplicable", regex: /L\.113-16/ },
+  { label: "plancher R.243-3", regex: /R\.243-3/ },
+  { label: "article 1792-5", regex: /1792-5/ },
 ]
 
 const RC_FAB_MENTIONS: MentionCheck[] = [

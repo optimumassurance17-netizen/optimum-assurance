@@ -6,7 +6,7 @@ import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 import { COMPANY_BRAND } from "@/lib/legal-branding"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
 import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
-import { DO_CP_CADRE } from "@/lib/conditions-particulieres"
+import { doCadreCompletLines } from "@/lib/conditions-particulieres"
 
 interface AttestationDoTemplateProps {
   numero: string
@@ -95,7 +95,7 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
             ))}
           </tbody>
         </table>
-        <ConditionsParticulieresNotes lines={DO_CP_CADRE} />
+        <ConditionsParticulieresNotes lines={doCadreCompletLines()} />
       </div>
 
       <p className="text-sm text-[#171717] mb-6">

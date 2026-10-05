@@ -10,7 +10,7 @@ import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
-import { DECENNALE_CP_CADRE, DO_CP_CADRE, doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
+import { DECENNALE_CP_CADRE, doCadreCompletLines, doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
 
 function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
   const rows = decennaleGarantieRows(data)
@@ -40,11 +40,21 @@ function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
   )
 }
 
-function chunkLines(lines: readonly string[], size: number): string[][] {
+/** Regroupe les clauses pour qu'une page A4 react-pdf ne les coupe pas. */
+function chunkLinesByLength(lines: readonly string[], maxChars: number): string[][] {
   const chunks: string[][] = []
-  for (let index = 0; index < lines.length; index += size) {
-    chunks.push(lines.slice(index, index + size))
+  let current: string[] = []
+  let size = 0
+  for (const line of lines) {
+    if (current.length > 0 && size + line.length > maxChars) {
+      chunks.push(current)
+      current = []
+      size = 0
+    }
+    current.push(line)
+    size += line.length
   }
+  if (current.length > 0) chunks.push(current)
   return chunks
 }
 
@@ -359,7 +369,7 @@ export function AttestationDoPDFPage({
     verificationQrDataUri?: string
   }
   const typeGarantie = d.closCouvert ? "Clos et couvert" : "DO complète"
-  const cpPages = chunkLines(DO_CP_CADRE, 6)
+  const cpPages = chunkLinesByLength(doCadreCompletLines(), 1400)
   return (
     <>
     <Page size="A4" style={pdfTheme.page}>
@@ -510,7 +520,7 @@ export function FactureDoPDFPage({
     datePaiement?: string
   }
   const typeGarantie = d.closCouvert ? "Clos et couvert" : "DO complète"
-  const cpPages = chunkLines(doConditionsParticulieresLines(), 6)
+  const cpPages = chunkLinesByLength(doConditionsParticulieresLines(), 1400)
   return (
     <>
     <Page size="A4" style={pdfTheme.page}>

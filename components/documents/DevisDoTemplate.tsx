@@ -16,7 +16,7 @@ import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
 import {
   DO_COUT_MAX_PROPOSITION_LABEL,
-  DO_CP_CADRE,
+  doCadreCompletLines,
   DO_GARANTIE_OBLIGATOIRE_LIGNE,
   DO_GARANTIES_NON_SOUSCRITES,
   DO_MISSIONS_OBLIGATOIRES,
@@ -242,7 +242,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
             </tr>
           </tbody>
         </table>
-        <ConditionsParticulieresNotes lines={DO_CP_CADRE} />
+        <ConditionsParticulieresNotes lines={doCadreCompletLines()} />
         {data.closCouvert === true && (
           <div className="text-xs text-[#171717] mb-2 p-2 bg-[#dbeafe] rounded">
             <p className="font-medium mb-1">Option clos et couvert : lots couverts</p>

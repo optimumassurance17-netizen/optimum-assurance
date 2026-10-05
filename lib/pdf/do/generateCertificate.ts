@@ -10,7 +10,7 @@ import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../s
 import { embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
-import { DO_CP_CADRE } from "@/lib/conditions-particulieres"
+import { doCadreCompletLines } from "@/lib/conditions-particulieres"
 import { drawClausesPaginated } from "../shared/drawClauses"
 
 /**
@@ -222,7 +222,7 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
       font,
       fontBold,
       logo: accelerantLogo,
-      clauses: DO_CP_CADRE,
+      clauses: doCadreCompletLines(),
       continuationTitle: "ATTESTATION — conditions particulières (suite)",
     })
     page = continued.page
