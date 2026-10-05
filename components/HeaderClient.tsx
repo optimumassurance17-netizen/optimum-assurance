@@ -75,7 +75,7 @@ export function HeaderClient() {
           <Link href="/assurance-decennale" className="-my-2 flex min-h-[44px] items-center justify-center px-2 py-2 text-sm font-medium text-slate-700 transition-colors hover:text-slate-900 sm:px-0 sm:py-0">
             Assurance décennale
           </Link>
-          <Link href="/devis-dommage-ouvrage" className="-my-2 flex min-h-[44px] items-center justify-center px-2 py-2 text-sm font-medium text-slate-700 transition-colors hover:text-slate-900 sm:px-0 sm:py-0">
+          <Link href="/dommage-ouvrage" className="-my-2 flex min-h-[44px] items-center justify-center px-2 py-2 text-sm font-medium text-slate-700 transition-colors hover:text-slate-900 sm:px-0 sm:py-0">
             Dommage ouvrage
           </Link>
           <Link href="/faq" className="text-[#171717] hover:text-[#0a0a0a] font-medium text-sm sm:text-base px-2 py-2 -my-2 sm:px-0 sm:py-0 min-h-[44px] min-w-[44px] sm:min-w-0 flex items-center justify-center transition-colors">
@@ -163,6 +163,14 @@ export function HeaderClient() {
               >
                 Devis dommage ouvrage — 24h
               </Link>
+              <Link
+                href="/dommage-ouvrage"
+                role="menuitem"
+                onClick={() => setDevisOpen(false)}
+                className="flex min-h-[44px] items-center whitespace-nowrap px-4 py-3 text-xs text-slate-600 hover:bg-slate-50 hover:text-blue-600 border-t border-slate-100"
+              >
+                Explorer tous les profils DO →
+              </Link>
             </div>
           </div>
         </nav>
@@ -219,7 +227,14 @@ export function HeaderClient() {
               className="rounded-xl bg-blue-50 px-4 py-3.5 text-center text-base font-semibold text-blue-700 active:bg-blue-100"
               onClick={() => setMobileOpen(false)}
             >
-              Dommage ouvrage
+              Devis dommage ouvrage
+            </Link>
+            <Link
+              href="/dommage-ouvrage"
+              className="rounded-xl px-4 py-3.5 text-base font-medium text-slate-800 active:bg-slate-50"
+              onClick={() => setMobileOpen(false)}
+            >
+              Profils dommage ouvrage
             </Link>
             <Link
               href="/faq"

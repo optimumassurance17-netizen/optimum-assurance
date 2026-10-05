@@ -546,8 +546,11 @@ export default function Home() {
               <span className="inline-block bg-blue-50 text-blue-800 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">Maître d&apos;ouvrage</span>
               <h3 className="font-semibold text-slate-900 mb-2">Dommage ouvrage</h3>
               <p className="text-[#171717] text-sm mb-3">Assurance obligatoire pour constructeurs et promoteurs. Auto-construction acceptée. Clos et couvert uniquement possible.</p>
-              <p className="text-blue-600 font-semibold mb-4">Devis en ligne</p>
-              <Link href="/devis-dommage-ouvrage" className="text-blue-600 font-medium hover:underline group-hover:underline">Mon devis →</Link>
+              <p className="text-blue-600 font-semibold mb-4">Étude sous 24 h</p>
+              <div className="flex flex-col gap-2">
+                <Link href="/devis-dommage-ouvrage" className="text-blue-600 font-semibold hover:underline group-hover:underline">Demander un devis DO →</Link>
+                <Link href="/dommage-ouvrage" className="text-slate-600 text-xs hover:text-blue-600 transition-colors">Découvrir les profils DO (particulier, auto-construction, clos & couvert…)</Link>
+              </div>
             </div>
           </div>
         </div>

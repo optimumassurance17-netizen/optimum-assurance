@@ -143,12 +143,12 @@ export default async function GuidePage({
             <Link
               href={
                 isDoGuide
-                  ? "/dommage-ouvrage/auto-construction"
-                  : "/assurance-decennale/plombier"
+                  ? "/dommage-ouvrage"
+                  : "/assurance-decennale"
               }
               className="inline-flex items-center justify-center rounded-2xl border-2 border-[#2563eb] px-6 py-3 text-center font-semibold text-[#2563eb] hover:bg-[#eff6ff] transition-all"
             >
-              {isDoGuide ? "Voir un profil dommage ouvrage" : "Voir une page métier décennale"}
+              {isDoGuide ? "Tous les profils dommage ouvrage" : "Toutes les activités décennale"}
             </Link>
           </div>
         </section>

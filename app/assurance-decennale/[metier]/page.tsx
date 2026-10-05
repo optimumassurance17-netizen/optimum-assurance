@@ -8,6 +8,7 @@ import { METIERS_SEO } from "@/lib/metiers-seo"
 import {
   seoBreadcrumbListNode,
   seoFaqPageNode,
+  seoFinancialProductNode,
   seoJsonLdGraph,
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
@@ -101,6 +102,12 @@ export default async function MetierPage({
       path,
       name: `Assurance décennale ${data.nom}`,
       description: data.description,
+    }),
+    seoFinancialProductNode({
+      path,
+      name: `Assurance décennale ${data.nom}`,
+      description: data.description,
+      category: "Assurance Décennale BTP",
     }),
     seoFaqPageNode([...data.faq, faqComparatif]),
   ])

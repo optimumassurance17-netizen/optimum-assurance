@@ -62,6 +62,27 @@ export function seoWebPageNode(opts: {
   }
 }
 
+/** Nœud FinancialProduct / InsuranceProduct pour pages de garantie. */
+export function seoFinancialProductNode(opts: {
+  path: string
+  name: string
+  description: string
+  category?: string
+}): Record<string, unknown> {
+  const url = seoAbsoluteUrl(opts.path)
+  return {
+    "@type": "FinancialProduct",
+    "@id": `${url}#product`,
+    url,
+    name: opts.name,
+    description: opts.description,
+    category: opts.category ?? "Assurance Construction",
+    provider: { "@id": seoOrgId },
+    areaServed: { "@type": "Country", name: "FR" },
+    inLanguage: "fr-FR",
+  }
+}
+
 export function seoJsonLdGraph(nodes: Record<string, unknown>[]) {
   return {
     "@context": "https://schema.org",

@@ -36,7 +36,7 @@ export function Footer() {
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
             Métiers décennale les plus demandés
           </p>
-          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm mb-4">
             <Link href="/assurance-decennale/plombier" className="text-slate-700 hover:text-blue-600 transition-colors">
               Plombier
             </Link>
@@ -75,6 +75,26 @@ export function Footer() {
             </Link>
             <Link href="/assurance-decennale" className="text-blue-600 font-medium hover:underline">
               Tous les métiers →
+            </Link>
+          </div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+            Assurance dommage ouvrage par profil
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+            <Link href="/dommage-ouvrage/particulier" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Particulier faisant construire
+            </Link>
+            <Link href="/dommage-ouvrage/auto-construction" className="text-slate-700 hover:text-blue-600 transition-colors">
+              DO Auto-construction
+            </Link>
+            <Link href="/dommage-ouvrage/clos-et-couvert" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Formule Clos et Couvert
+            </Link>
+            <Link href="/dommage-ouvrage/constructeur-promoteur" className="text-slate-700 hover:text-blue-600 transition-colors">
+              Constructeur & Promoteur
+            </Link>
+            <Link href="/dommage-ouvrage" className="text-blue-600 font-medium hover:underline">
+              Tous les profils DO →
             </Link>
           </div>
         </div>

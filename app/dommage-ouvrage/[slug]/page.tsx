@@ -5,6 +5,7 @@ import { DO_SEO } from "@/lib/dommage-ouvrage-seo"
 import {
   seoBreadcrumbListNode,
   seoFaqPageNode,
+  seoFinancialProductNode,
   seoJsonLdGraph,
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
@@ -78,13 +79,19 @@ export default async function DommageOuvragePage({
   const jsonLd = seoJsonLdGraph([
     seoBreadcrumbListNode([
       { name: "Accueil", path: "/" },
-      { name: "Dommage ouvrage", path: "/devis-dommage-ouvrage" },
+      { name: "Dommage ouvrage", path: "/dommage-ouvrage" },
       { name: data.nom, path },
     ]),
     seoWebPageNode({
       path,
       name: `Assurance dommage ouvrage ${data.nom}`,
       description: data.description,
+    }),
+    seoFinancialProductNode({
+      path,
+      name: `Assurance dommage ouvrage ${data.nom}`,
+      description: data.description,
+      category: "Assurance Dommage Ouvrage",
     }),
     seoFaqPageNode(data.faq),
   ])
@@ -98,7 +105,7 @@ export default async function DommageOuvragePage({
         <nav aria-label="Fil d'Ariane" className="text-sm mb-8">
           <Link href="/" className="text-[#2563eb] hover:underline">Accueil</Link>
           <span className="text-[#333333] mx-2">/</span>
-          <Link href="/devis-dommage-ouvrage" className="text-[#2563eb] hover:underline">Dommage ouvrage</Link>
+          <Link href="/dommage-ouvrage" className="text-[#2563eb] hover:underline">Dommage ouvrage</Link>
           <span className="text-[#333333] mx-2">/</span>
           <span className="text-[#0a0a0a] font-medium">{data.nom}</span>
         </nav>
@@ -126,27 +133,38 @@ export default async function DommageOuvragePage({
           </ul>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#e5e5e5] p-6 mb-10">
-          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Bien préparer votre dossier dommage ouvrage</h2>
-          <p className="text-[#171717] text-sm leading-relaxed mb-4">
-            Une demande DO est plus fluide si vous préparez dès le départ les informations clés :
-            <strong> permis de construire</strong>, coût de l&apos;opération, nature exacte des travaux, acteurs du chantier
-            et pièces techniques disponibles. Cela facilite l&apos;étude du risque et évite les retours inutiles avant
-            l&apos;émission du devis.
-          </p>
-          <p className="text-[#171717] text-sm leading-relaxed">
-            Selon votre profil, le bon niveau de garantie n&apos;est pas le même : particulier, auto-construction,
-            promoteur ou formule clos et couvert. Le choix dépend du budget, des lots réalisés et des intervenants
-            déjà assurés en décennale.
-          </p>
+        <div className="bg-white rounded-2xl border border-[#e5e5e5] p-6 mb-10 shadow-sm">
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">
+            {data.dossierPreparation?.titre || "Bien préparer votre dossier dommage ouvrage"}
+          </h2>
+          {data.dossierPreparation?.paragraphes?.map((paragraphe, idx) => (
+            <p key={idx} className="text-[#171717] text-sm leading-relaxed mb-4">
+              {paragraphe}
+            </p>
+          ))}
+          {data.dossierPreparation?.documentsRequis?.length ? (
+            <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/70 p-4">
+              <p className="font-semibold text-[#0a0a0a] text-sm mb-3">
+                Documents clés à réunir pour votre étude
+              </p>
+              <ul className="space-y-2 text-sm text-[#171717]">
+                {data.dossierPreparation.documentsRequis.map((doc, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="text-[#2563eb] font-bold" aria-hidden="true">•</span>
+                    <span>{doc}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#e5e5e5] p-6 mb-10">
-          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Questions fréquentes</h2>
+        <div className="mt-10 rounded-2xl border border-[#e5e5e5] bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Questions fréquentes sur ce profil</h2>
           <div className="space-y-4">
             {data.faq.map((f, i) => (
-              <div key={i} className="border-b border-[#e5e5e5] pb-4 last:border-0">
-                <p className="font-semibold text-[#0a0a0a] mb-1">{f.q}</p>
+              <div key={i} className="border-b border-[#e5e5e5] pb-4 last:border-0 last:pb-0">
+                <h3 className="font-semibold text-[#0a0a0a] mb-1.5 text-base">{f.q}</h3>
                 <p className="text-[#171717] text-sm leading-relaxed">{f.r}</p>
               </div>
             ))}

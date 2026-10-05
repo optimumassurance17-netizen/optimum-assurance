@@ -146,6 +146,12 @@ export default function GuidesPage() {
             Devis décennale
           </Link>
           <Link
+            href="/dommage-ouvrage"
+            className="inline-block border-2 border-slate-300 text-slate-800 px-8 py-4 rounded-2xl hover:bg-slate-100 font-semibold transition-all"
+          >
+            Tous les profils DO
+          </Link>
+          <Link
             href="/devis-dommage-ouvrage"
             className="inline-block border-2 border-[#2563eb] text-[#2563eb] px-8 py-4 rounded-2xl hover:bg-[#eff6ff] font-semibold transition-all"
           >

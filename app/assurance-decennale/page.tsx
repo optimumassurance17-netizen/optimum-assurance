@@ -199,6 +199,12 @@ export default function AssuranceDecennaleIndexPage() {
             Descriptifs et exclusions
           </Link>
           <Link
+            href="/dommage-ouvrage"
+            className="inline-block border-2 border-slate-300 text-slate-800 px-8 py-4 rounded-2xl hover:bg-slate-100 font-semibold transition-all"
+          >
+            Dommage ouvrage
+          </Link>
+          <Link
             href="/guides/obligation-decennale"
             className="inline-block border-2 border-[#2563eb] text-[#2563eb] px-8 py-4 rounded-2xl hover:bg-[#eff6ff] font-semibold transition-all"
           >

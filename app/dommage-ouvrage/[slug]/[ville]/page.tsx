@@ -103,7 +103,7 @@ export default async function DoVillePage({
   const jsonLd = seoJsonLdGraph([
     seoBreadcrumbListNode([
       { name: "Accueil", path: "/" },
-      { name: "Dommage ouvrage", path: "/devis-dommage-ouvrage" },
+      { name: "Dommage ouvrage", path: "/dommage-ouvrage" },
       { name: data.nom, path: parentPath },
       { name: data.villeNom, path },
     ]),
@@ -126,7 +126,7 @@ export default async function DoVillePage({
             Accueil
           </Link>
           <span className="text-[#333333] mx-2">/</span>
-          <Link href="/devis-dommage-ouvrage" className="text-blue-600 hover:underline">
+          <Link href="/dommage-ouvrage" className="text-blue-600 hover:underline">
             Dommage ouvrage
           </Link>
           <span className="text-[#333333] mx-2">/</span>

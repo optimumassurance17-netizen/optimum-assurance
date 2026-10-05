@@ -199,7 +199,8 @@ export function buildDoLocalEnrichment(input: {
       "Choix entre DO complète et garantie clos/couvert lorsque le dossier s’y prête",
     ],
     links: [
-      { href: `/devis-dommage-ouvrage?from=seo-local-${input.villeSlug}`, label: "Demander un devis DO" },
+      { href: `/devis-dommage-ouvrage?from=seo-local-${input.villeSlug}`, label: `Devis DO à ${input.villeNom}` },
+      { href: "/dommage-ouvrage", label: "Tous les profils dommage ouvrage" },
       { href: `/assurance-decennale/macon/${input.villeSlug}`, label: `Décennale maçon à ${input.villeNom}` },
       { href: "/guides/obligation-dommage-ouvrage", label: "Guide obligation DO" },
       { href: "/guides/quand-souscrire-dommage-ouvrage", label: "Quand souscrire la dommage ouvrage" },

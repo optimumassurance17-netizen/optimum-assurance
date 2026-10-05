@@ -21,8 +21,8 @@ export function buildStaticSitemapEntries(): SitemapEntry[] {
   const doPages: SitemapEntry[] = DO_SEO.map((m) => ({
     url: `${baseUrl}/dommage-ouvrage/${m.slug}`,
     lastModified: new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.8,
+    changeFrequency: "weekly" as const,
+    priority: 0.88,
   }))
 
   const guides: SitemapEntry[] = GUIDES_SEO.map((g) => ({
@@ -41,7 +41,7 @@ export function buildStaticSitemapEntries(): SitemapEntry[] {
     },
     { url: `${baseUrl}/assurance-decennale`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.92 },
     { url: `${baseUrl}/assurance-decennale/activites`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.84 },
-    { url: `${baseUrl}/dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.88 },
+    { url: `${baseUrl}/dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.92 },
     {
       url: `${baseUrl}/devis-assurance-decennale-en-ligne`,
       lastModified: new Date(),
@@ -51,7 +51,7 @@ export function buildStaticSitemapEntries(): SitemapEntry[] {
     { url: `${baseUrl}/devis`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.95 },
     { url: `${baseUrl}/prix-assurance-decennale`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.86 },
     { url: `${baseUrl}/documents-assurance-decennale`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.84 },
-    { url: `${baseUrl}/devis-dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.9 },
+    { url: `${baseUrl}/devis-dommage-ouvrage`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.95 },
     { url: `${baseUrl}/devis-rc-fabriquant`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.85 },
     { url: `${baseUrl}/devis/rcpro`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.65 },
     { url: `${baseUrl}/assurance-titre`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.78 },

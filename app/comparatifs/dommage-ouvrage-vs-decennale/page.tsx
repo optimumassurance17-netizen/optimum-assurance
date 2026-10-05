@@ -108,6 +108,9 @@ export default function DoVsDecennalePage() {
           <Link href="/devis-dommage-ouvrage" className="rounded-2xl bg-[#2563eb] px-6 py-3 text-center font-semibold text-white hover:bg-[#1d4ed8]">
             Demander un devis DO
           </Link>
+          <Link href="/dommage-ouvrage" className="rounded-2xl border-2 border-slate-300 px-6 py-3 text-center font-semibold text-slate-800 hover:bg-slate-100">
+            Explorer les profils DO
+          </Link>
           <Link href="/devis" className="rounded-2xl border-2 border-[#2563eb] px-6 py-3 text-center font-semibold text-[#2563eb] hover:bg-[#eff6ff]">
             Obtenir un devis décennale
           </Link>

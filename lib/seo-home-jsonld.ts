@@ -78,12 +78,15 @@ export function buildHomePageJsonLdGraph() {
     { name: "Activités assurance décennale", path: "/assurance-decennale" },
     { name: "Devis assurance dommage ouvrage", path: "/devis-dommage-ouvrage" },
     { name: "Profils dommage ouvrage", path: "/dommage-ouvrage" },
+    { name: "Dommage ouvrage particulier", path: "/dommage-ouvrage/particulier" },
+    { name: "Dommage ouvrage auto-construction", path: "/dommage-ouvrage/auto-construction" },
+    { name: "Dommage ouvrage formule clos et couvert", path: "/dommage-ouvrage/clos-et-couvert" },
     { name: "Assurance titre immobilière", path: "/assurance-titre" },
     { name: "Souscription dommage ouvrage en ligne", path: "/souscription-dommage-ouvrage" },
     { name: "FAQ assurance décennale et dommage ouvrage", path: "/faq" },
     { name: "Guides assurance construction", path: "/guides" },
+    { name: "Guide obligation dommage ouvrage", path: "/guides/obligation-dommage-ouvrage" },
     { name: "Assurance décennale plombier", path: "/assurance-decennale/plombier" },
-    { name: "Dommage ouvrage auto-construction", path: "/dommage-ouvrage/auto-construction" },
     { name: "Avis clients Optimum Assurance", path: "/avis" },
   ]
 

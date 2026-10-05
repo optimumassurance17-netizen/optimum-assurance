@@ -5,6 +5,7 @@ import { Breadcrumb } from "@/components/Breadcrumb"
 import { DO_SEO } from "@/lib/dommage-ouvrage-seo"
 import {
   seoBreadcrumbListNode,
+  seoFaqPageNode,
   seoJsonLdGraph,
   seoWebPageNode,
 } from "@/lib/seo-jsonld-helpers"
@@ -40,6 +41,25 @@ export const metadata = {
   },
 }
 
+const HUB_DO_FAQ = [
+  {
+    q: "Quelle est la différence entre assurance dommage ouvrage et assurance décennale ?",
+    r: "La dommage ouvrage est souscrite par le maître d'ouvrage (particulier, promoteur) pour préfinancer les réparations sous 90 à 105 jours sans recherche de responsabilité. L'assurance décennale est souscrite par les artisans et entreprises du BTP pour garantir leur propre responsabilité pendant 10 ans.",
+  },
+  {
+    q: "L'assurance dommage ouvrage est-elle obligatoire pour un particulier ?",
+    r: "Oui. L'article L.242-1 du Code des assurances impose la souscription d'une DO avant l'ouverture du chantier pour toute construction de maison individuelle ou rénovation touchant à la structure. Les banques l'exigent pour débloquer le prêt immobilier.",
+  },
+  {
+    q: "Combien coûte une assurance dommage ouvrage ?",
+    r: "La prime unique est généralement comprise entre 1,5 % et 3,5 % du montant total des travaux, selon la nature du sol, les contrôles techniques et le choix entre formule complète ou formule allégée clos et couvert.",
+  },
+  {
+    q: "Pourquoi choisir la formule clos et couvert ?",
+    r: "La formule clos et couvert protège l'ossature et l'enveloppe étanche du bâtiment (terrassement, gros œuvre, charpente, toiture, menuiseries extérieures). Elle permet de réduire la prime jusqu'à 30 % à 40 % par rapport à une couverture totale.",
+  },
+] as const
+
 const dommageOuvrageHubJsonLd = seoJsonLdGraph([
   seoBreadcrumbListNode([
     { name: "Accueil", path: "/" },
@@ -51,6 +71,7 @@ const dommageOuvrageHubJsonLd = seoJsonLdGraph([
     description:
       "Hub dommage ouvrage : profils couverts, explications et accès au devis en ligne.",
   }),
+  seoFaqPageNode(HUB_DO_FAQ),
 ])
 
 const DOMMAGE_OUVRAGE_HUB_QUOTE_HREF = buildTrackedHref("/devis-dommage-ouvrage", {
@@ -102,20 +123,32 @@ export default function DommageOuvrageHubPage() {
             <div className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-4">
               <p className="font-semibold text-[#0a0a0a]">Auto-construction / particulier</p>
               <p className="mt-2 text-sm leading-relaxed text-[#171717]">
-                Si vous faites construire pour vous-meme ou pour un projet patrimonial, commencez par les
+                Si vous faites construire pour vous-même ou pour un projet patrimonial, commencez par les
                 profils <strong>auto-construction</strong> ou <strong>particulier faisant construire</strong>.
-                Vous verrez plus clairement les pieces a reunir, le calendrier de souscription et le
+                Vous verrez plus clairement les pièces à réunir, le calendrier de souscription et le
                 niveau de garantie utile.
               </p>
             </div>
             <div className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-4">
               <p className="font-semibold text-[#0a0a0a]">Constructeur / promoteur / clos et couvert</p>
               <p className="mt-2 text-sm leading-relaxed text-[#171717]">
-                Si vous portez une operation plus structuree ou si vous cherchez a reduire le perimetre
+                Si vous portez une opération plus structurée ou si vous cherchez à réduire le périmètre
                 de garantie, comparez les pages <strong>constructeur-promoteur</strong> et{" "}
                 <strong>clos et couvert</strong> avant de lancer la demande de devis.
               </p>
             </div>
+          </div>
+        </div>
+
+        <div className="mt-10 rounded-2xl border border-[#e5e5e5] bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-xl font-bold text-[#0a0a0a]">Questions fréquentes sur la dommage ouvrage</h2>
+          <div className="space-y-4">
+            {HUB_DO_FAQ.map((faq, i) => (
+              <div key={i} className="border-b border-[#e5e5e5] pb-4 last:border-0 last:pb-0">
+                <h3 className="font-semibold text-[#0a0a0a] mb-1.5 text-base">{faq.q}</h3>
+                <p className="text-[#171717] text-sm leading-relaxed">{faq.r}</p>
+              </div>
+            ))}
           </div>
         </div>
 
