@@ -3,6 +3,8 @@
 import { SITE_URL } from "@/lib/site-url"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 import { COMPANY_BRAND } from "@/lib/legal-branding"
+import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
+import { doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
 
 /**
  * Facture acquittée dommage ouvrage.
@@ -131,8 +133,10 @@ export function FactureDoTemplate({ numero, data }: FactureDoTemplateProps) {
       <p className="text-[10px] text-[#333333] mt-4 leading-tight">
         En application du 2° de l&apos;article 261 C du CGI, sont exonérées de la taxe sur la valeur ajoutée (TVA) les opérations d&apos;assurance, de réassurance ainsi que les prestations de services afférentes à ces opérations effectuées par les courtiers et intermédiaires d&apos;assurance.
       </p>
+      <h3 className="font-bold text-black mt-6 mb-2 uppercase text-xs">Conditions de la garantie</h3>
+      <ConditionsParticulieresNotes lines={doConditionsParticulieresLines()} />
       <p className="text-xs text-[#171717] mt-4">
-        Fait à Paris, le {data.datePaiement}
+        Fait à Cholet, le {data.datePaiement}
       </p>
       <p className="text-xs font-medium mt-2">Pour {COMPANY_BRAND}</p>
     </div>

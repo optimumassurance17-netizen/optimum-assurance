@@ -21,6 +21,10 @@ import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
 import { primeTrimestrielle } from "@/lib/premium"
+import { doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
+import { drawClausesPaginated } from "@/lib/pdf/shared/drawClauses"
+import { drawOptimumHeader } from "@/lib/pdf/shared/drawHeader"
+import { PDF_PAGE } from "@/lib/pdf/shared/pdfLayout"
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import {
@@ -175,6 +179,27 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
   })
   page.drawText(sanitizeForPdfLib(`ORIAS ${ORIAS_NUMBER}`), { x: 50, y: 62, size: 8, font, maxWidth: 500 })
   page.drawText(sanitizeForPdfLib(`Références : ${SITE_URL}/cgv`), { x: 50, y: 46, size: 8, font })
+  if (c.productType === "do") {
+    const legalPage = pdf.addPage([PDF_PAGE.width, PDF_PAGE.height])
+    const legalY = drawOptimumHeader(
+      legalPage,
+      font,
+      bold,
+      "FACTURE — conditions de la garantie dommages-ouvrage",
+      c.contractNumber,
+      accelLogo
+    )
+    drawClausesPaginated({
+      pdfDoc: pdf,
+      page: legalPage,
+      y: legalY,
+      font,
+      fontBold: bold,
+      logo: accelLogo,
+      clauses: doConditionsParticulieresLines(),
+      continuationTitle: "FACTURE — conditions (suite)",
+    })
+  }
   return pdf.save()
 }
 

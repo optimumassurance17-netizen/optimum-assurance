@@ -118,7 +118,7 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
       )}
 
       <p className="text-sm">
-        Fait à Paris, le {new Date().toLocaleDateString("fr-FR")}
+        Fait à Cholet, le {new Date().toLocaleDateString("fr-FR")}
       </p>
       <p className="text-sm mt-4">Pour {COMPANY_BRAND}</p>
     </div>

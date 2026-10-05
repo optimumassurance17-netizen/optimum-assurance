@@ -28,6 +28,10 @@ const DO_QUOTE_MENTIONS: MentionCheck[] = [
   { label: "mention Bon pour accord", regex: /Bon pour accord/i },
   { label: "questionnaire d'étude", regex: /questionnaire d'.tude/i },
   { label: "pièces de fin de chantier", regex: /d.claration d'ach.vement/i },
+  { label: "médiation de l'assurance", regex: /M.diation de l'Assurance/i },
+  { label: "prescription L.114-1", regex: /L\.114-1/ },
+  { label: "contrôle ACPR", regex: /ACPR/ },
+  { label: "délai de position sinistre", regex: /60 jours/ },
 ]
 
 const RC_FAB_MENTIONS: MentionCheck[] = [

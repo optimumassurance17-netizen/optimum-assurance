@@ -10,7 +10,7 @@ import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
-import { DECENNALE_CP_CADRE, DO_CP_CADRE } from "@/lib/conditions-particulieres"
+import { DECENNALE_CP_CADRE, DO_CP_CADRE, doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
 
 function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
   const rows = decennaleGarantieRows(data)
@@ -38,6 +38,14 @@ function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
       </View>
     </View>
   )
+}
+
+function chunkLines(lines: readonly string[], size: number): string[][] {
+  const chunks: string[][] = []
+  for (let index = 0; index < lines.length; index += size) {
+    chunks.push(lines.slice(index, index + size))
+  }
+  return chunks
 }
 
 function CpLines({ lines }: { lines: readonly string[] }) {
@@ -351,7 +359,9 @@ export function AttestationDoPDFPage({
     verificationQrDataUri?: string
   }
   const typeGarantie = d.closCouvert ? "Clos et couvert" : "DO complète"
+  const cpPages = chunkLines(DO_CP_CADRE, 6)
   return (
+    <>
     <Page size="A4" style={pdfTheme.page}>
       <PdfBrandHeader tagline="Assurance dommage ouvrage" />
       <Text style={pdfTheme.h2Center}>ATTESTATION D&apos;ASSURANCE</Text>
@@ -380,7 +390,6 @@ export function AttestationDoPDFPage({
         ) : null}
         <Text style={pdfTheme.p}>Prime : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         <DoGarantiesPdf />
-        <CpLines lines={DO_CP_CADRE} />
         {d.verificationQrDataUri && (
           <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
             {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
@@ -401,6 +410,15 @@ export function AttestationDoPDFPage({
         Optimum Courtage agit par délégation de Accelerant Insurance.
       </Text>
     </Page>
+    {cpPages.map((chunk, index) => (
+      <Page key={chunk[0]} size="A4" style={pdfTheme.page}>
+        <PdfBrandHeader tagline="Assurance dommage ouvrage" />
+        <Text style={pdfTheme.h2}>Conditions particulières — page {index + 1}</Text>
+        <Text style={pdfTheme.p}>Attestation n° {numero}</Text>
+        <CpLines lines={chunk} />
+      </Page>
+    ))}
+    </>
   )
 }
 
@@ -492,7 +510,9 @@ export function FactureDoPDFPage({
     datePaiement?: string
   }
   const typeGarantie = d.closCouvert ? "Clos et couvert" : "DO complète"
+  const cpPages = chunkLines(doConditionsParticulieresLines(), 6)
   return (
+    <>
     <Page size="A4" style={pdfTheme.page}>
       <PdfBrandHeader tagline="Assurance dommage ouvrage — facturation" />
       <Text style={pdfTheme.h2Center}>FACTURE ACQUITTÉE</Text>
@@ -528,6 +548,15 @@ export function FactureDoPDFPage({
         Optimum Courtage agit par délégation de Accelerant Insurance.
       </Text>
     </Page>
+    {cpPages.map((chunk, index) => (
+      <Page key={chunk[0]} size="A4" style={pdfTheme.page}>
+        <PdfBrandHeader tagline="Assurance dommage ouvrage — facturation" />
+        <Text style={pdfTheme.h2}>Conditions de garantie — page {index + 1}</Text>
+        <Text style={pdfTheme.p}>Facture n° {numero}</Text>
+        <CpLines lines={chunk} />
+      </Page>
+    ))}
+    </>
   )
 }
 

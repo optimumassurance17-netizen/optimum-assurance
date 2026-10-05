@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { createInsuranceContract } from "@/lib/insurance-contract-service"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { buildDoDocumentLinesFromStoredJson } from "@/lib/do-operation-lines"
 
 function asTrimmedString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined
@@ -100,6 +101,8 @@ export async function POST(request: NextRequest) {
         adresse: true,
         codePostal: true,
         ville: true,
+        doEtudeQuestionnaireJson: true,
+        doInitialQuestionnaireJson: true,
       },
     })
     if (!user) return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 })
@@ -119,6 +122,8 @@ export async function POST(request: NextRequest) {
         ? `Frais de courtage : ${fraisCourtage.toLocaleString("fr-FR")} EUR`
         : undefined,
       ...operationLines,
+      ...buildDoDocumentLinesFromStoredJson(user.doEtudeQuestionnaireJson),
+      ...buildDoDocumentLinesFromStoredJson(user.doInitialQuestionnaireJson),
     ])
 
     const { contract, risk } = await createInsuranceContract({

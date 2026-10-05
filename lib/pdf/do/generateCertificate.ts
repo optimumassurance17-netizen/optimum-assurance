@@ -127,7 +127,25 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
       13
     )
   }
-  y -= 14
+  if (data.activities?.length) {
+    const operation = drawClausesPaginated({
+      pdfDoc,
+      page,
+      y,
+      font,
+      fontBold,
+      logo: accelerantLogo,
+      clauses: ["Caractéristiques de l'opération déclarées au contrat :", ...data.activities],
+      continuationTitle: "ATTESTATION — opération (suite)",
+    })
+    page = operation.page
+    y = operation.y
+  }
+  if (y < 220) {
+    page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+    y = drawOptimumHeader(page, font, fontBold, "ATTESTATION — suite", "", accelerantLogo)
+  }
+  y -= 8
   y = drawWrappedText(
     page,
     `Validité affichée : du ${data.startDate} au ${data.endDate}. La garantie obligatoire court dix ans à compter de la réception et n'est pas résiliable.`,

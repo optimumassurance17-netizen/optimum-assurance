@@ -1,5 +1,7 @@
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
+import { DEFAULT_PUBLIC_CONTACT_EMAIL } from "@/lib/public-contact-email"
+import { SITE_URL } from "@/lib/site-url"
 
 /**
  * Rubriques que les conditions particulières du marché indiquent toujours
@@ -25,6 +27,18 @@ export const DO_QUOTE_VALIDITY_DAYS = 90
 /** Plafond de coût déjà retenu sur les propositions générées (honoraires et existants inclus). */
 export const DO_COUT_MAX_PROPOSITION_LABEL = "1 000 000 EUR TTC (honoraires et existants inclus)"
 
+/** Mentions déjà publiées par Optimum (mentions légales, CGV, Code des assurances). */
+export const DO_MENTIONS_JURIDIQUES = [
+  "Courtier : Optimum Courtage, RCS Angers 450 788 278, ORIAS LPS 28931947 (libre prestation de services), siège 14 rue d'Amboise, 49300 Cholet. Assurance de responsabilité civile professionnelle et garantie financière conformes aux articles L.512-6 et L.512-7 du Code des assurances.",
+  "Contrôle : Autorité de contrôle prudentiel et de résolution (ACPR), 4 place de Budapest, CS 92459, 75436 Paris Cedex 09.",
+  `Déclaration de sinistre : l'assuré la transmet par écrit à ${DEFAULT_PUBLIC_CONTACT_EMAIL}, avec la description des dommages, leur date d'apparition et les pièces du chantier. Au titre de l'article L.242-1 du Code des assurances, l'assureur notifie sa décision sur le principe de la garantie dans les 60 jours de la réception de la déclaration, puis présente une offre d'indemnité dans les 90 jours lorsque la garantie est acquise.`,
+  "Réclamation : elle est d'abord adressée au courtier. Sans réponse satisfaisante, le souscripteur peut saisir gratuitement La Médiation de l'Assurance, TSA 50110, 75441 Paris Cedex 09, www.mediation-assurance.org, sans préjudice d'une action en justice.",
+  "Prescription : deux ans à compter de l'événement qui y donne naissance, selon l'article L.114-1 du Code des assurances, sous réserve des causes d'interruption de l'article L.114-2.",
+  "Lorsqu'une personne physique souscrit à distance ou hors établissement en dehors de son activité professionnelle, elle peut renoncer au contrat pendant quatorze jours calendaires, dans les conditions de l'article L.112-2-1 du Code des assurances. La demande d'exécution immédiate avant la fin de ce délai laisse due la prime correspondant à la période déjà courue.",
+  `Données personnelles : traitement pour l'étude du risque, la souscription et la gestion du contrat. Droits d'accès, de rectification, d'effacement, d'opposition, de limitation et de portabilité auprès de ${DEFAULT_PUBLIC_CONTACT_EMAIL}. Politique : ${SITE_URL}/confidentialite.`,
+  "Lutte contre le blanchiment : des justificatifs d'identité et d'origine des fonds peuvent être demandés. Le refus de les transmettre bloque le dossier.",
+] as const
+
 export const DO_CP_CADRE = [
   "En cas de divergence, les conditions particulières prévalent sur les conditions générales.",
   "Le contrat est composé des présentes conditions particulières, du questionnaire d'étude du risque et des conditions générales remises au souscripteur.",
@@ -45,7 +59,8 @@ export const DO_CP_CADRE = [
   "Sont notamment exclus les sinistres connus du souscripteur avant la date d'effet et les travaux sur un ouvrage inscrit ou classé monument historique.",
   "Durée : garantie unique de dix ans à compter de la réception pour la garantie obligatoire. Cette garantie obligatoire n'est pas résiliable.",
   "Tout litige relatif au contrat relève du droit français et des tribunaux français.",
-  "Protection juridique : défense et recours selon les conditions contractuelles applicables.",
+  "Protection juridique : défense et recours selon les conditions contractuelles applicables. L'indemnisation du sinistre incombe à l'assureur. Le courtier distribue le contrat et transmet la déclaration.",
+  ...DO_MENTIONS_JURIDIQUES,
 ] as const
 
 export const DO_GARANTIE_OBLIGATOIRE_LIGNE =
