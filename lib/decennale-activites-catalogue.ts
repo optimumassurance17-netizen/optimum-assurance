@@ -355,6 +355,17 @@ export const ACTIVITE_CATALOGUE: Record<string, ActiviteFiche> = {
     description: "Traitement curatif ou préventif des bois de structure contre les insectes et les champignons.",
     exclusions: ["Remplacement de charpente", "Bois de menuiserie décorative seule", "Désamiantage"],
   },
+  "Traitement termites et injection produit chimique charpente et sol": {
+    description: "Traitement préventif ou curatif contre les termites par injection de produit chimique dans les bois de charpente et dans le sol. Les produits sont mis en œuvre selon leur homologation.",
+    exclusions: [
+      "Remplacement de la charpente",
+      "Menuiserie décorative seule",
+      "Désamiantage",
+      "Injection de résine de stabilisation",
+      "Reprise totale des fondations",
+      "Garantie de résultat géotechnique sans étude",
+    ],
+  },
   "Traitement humidité": {
     description: "Traitement des remontées capillaires et de l'humidité des murs, avec travaux préparatoires associés.",
     exclusions: ["Étanchéité de toiture et de façade", "Drainage VRD", "Reprise structurelle des murs"],

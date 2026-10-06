@@ -11,7 +11,7 @@ const ACTIVITES_PAR_CATEGORIE = [...TARIFICATION_110_ACTIVITES].sort(
   (a, b) => a.categorie.localeCompare(b.categorie) || a.activite.localeCompare(b.activite)
 )
 
-/** Liste plate des 110 activités + offre spécifique */
+/** Liste plate des activités tarifées + offre spécifique */
 export const ACTIVITES_BTP = [
   ...ACTIVITES_PAR_CATEGORIE.map((t) => t.activite),
   "Nettoyage toiture et peinture résine (I3 à I5)",

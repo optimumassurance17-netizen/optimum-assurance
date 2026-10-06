@@ -1,5 +1,5 @@
 /**
- * Tarification décennale - 110 activités Optimum Assurance
+ * Tarification décennale - activités Optimum Assurance
  * Source : tarification_decennale_110_activites_optimum_assurance.pdf
  * Structure : taux_base (% du CA), prime_min (€/an)
  * Stratégie : ~30% sous le marché + réduction 10% par tranche de 100k€ de CA
@@ -98,6 +98,7 @@ export const TARIFICATION_110_ACTIVITES: TarifActivite[] = [
   { activite: "Forage micropieux", categorie: "Spécialisé", taux_base: 2.4, prime_min: 1300 },
   { activite: "Injection résine", categorie: "Spécialisé", taux_base: 2.0, prime_min: 950 },
   { activite: "Traitement bois", categorie: "Spécialisé", taux_base: 1.7, prime_min: 900 },
+  { activite: "Traitement termites et injection produit chimique charpente et sol", categorie: "Spécialisé", taux_base: 2.1, prime_min: 950 },
   { activite: "Traitement humidité", categorie: "Spécialisé", taux_base: 1.7, prime_min: 900 },
   { activite: "Rénovation énergétique", categorie: "Spécialisé", taux_base: 1.8, prime_min: 900 },
   { activite: "Rénovation TCE", categorie: "Divers", taux_base: 2.0, prime_min: 1000 },
@@ -190,6 +191,13 @@ const ALIAS_ACTIVITES: Record<string, string> = {
   "bet économie de la construction": "Économiste construction",
   "bet structure métallique": "Structure métallique",
   "bet géomètre": "Géotechnicien",
+  "traitement termites": "Traitement termites et injection produit chimique charpente et sol",
+  "traitement termite": "Traitement termites et injection produit chimique charpente et sol",
+  "termites": "Traitement termites et injection produit chimique charpente et sol",
+  "termite": "Traitement termites et injection produit chimique charpente et sol",
+  "injection produit chimique": "Traitement termites et injection produit chimique charpente et sol",
+  "injection produit chimique charpente et sol": "Traitement termites et injection produit chimique charpente et sol",
+  "traitement termites charpente et sol": "Traitement termites et injection produit chimique charpente et sol",
 }
 
 function normalize(s: string): string {
