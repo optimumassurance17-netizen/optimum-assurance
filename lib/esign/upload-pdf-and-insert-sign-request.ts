@@ -50,9 +50,9 @@ export async function uploadPdfAndInsertSignRequest(
     try {
       await fetch(`${origin}/auth/v1/health`, { method: "GET" })
     } catch (error) {
-      throw storageError(
-        { message: "Service de signature injoignable", originalError: error },
-        "Service de signature injoignable."
+      console.error("[esign] projet Supabase injoignable", networkDetail(error))
+      throw new Error(
+        "Le service de signature électronique est injoignable. L’adresse du projet Supabase ne répond pas."
       )
     }
   }
