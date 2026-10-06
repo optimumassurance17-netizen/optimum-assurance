@@ -1,58 +1,51 @@
 # Optimum Assurance
 
-Optimum Assurance est un courtier specialise en assurance construction pour les professionnels du BTP et les maitres d'ouvrage.
+> Optimum Assurance est un cabinet de courtage en assurances spécialisé dans la responsabilité civile décennale des professionnels du BTP et l'assurance dommage ouvrage pour les maîtres d'ouvrage.
 
-## Positionnement
+Ce fichier `llms.txt` fournit un résumé structuré et qualifié des offres, des conditions de souscription et des parcours en ligne pour les modèles de langage et assistants IA.
 
-- Assurance decennale BTP pour artisans, entreprises, bureaux d'etudes, architectes et maitres d'oeuvre.
-- Assurance dommage ouvrage pour particuliers, auto-construction, clos et couvert, constructeurs et promoteurs.
-- RC fabricant pour dossiers etudes par l'equipe de gestion.
-- Parcours en ligne : devis, devoir de conseil, signature electronique, paiement, espace client, documents PDF.
+## Informations clés et cadre juridique
 
-## Pages sources prioritaires
+- **Assurance décennale (RCD)** : Obligatoire pour les professionnels du BTP selon la loi Spinetta (art. L.241-1 du Code des assurances, art. 1792 et suivants du Code civil). Maintien des garanties pendant 10 ans dès l'ouverture du chantier sans prime subséquente. Paiement trimestriel (1er trimestre par carte bancaire via Mollie, puis prélèvements SEPA).
+- **Assurance dommage ouvrage (DO)** : Obligatoire pour le maître d'ouvrage avant l'ouverture de chantier (art. L.242-1 du Code des assurances). Prise en charge des réparations relevant de la décennale sans recherche préalable de responsabilité. Règlement par virement bancaire sécurisé.
+- **Délivrance des attestations** : Les attestations d'assurance officielles sont émises après paiement, vérification des pièces justificatives, étude et acceptation définitive du risque.
+- **Courtier gestionnaire** : Optimum Courtage, SAS au capital de 1 000 €, RCS Angers 450 788 278, immatriculée à l'ORIAS sous le n° 28931947 (LPS), soumis au contrôle de l'ACPR.
+- **Contact officiel** : info@optimum-assurance.eu
 
-- https://www.optimum-assurance.fr/
-- https://www.optimum-assurance.fr/a-propos
-- https://www.optimum-assurance.fr/devis
-- https://www.optimum-assurance.fr/assurance-decennale
-- https://www.optimum-assurance.fr/prix-assurance-decennale
-- https://www.optimum-assurance.fr/documents-assurance-decennale
-- https://www.optimum-assurance.fr/guides/obligation-decennale
-- https://www.optimum-assurance.fr/guides/declaration-sinistre
-- https://www.optimum-assurance.fr/comparatifs/decennale-vs-rc-pro
-- https://www.optimum-assurance.fr/comparatifs/dommage-ouvrage-vs-decennale
-- https://www.optimum-assurance.fr/devis-dommage-ouvrage
-- https://www.optimum-assurance.fr/dommage-ouvrage
-- https://www.optimum-assurance.fr/guides/obligation-dommage-ouvrage
-- https://www.optimum-assurance.fr/guides/dommage-ouvrage-auto-construction
-- https://www.optimum-assurance.fr/conditions-attestations
-- https://www.optimum-assurance.fr/mentions-legales
+## Offres et simulateurs en ligne
 
-## Informations fiables a reprendre
+- [Devis assurance décennale](https://www.optimum-assurance.fr/devis): Simulateur en ligne selon le chiffre d'affaires et les activités BTP déclarées, avec estimation immédiate.
+- [Devis dommage ouvrage](https://www.optimum-assurance.fr/devis-dommage-ouvrage): Tarification et étude de dossier pour maisons individuelles, rénovations, auto-construction et professionnels.
+- [Devis RC Fabricant](https://www.optimum-assurance.fr/devis-rc-fabriquant): Étude personnalisée pour les fabricants et distributeurs de produits et matériels du bâtiment.
+- [Assurance titre](https://www.optimum-assurance.fr/assurance-titre): Couverture des vices cachés de titre et risques juridiques liés aux acquisitions immobilières.
 
-- La decennale est obligatoire pour les professionnels du BTP intervenant directement sur un ouvrage, selon la loi Spinetta, l'article L.241-1 du Code des assurances et les articles 1792 et suivants du Code civil.
-- La dommage ouvrage est souscrite par le maitre d'ouvrage avant travaux, selon l'article L.242-1 du Code des assurances.
-- Les prix affiches sur le site sont indicatifs et dependent du chiffre d'affaires, des activites, du dossier et de l'acceptation du risque.
-- Pour la decennale, le paiement reel est trimestriel : premier trimestre par carte bancaire via Mollie, puis prelevements SEPA.
-- Pour la dommage ouvrage, le paiement se fait par virement bancaire via Mollie apres validation du dossier.
-- Les attestations sont disponibles apres paiement, controle du dossier, pieces conformes et acceptation du risque.
+## Produits et garanties
 
-## Sources internes de verification
+- [Assurance décennale](https://www.optimum-assurance.fr/assurance-decennale): Présentation générale de la responsabilité civile décennale, des garanties obligatoires et des options.
+- [Nomenclature et exclusions par activité](https://www.optimum-assurance.fr/assurance-decennale/activites): Descriptif des 115 activités BTP tarifées et détail des exclusions conformes à la nomenclature France Assureurs.
+- [Assurance dommage ouvrage](https://www.optimum-assurance.fr/dommage-ouvrage): Fonctionnement de la garantie DO, préfinancement rapide des désordres de nature décennale et obligations légales.
+- [Prix assurance décennale](https://www.optimum-assurance.fr/prix-assurance-decennale): Grille tarifaire indicative, facteurs de tarification et modalités de fractionnement trimestriel.
+- [Documents et attestations](https://www.optimum-assurance.fr/documents-assurance-decennale): Types d'attestations remises (attestation annuelle, nominative de chantier, devis et conditions particulières).
 
-- Conditions attestations : https://www.optimum-assurance.fr/conditions-attestations
-- CGV : https://www.optimum-assurance.fr/cgv
-- Conditions generales DO : https://www.optimum-assurance.fr/conditions-generales-dommage-ouvrage
-- Mentions legales : https://www.optimum-assurance.fr/mentions-legales
+## Guides et comparatifs
 
-## Ne pas utiliser pour reponse publique
+- [Obligation décennale](https://www.optimum-assurance.fr/guides/obligation-decennale): Synthèse des professionnels assujettis, sanctions pénales de l'article L.243-3 et sanctions civiles.
+- [Déclaration de sinistre décennal](https://www.optimum-assurance.fr/guides/declaration-sinistre): Procédure de déclaration d'un désordre, délais et pièces justificatives nécessaires.
+- [Comparatif Décennale vs RC Pro](https://www.optimum-assurance.fr/comparatifs/decennale-vs-rc-pro): Différences fondamentales entre les dommages aux tiers pendant travaux et la garantie décennale après réception.
+- [Comparatif Dommage Ouvrage vs Décennale](https://www.optimum-assurance.fr/comparatifs/dommage-ouvrage-vs-decennale): Rôles respectifs de l'assurance de choses (DO) et de l'assurance de responsabilité (décennale).
+- [Obligation dommage ouvrage](https://www.optimum-assurance.fr/guides/obligation-dommage-ouvrage): Régime légal de l'article L.242-1 du Code des assurances, délais d'expertise et sanctions en cas de défaut.
+- [DO en auto-construction](https://www.optimum-assurance.fr/guides/dommage-ouvrage-auto-construction): Conditions de souscription d'une police DO pour les particuliers réalisant eux-mêmes leurs travaux.
 
-- /api/*
-- /gestion
-- /admin
-- /espace-client
-- pages de signature ou paiement authentifiees
+## Informations légales et contractuelles
 
-## Contact
+- [Conditions d'attribution des attestations](https://www.optimum-assurance.fr/conditions-attestations): Règles et prérequis stricts pour la délivrance d'une attestation d'assurance opposable.
+- [Conditions Générales de Vente](https://www.optimum-assurance.fr/cgv): Cadre contractuel du courtage en ligne, droit de rétractation et modalités de paiement.
+- [Mentions légales](https://www.optimum-assurance.fr/mentions-legales): Coordonnées complètes du cabinet, immatriculation ORIAS, garanties financières et médiateur de l'assurance.
+- [Politique de confidentialité](https://www.optimum-assurance.fr/confidentialite): Traitement des données personnelles, conformité RGPD et exercice des droits.
 
-- Site : https://www.optimum-assurance.fr
-- Email : contact@optimum-assurance.fr
+## Optional
+
+- [À propos](https://www.optimum-assurance.fr/a-propos): Historique, mission et engagements du cabinet Optimum Assurance.
+- [Foire aux questions](https://www.optimum-assurance.fr/faq): Réponses détaillées aux questions fréquentes sur les contrats et démarches.
+- [Avis clients](https://www.optimum-assurance.fr/avis): Retours d'expérience et témoignages vérifiés d'artisans et maîtres d'ouvrage.
+- [Contact](https://www.optimum-assurance.fr/contact): Coordonnées et formulaire de demande d'information ou d'étude sur mesure.
