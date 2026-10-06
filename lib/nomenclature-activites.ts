@@ -35,7 +35,7 @@ export const EXCLUSIONS_LEGALES_COMMUNES = [
 ] as const
 
 /** Déchéance (non opposable au tiers) — inobservation inexcusable des règles de l'art */
-export const DECHANCE_REGLE_ART = "Déchéance pour inobservation inexcusable des règles de l'art (art. L.243-1 C. assur.)"
+export const DECHANCE_REGLE_ART = "Déchéance pour inobservation inexcusable des règles de l'art (annexe I de l'article A.243-1 du Code des assurances). Elle n'est pas opposable aux bénéficiaires des indemnités."
 
 /** Ouvrages exclus de la garantie décennale obligatoire (art. L.243-1-1 Code des assurances) */
 export const OUVRAGES_EXCLUS_DECENNALE = [

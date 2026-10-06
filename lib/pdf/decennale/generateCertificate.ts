@@ -11,7 +11,7 @@ import { embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
-import { DECENNALE_CP_CADRE } from "@/lib/conditions-particulieres"
+import { decennaleCadreCompletLines } from "@/lib/conditions-particulieres"
 import { drawClausesPaginated } from "../shared/drawClauses"
 import { appendDecennaleActivityDetailsAnnex } from "./activityDetailsAnnex"
 
@@ -200,7 +200,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
       font,
       fontBold,
       logo: accelerantLogo,
-      clauses: DECENNALE_CP_CADRE,
+      clauses: decennaleCadreCompletLines(),
       continuationTitle: "ATTESTATION — conditions particulières (suite)",
     })
     page = continued.page

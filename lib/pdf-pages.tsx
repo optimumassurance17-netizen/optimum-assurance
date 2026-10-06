@@ -10,7 +10,7 @@ import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
-import { DECENNALE_CP_CADRE, doCadreCompletLines, doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
+import { decennaleCadreCompletLines, doCadreCompletLines, doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
 
 function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
   const rows = decennaleGarantieRows(data)
@@ -70,6 +70,24 @@ function CpLines({ lines }: { lines: readonly string[] }) {
   )
 }
 
+function DecennaleRegimePages({ title, numero }: { title: string; numero: string }) {
+  const cpPages = chunkLinesByLength(decennaleCadreCompletLines(), 1400)
+  return (
+    <>
+      {cpPages.map((chunk, index) => (
+        <Page key={`${title}-${index}`} size="A4" style={pdfTheme.page}>
+          <PdfBrandHeader tagline="Assurance décennale professionnelle" />
+          <Text style={pdfTheme.h2}>
+            {title} — page {index + 1}
+          </Text>
+          <Text style={pdfTheme.p}>Document n° {numero}</Text>
+          <CpLines lines={chunk} />
+        </Page>
+      ))}
+    </>
+  )
+}
+
 function DoGarantiesPdf() {
   const rows = [DO_GARANTIES_LEGALES.I1, DO_GARANTIES_LEGALES.I2, DO_GARANTIES_LEGALES.I3]
   return (
@@ -114,6 +132,7 @@ export function ContratPDFPage({
   }
   const activities = extractStructuredActivities(d)
   return (
+    <>
     <Page size="A4" style={pdfTheme.page}>
       <PdfBrandHeader tagline="Assurance décennale professionnelle — extrait contrat" />
       <Text style={pdfTheme.h2}>CONTRAT D&apos;ASSURANCE DÉCENNALE</Text>
@@ -156,9 +175,10 @@ export function ContratPDFPage({
           </View>
         </View>
         <DecennaleGarantiesPdf data={data} />
-        <CpLines lines={DECENNALE_CP_CADRE} />
       </View>
     </Page>
+    <DecennaleRegimePages title="Conditions particulières" numero={numero} />
+    </>
   )
 }
 
@@ -186,6 +206,7 @@ export function AttestationPDFPage({
   const optimizedExclusions = extractOptimizedExclusionLines(d)
   const activityLines = activities.length > 0 ? activities : ["Activité déclarée au contrat"]
   return (
+    <>
     <Page size="A4" style={pdfTheme.page}>
       <PdfBrandHeader tagline="Assurance décennale professionnelle" />
       <Text style={pdfTheme.h2Center}>ATTESTATION D&apos;ASSURANCE</Text>
@@ -215,7 +236,6 @@ export function AttestationPDFPage({
         </Text>
         <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         <DecennaleGarantiesPdf data={data} />
-        <CpLines lines={DECENNALE_CP_CADRE} />
         {d.verificationQrDataUri && (
           <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
             {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
@@ -265,6 +285,8 @@ export function AttestationPDFPage({
         Optimum Courtage agit par délégation de Accelerant Insurance.
       </Text>
     </Page>
+    <DecennaleRegimePages title="Conditions particulières" numero={numero} />
+    </>
   )
 }
 
@@ -292,6 +314,7 @@ export function AttestationNominativePDFPage({
     objetMission?: string
   }
   return (
+    <>
     <Page size="A4" style={pdfTheme.page}>
       <PdfBrandHeader tagline="Attestation décennale nominative" />
       <Text style={pdfTheme.h2Center}>ATTESTATION D&apos;ASSURANCE NOMINATIVE</Text>
@@ -312,7 +335,6 @@ export function AttestationNominativePDFPage({
         </Text>
         <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         <DecennaleGarantiesPdf data={data} />
-        <CpLines lines={DECENNALE_CP_CADRE} />
       </View>
 
       <View style={pdfTheme.section}>
@@ -346,6 +368,8 @@ export function AttestationNominativePDFPage({
         Optimum Courtage agit par délégation de Accelerant Insurance.
       </Text>
     </Page>
+    <DecennaleRegimePages title="Conditions particulières" numero={numero} />
+    </>
   )
 }
 
@@ -453,7 +477,9 @@ export function FactureDecennalePDFPage({
     montantTotalPaye?: number
     datePaiement?: string
   }
+  const cpPages = chunkLinesByLength(decennaleCadreCompletLines(), 1400)
   return (
+    <>
     <Page size="A4" style={pdfTheme.page}>
       <PdfBrandHeader tagline="Assurance décennale — facturation" />
       <Text style={pdfTheme.h2Center}>FACTURE ACQUITTÉE</Text>
@@ -499,6 +525,15 @@ export function FactureDecennalePDFPage({
         Optimum Courtage agit par délégation de Accelerant Insurance.
       </Text>
     </Page>
+    {cpPages.map((chunk, index) => (
+      <Page key={`facture-decennale-cp-${index}`} size="A4" style={pdfTheme.page}>
+        <PdfBrandHeader tagline="Assurance décennale — facturation" />
+        <Text style={pdfTheme.h2}>Conditions particulières — page {index + 1}</Text>
+        <Text style={pdfTheme.p}>Facture n° {numero}</Text>
+        <CpLines lines={chunk} />
+      </Page>
+    ))}
+    </>
   )
 }
 

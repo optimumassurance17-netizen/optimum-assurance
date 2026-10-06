@@ -8,7 +8,7 @@ import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 import { DecennaleGarantiesTable } from "@/components/documents/DecennaleGarantiesTable"
 import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
-import { DECENNALE_CP_CADRE } from "@/lib/conditions-particulieres"
+import { decennaleCadreCompletLines } from "@/lib/conditions-particulieres"
 import { ActivityDetailsBlock } from "@/components/documents/ActivityDetailsBlock"
 import { INSURER_NAME } from "@/lib/legal-branding"
 
@@ -126,7 +126,7 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
           </table>
           <h4 className="font-semibold mt-4 mb-2">Garanties, montants et franchises</h4>
           <DecennaleGarantiesTable data={data} />
-          <ConditionsParticulieresNotes lines={DECENNALE_CP_CADRE} />
+          <ConditionsParticulieresNotes lines={decennaleCadreCompletLines()} />
         </section>
 
         <section>
