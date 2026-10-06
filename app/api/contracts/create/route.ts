@@ -93,7 +93,13 @@ export async function POST(request: NextRequest) {
     if (companyAgeMonths === undefined) {
       return NextResponse.json({ error: "companyAgeMonths invalide" }, { status: 400 })
     }
-    const ddaCheck = await assertRecentDdaConsent(session.user.id, expectedDdaProduct, 72)
+    const ddaCheck = await assertRecentDdaConsent({
+      userId: session.user.id,
+      email: session.user.email,
+      produit: expectedDdaProduct,
+      maxAgeHours: 72,
+      allowedPages: ["souscription", "signature", "souscription_do", "formulaire_do"],
+    })
     if (!ddaCheck.ok) {
       return NextResponse.json(
         {

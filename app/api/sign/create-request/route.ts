@@ -136,6 +136,7 @@ export async function POST(request: NextRequest) {
 
     const ddaConsent = await assertRecentDdaConsent({
       userId: session.user.id,
+      email: session.user.email ?? email,
       produit: "decennale",
       maxAgeHours: 72,
       allowedPages: ["signature", "souscription"],
