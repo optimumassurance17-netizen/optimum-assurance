@@ -7,6 +7,8 @@ import { drawOptimumHeader } from "@/lib/pdf/shared/drawHeader"
 import { embedStandardFonts } from "@/lib/pdf/shared/initPdf"
 import { finalizeWithFooters } from "@/lib/pdf/shared/finalizePdf"
 import { loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
+import { drawClausesPaginated } from "@/lib/pdf/shared/drawClauses"
+import { rcFabRegimeLines } from "@/lib/conditions-particulieres"
 import type { RcFabDossierConfig } from "@/lib/rc-fabriquant-dossier-config"
 
 export type RcFabBatteriesDocumentData = {
@@ -69,6 +71,27 @@ function drawParagraph(
     lineHeight
   )
   return { ...state, y: y - 7 }
+}
+
+function drawRegime(
+  pdfDoc: PDFDocument,
+  state: DrawState,
+  font: import("pdf-lib").PDFFont,
+  fontBold: import("pdf-lib").PDFFont,
+  logo: Awaited<ReturnType<typeof loadAccelerantLogoImage>>,
+  continuationTitle: string
+): DrawState {
+  const next = drawClausesPaginated({
+    pdfDoc,
+    page: state.page,
+    y: state.y,
+    font,
+    fontBold,
+    logo,
+    clauses: rcFabRegimeLines(),
+    continuationTitle,
+  })
+  return { page: next.page, y: next.y }
 }
 
 function drawBullets(
@@ -172,7 +195,8 @@ export async function generateRcFabBatteriesQuotePdf(
     13
   )
   state = drawParagraph(state, `Mentions utiles : ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`, font, 8, 11)
-  drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 11)
+  state = drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 11)
+  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "DEVIS — régime juridique (suite)")
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }
@@ -236,7 +260,8 @@ export async function generateRcFabBatteriesFicPdf(
   )
 
   state = drawParagraph(state, `Devoir de conseil : ${DEVOIR_CONSEIL_TEXT_BY_PRODUCT.rc_fabriquant.contenu}`, font, 8.8, 11)
-  drawParagraph(state, getDevoirConseilLinksLine("rc_fabriquant"), font, 8, 10)
+  state = drawParagraph(state, getDevoirConseilLinksLine("rc_fabriquant"), font, 8, 10)
+  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "FIC — régime juridique (suite)")
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }
@@ -372,6 +397,7 @@ export async function generateRcFabBatteriesPolicyPdf(
   state = drawParagraph(state, getDevoirConseilLinksLine("rc_fabriquant"), font, 8, 10)
   state = drawParagraph(state, `Références : ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`, font, 8, 10)
   state = drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
+  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "CONTRAT — régime juridique (suite)")
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }
@@ -416,7 +442,8 @@ export async function generateRcFabBatteriesCertificatePdf(
   )
   state = drawParagraph(state, `Vérification publique : ${SITE_URL}/verify/${encodeURIComponent(data.referenceContrat)}`, font, 8.4, 10)
   state = drawParagraph(state, `Mentions utiles : ${SITE_URL}/conditions-attestations`, font, 8, 10)
-  drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
+  state = drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
+  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "ATTESTATION — régime juridique (suite)")
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }

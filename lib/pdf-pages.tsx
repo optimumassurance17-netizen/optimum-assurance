@@ -637,7 +637,14 @@ export function AttestationNonSinistralitePDFPage({
           La société Optimum Assurance atteste que {d.raisonSociale ?? "—"} (SIRET : {d.siret ?? "—"}) n&apos;a déclaré
           aucun sinistre sur la période du {formatDate(d.dateDebut ?? "")} au {formatDate(d.dateFin ?? "")}.
         </Text>
+        <Text style={pdfTheme.p}>
+          Cette attestation constate seulement les sinistres déclarés à Optimum Courtage. Elle ne prouve pas
+          l&apos;absence de responsabilité, ni l&apos;absence de sinistre auprès d&apos;un autre assureur. Elle ne vaut
+          pas attestation d&apos;assurance au sens de l&apos;article L.241-1. Une déclaration inexacte relève des
+          articles L.113-8 et L.113-9.
+        </Text>
       </View>
+      <Text style={[pdfTheme.p, { marginTop: 12 }]}>Fait à Cholet.</Text>
     </Page>
   )
 }
@@ -659,7 +666,15 @@ export function DocumentResumePDFPage({
   }
   const d = data as { raisonSociale?: string; primeAnnuelle?: number; dateEffet?: string }
   const label = labels[type] || type
+  const regime =
+    type === "devis_do"
+      ? doCadreCompletLines()
+      : type === "devis" || type === "avenant"
+        ? decennaleCadreCompletLines()
+        : []
+  const regimePages = chunkLinesByLength(regime, 1400)
   return (
+    <>
     <Page size="A4" style={pdfTheme.page}>
       <PdfBrandHeader tagline={label} />
       <Text style={pdfTheme.h2}>{label}</Text>
@@ -677,5 +692,14 @@ export function DocumentResumePDFPage({
         Optimum Courtage agit par délégation de Accelerant Insurance.
       </Text>
     </Page>
+    {regimePages.map((chunk, index) => (
+      <Page key={`${type}-regime-${index}`} size="A4" style={pdfTheme.page}>
+        <PdfBrandHeader tagline={label} />
+        <Text style={pdfTheme.h2}>Régime juridique — page {index + 1}</Text>
+        <Text style={pdfTheme.p}>Document n° {numero}</Text>
+        <CpLines lines={chunk} />
+      </Page>
+    ))}
+    </>
   )
 }

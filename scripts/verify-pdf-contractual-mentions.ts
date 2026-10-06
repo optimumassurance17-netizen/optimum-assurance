@@ -61,11 +61,18 @@ const RC_FAB_MENTIONS: MentionCheck[] = [
   { label: "mention protection juridique", regex: /protection\s+juridique/i },
   { label: "montant protection juridique 20 000", regex: /20[\s\u00a0\u202f]*000/i },
   { label: "mention devoir de conseil", regex: /devoir\s+de\s+conseil/i },
+  { label: "responsabilité du fait des produits", regex: /1245-15/ },
+  { label: "déclenchement par le fait dommageable", regex: /L\.124-5/ },
+  { label: "franchise opposable", regex: /franchise\s+contractuelle\s+est\s+opposable/i },
+  { label: "prescription L.114-1", regex: /L\.114-1/ },
 ]
 
 const ASSURANCE_TITRE_MENTIONS: MentionCheck[] = [
   { label: "mention Assurance titre", regex: /assurance\s+titre/i },
   { label: "mention devoir de conseil", regex: /devoir\s+de\s+conseil/i },
+  { label: "principe indemnitaire L.121-1", regex: /L\.121-1/ },
+  { label: "ne remplace pas le notaire", regex: /ne\s+remplace\s+pas/i },
+  { label: "prescription L.114-1", regex: /L\.114-1/ },
 ]
 
 function normalizeExtractedPdfText(input: string): string {

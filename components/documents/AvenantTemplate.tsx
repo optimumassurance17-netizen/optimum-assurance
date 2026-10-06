@@ -2,6 +2,8 @@
 
 import { SITE_URL } from "@/lib/site-url"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
+import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
+import { decennaleCadreCompletLines } from "@/lib/conditions-particulieres"
 import { COMPANY_BRAND } from "@/lib/legal-branding"
 
 interface AvenantTemplateProps {
@@ -52,7 +54,7 @@ export function AvenantTemplate({ numero, data }: AvenantTemplateProps) {
         </ul>
         <p className="text-sm">Date de l&apos;avenant : {data.dateAvenant || new Date().toLocaleDateString("fr-FR")}</p>
         <p className="text-sm mt-3">
-          Les conditions particulières du contrat restent applicables. Seuls les points listés ci-dessus sont modifiés. En cas de divergence, les conditions particulières prévalent sur les conditions générales.
+          Les conditions particulières du contrat restent applicables. Seuls les points listés ci-dessus sont modifiés. En cas de divergence, les conditions particulières prévalent sur les conditions générales. Si le changement aggrave le risque, l&apos;article L.113-4 du Code des assurances s&apos;applique. L&apos;avenant ne peut pas ramener la garantie décennale obligatoire au-dessous de l&apos;annexe I de l&apos;article A.243-1.
         </p>
         <p className="text-sm font-medium mt-4 text-[#2563eb]">
           Frais d&apos;avenant : 60 € (reportés automatiquement sur la prochaine échéance de prélèvement)
@@ -60,8 +62,9 @@ export function AvenantTemplate({ numero, data }: AvenantTemplateProps) {
       </div>
 
       <p className="text-sm">
-        Fait à Paris, le {new Date().toLocaleDateString("fr-FR")}
+        Fait à Cholet, le {new Date().toLocaleDateString("fr-FR")}
       </p>
+      <ConditionsParticulieresNotes lines={decennaleCadreCompletLines()} />
       <p className="text-sm mt-4">
         Pour {COMPANY_BRAND}
       </p>

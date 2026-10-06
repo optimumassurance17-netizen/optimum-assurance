@@ -7,6 +7,8 @@ import { drawOptimumHeader } from "@/lib/pdf/shared/drawHeader"
 import { embedStandardFonts } from "@/lib/pdf/shared/initPdf"
 import { finalizeWithFooters } from "@/lib/pdf/shared/finalizePdf"
 import { loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
+import { drawClausesPaginated } from "@/lib/pdf/shared/drawClauses"
+import { assuranceTitreRegimeLines } from "@/lib/conditions-particulieres"
 import type { AssuranceTitreContractConfig } from "@/lib/assurance-titre-contract-config"
 
 export type AssuranceTitreDocumentData = {
@@ -66,6 +68,27 @@ function drawParagraph(
     lineHeight
   )
   return { ...state, y: y - 7 }
+}
+
+function drawRegime(
+  pdfDoc: PDFDocument,
+  state: DrawState,
+  font: import("pdf-lib").PDFFont,
+  fontBold: import("pdf-lib").PDFFont,
+  logo: Awaited<ReturnType<typeof loadAccelerantLogoImage>>,
+  continuationTitle: string
+): DrawState {
+  const next = drawClausesPaginated({
+    pdfDoc,
+    page: state.page,
+    y: state.y,
+    font,
+    fontBold,
+    logo,
+    clauses: assuranceTitreRegimeLines(),
+    continuationTitle,
+  })
+  return { page: next.page, y: next.y }
 }
 
 function drawBullets(
@@ -226,7 +249,8 @@ export async function generateAssuranceTitrePolicyPdf(
     8,
     10
   )
-  drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
+  state = drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
+  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "ASSURANCE TITRE — régime juridique (suite)")
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }
@@ -308,7 +332,8 @@ export async function generateAssuranceTitreCertificatePdf(
     11
   )
   state = drawParagraph(state, getDevoirConseilLinksLine("assurance_titre"), font, 8, 10)
-  drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
+  state = drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
+  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "ATTESTATION TITRE — régime juridique (suite)")
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }

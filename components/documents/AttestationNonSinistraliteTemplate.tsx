@@ -76,8 +76,11 @@ export function AttestationNonSinistraliteTemplate({
         )}
       </div>
 
+      <p className="text-sm mb-4">
+        Cette attestation constate seulement les sinistres déclarés à Optimum Courtage pour la période indiquée. Elle ne prouve pas l&apos;absence de responsabilité, ni l&apos;absence de sinistre déclaré à un autre assureur. Elle ne vaut pas attestation d&apos;assurance au sens de l&apos;article L.241-1 du Code des assurances. Une déclaration inexacte relève des articles L.113-8 et L.113-9. La reprise de chantiers déjà ouverts n&apos;est acquise que si le contrat l&apos;accepte expressément.
+      </p>
       <p className="text-sm">
-        Fait à Paris, le {new Date().toLocaleDateString("fr-FR")}
+        Fait à Cholet, le {new Date().toLocaleDateString("fr-FR")}
       </p>
       <p className="text-sm mt-4">Pour {COMPANY_BRAND}</p>
     </div>
