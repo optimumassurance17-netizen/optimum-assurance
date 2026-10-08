@@ -47,7 +47,7 @@ Notification automatique — formulaire optimum-assurance.fr`.trim()
 <p><strong>Sujet :</strong> ${escapeHtmlForEmail(sujetT)}</p>
 <p style="margin-top:18px;margin-bottom:8px;"><strong>Message</strong></p>
 <p style="margin:0;white-space:pre-wrap;background:#f8fafc;padding:14px 16px;border-radius:10px;border:1px solid #e2e8f0;color:#0f172a;">${escapeHtmlForEmail(messageT)}</p>
-<p style="margin-top:20px;font-size:12px;color:#64748b;">Répondre à ce message pour contacter directement l’expéditeur (en-tête Reply-To).</p>`.trim()
+<p style="margin-top:20px;font-size:12px;color:#64748b;">Message reçu sur info@optimum-assurance.eu. L'adresse de l'expéditeur est indiquée ci-dessus.</p>`.trim()
 
     const sent = await sendEmail({
       to,

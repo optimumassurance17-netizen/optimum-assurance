@@ -12,5 +12,5 @@ export function getPublicContactEmail(): string {
 }
 
 export function getContactRecipientEmail(): string {
-  return normalizePublicContactEmail(process.env.CONTACT_EMAIL || process.env.NEXT_PUBLIC_EMAIL)
+  return DEFAULT_PUBLIC_CONTACT_EMAIL
 }

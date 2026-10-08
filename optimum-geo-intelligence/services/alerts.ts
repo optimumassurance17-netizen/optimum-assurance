@@ -1,4 +1,5 @@
 import { sendEmail } from "@/lib/email"
+import { DEFAULT_PUBLIC_CONTACT_EMAIL } from "@/lib/public-contact-email"
 import { logAiReport } from "@/optimum-geo-intelligence/services/audit-log"
 import { getSupabaseAdminClient } from "@/optimum-geo-intelligence/services/supabase-admin"
 import type { OgiAlertSeverity } from "@/optimum-geo-intelligence/types"
@@ -58,8 +59,7 @@ async function createAlertIfMissing(input: {
 }
 
 async function pushEmailNotification(alertId: string, subject: string, body: string) {
-  const to = process.env.ALERTS_EMAIL_TO?.trim()
-  if (!to) return false
+  const to = DEFAULT_PUBLIC_CONTACT_EMAIL
   const success = await sendEmail({
     to,
     subject,

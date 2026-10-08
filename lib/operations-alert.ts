@@ -5,7 +5,6 @@ import { getDevisAlertRecipientEmails } from "@/lib/devis-alert"
 type OperationsAlertParams = {
   subject: string
   lines: string[]
-  replyTo?: string
 }
 
 /**
@@ -14,12 +13,6 @@ type OperationsAlertParams = {
  */
 export async function sendOperationsAlert(params: OperationsAlertParams): Promise<boolean> {
   const recipients = getDevisAlertRecipientEmails()
-  if (recipients.length === 0) {
-    console.warn(
-      "[operations-alert] Aucun destinataire — définissez DEVIS_ALERT_EMAILS, ADMIN_EMAILS, CONTACT_EMAIL ou NEXT_PUBLIC_EMAIL."
-    )
-    return false
-  }
 
   const text = [
     "Alerte automatique Optimum Assurance",
@@ -48,7 +41,6 @@ export async function sendOperationsAlert(params: OperationsAlertParams): Promis
         subject: params.subject,
         text,
         html,
-        ...(params.replyTo?.trim() ? { replyTo: params.replyTo.trim() } : {}),
       })
     )
   )

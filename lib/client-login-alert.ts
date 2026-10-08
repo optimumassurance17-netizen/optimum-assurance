@@ -111,7 +111,6 @@ export async function notifyClientSpaceLogin(user: LoginAlertUser): Promise<bool
       subject,
       text,
       html,
-      replyTo: email,
     })
   } catch (error) {
     console.error("[client-login-alert] envoi:", error)

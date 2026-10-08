@@ -193,7 +193,6 @@ export async function GET(request: NextRequest) {
             `Signature request : ${pending.signatureRequestId}`,
             `Âge : ${ageHours}h`,
           ],
-          replyTo: email,
         })
         if (ok) {
           signatureAdminAlerted++
@@ -273,7 +272,6 @@ export async function GET(request: NextRequest) {
             `Âge : ${ageHours}h`,
             `Espace client : ${espaceClient}`,
           ],
-          replyTo: email,
         })
         if (ok) {
           contractAdminAlerted++

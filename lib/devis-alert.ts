@@ -1,31 +1,14 @@
 import { sendEmail } from "@/lib/email"
 import { escapeHtmlForEmail } from "@/lib/email-layout"
-import { normalizePublicContactEmail } from "@/lib/public-contact-email"
+import { DEFAULT_PUBLIC_CONTACT_EMAIL } from "@/lib/public-contact-email"
 import { SITE_URL } from "@/lib/site-url"
 
 /**
- * Destinataires des alertes « nouvelle demande de devis ».
- * Priorité : DEVIS_ALERT_EMAILS (liste séparée par virgules) → sinon ADMIN_EMAILS → CONTACT_EMAIL → NEXT_PUBLIC_EMAIL.
+ * Destinataire unique des alertes internes : info@optimum-assurance.eu.
+ * Les réponses aux e-mails partent aussi sur cette adresse (reply-to dans sendEmail).
  */
 export function getDevisAlertRecipientEmails(): string[] {
-  const primary = process.env.DEVIS_ALERT_EMAILS?.trim()
-  const publicFallback = normalizePublicContactEmail(
-    process.env.CONTACT_EMAIL?.trim() || process.env.NEXT_PUBLIC_EMAIL?.trim()
-  )
-  const fallback =
-    process.env.ADMIN_EMAILS?.trim() ||
-    publicFallback
-  const raw = primary || fallback
-  const seen = new Set<string>()
-  const out: string[] = []
-  for (const part of raw.split(",")) {
-    const e = part.trim().toLowerCase()
-    if (e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && !seen.has(e)) {
-      seen.add(e)
-      out.push(e)
-    }
-  }
-  return out
+  return [DEFAULT_PUBLIC_CONTACT_EMAIL]
 }
 
 type DevisAlertType =
@@ -45,12 +28,6 @@ export async function sendNewDevisRequestAlert(params: {
   lines: string[]
 }): Promise<void> {
   const recipients = getDevisAlertRecipientEmails()
-  if (recipients.length === 0) {
-    console.warn(
-      "[devis-alert] Aucun destinataire — définissez DEVIS_ALERT_EMAILS, ADMIN_EMAILS, CONTACT_EMAIL ou NEXT_PUBLIC_EMAIL."
-    )
-    return
-  }
 
   const label =
     params.type === "decennale"
@@ -84,13 +61,12 @@ export async function sendNewDevisRequestAlert(params: {
   const html = `<p style="font-weight:600;font-size:16px;margin:0 0 14px;color:#0f172a;">Nouvelle demande de devis — ${escapeHtmlForEmail(label)}</p>
 <p style="margin:0 0 12px;"><strong>Email du prospect :</strong> <a href="mailto:${escapeHtmlForEmail(clientEmail)}" style="color:#2563eb;">${escapeHtmlForEmail(clientEmail)}</a></p>
 ${htmlLines}
-<p style="margin-top:18px;font-size:12px;color:#64748b;">Répondre à ce message pour écrire directement au prospect (Reply-To).</p>`.trim()
+<p style="margin-top:18px;font-size:12px;color:#64748b;">Alerte reçue sur ${escapeHtmlForEmail(DEFAULT_PUBLIC_CONTACT_EMAIL)}. L'adresse du prospect est indiquée ci-dessus.</p>`.trim()
 
   const results = await Promise.all(
     recipients.map((to) =>
       sendEmail({
         to,
-        replyTo: clientEmail,
         subject,
         text: textBody,
         html,
@@ -113,12 +89,6 @@ export async function sendDoEtudeSavedAlert(params: {
   isUpdate: boolean
 }): Promise<void> {
   const recipients = getDevisAlertRecipientEmails()
-  if (recipients.length === 0) {
-    console.warn(
-      "[devis-alert] DO étude : aucun destinataire — définissez DEVIS_ALERT_EMAILS, ADMIN_EMAILS, CONTACT_EMAIL ou NEXT_PUBLIC_EMAIL."
-    )
-    return
-  }
 
   const clientEmail = params.clientEmail.trim()
   const action = params.isUpdate ? "mis à jour" : "enregistré"
@@ -150,13 +120,12 @@ export async function sendDoEtudeSavedAlert(params: {
   const html = `<p style="font-weight:600;font-size:16px;margin:0 0 14px;color:#0f172a;">Questionnaire d’étude DO — ${escapeHtmlForEmail(action)}</p>
 <p style="margin:0 0 12px;"><strong>Email du client :</strong> <a href="mailto:${escapeHtmlForEmail(clientEmail)}" style="color:#2563eb;">${escapeHtmlForEmail(clientEmail)}</a></p>
 ${htmlLines}
-<p style="margin-top:18px;font-size:12px;color:#64748b;">Répondre à ce message pour écrire directement au client (Reply-To).</p>`.trim()
+<p style="margin-top:18px;font-size:12px;color:#64748b;">Alerte reçue sur ${escapeHtmlForEmail(DEFAULT_PUBLIC_CONTACT_EMAIL)}. L'adresse du client est indiquée ci-dessus.</p>`.trim()
 
   const results = await Promise.all(
     recipients.map((to) =>
       sendEmail({
         to,
-        replyTo: clientEmail,
         subject,
         text: textBody,
         html,
@@ -178,12 +147,6 @@ export async function sendAssuranceTitreEtudeSavedAlert(params: {
   isUpdate: boolean
 }): Promise<void> {
   const recipients = getDevisAlertRecipientEmails()
-  if (recipients.length === 0) {
-    console.warn(
-      "[devis-alert] Assurance titre étude : aucun destinataire — définissez DEVIS_ALERT_EMAILS, ADMIN_EMAILS, CONTACT_EMAIL ou NEXT_PUBLIC_EMAIL."
-    )
-    return
-  }
 
   const clientEmail = params.clientEmail.trim()
   const action = params.isUpdate ? "mis à jour" : "enregistré"
@@ -215,13 +178,12 @@ export async function sendAssuranceTitreEtudeSavedAlert(params: {
   const html = `<p style="font-weight:600;font-size:16px;margin:0 0 14px;color:#0f172a;">Questionnaire d’étude Assurance titre — ${escapeHtmlForEmail(action)}</p>
 <p style="margin:0 0 12px;"><strong>Email du client :</strong> <a href="mailto:${escapeHtmlForEmail(clientEmail)}" style="color:#2563eb;">${escapeHtmlForEmail(clientEmail)}</a></p>
 ${htmlLines}
-<p style="margin-top:18px;font-size:12px;color:#64748b;">Répondre à ce message pour écrire directement au client (Reply-To).</p>`.trim()
+<p style="margin-top:18px;font-size:12px;color:#64748b;">Alerte reçue sur ${escapeHtmlForEmail(DEFAULT_PUBLIC_CONTACT_EMAIL)}. L'adresse du client est indiquée ci-dessus.</p>`.trim()
 
   await Promise.all(
     recipients.map((to) =>
       sendEmail({
         to,
-        replyTo: clientEmail,
         subject,
         text: textBody,
         html,

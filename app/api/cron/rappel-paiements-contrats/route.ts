@@ -139,7 +139,6 @@ export async function GET(request: NextRequest) {
               `Montant: ${latestPayment.amount.toLocaleString("fr-FR")} €`,
               `Espace client: ${SITE_URL}/espace-client`,
             ],
-            replyTo: normalizedEmail,
           })
           if (alertOk) {
             alerts++

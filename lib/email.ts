@@ -65,7 +65,10 @@ export async function sendEmail(params: {
   text: string
   html?: string
   attachments?: Array<{ filename: string; content: Buffer | string }>
-  /** Réponse directe au visiteur (ex. formulaire contact). API Resend : reply_to */
+  /**
+   * Conservé pour les appelants. Ignoré : toute réponse revient sur info@optimum-assurance.eu.
+   * API Resend : reply_to
+   */
   replyTo?: string
   /** Désactive logo + pied de page (cas exceptionnels). */
   skipBranding?: boolean
@@ -83,7 +86,7 @@ export async function sendEmail(params: {
   const textOut = params.skipBranding ? params.text : appendTransactionalEmailTextFooter(params.text)
 
   const unsubscribeHeaders = listUnsubscribeHeaders(textOut)
-  const replyTo = params.replyTo?.trim() || DEFAULT_PUBLIC_CONTACT_EMAIL
+  const replyTo = DEFAULT_PUBLIC_CONTACT_EMAIL
   const payloadFor = (from: string) =>
     JSON.stringify({
       from,
