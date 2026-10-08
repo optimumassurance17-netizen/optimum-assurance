@@ -151,6 +151,7 @@ interface ClientData {
     amount: number
     status: string
     statusLabel?: string | null
+    methodLabel?: string | null
     echeanceLabel?: string | null
     paidAt: string | null
     createdAt: string
@@ -416,7 +417,7 @@ export default function ClientDetailPage() {
   const { user, documents, payments, avenantFees } = data
   const echeances = data.echeances ?? []
 
-  const handleEcheance = async (echeanceId: string, action: "carte" | "regler") => {
+  const handleEcheance = async (echeanceId: string, action: "carte" | "regler" | "prevenir") => {
     setEcheanceBusy(`${echeanceId}:${action}`)
     try {
       const res = await fetch(`/api/gestion/clients/${clientId}/echeances`, {
@@ -432,6 +433,7 @@ export default function ClientDetailPage() {
         sentTo?: string
         checkoutUrl?: string
         emailSent?: boolean
+        warning?: string
         echeances?: ClientData["echeances"]
       }>(res)
       if (!res.ok && !body.checkoutUrl) {
@@ -443,6 +445,15 @@ export default function ClientDetailPage() {
       const reload = await fetch(`/api/gestion/clients/${clientId}`)
       if (reload.ok) {
         setData(await readResponseJson<ClientData>(reload))
+      }
+      if (action === "prevenir") {
+        setToast({
+          message: body.emailSent === false
+            ? body.warning || "Email non envoyé."
+            : `Information envoyée à ${body.sentTo || user.email}.`,
+          type: body.emailSent === false ? "warning" : "success",
+        })
+        return
       }
       if (action === "carte" && body.checkoutUrl && body.emailSent === false) {
         setToast({
@@ -1681,6 +1692,16 @@ export default function ClientDetailPage() {
                                 Envoyé le {new Date(echeance.cardLinkSentAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}
                               </span>
                             ) : null}
+                            {echeance.sepaFailure ? (
+                              <button
+                                type="button"
+                                disabled={echeanceBusy !== null}
+                                onClick={() => void handleEcheance(echeance.id, "prevenir")}
+                                className="rounded-lg border border-red-400 px-3 py-1.5 text-xs font-semibold text-red-100 hover:border-red-300 disabled:opacity-50"
+                              >
+                                {echeanceBusy === `${echeance.id}:prevenir` ? "Envoi…" : "Prévenir le client"}
+                              </button>
+                            ) : null}
                             <button
                               type="button"
                               disabled={echeanceBusy !== null}
@@ -1711,6 +1732,7 @@ export default function ClientDetailPage() {
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-4 font-medium">Date</th>
                     <th className="text-left p-4 font-medium">Échéance</th>
+                    <th className="text-left p-4 font-medium">Mode</th>
                     <th className="text-left p-4 font-medium">Montant</th>
                     <th className="text-left p-4 font-medium">Statut</th>
                   </tr>
@@ -1720,6 +1742,7 @@ export default function ClientDetailPage() {
                     <tr key={p.id} className="border-b border-gray-700/50">
                       <td className="p-4">{new Date(p.paidAt || p.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-4">{p.echeanceLabel || "—"}</td>
+                      <td className="p-4">{p.methodLabel || "—"}</td>
                       <td className="p-4">{p.amount.toLocaleString("fr-FR")} €</td>
                       <td className="p-4">
                         <span className={`px-2 py-1 rounded text-xs ${

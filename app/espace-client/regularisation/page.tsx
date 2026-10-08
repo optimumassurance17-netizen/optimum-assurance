@@ -75,7 +75,12 @@ export default function RegularisationPage() {
         error?: string
         checkoutUrl?: string
         id?: string
+        alreadyPaid?: boolean
       }>(res)
+      if (result.alreadyPaid) {
+        setError("Cette régularisation est déjà payée.")
+        return
+      }
       if (!res.ok) throw new Error(result.error || "Erreur")
       if (result.checkoutUrl) {
         sessionStorage.setItem("mollie_payment_id", result.id ?? "")

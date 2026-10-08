@@ -1,13 +1,17 @@
+import { readFileSync } from "node:fs"
 import {
   attachOpenCardLinks,
   attestationIdFromPaymentMetadata,
   buildClientEcheances,
+  cardPaymentMatches,
   echeanceReceiptLabel,
   installmentFromPaymentMetadata,
   mollieCardLinkIsClosed,
   molliePaymentIsOpen,
+  nextUnpaidEcheance,
   paidAttestationMoments,
   paymentEcheanceLabel,
+  paymentMethodLabel,
   paymentStatusLabel,
   readEcheanceCardLink,
 } from "../lib/client-echeances"
@@ -147,5 +151,53 @@ const moments = paidAttestationMoments([
 ])
 assert(attestationIdFromPaymentMetadata(JSON.stringify({ attestationId: "doc2" })) === "doc2", "le paiement identifie l'attestation")
 assert(moments.get("doc2")?.toISOString() === "2026-06-02T00:00:00.000Z", "la date de règlement de l'attestation est conservée")
+assert(paymentMethodLabel(null, "manuel_1") === "Règlement manuel", "un paiement manuel est identifié")
+assert(paymentMethodLabel(JSON.stringify({ type: "sepa_trimestre" })) === "Prélèvement SEPA", "un prélèvement SEPA est identifié")
+assert(paymentMethodLabel(JSON.stringify({ type: "echeance_carte" })) === "Carte", "un paiement carte est identifié")
+assert(nextUnpaidEcheance(partial)?.id === "decennale:3", "la prochaine échéance est la première non réglée")
+assert(
+  cardPaymentMatches(JSON.stringify({ type: "regularisation", attestationId: "doc1" }), { echeanceId: "attestation:doc1" }),
+  "une régularisation correspond à l'échéance d'attestation"
+)
+assert(
+  !cardPaymentMatches(JSON.stringify({ type: "echeance_manuelle", echeanceId: "decennale:1" }), { echeanceId: "decennale:1" }),
+  "un règlement manuel n'est pas un lien carte réutilisable"
+)
+
+const attestationRows = buildClientEcheances({
+  primeAnnuelle: null,
+  anchorDate: null,
+  firstTrimesterPaidAt: null,
+  trimestresSepaPayes: 0,
+  sepaSubscriptionId: null,
+  explicitPaidInstallments: [],
+  avenantFees: [],
+  suspendedAttestations: [{ id: "doc1", numero: "AT-1", amount: 80, createdAt: new Date("2026-05-01T00:00:00.000Z") }],
+})
+const reusedAttestation = attachOpenCardLinks(attestationRows, [
+  {
+    status: "pending",
+    molliePaymentId: "tr_reg",
+    createdAt: new Date("2026-05-02T00:00:00.000Z"),
+    metadata: JSON.stringify({
+      type: "regularisation",
+      attestationId: "doc1",
+      checkoutUrl: "https://pay.example/reg",
+    }),
+  },
+])
+assert(reusedAttestation[0]?.cardLinkStatus === "open", "le lien de régularisation client s'affiche sur l'échéance")
+assert(reusedAttestation[0]?.checkoutUrl === "https://pay.example/reg", "l'adresse du lien de régularisation est conservée")
+
+const createPayment = readFileSync(new URL("../app/api/mollie/create-payment/route.ts", import.meta.url), "utf8")
+const clientEcheance = readFileSync(new URL("../app/api/client/prochaine-echeance/route.ts", import.meta.url), "utf8")
+const adminEcheance = readFileSync(new URL("../app/api/gestion/clients/[id]/echeances/route.ts", import.meta.url), "utf8")
+assert(createPayment.includes("reused: true") && createPayment.includes('status: "pending"'), "la régularisation réutilise et enregistre le lien ouvert")
+assert(!clientEcheance.includes("payments.create"), "l'espace client ne crée pas de nouveau paiement pour l'échéance")
+assert(clientEcheance.includes("resolveOpenCardLink"), "l'espace client renvoie le lien déjà ouvert")
+const prevenirAt = adminEcheance.indexOf('action === "prevenir"')
+const refreshAt = adminEcheance.indexOf("await refreshPendingCardPayment")
+assert(prevenirAt > 0 && refreshAt > prevenirAt, "l'information de refus SEPA part avant toute lecture Mollie")
+assert(adminEcheance.includes("sendSepaFailureNotice"), "le refus SEPA prévient le client par email")
 
 console.log("Échéances fiche client : OK")

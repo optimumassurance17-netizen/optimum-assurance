@@ -231,7 +231,7 @@ export function attachOpenCardLinks(rows: ClientEcheance[], payments: PendingCar
   for (const payment of payments) {
     if (payment.status !== "pending") continue
     if (!payment.molliePaymentId || payment.molliePaymentId.startsWith("manuel_")) continue
-    const link = readEcheanceCardLink(payment.metadata)
+    const link = readOpenCardTarget(payment.metadata)
     if (!link) continue
     const createdAt = payment.createdAt.getTime()
     const previous = latest.get(link.echeanceId)
@@ -279,6 +279,50 @@ export function paymentStatusLabel(status: string): string {
   if (status === "pending") return "Lien envoyé"
   if (status === "failed") return "Échoué"
   return status
+}
+
+export function readOpenCardTarget(metadata: string | null | undefined): {
+  echeanceId: string
+  checkoutUrl: string | null
+} | null {
+  const direct = readEcheanceCardLink(metadata)
+  if (direct) return direct
+  const parsed = parseMetadataRecord(metadata)
+  if (!parsed || parsed.type !== "regularisation") return null
+  if (typeof parsed.attestationId !== "string" || !parsed.attestationId.trim()) return null
+  const checkoutUrl =
+    typeof parsed.checkoutUrl === "string" && parsed.checkoutUrl.startsWith("https://") ? parsed.checkoutUrl : null
+  return { echeanceId: `attestation:${parsed.attestationId.trim()}`, checkoutUrl }
+}
+
+export function cardPaymentMatches(
+  metadata: string | null | undefined,
+  target: { echeanceId?: string | null; attestationId?: string | null }
+): boolean {
+  const parsed = parseMetadataRecord(metadata)
+  if (!parsed) return false
+  if (parsed.type !== "echeance_carte" && parsed.type !== "regularisation") return false
+  if (target.echeanceId && parsed.echeanceId === target.echeanceId) return true
+  if (target.attestationId && parsed.attestationId === target.attestationId) return true
+  if (target.attestationId && parsed.echeanceId === `attestation:${target.attestationId}`) return true
+  if (target.echeanceId?.startsWith("attestation:") && parsed.attestationId === target.echeanceId.slice("attestation:".length)) {
+    return true
+  }
+  return false
+}
+
+export function nextUnpaidEcheance<T extends { paid: boolean }>(rows: T[]): T | null {
+  return rows.find((row) => !row.paid) ?? null
+}
+
+export function paymentMethodLabel(metadata: string | null | undefined, molliePaymentId?: string | null): string | null {
+  if (molliePaymentId?.startsWith("manuel_")) return "Règlement manuel"
+  const parsed = parseMetadataRecord(metadata)
+  const type = typeof parsed?.type === "string" ? parsed.type : ""
+  if (type === "echeance_manuelle") return "Règlement manuel"
+  if (type === "sepa_trimestre") return "Prélèvement SEPA"
+  if (type === "echeance_carte" || type === "regularisation" || type === "decennale_premier_trimestre") return "Carte"
+  return null
 }
 
 export function paymentEcheanceLabel(metadata: string | null | undefined): string | null {

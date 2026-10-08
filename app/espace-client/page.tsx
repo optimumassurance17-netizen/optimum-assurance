@@ -14,6 +14,7 @@ import type { InsuranceContractListItem } from "@/lib/insurance-contract-types"
 import { PayInsuranceContractButton } from "@/components/insurance/PayInsuranceContractButton"
 import { InsuranceContractPdfLinks } from "@/components/insurance/InsuranceContractPdfLinks"
 import { primeTrimestrielle } from "@/lib/premium"
+import { ProchaineEcheanceCard } from "@/components/espace-client/ProchaineEcheanceCard"
 import {
   getInsuranceProductLabel,
   insuranceProductAllowsActiveInstallmentPayments,
@@ -1010,6 +1011,8 @@ export default function EspaceClientPage() {
             )}
           </div>
         )}
+
+        {activeTab === "documents" && !loading && status === "authenticated" ? <ProchaineEcheanceCard /> : null}
 
         {/* Onglet Documents */}
         {activeTab === "documents" && !loading && documents.some((d) => d.type === "attestation" && d.status === "suspendu") && (

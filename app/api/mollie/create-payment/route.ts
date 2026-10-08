@@ -3,6 +3,8 @@ import { createMollieClient, Locale, PaymentMethod } from "@mollie/api-client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
+import { attestationCardMatch, resolveOpenCardLink } from "@/lib/open-card-link"
+import { prisma } from "@/lib/prisma"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const ALLOWED_METHODS = new Set([
@@ -104,6 +106,38 @@ export async function POST(request: NextRequest) {
     }
 
     const mollieClient = createMollieClient({ apiKey })
+    const attestationId = typeof metadata.attestationId === "string" ? metadata.attestationId.trim() : ""
+    const isRegularisation = metadata.type === "regularisation" && attestationId.length > 0
+
+    if (isRegularisation) {
+      const account = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { raisonSociale: true, email: true },
+      })
+      const existing = await resolveOpenCardLink({
+        mollie: mollieClient,
+        userId: session.user.id,
+        match: attestationCardMatch(attestationId),
+        raisonSociale: account?.raisonSociale || account?.email || customerEmail || "",
+      })
+      if (existing.kind === "open") {
+        return NextResponse.json({
+          id: existing.paymentId,
+          checkoutUrl: existing.checkoutUrl,
+          status: "open",
+          reused: true,
+        })
+      }
+      if (existing.kind === "paid") {
+        return NextResponse.json(
+          { error: "Cette régularisation est déjà payée.", alreadyPaid: true },
+          { status: 409 }
+        )
+      }
+      if (existing.kind === "blocked") {
+        return NextResponse.json({ error: existing.message }, { status: 409 })
+      }
+    }
 
     const baseUrl = getMolliePublicBaseUrl()
 
@@ -145,10 +179,41 @@ export async function POST(request: NextRequest) {
     }
 
     const payment = await mollieClient.payments.create(paymentParams)
+    const checkoutUrl = payment._links?.checkout?.href
+
+    if (isRegularisation && checkoutUrl) {
+      const numero = typeof metadata.attestationNumero === "string" ? metadata.attestationNumero.trim() : ""
+      const account = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { raisonSociale: true, email: true },
+      })
+      try {
+        await prisma.payment.create({
+          data: {
+            userId: session.user.id,
+            molliePaymentId: payment.id,
+            amount,
+            status: "pending",
+            metadata: JSON.stringify({
+              type: "regularisation",
+              attestationId,
+              attestationNumero: numero,
+              label: numero ? `Régularisation ${numero}` : "Régularisation",
+              userId: session.user.id,
+              email: (customerEmail || account?.email || "").trim().toLowerCase(),
+              raisonSociale: account?.raisonSociale || "",
+              checkoutUrl,
+            }),
+          },
+        })
+      } catch (error) {
+        console.error("[mollie/create-payment] enregistrement du lien de régularisation", error)
+      }
+    }
 
     return NextResponse.json({
       id: payment.id,
-      checkoutUrl: payment._links?.checkout?.href,
+      checkoutUrl,
       status: payment.status,
     })
   } catch (error) {

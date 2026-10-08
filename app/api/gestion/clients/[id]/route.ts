@@ -19,7 +19,7 @@ import { loadClientEcheances } from "@/lib/client-echeance-service"
 import { clientDeleteErrorMessage, deleteClientAccount } from "@/lib/client-account"
 import { purgeClientExternalResidue } from "@/lib/purge-client-residue"
 import { describeSepaReadiness } from "@/lib/sepa-readiness"
-import { paymentEcheanceLabel, paymentStatusLabel } from "@/lib/client-echeances"
+import { paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel } from "@/lib/client-echeances"
 
 function parseLogDetails(raw: string | null | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null
@@ -134,7 +134,7 @@ export async function GET(
       }),
       prisma.payment.findMany({
         where: { userId: id },
-        select: { id: true, amount: true, status: true, paidAt: true, createdAt: true, metadata: true },
+        select: { id: true, amount: true, status: true, paidAt: true, createdAt: true, metadata: true, molliePaymentId: true },
         orderBy: { createdAt: "desc" },
       }),
       prisma.avenantFee.findMany({
@@ -272,6 +272,7 @@ export async function GET(
       amount: payment.amount,
       status: payment.status,
       statusLabel: paymentStatusLabel(payment.status),
+      methodLabel: paymentMethodLabel(payment.metadata, payment.molliePaymentId),
       echeanceLabel: paymentEcheanceLabel(payment.metadata),
       paidAt: payment.paidAt,
       createdAt: payment.createdAt,

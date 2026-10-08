@@ -14,6 +14,51 @@ export function shouldCopyEcheanceReceipt(clientEmail: string): boolean {
   return clientEmail.trim().toLowerCase() !== DEFAULT_PUBLIC_CONTACT_EMAIL.toLowerCase()
 }
 
+/** Information au client : le prélèvement SEPA n'a pas abouti. Aucun paiement n'est créé. */
+export async function sendSepaFailureNotice(params: {
+  email: string
+  raisonSociale: string
+  label: string
+  reason: string
+  espaceUrl: string
+}): Promise<boolean> {
+  const email = params.email.trim()
+  if (!email) return false
+  const template = EMAIL_TEMPLATES.informationRefusSepa(
+    params.raisonSociale || email,
+    params.label,
+    params.reason,
+    params.espaceUrl,
+    email
+  )
+  try {
+    const sent = await sendEmail({
+      to: email,
+      subject: template.subject,
+      text: template.text,
+      html: template.html,
+    })
+    if (!sent) {
+      console.warn("[echeance] information de refus SEPA non envoyée", { email, label: params.label })
+      return false
+    }
+    if (!shouldCopyEcheanceReceipt(email)) return true
+    const copied = await sendEmail({
+      to: DEFAULT_PUBLIC_CONTACT_EMAIL,
+      subject: `[Copie] ${template.subject}`,
+      text: `Copie de l'information envoyée à ${email}.\n\n${template.text}`,
+      html: `<p>Copie de l'information envoyée à <strong>${escapeHtml(email)}</strong>.</p>${template.html}`,
+    })
+    if (!copied) {
+      console.warn("[echeance] copie de l'information de refus SEPA non envoyée", { email, label: params.label })
+    }
+    return true
+  } catch (error) {
+    console.warn("[echeance] envoi de l'information de refus SEPA impossible", { email, error })
+    return false
+  }
+}
+
 /** Reçu client à l'encaissement Mollie, avec copie sur info@ si l'adresse diffère. */
 export async function sendEcheancePaidReceipt(params: {
   email: string

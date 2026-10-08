@@ -16,7 +16,8 @@ import {
   readEcheanceCardLink,
   stringRecordFromMetadata,
 } from "@/lib/client-echeances"
-import { sendEcheancePaidReceipt } from "@/lib/echeance-receipt"
+import { sendEcheancePaidReceipt, sendSepaFailureNotice } from "@/lib/echeance-receipt"
+import { SITE_URL } from "@/lib/site-url"
 
 const ECHEANCE_ID_RE = /^(decennale:\d+|avenant:[a-z0-9]+|attestation:[a-z0-9]+)$/i
 
@@ -182,7 +183,7 @@ export async function POST(
       return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
     }
     const raw = body as Record<string, unknown>
-    const action = raw.action === "carte" || raw.action === "regler" ? raw.action : null
+    const action = raw.action === "carte" || raw.action === "regler" || raw.action === "prevenir" ? raw.action : null
     const echeanceId = typeof raw.echeanceId === "string" ? raw.echeanceId.trim() : ""
     if (!action || !ECHEANCE_ID_RE.test(echeanceId)) {
       return NextResponse.json({ error: "Échéance ou action invalide." }, { status: 400 })
@@ -209,6 +210,32 @@ export async function POST(
 
     const email = user.email.trim().toLowerCase()
     const raisonSociale = user.raisonSociale || email
+
+    if (action === "prevenir") {
+      if (!echeance.sepaFailure) {
+        return NextResponse.json({ error: "Cette échéance n'a pas de prélèvement refusé." }, { status: 400 })
+      }
+      const sent = await sendSepaFailureNotice({
+        email,
+        raisonSociale,
+        label: echeance.label,
+        reason: echeance.sepaFailure,
+        espaceUrl: `${SITE_URL}/espace-client/regularisation`,
+      })
+      await logAdminActivity({
+        adminEmail: session.user.email,
+        action: "echeance_refus_sepa_prevenu",
+        targetType: "user",
+        targetId: user.id,
+        details: { echeanceId: echeance.id, emailSent: sent },
+      })
+      const echeances = await loadClientEcheances(userId)
+      if (!sent) {
+        return NextResponse.json({ ...emailNotSentBody(), echeances })
+      }
+      return NextResponse.json({ ok: true, sentTo: email, echeances })
+    }
+
     const metadata: Record<string, string> = {
       type: action === "carte" ? "echeance_carte" : "echeance_manuelle",
       echeanceId: echeance.id,
