@@ -4,6 +4,7 @@ import { Prisma } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { sendAccountCreationMailCopy, sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
+import { duplicateSiretAccountMessage, findClientBySiret, normalizeAccountSiret } from "@/lib/client-account"
 
 function isPlausibleEmail(value: string): boolean {
   return value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
@@ -25,7 +26,8 @@ export async function POST(request: NextRequest) {
     const email = optionalTrimmed(body.email)?.toLowerCase() ?? ""
     const password = typeof body.password === "string" ? body.password : ""
     const raisonSociale = optionalTrimmed(body.raisonSociale)
-    const siret = optionalTrimmed(body.siret)
+    const siretInput = optionalTrimmed(body.siret)
+    const siret = normalizeAccountSiret(siretInput) ?? siretInput
     const adresse = optionalTrimmed(body.adresse)
     const codePostal = optionalTrimmed(body.codePostal)
     const ville = optionalTrimmed(body.ville)
@@ -50,6 +52,13 @@ export async function POST(request: NextRequest) {
     if (existing) {
       return NextResponse.json(
         { error: "Un compte existe déjà avec cet email" },
+        { status: 400 }
+      )
+    }
+    const existingSiret = await findClientBySiret(siretInput)
+    if (existingSiret) {
+      return NextResponse.json(
+        { error: duplicateSiretAccountMessage(existingSiret.email) },
         { status: 400 }
       )
     }

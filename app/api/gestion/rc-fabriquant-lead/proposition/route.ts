@@ -10,6 +10,7 @@ import { buildDdaNeedSummary, buildDdaSuitabilityStatement } from "@/lib/dda-com
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
 import { sendAccountCreationMailCopy, sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
+import { findDuplicateClientAccount } from "@/lib/client-account"
 
 const MESSAGE_MIN = 20
 const MESSAGE_MAX = 12000
@@ -102,10 +103,13 @@ export async function POST(request: NextRequest) {
     const email = lead.email.trim().toLowerCase()
     let createdClientSpace = false
     let tempPassword: string | undefined
-    let user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true, raisonSociale: true },
+    const existingAccount = await findDuplicateClientAccount({
+      email,
+      siret: typeof leadData.siret === "string" ? leadData.siret : null,
     })
+    let user = existingAccount
+      ? { id: existingAccount.id, email: existingAccount.email, raisonSociale: existingAccount.raisonSociale }
+      : null
 
     if (!user) {
       tempPassword = generateTempPassword()

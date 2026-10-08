@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { ensureUserTitleQuestionnaireColumns } from "@/lib/ensure-user-title-columns"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
+import { duplicateSiretAccountMessage, findClientBySiret } from "@/lib/client-account"
 import { extractClientIdentityFromRecord, mergeClientIdentity } from "@/lib/client-identity-extract"
 import {
   clientAccessErrorMessage,
@@ -282,6 +283,14 @@ export async function POST(request: NextRequest) {
 
     if (leadType === "assurance_titre") {
       await ensureUserTitleQuestionnaireColumns()
+    }
+
+    const sameSiret = await findClientBySiret(siret)
+    if (sameSiret && sameSiret.email.trim().toLowerCase() !== normalizedEmail) {
+      return NextResponse.json(
+        { error: duplicateSiretAccountMessage(sameSiret.email) },
+        { status: 409 }
+      )
     }
 
     const { user, usedFallback } = await createLeadUserWithSchemaFallback({

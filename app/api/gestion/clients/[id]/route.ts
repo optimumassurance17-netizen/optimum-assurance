@@ -22,6 +22,7 @@ import {
   normalizeForcedActivitiesInput,
 } from "@/lib/client-devis-autonomy"
 import { loadClientEcheances } from "@/lib/client-echeance-service"
+import { clientDeleteErrorMessage, deleteClientAccount } from "@/lib/client-account"
 
 function parseLogDetails(raw: string | null | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null
@@ -537,15 +538,7 @@ export async function DELETE(
       select: { mollieCustomerId: true },
     })
 
-    await prisma.$transaction(async (tx) => {
-      await tx.pendingSignature.deleteMany({ where: { userId: id } })
-      await tx.insuranceContract.updateMany({ where: { userId: id }, data: { userId: null } })
-      await tx.missingSubActivity.updateMany({ where: { userId: id }, data: { userId: null } })
-      await tx.whatsappClickLog.updateMany({ where: { userId: id }, data: { userId: null } })
-      await tx.pdfGenerationLog.updateMany({ where: { userId: id }, data: { userId: null } })
-      await tx.devoirConseilLog.updateMany({ where: { userId: id }, data: { userId: null } })
-      await tx.user.delete({ where: { id } })
-    })
+    await deleteClientAccount(id)
 
     if (sepaMollie?.mollieCustomerId) {
       const apiKey = process.env.MOLLIE_API_KEY
@@ -596,6 +589,8 @@ export async function DELETE(
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error("Erreur DELETE client:", error)
-    return NextResponse.json({ error: "Erreur lors de la suppression" }, { status: 500 })
+    const message = clientDeleteErrorMessage(error)
+    const status = message === "Client introuvable" ? 404 : 500
+    return NextResponse.json({ error: message }, { status })
   }
 }

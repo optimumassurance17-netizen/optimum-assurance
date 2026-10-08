@@ -321,6 +321,7 @@ export default function ClientDetailPage() {
   const [deleteModal, setDeleteModal] = useState(false)
   const [deleteConfirmEmail, setDeleteConfirmEmail] = useState("")
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -1680,6 +1681,7 @@ export default function ClientDetailPage() {
               type="button"
               onClick={() => {
                 setDeleteConfirmEmail("")
+                setDeleteError(null)
                 setDeleteModal(true)
               }}
               className="text-sm font-medium px-4 py-2 rounded-lg bg-red-900/80 text-white hover:bg-red-800 border border-red-700"
@@ -1833,6 +1835,7 @@ export default function ClientDetailPage() {
               placeholder="Email du client"
               className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white mb-4"
             />
+            {deleteError ? <p className="mb-4 text-sm text-red-300">{deleteError}</p> : null}
             <div className="flex gap-3 justify-end">
               <button
                 type="button"
@@ -1858,17 +1861,19 @@ export default function ClientDetailPage() {
                     })
                     const json = await readResponseJson<{ error?: string }>(res)
                     if (!res.ok) {
-                      setToast({ message: json.error || "Suppression impossible", type: "error" })
+                      const message = json.error || "Suppression impossible"
+                      setDeleteError(message)
+                      setToast({ message, type: "error" })
                       return
                     }
                     setDeleteModal(false)
                     router.replace("/gestion")
                   } catch (error) {
+                    const message =
+                      error instanceof Error ? error.message : "Erreur lors de la suppression de la fiche."
+                    setDeleteError(message)
                     setToast({
-                      message:
-                        error instanceof Error
-                          ? error.message
-                          : "Erreur lors de la suppression de la fiche.",
+                      message,
                       type: "error",
                     })
                   } finally {
