@@ -59,15 +59,15 @@ export async function sendSepaFailureNotice(params: {
   }
 }
 
-/** Reçu client à l'encaissement Mollie, avec copie sur info@ si l'adresse diffère. */
+/** Reçu client à l'encaissement, avec copie sur info@ si l'adresse diffère. */
 export async function sendEcheancePaidReceipt(params: {
   email: string
   raisonSociale: string
   metadata: Record<string, unknown>
   amount: number
-}): Promise<void> {
+}): Promise<boolean> {
   const email = params.email.trim()
-  if (!email) return
+  if (!email) return false
   const label = echeanceReceiptLabel(params.metadata)
   const template = EMAIL_TEMPLATES.confirmationEcheancePayee(params.raisonSociale || email, label, params.amount)
   try {
@@ -79,8 +79,9 @@ export async function sendEcheancePaidReceipt(params: {
     })
     if (!sent) {
       console.warn("[echeance] reçu non envoyé", { email, label })
+      return false
     }
-    if (!shouldCopyEcheanceReceipt(email)) return
+    if (!shouldCopyEcheanceReceipt(email)) return true
     const copied = await sendEmail({
       to: DEFAULT_PUBLIC_CONTACT_EMAIL,
       subject: `[Copie] ${template.subject}`,
@@ -90,7 +91,9 @@ export async function sendEcheancePaidReceipt(params: {
     if (!copied) {
       console.warn("[echeance] copie du reçu non envoyée", { email, label })
     }
+    return true
   } catch (error) {
     console.warn("[echeance] envoi du reçu impossible", { email, label, error })
+    return false
   }
 }

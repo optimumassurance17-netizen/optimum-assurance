@@ -48,6 +48,7 @@ import {
   ASSURANCE_TITRE_BIEN_LABELS,
   ASSURANCE_TITRE_OPERATION_LABELS,
 } from "@/lib/assurance-titre-types"
+import { paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel, pendingCardEcheanceId } from "@/lib/client-echeances"
 
 function getRcFabLeadDraft(
   d: { id: string; statut?: string; notesInternes?: string | null },
@@ -263,6 +264,7 @@ interface DashboardData {
     status: string
     paidAt: string | null
     createdAt: string
+    metadata?: string | null
     user: { email: string; raisonSociale: string | null }
   }[]
   avenantFees?: {
@@ -1490,6 +1492,22 @@ export default function GestionPage() {
     }
   }
 
+  const reloadDashboard = async () => {
+    const dashRes = await fetch("/api/gestion/dashboard")
+    if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+  }
+
+  const describeCardRelance = (body: {
+    alreadyPaid?: boolean
+    reused?: boolean
+    sentTo?: string
+    fallbackEmail?: string | null
+  }) => {
+    if (body.alreadyPaid) return "Cette échéance est déjà réglée. Aucun nouveau lien n'a été créé."
+    if (body.reused) return `Lien déjà ouvert, renvoyé à ${body.sentTo || body.fallbackEmail || "le client"}.`
+    return `Lien de paiement carte envoyé à ${body.sentTo || body.fallbackEmail || "le client"}.`
+  }
+
   const handleRelanceCarteAttestation = async (docId: string) => {
     setSendingAttestationCarteId(docId)
     try {
@@ -1500,6 +1518,8 @@ export default function GestionPage() {
         warning?: string
         sentTo?: string
         checkoutUrl?: string
+        reused?: boolean
+        alreadyPaid?: boolean
       }
       if (!res.ok && !body.checkoutUrl) {
         throw new Error(body.error || "Impossible d'ouvrir le paiement carte.")
@@ -1511,12 +1531,14 @@ export default function GestionPage() {
             : body.warning || "Email non envoyé.",
           type: "warning",
         })
+        await reloadDashboard()
         return
       }
       setToast({
-        message: `Lien de paiement carte envoyé à ${body.sentTo || "le client"}`,
+        message: describeCardRelance(body),
         type: "success",
       })
+      await reloadDashboard()
     } catch (e) {
       setToast({
         message: e instanceof Error ? e.message : "Erreur lors de la relance carte",
@@ -1524,6 +1546,47 @@ export default function GestionPage() {
       })
     } finally {
       setSendingAttestationCarteId(null)
+    }
+  }
+
+  const handleRelanceCarteSepa = async (subscriptionId: string, fallbackEmail?: string | null) => {
+    setSendingSepaCarteId(subscriptionId)
+    try {
+      const res = await fetch(`/api/gestion/sepa/${subscriptionId}/relance-carte`, { method: "POST" })
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string
+        emailSent?: boolean
+        warning?: string
+        sentTo?: string
+        checkoutUrl?: string
+        reused?: boolean
+        alreadyPaid?: boolean
+      }
+      if (!res.ok && !body.checkoutUrl) {
+        throw new Error(body.error || "Impossible d'ouvrir le paiement carte.")
+      }
+      if (body.emailSent === false) {
+        setToast({
+          message: body.checkoutUrl
+            ? `Email non envoyé. Lien carte : ${body.checkoutUrl}`
+            : body.warning || "Email non envoyé.",
+          type: "warning",
+        })
+        await reloadDashboard()
+        return
+      }
+      setToast({
+        message: describeCardRelance({ ...body, fallbackEmail }),
+        type: "success",
+      })
+      await reloadDashboard()
+    } catch (e) {
+      setToast({
+        message: e instanceof Error ? e.message : "Erreur lors de la relance carte",
+        type: "error",
+      })
+    } finally {
+      setSendingSepaCarteId(null)
     }
   }
 
@@ -2870,47 +2933,29 @@ export default function GestionPage() {
                                 <button
                                   type="button"
                                   disabled={sendingSepaCarteId === row.id}
-                                  onClick={async () => {
-                                    setSendingSepaCarteId(row.id)
-                                    try {
-                                      const res = await fetch(`/api/gestion/sepa/${row.id}/relance-carte`, {
-                                        method: "POST",
-                                      })
-                                      const body = (await res.json().catch(() => ({}))) as {
-                                        error?: string
-                                        emailSent?: boolean
-                                        warning?: string
-                                        sentTo?: string
-                                        checkoutUrl?: string
-                                      }
-                                      if (!res.ok && !body.checkoutUrl) {
-                                        throw new Error(body.error || "Impossible d'ouvrir le paiement carte.")
-                                      }
-                                      if (body.emailSent === false) {
-                                        setToast({
-                                          message: body.checkoutUrl
-                                            ? `Email non envoyé. Lien carte : ${body.checkoutUrl}`
-                                            : body.warning || "Email non envoyé.",
-                                          type: "warning",
-                                        })
-                                        return
-                                      }
-                                      setToast({
-                                        message: `Lien de paiement carte envoyé à ${body.sentTo || row.userEmail || "le client"}`,
-                                        type: "success",
-                                      })
-                                    } catch (e) {
-                                      setToast({
-                                        message: e instanceof Error ? e.message : "Erreur lors de la relance carte",
-                                        type: "error",
-                                      })
-                                    } finally {
-                                      setSendingSepaCarteId(null)
-                                    }
-                                  }}
+                                  title={
+                                    row.userId &&
+                                    (data?.payments ?? []).some(
+                                      (payment) =>
+                                        payment.userId === row.userId &&
+                                        pendingCardEcheanceId(payment)?.startsWith("decennale:")
+                                    )
+                                      ? "Renvoyer le lien carte déjà ouvert"
+                                      : "Envoyer un lien de paiement par carte"
+                                  }
+                                  onClick={() => void handleRelanceCarteSepa(row.id, row.userEmail)}
                                   className="text-[11px] px-2 py-1 rounded border border-emerald-700/70 text-emerald-100 hover:bg-emerald-900/30 disabled:opacity-50"
                                 >
-                                  {sendingSepaCarteId === row.id ? "Envoi..." : "Relancer par carte"}
+                                  {sendingSepaCarteId === row.id
+                                    ? "Envoi..."
+                                    : row.userId &&
+                                        (data?.payments ?? []).some(
+                                          (payment) =>
+                                            payment.userId === row.userId &&
+                                            pendingCardEcheanceId(payment)?.startsWith("decennale:")
+                                        )
+                                      ? "Renvoyer le lien"
+                                      : "Relancer par carte"}
                                 </button>
                               </div>
                             </div>
@@ -3649,7 +3694,7 @@ export default function GestionPage() {
             <p className="font-medium text-red-300">⚠ Impayés décennale</p>
             <p className="text-sm text-red-200 mt-1">
               {data.documents.filter((d) => (d.type === "attestation" || d.type === "attestation_nominative") && d.status === "suspendu").length} attestation(s){" "}
-              <strong>décennale</strong> suspendue(s). Le bouton vert envoie un lien de paiement carte. « Relancer email » renvoie seulement le message de relance.
+              <strong>décennale</strong> suspendue(s). Le bouton vert envoie un lien de paiement carte. Un lien déjà ouvert est renvoyé tel quel. « Relancer email » renvoie seulement le message de relance.
             </p>
             <div className="mt-3 space-y-2">
               {data.documents
@@ -3662,10 +3707,19 @@ export default function GestionPage() {
                     <button
                       type="button"
                       disabled={sendingAttestationCarteId === d.id}
+                      title={
+                        data.payments.some((payment) => pendingCardEcheanceId(payment) === `attestation:${d.id}`)
+                          ? "Renvoyer le lien carte déjà ouvert"
+                          : "Envoyer un lien de paiement par carte"
+                      }
                       onClick={() => handleRelanceCarteAttestation(d.id)}
                       className="text-sm px-3 py-1.5 rounded bg-emerald-700 text-white hover:bg-emerald-600 disabled:opacity-50"
                     >
-                      {sendingAttestationCarteId === d.id ? "Envoi..." : "Relancer par carte"}
+                      {sendingAttestationCarteId === d.id
+                        ? "Envoi..."
+                        : data.payments.some((payment) => pendingCardEcheanceId(payment) === `attestation:${d.id}`)
+                          ? "Renvoyer le lien"
+                          : "Relancer par carte"}
                     </button>
                   </div>
                 ))}
@@ -3692,6 +3746,8 @@ export default function GestionPage() {
                 <tr className="border-b border-gray-700">
                   <th className="text-left p-3 sm:p-4 font-medium">Date</th>
                   <th className="text-left p-3 sm:p-4 font-medium">Client</th>
+                  <th className="text-left p-3 sm:p-4 font-medium">Échéance</th>
+                  <th className="text-left p-3 sm:p-4 font-medium">Mode</th>
                   <th className="text-left p-3 sm:p-4 font-medium">Montant</th>
                   <th className="text-left p-3 sm:p-4 font-medium">Statut</th>
                   <th className="text-left p-3 sm:p-4 font-medium w-[4.5rem]">CRM</th>
@@ -3700,16 +3756,18 @@ export default function GestionPage() {
               </thead>
               <tbody>
                 {filteredPayments.length === 0 ? (
-                  <tr><td colSpan={6} className="p-4 text-gray-200">Aucun paiement</td></tr>
+                  <tr><td colSpan={8} className="p-4 text-gray-200">Aucun paiement</td></tr>
                 ) : (
                   filteredPayments.map((p) => (
                     <tr key={p.id} className="border-b border-gray-700/50">
                       <td className="p-3 sm:p-4">{new Date(p.paidAt || p.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-3 sm:p-4">{p.user.raisonSociale || p.user.email}</td>
+                      <td className="p-3 sm:p-4">{paymentEcheanceLabel(p.metadata) || "—"}</td>
+                      <td className="p-3 sm:p-4">{paymentMethodLabel(p.metadata, p.molliePaymentId) || "—"}</td>
                       <td className="p-3 sm:p-4">{p.amount.toLocaleString("fr-FR")} €</td>
                       <td className="p-3 sm:p-4">
-                        <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-green-900/50 text-green-300" : "bg-blue-900/50 text-sky-300"}`}>
-                          {p.status}
+                        <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-green-900/50 text-green-300" : p.status === "failed" ? "bg-red-900/50 text-red-200" : "bg-blue-900/50 text-sky-300"}`}>
+                          {paymentStatusLabel(p.status)}
                         </span>
                       </td>
                       <td className="p-3 sm:p-4">
@@ -3817,9 +3875,17 @@ export default function GestionPage() {
                               disabled={sendingAttestationCarteId === d.id}
                               onClick={() => handleRelanceCarteAttestation(d.id)}
                               className="text-emerald-400 hover:text-emerald-300 text-sm min-h-[44px] inline-flex items-center -m-1 px-2 disabled:opacity-50"
-                              title="Envoyer un lien de paiement carte"
+                              title={
+                                data.payments.some((payment) => pendingCardEcheanceId(payment) === `attestation:${d.id}`)
+                                  ? "Renvoyer le lien carte déjà ouvert"
+                                  : "Envoyer un lien de paiement par carte"
+                              }
                             >
-                              {sendingAttestationCarteId === d.id ? "Envoi..." : "Relancer par carte"}
+                              {sendingAttestationCarteId === d.id
+                                ? "Envoi..."
+                                : data.payments.some((payment) => pendingCardEcheanceId(payment) === `attestation:${d.id}`)
+                                  ? "Renvoyer le lien"
+                                  : "Relancer par carte"}
                             </button>
                             <button
                               type="button"

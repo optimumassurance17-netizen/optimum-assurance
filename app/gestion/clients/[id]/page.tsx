@@ -462,13 +462,21 @@ export default function ClientDetailPage() {
         })
         return
       }
+      if (action === "regler") {
+        setToast({
+          message: body.emailSent === false
+            ? body.warning || "Échéance marquée comme réglée. Le reçu n'a pas pu être envoyé."
+            : `Échéance marquée comme réglée. Reçu envoyé à ${body.sentTo || user.email}.`,
+          type: body.emailSent === false ? "warning" : "success",
+        })
+        return
+      }
       setToast({
-        message:
-          action === "regler" || body.alreadyPaid
-            ? "Échéance marquée comme réglée."
-            : body.reused
-              ? `Lien déjà ouvert, renvoyé à ${body.sentTo || user.email}.`
-              : `Lien de paiement carte envoyé à ${body.sentTo || user.email}.`,
+        message: body.alreadyPaid
+          ? "Échéance marquée comme réglée."
+          : body.reused
+            ? `Lien déjà ouvert, renvoyé à ${body.sentTo || user.email}.`
+            : `Lien de paiement carte envoyé à ${body.sentTo || user.email}.`,
         type: "success",
       })
     } catch (err) {

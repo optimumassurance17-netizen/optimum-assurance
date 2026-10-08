@@ -9,6 +9,7 @@ import {
   mollieCardLinkIsClosed,
   molliePaymentIsOpen,
   nextUnpaidEcheance,
+  pendingCardEcheanceId,
   paidAttestationMoments,
   paymentEcheanceLabel,
   paymentMethodLabel,
@@ -199,5 +200,37 @@ const prevenirAt = adminEcheance.indexOf('action === "prevenir"')
 const refreshAt = adminEcheance.indexOf("await refreshPendingCardPayment")
 assert(prevenirAt > 0 && refreshAt > prevenirAt, "l'information de refus SEPA part avant toute lecture Mollie")
 assert(adminEcheance.includes("sendSepaFailureNotice"), "le refus SEPA prévient le client par email")
+const reglerAt = adminEcheance.indexOf('if (action === "regler")')
+const receiptAt = adminEcheance.indexOf("sendEcheancePaidReceipt", reglerAt)
+assert(reglerAt > 0 && receiptAt > reglerAt, "le règlement manuel envoie le reçu")
+
+const adoptedLink = JSON.stringify({
+  type: "echeance_carte",
+  cardLinkEcheanceId: "decennale:2",
+  checkoutUrl: "https://pay.example/adopted",
+})
+assert(pendingCardEcheanceId({ status: "pending", molliePaymentId: "tr_old", metadata: adoptedLink }) === "decennale:2", "un lien carte repris s'affiche")
+assert(installmentFromPaymentMetadata(adoptedLink) === null, "un lien repris ne compte pas comme une échéance payée")
+assert(cardPaymentMatches(adoptedLink, { echeanceId: "decennale:2" }), "un lien repris correspond à l'échéance")
+assert(
+  pendingCardEcheanceId({ status: "paid", molliePaymentId: "tr_old", metadata: adoptedLink }) === null,
+  "un paiement déjà réglé n'est plus un lien ouvert"
+)
+
+const attestationRelance = readFileSync(new URL("../app/api/gestion/documents/[id]/relance-carte/route.ts", import.meta.url), "utf8")
+const sepaRelance = readFileSync(new URL("../app/api/gestion/sepa/[id]/relance-carte/route.ts", import.meta.url), "utf8")
+assert(attestationRelance.includes("resolveOpenCardLink") && attestationRelance.includes("createStoredCardPayment"), "la relance attestation réutilise le lien ouvert")
+assert(
+  attestationRelance.indexOf("await resolveOpenCardLink") < attestationRelance.indexOf("createStoredCardPayment({"),
+  "la relance attestation vérifie le lien avant d'en créer un"
+)
+assert(!attestationRelance.includes("payments.create"), "la relance attestation ne crée pas le paiement elle-même")
+assert(sepaRelance.includes("resolveOpenCardLink") && sepaRelance.includes("readRemotePaymentLock"), "la relance SEPA vérifie le paiement déjà lancé")
+assert(
+  sepaRelance.indexOf("await readRemotePaymentLock") < sepaRelance.indexOf("createStoredCardPayment({"),
+  "la relance SEPA bloque un prélèvement ouvert avant un nouveau lien"
+)
+assert(sepaRelance.includes("Un prélèvement SEPA est déjà en cours"), "un prélèvement ouvert empêche un second lien")
+assert(!sepaRelance.includes("payments.create"), "la relance SEPA ne crée pas le paiement elle-même")
 
 console.log("Échéances fiche client : OK")

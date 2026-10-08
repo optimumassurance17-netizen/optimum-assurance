@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createMollieClient, Locale, PaymentMethod } from "@mollie/api-client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
+import { logAdminActivity } from "@/lib/admin-activity"
+import { findClientEcheance } from "@/lib/client-echeances"
+import { loadClientEcheances } from "@/lib/client-echeance-service"
 import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
-import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
+import { createStoredCardPayment } from "@/lib/gestion-card-link"
+import { attestationCardMatch, createMollieClientFromEnv, resolveOpenCardLink } from "@/lib/open-card-link"
 import { prisma } from "@/lib/prisma"
 
 const DECENNALE_ATTESTATION_TYPES = ["attestation", "attestation_nominative"] as const
@@ -65,28 +68,54 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     }
 
     const raisonSociale = document.user.raisonSociale || email
-    const baseUrl = getMolliePublicBaseUrl()
-    const mollie = createMollieClient({ apiKey })
-    const payment = await mollie.payments.create({
-      amount: { currency: "EUR", value: amount.toFixed(2) },
-      description: `Régularisation décennale — ${raisonSociale} (${document.numero})`,
-      redirectUrl: `${baseUrl}/confirmation?regularisation=1`,
-      webhookUrl: `${baseUrl}/api/mollie/webhook`,
-      method: PaymentMethod.creditcard,
-      locale: Locale.fr_FR,
-      metadata: {
-        type: "regularisation",
-        attestationId: document.id,
-        attestationNumero: document.numero,
-        userId: document.userId,
-        email,
-        raisonSociale,
-      },
-    })
+    const echeance = findClientEcheance(await loadClientEcheances(document.userId), `attestation:${document.id}`)
+    if (echeance?.paid) {
+      return NextResponse.json({ ok: true, alreadyPaid: true })
+    }
 
-    const checkoutUrl = payment._links?.checkout?.href
-    if (!checkoutUrl) {
-      return NextResponse.json({ error: "Mollie n'a pas renvoyé de lien de paiement." }, { status: 502 })
+    const metadata = {
+      type: "regularisation",
+      attestationId: document.id,
+      attestationNumero: document.numero,
+      label: `Régularisation ${document.numero}`,
+      userId: document.userId,
+      email,
+      raisonSociale,
+    }
+    const mollie = createMollieClientFromEnv()
+    if (!mollie) {
+      return NextResponse.json({ error: "Mollie non configuré" }, { status: 500 })
+    }
+    const existing = await resolveOpenCardLink({
+      mollie,
+      userId: document.userId,
+      match: attestationCardMatch(document.id),
+      raisonSociale,
+    })
+    if (existing.kind === "paid") {
+      return NextResponse.json({ ok: true, alreadyPaid: true })
+    }
+    if (existing.kind === "blocked") {
+      return NextResponse.json({ error: existing.message }, { status: 409 })
+    }
+
+    let checkoutUrl = existing.kind === "open" ? existing.checkoutUrl : ""
+    let paymentId = existing.kind === "open" ? existing.paymentId : ""
+    const reused = existing.kind === "open"
+    if (!reused) {
+      const created = await createStoredCardPayment({
+        mollie,
+        userId: document.userId,
+        amount,
+        description: `Régularisation décennale — ${raisonSociale} (${document.numero})`,
+        redirectPath: "/confirmation?regularisation=1",
+        metadata,
+      })
+      if (created.kind === "blocked") {
+        return NextResponse.json({ error: created.message }, { status: 502 })
+      }
+      checkoutUrl = created.checkoutUrl
+      paymentId = created.paymentId
     }
 
     const template = EMAIL_TEMPLATES.relanceEcheanceCarte(raisonSociale, amount, checkoutUrl, email)
@@ -97,20 +126,30 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       html: template.html,
     })
 
+    await logAdminActivity({
+      adminEmail: session.user.email,
+      action: "echeance_lien_carte",
+      targetType: "document",
+      targetId: document.id,
+      details: { attestationId: document.id, amount, paymentId, emailSent: sent, reused },
+    })
+
     if (!sent) {
       return NextResponse.json({
         ...emailNotSentBody(),
+        reused,
         checkoutUrl,
         amount,
-        paymentId: payment.id,
+        paymentId,
       })
     }
 
     return NextResponse.json({
       ok: true,
+      reused,
       sentTo: email,
       amount,
-      paymentId: payment.id,
+      paymentId,
       checkoutUrl,
     })
   } catch (error) {

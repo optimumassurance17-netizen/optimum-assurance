@@ -288,10 +288,14 @@ export function readOpenCardTarget(metadata: string | null | undefined): {
   const direct = readEcheanceCardLink(metadata)
   if (direct) return direct
   const parsed = parseMetadataRecord(metadata)
-  if (!parsed || parsed.type !== "regularisation") return null
-  if (typeof parsed.attestationId !== "string" || !parsed.attestationId.trim()) return null
+  if (!parsed) return null
   const checkoutUrl =
     typeof parsed.checkoutUrl === "string" && parsed.checkoutUrl.startsWith("https://") ? parsed.checkoutUrl : null
+  if (typeof parsed.cardLinkEcheanceId === "string" && parsed.cardLinkEcheanceId.trim()) {
+    return { echeanceId: parsed.cardLinkEcheanceId.trim(), checkoutUrl }
+  }
+  if (parsed.type !== "regularisation") return null
+  if (typeof parsed.attestationId !== "string" || !parsed.attestationId.trim()) return null
   return { echeanceId: `attestation:${parsed.attestationId.trim()}`, checkoutUrl }
 }
 
@@ -302,7 +306,9 @@ export function cardPaymentMatches(
   const parsed = parseMetadataRecord(metadata)
   if (!parsed) return false
   if (parsed.type !== "echeance_carte" && parsed.type !== "regularisation") return false
-  if (target.echeanceId && parsed.echeanceId === target.echeanceId) return true
+  if (target.echeanceId && (parsed.echeanceId === target.echeanceId || parsed.cardLinkEcheanceId === target.echeanceId)) {
+    return true
+  }
   if (target.attestationId && parsed.attestationId === target.attestationId) return true
   if (target.attestationId && parsed.echeanceId === `attestation:${target.attestationId}`) return true
   if (target.echeanceId?.startsWith("attestation:") && parsed.attestationId === target.echeanceId.slice("attestation:".length)) {
@@ -313,6 +319,17 @@ export function cardPaymentMatches(
 
 export function nextUnpaidEcheance<T extends { paid: boolean }>(rows: T[]): T | null {
   return rows.find((row) => !row.paid) ?? null
+}
+
+/** Identifiant d'échéance d'un lien carte encore en attente, sinon null. */
+export function pendingCardEcheanceId(payment: {
+  status: string
+  molliePaymentId?: string | null
+  metadata?: string | null
+}): string | null {
+  if (payment.status !== "pending") return null
+  if (!payment.molliePaymentId || payment.molliePaymentId.startsWith("manuel_")) return null
+  return readOpenCardTarget(payment.metadata)?.echeanceId ?? null
 }
 
 export function paymentMethodLabel(metadata: string | null | undefined, molliePaymentId?: string | null): string | null {

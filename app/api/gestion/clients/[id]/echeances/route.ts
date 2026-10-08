@@ -278,14 +278,29 @@ export async function POST(
         },
       })
       await applyEcheancePaidEffects(metadata)
+      const emailSent = await sendEcheancePaidReceipt({
+        email,
+        raisonSociale,
+        metadata,
+        amount: echeance.amount,
+      })
       await logAdminActivity({
         adminEmail: session.user.email,
         action: "echeance_marquee_reglee",
         targetType: "user",
         targetId: user.id,
-        details: { echeanceId: echeance.id, amount: echeance.amount, paymentId },
+        details: { echeanceId: echeance.id, amount: echeance.amount, paymentId, emailSent },
       })
-      return NextResponse.json({ ok: true, echeances: await loadClientEcheances(userId) })
+      const echeances = await loadClientEcheances(userId)
+      if (!emailSent) {
+        return NextResponse.json({
+          ok: true,
+          emailSent: false,
+          warning: "Échéance marquée comme réglée, mais le reçu n'a pas pu être envoyé.",
+          echeances,
+        })
+      }
+      return NextResponse.json({ ok: true, emailSent: true, sentTo: email, echeances })
     }
 
     if (refreshed.kind === "open") {
