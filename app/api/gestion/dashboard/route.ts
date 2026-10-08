@@ -6,6 +6,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import { stripSignatureBinariesFromJsonString } from "@/lib/esign/local-signature-fallback"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -1072,7 +1073,10 @@ export async function GET() {
 
     return NextResponse.json({
       users: usersWithDoFlags,
-      documents,
+      documents: documents.map((doc) => ({
+        ...doc,
+        data: stripSignatureBinariesFromJsonString(doc.data),
+      })),
       payments,
       avenantFees,
       devisDoLeads,

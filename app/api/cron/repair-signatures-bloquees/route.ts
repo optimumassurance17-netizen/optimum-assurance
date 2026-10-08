@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
 
     let repaired = 0
     let notSignedYet = 0
+    let localFallback = 0
     let failed = 0
     const errors: Array<{ signatureRequestId: string; error: string }> = []
 
@@ -36,6 +37,8 @@ export async function GET(request: NextRequest) {
           repaired++
         } else if (result.code === "signed_not_found") {
           notSignedYet++
+        } else if (result.code === "local_fallback") {
+          localFallback++
         } else {
           failed++
           errors.push({ signatureRequestId: pending.signatureRequestId, error: result.reason })
@@ -54,6 +57,7 @@ export async function GET(request: NextRequest) {
       scanned: pendingRows.length,
       repaired,
       notSignedYet,
+      localFallback,
       failed,
       errors: errors.slice(0, 10),
     })

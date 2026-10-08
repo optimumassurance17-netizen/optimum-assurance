@@ -2,6 +2,7 @@ import type { PendingSignature } from "@/lib/prisma-client"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { ESIGN_BUCKET_ORIGINALS, ESIGN_BUCKET_SIGNED } from "@/lib/esign/buckets"
 import { applyPendingFinalize } from "@/lib/pending-signature-finalize"
+import { isLocalFallbackContract, readContractObject } from "@/lib/esign/local-signature-fallback"
 import { createSupabaseServiceClient } from "@/lib/supabase"
 
 function normalizeStoragePath(path: string): string {
@@ -56,7 +57,13 @@ export type PendingSignatureRepairResult =
       repaired: false
       reason: string
       status: number
-      code: "config" | "supabase_read" | "missing_request" | "signed_not_found" | "invalid_signed_url"
+      code:
+        | "config"
+        | "supabase_read"
+        | "missing_request"
+        | "signed_not_found"
+        | "invalid_signed_url"
+        | "local_fallback"
     }
 
 export async function repairPendingSignature(
@@ -64,6 +71,16 @@ export async function repairPendingSignature(
   actorEmail: string,
   opts?: { action?: string }
 ): Promise<PendingSignatureRepairResult> {
+  if (isLocalFallbackContract(readContractObject(pending.contractData))) {
+    return {
+      repaired: false,
+      reason:
+        "Cette demande utilise la signature de secours. Le client signe via le lien, sans stockage Supabase.",
+      status: 409,
+      code: "local_fallback",
+    }
+  }
+
   const supabase = createSupabaseServiceClient()
   if (!supabase) {
     return {

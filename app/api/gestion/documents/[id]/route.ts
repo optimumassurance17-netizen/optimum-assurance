@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { IDENTITY_DOC_KEYS, syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
 import { DDA_LEGAL_VERSION, buildDdaNeedSummary } from "@/lib/dda-compliance"
+import { stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
   try {
@@ -39,7 +40,7 @@ export async function GET(
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
-    const data = parseDocumentData(document.data)
+    const data = stripSignatureBinaries(parseDocumentData(document.data))
     if (document.user) {
       data.raisonSociale = document.user.raisonSociale ?? data.raisonSociale
       data.email = document.user.email ?? data.email

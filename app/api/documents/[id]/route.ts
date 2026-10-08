@@ -7,6 +7,7 @@ import { syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identit
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 import { getClientDevisAutonomyConfig } from "@/lib/client-devis-autonomy"
+import { stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
   try {
@@ -39,7 +40,7 @@ export async function GET(
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
-    const data = parseDocumentData(document.data)
+    const data = stripSignatureBinaries(parseDocumentData(document.data))
     const identity = extractClientIdentityFromRecord(data)
     data.raisonSociale = identity.raisonSociale ?? data.raisonSociale
     data.email = identity.email ?? data.email
@@ -275,7 +276,7 @@ export async function PATCH(
       },
     })
 
-    return NextResponse.json({ ok: true, data: mergedData })
+    return NextResponse.json({ ok: true, data: stripSignatureBinaries(mergedData) })
   } catch (error) {
     console.error("Erreur modification document client:", error)
     return NextResponse.json(

@@ -5,6 +5,7 @@ import React from "react"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { DocumentsCombinedPDF } from "@/components/pdf/DocumentsCombinedPDF"
+import { LOCAL_SIGNED_PDF_KEY, decodeStoredPdfBase64, stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
 import { qrCodePngDataUri } from "@/lib/qr-pdf"
 import { SITE_URL } from "@/lib/site-url"
 
@@ -39,6 +40,25 @@ export async function GET(
     } catch {
       return NextResponse.json({ error: "Document invalide (JSON illisible)" }, { status: 422 })
     }
+
+    if (document.type === "contrat") {
+      const signedBytes = decodeStoredPdfBase64(data[LOCAL_SIGNED_PDF_KEY])
+      if (signedBytes) {
+        const safeNumero = document.numero.replace(/[^A-Za-z0-9._-]/g, "") || "contrat"
+        const filename = `${safeNumero}.pdf`
+        return new NextResponse(Buffer.from(signedBytes), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `attachment; filename="${filename}"`,
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+          },
+        })
+      }
+    }
+
+    data = stripSignatureBinaries(data)
 
     if (document.type === "devis_do" && document.user) {
       data.raisonSociale = document.user.raisonSociale ?? data.raisonSociale

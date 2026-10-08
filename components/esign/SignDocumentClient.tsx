@@ -12,9 +12,11 @@ type Props = {
   documentSignedUrl: string
   /** Après succès, redirection (chemin interne) au lieu de l’écran de téléchargement seul. */
   afterSignRedirect?: string
+  /** Mention affichée quand la signature de secours remplace Supabase. */
+  notice?: string
 }
 
-export function SignDocumentClient({ documentId, documentSignedUrl, afterSignRedirect }: Props) {
+export function SignDocumentClient({ documentId, documentSignedUrl, afterSignRedirect, notice }: Props) {
   const sigRef = useRef<SignatureCanvasHandle>(null)
   const [email, setEmail] = useState("")
   const [agreed, setAgreed] = useState(false)
@@ -64,12 +66,12 @@ export function SignDocumentClient({ documentId, documentSignedUrl, afterSignRed
         setError(data.error ?? "La signature a échoué.")
         return
       }
-      if (!data.signedDocumentUrl) {
-        setError("Réponse serveur inattendue.")
-        return
-      }
       if (afterSignRedirect) {
         window.location.href = afterSignRedirect
+        return
+      }
+      if (!data.signedDocumentUrl) {
+        setError("Réponse serveur inattendue.")
         return
       }
       setSuccessUrl(data.signedDocumentUrl)
@@ -105,6 +107,9 @@ export function SignDocumentClient({ documentId, documentSignedUrl, afterSignRed
 
   return (
     <div className="space-y-8">
+      {notice ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">{notice}</p>
+      ) : null}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-inner">
         <iframe title="Document PDF" src={documentSignedUrl} className="h-[min(70vh,640px)] w-full bg-white" />
       </div>

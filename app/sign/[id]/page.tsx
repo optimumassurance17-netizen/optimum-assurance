@@ -2,8 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { SignDocumentClient } from "@/components/esign/SignDocumentClient"
-import { ESIGN_BUCKET_ORIGINALS } from "@/lib/esign/buckets"
-import { createSupabaseServiceClient } from "@/lib/supabase"
+import { resolveSignPreview } from "@/lib/esign/resolve-sign-preview"
 
 function normalizeInternalNext(next: string | string[] | undefined): string | undefined {
   const raw = Array.isArray(next) ? next[0] : next
@@ -32,8 +31,10 @@ export default async function SignDocumentPage({ params, searchParams }: PagePro
   const afterSignRedirect = normalizeInternalNext(sp.next)
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound()
 
-  const supabase = createSupabaseServiceClient()
-  if (!supabase) {
+  const preview = await resolveSignPreview(id)
+  if (preview.kind === "missing") notFound()
+
+  if (preview.kind === "unconfigured") {
     return (
       <main className="mx-auto max-w-3xl px-4 py-16">
         <p className="text-slate-700">
@@ -46,25 +47,12 @@ export default async function SignDocumentPage({ params, searchParams }: PagePro
     )
   }
 
-  const { data: row, error } = await supabase
-    .from("sign_requests")
-    .select("id, document_storage_path")
-    .eq("id", id)
-    .maybeSingle()
-
-  if (error || !row?.document_storage_path) notFound()
-
-  const { data: signed, error: signErr } = await supabase.storage
-    .from(ESIGN_BUCKET_ORIGINALS)
-    .createSignedUrl(row.document_storage_path, 3600)
-
-  if (signErr || !signed?.signedUrl) {
+  if (preview.kind === "unavailable") {
     return (
       <main className="mx-auto max-w-3xl px-4 py-16">
         <h1 className="text-2xl font-bold text-slate-900">Document indisponible</h1>
         <p className="mt-2 text-slate-600">
-          Impossible de générer un lien de lecture sécurisé. Vérifiez le bucket Storage « documents » et le chemin du
-          fichier.
+          Le service de signature est momentanément indisponible. Rouvrez le lien dans quelques instants.
         </p>
         <Link href="/" className="mt-6 inline-block text-blue-600 underline">
           Accueil
@@ -73,6 +61,7 @@ export default async function SignDocumentPage({ params, searchParams }: PagePro
     )
   }
 
+  const localFallback = preview.kind === "local"
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
       <header className="mb-8">
@@ -80,9 +69,16 @@ export default async function SignDocumentPage({ params, searchParams }: PagePro
         <p className="mt-2 text-sm text-slate-600">Consultez le document, signez et recevez le PDF signé.</p>
       </header>
       <SignDocumentClient
-        documentId={row.id}
-        documentSignedUrl={signed.signedUrl}
+        documentId={preview.documentId}
+        documentSignedUrl={
+          preview.kind === "local" ? `/api/sign/local-pdf/${preview.documentId}` : preview.url
+        }
         afterSignRedirect={afterSignRedirect}
+        notice={
+          localFallback
+            ? "Vous signez directement auprès d’Optimum Assurance. Après validation, le parcours continue vers le mandat SEPA."
+            : undefined
+        }
       />
     </main>
   )

@@ -3,8 +3,10 @@ import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { applySignatureToPdf } from "@/lib/esign/apply-signature-to-pdf"
 import { ESIGN_BUCKET_ORIGINALS, ESIGN_BUCKET_SIGNED } from "@/lib/esign/buckets"
+import { completeLocalDecennaleSignature, LocalSignatureError } from "@/lib/esign/complete-local-signature"
 import { getClientIp, getUserAgent } from "@/lib/esign/get-request-meta"
 import { sha256Hex } from "@/lib/esign/hash-pdf"
+import { isLocalFallbackContract, readContractObject, safeLogMessage } from "@/lib/esign/local-signature-fallback"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
 import { applyPendingFinalize } from "@/lib/pending-signature-finalize"
@@ -63,13 +65,46 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Signature vide ou image invalide." }, { status: 400 })
   }
 
+  const id = documentId.trim()
+  const emailNorm = email.trim().toLowerCase()
+
+  const pending = await prisma.pendingSignature.findUnique({
+    where: { signatureRequestId: id },
+  })
+  if (pending && isLocalFallbackContract(readContractObject(pending.contractData))) {
+    try {
+      const local = await completeLocalDecennaleSignature({
+        pending,
+        signaturePngDataUrl: signature,
+        email: emailNorm,
+        ip: getClientIp(request),
+        userAgent: getUserAgent(request),
+      })
+      return NextResponse.json({
+        ok: true,
+        signatureMode: "local",
+        signatureId: id,
+        documentHash: local.documentHash,
+        signedDocumentUrl: local.signedDocumentUrl,
+      })
+    } catch (error) {
+      if (error instanceof LocalSignatureError) {
+        return NextResponse.json({ error: error.message }, { status: error.status })
+      }
+      console.error("[api/sign] signature locale", safeLogMessage(error))
+      return NextResponse.json(
+        {
+          error: "La finalisation du contrat a échoué. Vous pouvez réessayer, ou contacter le support avec votre e-mail.",
+        },
+        { status: 500 }
+      )
+    }
+  }
+
   const supabase = createSupabaseServiceClient()
   if (!supabase) {
     return NextResponse.json({ error: "Configuration Supabase incomplète (clé service)." }, { status: 500 })
   }
-
-  const id = documentId.trim()
-  const emailNorm = email.trim().toLowerCase()
 
   const { data: signRequest, error: reqError } = await supabase
     .from("sign_requests")
@@ -83,10 +118,6 @@ export async function POST(request: NextRequest) {
   if (!signRequest?.document_storage_path) {
     return NextResponse.json({ error: "Demande de signature introuvable." }, { status: 404 })
   }
-
-  const pending = await prisma.pendingSignature.findUnique({
-    where: { signatureRequestId: id },
-  })
 
   const { data: downloaded, error: dlError } = await supabase.storage
     .from(ESIGN_BUCKET_ORIGINALS)

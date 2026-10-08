@@ -12,7 +12,8 @@ import {
   buildContractDataFromDevisForSignature,
   validateDevisContractData,
 } from "@/lib/gestion-contract-from-devis"
-import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
+import { createSignRequestWithFallback } from "@/lib/esign/create-sign-request-with-fallback"
+import { safeLogMessage } from "@/lib/esign/local-signature-fallback"
 import { createSupabaseServiceClient } from "@/lib/supabase"
 import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
@@ -175,8 +176,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const contractData = { ...baseContract, signatureProvider: "supabase" as const }
-
     const pdfElement = React.createElement(ContratPDF, {
       numero: contractNumero,
       data: baseContract as React.ComponentProps<typeof ContratPDF>["data"],
@@ -187,8 +186,13 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
     const folder = randomUUID()
     const storagePath = `gestion/devis/${folder}/contrat-${contractNumero}.pdf`
-
-    const { id: signRequestId } = await uploadPdfAndInsertSignRequest(pdfBuffer, storagePath)
+    const created = await createSignRequestWithFallback(pdfBuffer, storagePath)
+    const signRequestId = created.id
+    const contractData = {
+      ...baseContract,
+      signatureProvider: created.signatureProvider,
+      ...(created.fallbackPdfBase64 ? { fallbackPdfBase64: created.fallbackPdfBase64 } : {}),
+    }
 
     await prisma.pendingSignature.create({
       data: {
@@ -230,7 +234,7 @@ export async function POST(request: NextRequest) {
       signatureLink,
     })
   } catch (error) {
-    console.error("[gestion/sign/send-from-devis]", error)
+    console.error("[gestion/sign/send-from-devis]", safeLogMessage(error))
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Erreur lors de la création de la signature",

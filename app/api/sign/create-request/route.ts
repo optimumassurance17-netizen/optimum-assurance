@@ -8,7 +8,8 @@ import { ContratPDF } from "@/components/pdf/ContratPDF"
 import { getNextNumero } from "@/lib/documents"
 import { prisma } from "@/lib/prisma"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
-import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
+import { createSignRequestWithFallback } from "@/lib/esign/create-sign-request-with-fallback"
+import { safeLogMessage, stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 import { assertRecentDdaConsent } from "@/lib/dda-compliance"
@@ -41,7 +42,7 @@ function asOptionalBoolean(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined
 }
 
-/** Décennale : PDF contrat + ligne `sign_requests` (Supabase) + `pendingSignature`. */
+/** Décennale : PDF contrat + demande de signature (Supabase, ou secours local) + `pendingSignature`. */
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -211,8 +212,6 @@ export async function POST(request: NextRequest) {
       dateCreationSociete: asOptionalTrimmedString(rawSouscription.dateCreationSociete),
     }
 
-    const contractData = { ...baseContract, signatureProvider: "supabase" as const }
-
     const pdfElement = React.createElement(ContratPDF, {
       numero: baseContract.numero,
       data: baseContract,
@@ -222,12 +221,16 @@ export async function POST(request: NextRequest) {
 
     const folder = randomUUID()
     const storagePath = `souscription/decennale/${folder}/contrat-${baseContract.numero}.pdf`
-
-    const { id: signRequestId } = await uploadPdfAndInsertSignRequest(pdfBuffer, storagePath)
+    const created = await createSignRequestWithFallback(pdfBuffer, storagePath)
+    const contractData = {
+      ...baseContract,
+      signatureProvider: created.signatureProvider,
+      ...(created.fallbackPdfBase64 ? { fallbackPdfBase64: created.fallbackPdfBase64 } : {}),
+    }
 
     await prisma.pendingSignature.create({
       data: {
-        signatureRequestId: signRequestId,
+        signatureRequestId: created.id,
         userId: session.user.id,
         contractData: JSON.stringify(contractData),
         contractNumero: baseContract.numero,
@@ -235,16 +238,17 @@ export async function POST(request: NextRequest) {
     })
 
     const nextPath = "/mandat-sepa"
-    const signatureLink = `${baseUrl}/sign/${signRequestId}?next=${encodeURIComponent(nextPath)}`
+    const signatureLink = `${baseUrl}/sign/${created.id}?next=${encodeURIComponent(nextPath)}`
 
     return NextResponse.json({
-      signatureRequestId: signRequestId,
+      signatureRequestId: created.id,
       signatureLink,
-      contractNumero: contractData.numero,
-      contractData,
+      contractNumero: baseContract.numero,
+      contractData: stripSignatureBinaries(contractData),
+      signatureMode: created.signatureProvider,
     })
   } catch (error) {
-    console.error("[api/sign/create-request]", error)
+    console.error("[api/sign/create-request]", safeLogMessage(error))
     return NextResponse.json(
       {
         error:

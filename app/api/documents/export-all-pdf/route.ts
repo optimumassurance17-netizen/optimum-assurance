@@ -5,6 +5,7 @@ import React from "react"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { DocumentsCombinedPDF } from "@/components/pdf/DocumentsCombinedPDF"
+import { stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
 import { qrCodePngDataUri } from "@/lib/qr-pdf"
 
 type AssuranceFilter = "decennale" | "do" | "rc_fabriquant" | "assurance_titre"
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     const docsWithData = await Promise.all(
       filteredDocuments.map(async (doc) => {
-        const data = JSON.parse(doc.data) as Record<string, unknown>
+        const data = stripSignatureBinaries(JSON.parse(doc.data) as Record<string, unknown>)
         if (doc.type === "devis_do" && doc.user) {
           data.raisonSociale = doc.user.raisonSociale ?? data.raisonSociale
           data.email = doc.user.email ?? data.email

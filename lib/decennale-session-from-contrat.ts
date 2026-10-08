@@ -1,3 +1,4 @@
+import { stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
 import type { DevisResult } from "@/lib/tarification"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 import type { SouscriptionData } from "@/lib/types"
@@ -83,6 +84,6 @@ export function buildSignatureSessionFromContrat(
   return {
     ...souscription,
     signedContractNumero: contratNumero,
-    signedContractData: { ...contratData, numero: contratNumero },
+    signedContractData: stripSignatureBinaries({ ...contratData, numero: contratNumero }),
   }
 }

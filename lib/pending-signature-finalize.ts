@@ -22,6 +22,7 @@ import {
   serializeAssuranceTitreContractConfig,
 } from "@/lib/assurance-titre-contract-config"
 import { normalizeInsurancePlatformProductType } from "@/lib/insurance-product"
+import { FALLBACK_PDF_KEY } from "@/lib/esign/local-signature-fallback"
 
 export type PendingFinalizeOptions = {
   /** Objet fichier dans le bucket « signed » (PDF signé) — flux devis PDF personnalisé */
@@ -224,6 +225,7 @@ export async function applyPendingFinalize(
 
   const contractData = { ...raw }
   delete contractData.signatureProvider
+  delete contractData[FALLBACK_PDF_KEY]
 
   await prisma.document.create({
     data: {
