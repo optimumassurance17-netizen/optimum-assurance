@@ -241,6 +241,21 @@ export const EMAIL_TEMPLATES = {
       `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Le prélèvement de votre échéance n'a pas abouti. Vous pouvez la régler par <strong>carte bancaire</strong>.</p><p><strong>Montant :</strong> ${montant.toLocaleString("fr-FR")} €</p><p><a href="${checkoutUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Payer par carte</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
       reminderUnsubscribeHtmlFooter("paiement", recipientEmail),
   }),
+  paiementEcheanceCarte: (
+    raisonSociale: string,
+    label: string,
+    montant: number,
+    checkoutUrl: string,
+    recipientEmail: string
+  ) => ({
+    subject: `Règlement par carte — ${label} - Optimum Assurance`,
+    text:
+      `Bonjour ${raisonSociale},\n\nVous pouvez régler ${label.toLowerCase()} par carte bancaire.\n\nMontant : ${montant.toLocaleString("fr-FR")} €\n\nLien de paiement :\n${checkoutUrl}\n\nCordialement,\nOptimum Assurance` +
+      reminderUnsubscribeTextFooter("paiement", recipientEmail),
+    html:
+      `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Vous pouvez régler <strong>${escapeHtmlForEmail(label.toLowerCase())}</strong> par carte bancaire.</p><p><strong>Montant :</strong> ${montant.toLocaleString("fr-FR")} €</p><p><a href="${checkoutUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Payer par carte</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
+      reminderUnsubscribeHtmlFooter("paiement", recipientEmail),
+  }),
   motDePasseReinitialisation: (resetUrl: string) => ({
     subject: "Réinitialisation de votre mot de passe - Optimum Assurance",
     text: `Bonjour,\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\nOuvrez ce lien (valable 1 heure) :\n${resetUrl}\n\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\nCordialement,\nOptimum Assurance`,

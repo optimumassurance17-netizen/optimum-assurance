@@ -15,6 +15,7 @@ import {
 } from "@/lib/mollie-sepa"
 import { processInsuranceContractPaymentSuccess } from "@/lib/insurance-contract-service"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
+import { applyEcheancePaidEffects } from "@/lib/client-echeance-service"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -374,6 +375,10 @@ export async function POST(request: NextRequest) {
         await onSepaTrimestrePaid(metadata.sepaSubscriptionId)
       }
 
+      if (metadata.type === "echeance_carte" && !alreadyProcessed) {
+        await applyEcheancePaidEffects(metadata)
+      }
+
       if (user) {
         const amount = payment.amount?.value ? parseFloat(payment.amount.value) : 0
         await prisma.payment.upsert({
@@ -435,7 +440,9 @@ export async function POST(request: NextRequest) {
         } else if (
           metadata.type !== "sepa_trimestre" &&
           metadata.type !== "decennale_premier_trimestre" &&
-          metadata.type !== "regularisation"
+          metadata.type !== "regularisation" &&
+          metadata.type !== "echeance_carte" &&
+          metadata.type !== "echeance_manuelle"
         ) {
           const template = EMAIL_TEMPLATES.confirmationSouscription(
             metadata.raisonSociale || user.raisonSociale || user.email

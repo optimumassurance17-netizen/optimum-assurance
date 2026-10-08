@@ -148,6 +148,14 @@ interface ClientData {
   canGenerateDecennaleAttestation?: boolean
   payments: { id: string; amount: number; status: string; paidAt: string | null; createdAt: string }[]
   avenantFees: { id: string; amount: number; status: string; createdAt: string }[]
+  echeances?: {
+    id: string
+    label: string
+    amount: number
+    dueDate: string | null
+    paid: boolean
+    paidAt: string | null
+  }[]
   notes?: { id: string; content: string; adminEmail: string; createdAt: string }[]
   sinistres?: { id: string; dateSinistre: string; montantIndemnisation: number | null; description: string | null; userDocument: { id: string; filename: string; type: string } | null }[]
   userDocuments?: { id: string; type: string; filename: string; size?: number; createdAt?: string }[]
@@ -309,6 +317,7 @@ export default function ClientDetailPage() {
   const [attestationGenerating, setAttestationGenerating] = useState(false)
   const [clientAccessLoading, setClientAccessLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type?: "success" | "warning" | "error" } | null>(null)
+  const [echeanceBusy, setEcheanceBusy] = useState<string | null>(null)
   const [deleteModal, setDeleteModal] = useState(false)
   const [deleteConfirmEmail, setDeleteConfirmEmail] = useState("")
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -380,6 +389,59 @@ export default function ClientDetailPage() {
   }
 
   const { user, documents, payments, avenantFees } = data
+  const echeances = data.echeances ?? []
+
+  const handleEcheance = async (echeanceId: string, action: "carte" | "regler") => {
+    setEcheanceBusy(`${echeanceId}:${action}`)
+    try {
+      const res = await fetch(`/api/gestion/clients/${clientId}/echeances`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ echeanceId, action }),
+      })
+      const body = await readResponseJson<{
+        error?: string
+        ok?: boolean
+        alreadyPaid?: boolean
+        sentTo?: string
+        checkoutUrl?: string
+        emailSent?: boolean
+        echeances?: ClientData["echeances"]
+      }>(res)
+      if (!res.ok && !body.checkoutUrl) {
+        throw new Error(body.error || "Action impossible")
+      }
+      if (body.echeances) {
+        setData((current) => (current ? { ...current, echeances: body.echeances } : current))
+      } else {
+        const reload = await fetch(`/api/gestion/clients/${clientId}`)
+        if (reload.ok) {
+          setData(await readResponseJson<ClientData>(reload))
+        }
+      }
+      if (action === "carte" && body.checkoutUrl && body.emailSent === false) {
+        setToast({
+          message: `Email non envoyé. Lien carte : ${body.checkoutUrl}`,
+          type: "warning",
+        })
+        return
+      }
+      setToast({
+        message:
+          action === "regler" || body.alreadyPaid
+            ? "Échéance marquée comme réglée."
+            : `Lien de paiement carte envoyé à ${body.sentTo || user.email}.`,
+        type: "success",
+      })
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : "Erreur sur l'échéance",
+        type: "error",
+      })
+    } finally {
+      setEcheanceBusy(null)
+    }
+  }
   const caTotal = payments.filter((p) => p.status === "paid").reduce((a, p) => a + p.amount, 0)
   const isOwnAdminAccount = authSession?.user?.id === clientId
   const ddaConsents = data.dda?.consents ?? []
@@ -1509,6 +1571,66 @@ export default function ClientDetailPage() {
                 ))
               )}
             </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-white mb-2">Échéances</h2>
+          <p className="text-sm text-gray-300 mb-4">
+            Chaque échéance peut être envoyée en règlement par carte bancaire, ou marquée réglée si le paiement est déjà reçu.
+          </p>
+          <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
+            {echeances.length === 0 ? (
+              <p className="p-4 text-gray-200">Aucune échéance sur cette fiche.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-4 font-medium">Échéance</th>
+                    <th className="text-left p-4 font-medium">Date</th>
+                    <th className="text-left p-4 font-medium">Montant</th>
+                    <th className="text-left p-4 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {echeances.map((echeance) => (
+                    <tr key={echeance.id} className="border-b border-gray-700/50">
+                      <td className="p-4 text-white">{echeance.label}</td>
+                      <td className="p-4">
+                        {echeance.dueDate ? new Date(echeance.dueDate).toLocaleDateString("fr-FR") : "—"}
+                      </td>
+                      <td className="p-4">{echeance.amount.toLocaleString("fr-FR")} €</td>
+                      <td className="p-4">
+                        {echeance.paid ? (
+                          <span className="inline-flex rounded-lg bg-green-900/50 px-3 py-1.5 text-xs font-semibold text-green-200">
+                            Réglé
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              disabled={echeanceBusy !== null}
+                              onClick={() => void handleEcheance(echeance.id, "carte")}
+                              className="rounded-lg bg-[#2563eb] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
+                            >
+                              {echeanceBusy === `${echeance.id}:carte` ? "Envoi…" : "Règlement par carte bancaire"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={echeanceBusy !== null}
+                              onClick={() => void handleEcheance(echeance.id, "regler")}
+                              className="rounded-lg border border-gray-500 px-3 py-1.5 text-xs font-semibold text-white hover:border-green-400 disabled:opacity-50"
+                            >
+                              {echeanceBusy === `${echeance.id}:regler` ? "…" : "Régler"}
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </section>
 

@@ -21,6 +21,7 @@ import {
   getClientDevisAutonomyConfig,
   normalizeForcedActivitiesInput,
 } from "@/lib/client-devis-autonomy"
+import { loadClientEcheances } from "@/lib/client-echeance-service"
 
 function parseLogDetails(raw: string | null | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null
@@ -246,6 +247,7 @@ export async function GET(
       () => fetchUserDocumentReviews(userDocuments.map((d) => d.id)),
       {}
     )
+    const echeances = await withSchemaDriftFallback(() => loadClientEcheances(id), [])
     const canGenerateDecennaleAttestation =
       insuranceContracts.some((contract) => contract.productType === "decennale") ||
       documents.some((document) => {
@@ -268,6 +270,7 @@ export async function GET(
       insuranceContracts,
       payments,
       avenantFees,
+      echeances,
       notes,
       sinistres,
       userDocuments,
