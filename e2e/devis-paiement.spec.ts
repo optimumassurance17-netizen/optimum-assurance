@@ -94,8 +94,10 @@ test.describe("Parcours devis → paiement → attestation", () => {
     expect(data).not.toHaveProperty("clientName")
   })
 
-  test("Souscription DO sans brouillon session → retour devis DO", async ({ page }) => {
+  test("Souscription DO sans brouillon session → connexion pour reprendre", async ({ page }) => {
     await page.goto("/souscription-dommage-ouvrage")
-    await expect(page).toHaveURL(/devis-dommage-ouvrage/, { timeout: 15000 })
+    await expect(page).toHaveURL(/\/connexion\?/, { timeout: 15000 })
+    const callbackUrl = new URL(page.url()).searchParams.get("callbackUrl")
+    expect(callbackUrl).toBe("/souscription-dommage-ouvrage")
   })
 })
