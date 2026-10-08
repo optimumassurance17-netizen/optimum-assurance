@@ -249,6 +249,10 @@ export default function EspaceClientPage() {
     createdAt: string
     contractNumber?: string
     productType?: string
+    echeanceLabel?: string | null
+    methodLabel?: string | null
+    statusLabel?: string | null
+    virementReference?: string | null
   }[]>([])
   const [savedDevisDrafts, setSavedDevisDrafts] = useState<SavedDevisDraftItem[]>([])
   const [pendingSignatures, setPendingSignatures] = useState<PendingSignatureItem[]>([])
@@ -1303,49 +1307,46 @@ export default function EspaceClientPage() {
                 <thead>
                   <tr className="border-b border-[#d4d4d4]">
                     <th className="text-left py-3 font-medium text-[#0a0a0a]">Date</th>
-                    <th className="text-left py-3 font-medium text-[#0a0a0a]">Référence</th>
+                    <th className="text-left py-3 font-medium text-[#0a0a0a]">Échéance</th>
+                    <th className="text-left py-3 font-medium text-[#0a0a0a]">Mode</th>
                     <th className="text-left py-3 font-medium text-[#0a0a0a]">Montant</th>
                     <th className="text-left py-3 font-medium text-[#0a0a0a]">Statut</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {payments.map((p) => (
+                  {payments.map((p) => {
+                    const statusLabel = p.statusLabel
+                      || (p.status === "paid"
+                        ? "Payé"
+                        : p.status === "pending" || p.status === "open" || p.status === "authorized"
+                          ? "En attente"
+                          : "Échoué")
+                    const statusClass = statusLabel === "Payé"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : statusLabel === "Échoué"
+                        ? "bg-red-100 text-red-700"
+                        : statusLabel === "Lien expiré"
+                          ? "bg-amber-100 text-amber-900"
+                          : "bg-blue-100 text-blue-900"
+                    return (
                     <tr key={p.id} className="border-b border-[#d4d4d4]/50">
                       <td className="py-3 text-[#171717]">{new Date(p.paidAt || p.createdAt).toLocaleDateString("fr-FR")}</td>
+                      <td className="py-3 text-[#171717]">{p.echeanceLabel || "—"}</td>
                       <td className="py-3 text-[#171717]">
-                        {p.contractNumber ? (
-                          <>
-                            <span className="font-mono text-xs">{p.contractNumber}</span>
-                            {p.productType ? (
-                              <span className="ml-2 text-xs text-[#666]">
-                                {getInsuranceProductLabel(p.productType)}
-                              </span>
-                            ) : null}
-                          </>
-                        ) : (
-                          <span className="text-xs text-[#666]">Paiement historique</span>
-                        )}
+                        <div>{p.methodLabel || "—"}</div>
+                        {p.virementReference ? (
+                          <div className="mt-1 text-xs text-[#666]">Réf. {p.virementReference}</div>
+                        ) : null}
                       </td>
                       <td className="py-3 font-medium text-[#0a0a0a]">{p.amount.toLocaleString("fr-FR")} €</td>
                       <td className="py-3">
-                        <span
-                          className={`px-2 py-1 rounded text-xs ${
-                            p.status === "paid"
-                              ? "bg-emerald-100 text-emerald-800"
-                              : p.status === "pending" || p.status === "open" || p.status === "authorized"
-                                ? "bg-blue-100 text-blue-900"
-                                : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {p.status === "paid"
-                            ? "Payé"
-                            : p.status === "pending" || p.status === "open" || p.status === "authorized"
-                              ? "En attente"
-                              : "Échoué"}
+                        <span className={`px-2 py-1 rounded text-xs ${statusClass}`}>
+                          {statusLabel}
                         </span>
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

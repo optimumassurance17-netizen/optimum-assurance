@@ -8,7 +8,7 @@ type NextEcheance = {
   label: string
   amount: number
   dueDate: string | null
-  cardLinkStatus: "none" | "open"
+  cardLinkStatus: "none" | "open" | "expired"
   cardLinkSentAt: string | null
 }
 
@@ -89,6 +89,10 @@ export function ProchaineEcheanceCard() {
             </span>
           ) : null}
         </div>
+      ) : echeance.cardLinkStatus === "expired" ? (
+        <p className="mt-3 text-sm text-amber-900">
+          Le lien de paiement a expiré. Aucun nouveau lien n&apos;est créé depuis cet écran.
+        </p>
       ) : (
         <p className="mt-3 text-sm text-blue-900">Aucun lien de paiement n&apos;a encore été envoyé.</p>
       )}

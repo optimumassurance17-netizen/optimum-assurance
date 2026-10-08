@@ -153,6 +153,7 @@ interface ClientData {
     statusLabel?: string | null
     methodLabel?: string | null
     echeanceLabel?: string | null
+    virementReference?: string | null
     paidAt: string | null
     createdAt: string
   }[]
@@ -164,7 +165,7 @@ interface ClientData {
     dueDate: string | null
     paid: boolean
     paidAt: string | null
-    cardLinkStatus?: "none" | "open"
+    cardLinkStatus?: "none" | "open" | "expired"
     checkoutUrl?: string | null
     cardLinkSentAt?: string | null
     sepaFailure?: string | null
@@ -343,6 +344,9 @@ export default function ClientDetailPage() {
   const [clientAccessLoading, setClientAccessLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type?: "success" | "warning" | "error" } | null>(null)
   const [echeanceBusy, setEcheanceBusy] = useState<string | null>(null)
+  const [virementModal, setVirementModal] = useState<{ echeanceId: string; label: string; amountLabel: string } | null>(null)
+  const [virementReference, setVirementReference] = useState("")
+  const [virementError, setVirementError] = useState<string | null>(null)
   const [deleteModal, setDeleteModal] = useState(false)
   const [deleteConfirmEmail, setDeleteConfirmEmail] = useState("")
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -417,22 +421,25 @@ export default function ClientDetailPage() {
   const { user, documents, payments, avenantFees } = data
   const echeances = data.echeances ?? []
 
-  const handleEcheance = async (echeanceId: string, action: "carte" | "regler" | "virement" | "prevenir") => {
-    if (action === "virement") {
-      const echeance = echeances.find((row) => row.id === echeanceId)
-      const amount = echeance ? `${echeance.amount.toLocaleString("fr-FR")} €` : "cette échéance"
-      const label = echeance?.label || "cette échéance"
-      const confirmed = window.confirm(
-        `Valider le virement reçu pour ${label} (${amount}) ? Aucun paiement Mollie ne sera créé.`
-      )
-      if (!confirmed) return
+  const handleEcheance = async (
+    echeanceId: string,
+    action: "carte" | "regler" | "virement" | "prevenir",
+    reference?: string
+  ) => {
+    if (action === "virement" && !reference?.trim()) {
+      setVirementError("Indiquez le libellé ou la date du virement.")
+      return
     }
     setEcheanceBusy(`${echeanceId}:${action}`)
     try {
       const res = await fetch(`/api/gestion/clients/${clientId}/echeances`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ echeanceId, action }),
+        body: JSON.stringify({
+          echeanceId,
+          action,
+          ...(action === "virement" ? { virementReference: reference } : {}),
+        }),
       })
       const body = await readResponseJson<{
         error?: string
@@ -472,6 +479,15 @@ export default function ClientDetailPage() {
         return
       }
       if (action === "regler" || action === "virement") {
+        if (action === "virement") {
+          setVirementModal(null)
+          setVirementReference("")
+          setVirementError(null)
+        }
+        if (body.alreadyPaid) {
+          setToast({ message: "Cette échéance est déjà réglée.", type: "success" })
+          return
+        }
         const recorded = action === "virement" ? "Virement enregistré" : "Échéance marquée comme réglée"
         setToast({
           message: body.emailSent === false
@@ -490,8 +506,10 @@ export default function ClientDetailPage() {
         type: "success",
       })
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Erreur sur l'échéance"
+      if (action === "virement") setVirementError(message)
       setToast({
-        message: err instanceof Error ? err.message : "Erreur sur l'échéance",
+        message,
         type: "error",
       })
     } finally {
@@ -1635,7 +1653,9 @@ export default function ClientDetailPage() {
           <p className="text-sm text-gray-300 mb-4">
             Chaque échéance peut être envoyée en règlement par carte bancaire, marquée réglée, ou validée
             lorsqu’un virement est arrivé sur le compte en dehors de Mollie. Un lien carte encore ouvert est renvoyé,
-            sans créer un second paiement. Valider le virement ferme ce lien et n’appelle pas Mollie pour encaisser.
+            sans créer un second paiement. Après 7 jours, le lien déjà enregistré s’affiche comme expiré. Valider le
+            virement demande le libellé ou la date de la banque, ferme un lien carte encore ouvert et n’appelle pas
+            Mollie pour encaisser.
           </p>
           {data.sepa ? (
             <div className="mb-4 rounded-xl border border-gray-700 bg-[#252525] p-4 text-sm text-gray-200">
@@ -1711,6 +1731,14 @@ export default function ClientDetailPage() {
                                 Envoyé le {new Date(echeance.cardLinkSentAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}
                               </span>
                             ) : null}
+                            {echeance.cardLinkStatus === "expired" ? (
+                              <span className="self-center text-xs text-amber-200">
+                                Lien expiré
+                                {echeance.cardLinkSentAt
+                                  ? ` · envoyé le ${new Date(echeance.cardLinkSentAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}`
+                                  : ""}
+                              </span>
+                            ) : null}
                             {echeance.sepaFailure ? (
                               <button
                                 type="button"
@@ -1725,7 +1753,15 @@ export default function ClientDetailPage() {
                               type="button"
                               disabled={echeanceBusy !== null}
                               title="Le virement est arrivé sur le compte, en dehors de Mollie"
-                              onClick={() => void handleEcheance(echeance.id, "virement")}
+                              onClick={() => {
+                                setVirementReference("")
+                                setVirementError(null)
+                                setVirementModal({
+                                  echeanceId: echeance.id,
+                                  label: echeance.label,
+                                  amountLabel: `${echeance.amount.toLocaleString("fr-FR")} €`,
+                                })
+                              }}
                               className="rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-semibold text-emerald-100 hover:border-emerald-400 disabled:opacity-50"
                             >
                               {echeanceBusy === `${echeance.id}:virement` ? "…" : "Virement reçu"}
@@ -1770,7 +1806,12 @@ export default function ClientDetailPage() {
                     <tr key={p.id} className="border-b border-gray-700/50">
                       <td className="p-4">{new Date(p.paidAt || p.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-4">{p.echeanceLabel || "—"}</td>
-                      <td className="p-4">{p.methodLabel || "—"}</td>
+                      <td className="p-4">
+                        <div>{p.methodLabel || "—"}</div>
+                        {p.virementReference ? (
+                          <div className="mt-1 text-xs text-gray-300">Réf. {p.virementReference}</div>
+                        ) : null}
+                      </td>
                       <td className="p-4">{p.amount.toLocaleString("fr-FR")} €</td>
                       <td className="p-4">
                         <span className={`px-2 py-1 rounded text-xs ${
@@ -2107,6 +2148,57 @@ export default function ClientDetailPage() {
                 {emailLoading ? "Envoi..." : "Envoyer"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {virementModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setVirementModal(null)}>
+          <div className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-2">Virement reçu</h3>
+            <p className="text-sm text-gray-300 mb-4">
+              {virementModal.label} · {virementModal.amountLabel}. Aucun paiement Mollie ne sera créé.
+            </p>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault()
+                void handleEcheance(virementModal.echeanceId, "virement", virementReference)
+              }}
+            >
+              <label className="block text-sm text-gray-200 mb-2" htmlFor="virement-reference">
+                Libellé ou date de la banque
+              </label>
+              <input
+                id="virement-reference"
+                type="text"
+                maxLength={80}
+                value={virementReference}
+                onChange={(event) => {
+                  setVirementReference(event.target.value)
+                  setVirementError(null)
+                }}
+                placeholder="Ex. VIR SEPA 08/10/2026"
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500"
+                autoFocus
+              />
+              {virementError ? <p className="mt-2 text-sm text-red-300">{virementError}</p> : null}
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVirementModal(null)}
+                  className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={echeanceBusy !== null || !virementReference.trim()}
+                  className="px-4 py-2 rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 disabled:opacity-50"
+                >
+                  {echeanceBusy === `${virementModal.echeanceId}:virement` ? "…" : "Valider le virement"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

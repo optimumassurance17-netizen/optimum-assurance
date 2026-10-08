@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { contractLifecyclePresentation, describeClientPayment } from "@/lib/client-echeances"
 import { prisma } from "@/lib/prisma"
 
 export async function GET() {
@@ -13,7 +14,15 @@ export async function GET() {
     const [payments, contractPayments] = await Promise.all([
       prisma.payment.findMany({
         where: { userId: session.user.id },
-        select: { id: true, amount: true, status: true, paidAt: true, createdAt: true },
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          paidAt: true,
+          createdAt: true,
+          metadata: true,
+          molliePaymentId: true,
+        },
         orderBy: { createdAt: "desc" },
       }),
       prisma.contractLifecyclePayment.findMany({
@@ -38,22 +47,44 @@ export async function GET() {
     ])
 
     const merged = [
-      ...payments.map((payment) => ({
-        id: payment.id,
-        amount: payment.amount,
-        status: payment.status,
-        paidAt: payment.paidAt,
-        createdAt: payment.createdAt,
-      })),
-      ...contractPayments.map((payment) => ({
-        id: payment.id,
-        amount: payment.amount,
-        status: payment.status,
-        paidAt: payment.paidAt,
-        createdAt: payment.createdAt,
-        contractNumber: payment.contract.contractNumber,
-        productType: payment.contract.productType,
-      })),
+      ...payments.map((payment) => {
+        const described = describeClientPayment({
+          metadata: payment.metadata,
+          molliePaymentId: payment.molliePaymentId,
+          status: payment.status,
+        })
+        return {
+          id: payment.id,
+          amount: payment.amount,
+          status: payment.status,
+          paidAt: payment.paidAt,
+          createdAt: payment.createdAt,
+          echeanceLabel: described.echeanceLabel,
+          methodLabel: described.methodLabel,
+          statusLabel: described.statusLabel,
+          virementReference: described.virementReference,
+        }
+      }),
+      ...contractPayments.map((payment) => {
+        const described = contractLifecyclePresentation({
+          productType: payment.contract.productType,
+          contractNumber: payment.contract.contractNumber,
+          status: payment.status,
+        })
+        return {
+          id: payment.id,
+          amount: payment.amount,
+          status: payment.status,
+          paidAt: payment.paidAt,
+          createdAt: payment.createdAt,
+          contractNumber: payment.contract.contractNumber,
+          productType: payment.contract.productType,
+          echeanceLabel: described.echeanceLabel,
+          methodLabel: described.methodLabel,
+          statusLabel: described.statusLabel,
+          virementReference: described.virementReference,
+        }
+      }),
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     return NextResponse.json(merged)

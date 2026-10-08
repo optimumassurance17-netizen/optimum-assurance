@@ -3,18 +3,25 @@ import {
   attachOpenCardLinks,
   attestationIdFromPaymentMetadata,
   buildClientEcheances,
+  cardLinkIsExpired,
   cardPaymentMatches,
+  clientPaymentStatusLabel,
+  contractLifecyclePresentation,
+  describeClientPayment,
   echeanceReceiptLabel,
   installmentFromPaymentMetadata,
   mollieCardLinkIsClosed,
   molliePaymentIsOpen,
   nextUnpaidEcheance,
+  normalizeVirementReference,
   pendingCardEcheanceId,
   paidAttestationMoments,
   paymentEcheanceLabel,
   paymentMethodLabel,
   paymentStatusLabel,
   readEcheanceCardLink,
+  selectEcheancesASuivre,
+  sepaDebitIsInFlight,
 } from "../lib/client-echeances"
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -244,5 +251,150 @@ assert(
 )
 assert(sepaRelance.includes("Un prélèvement SEPA est déjà en cours"), "un prélèvement ouvert empêche un second lien")
 assert(!sepaRelance.includes("payments.create"), "la relance SEPA ne crée pas le paiement elle-même")
+
+const expiredAt = "2026-02-08T00:00:00+00:00"
+const expiredMeta = JSON.stringify({
+  type: "echeance_carte",
+  echeanceId: "decennale:2",
+  checkoutUrl: "https://pay.example/expired",
+  cardLinkExpiresAt: expiredAt,
+})
+const stillOpenMeta = JSON.stringify({
+  type: "echeance_carte",
+  echeanceId: "decennale:3",
+  checkoutUrl: "https://pay.example/live",
+  cardLinkExpiresAt: "2026-02-20T00:00:00+00:00",
+})
+const nowAfterExpiry = new Date("2026-02-09T00:00:00.000Z")
+assert(cardLinkIsExpired(expiredMeta, nowAfterExpiry), "un lien dont la date est passée est expiré")
+assert(!cardLinkIsExpired(stillOpenMeta, nowAfterExpiry), "un lien encore dans les 7 jours reste ouvert")
+assert(!cardLinkIsExpired(JSON.stringify({ type: "echeance_carte", echeanceId: "decennale:2" }), nowAfterExpiry), "un ancien lien sans date reste ouvert")
+const withExpiry = attachOpenCardLinks(open, [
+  {
+    status: "pending",
+    molliePaymentId: "pl_expired",
+    createdAt: new Date("2026-02-01T00:00:00.000Z"),
+    metadata: expiredMeta,
+  },
+  {
+    status: "pending",
+    molliePaymentId: "pl_live",
+    createdAt: new Date("2026-02-02T00:00:00.000Z"),
+    metadata: stillOpenMeta,
+  },
+  {
+    status: "pending",
+    molliePaymentId: "virement_ignored",
+    createdAt: new Date("2026-02-04T00:00:00.000Z"),
+    metadata: JSON.stringify({ type: "echeance_carte", echeanceId: "decennale:4", checkoutUrl: "https://pay.example/no" }),
+  },
+], nowAfterExpiry)
+assert(withExpiry.find((row) => row.id === "decennale:2")?.cardLinkStatus === "expired", "la fiche affiche le lien expiré")
+assert(withExpiry.find((row) => row.id === "decennale:2")?.checkoutUrl === null, "un lien expiré ne propose plus son adresse")
+assert(withExpiry.find((row) => row.id === "decennale:3")?.cardLinkStatus === "open", "un lien dans les 7 jours reste envoyé")
+assert(withExpiry.find((row) => row.id === "decennale:4")?.cardLinkStatus === "none", "un virement n'est pas un lien carte")
+assert(pendingCardEcheanceId({ status: "pending", molliePaymentId: "pl_expired", metadata: expiredMeta }, nowAfterExpiry) === null, "un lien expiré ne se renvoie pas")
+assert(
+  pendingCardEcheanceId({ status: "pending", molliePaymentId: "pl_live", metadata: stillOpenMeta }, nowAfterExpiry) === "decennale:3",
+  "un lien encore valable se renvoie"
+)
+assert(
+  paymentStatusLabel("pending", expiredMeta, nowAfterExpiry) === "Lien expiré",
+  "le tableau des paiements dit lien expiré"
+)
+
+assert(normalizeVirementReference("  VIR   08/10  ") === "VIR 08/10", "la référence de virement est nettoyée")
+assert(normalizeVirementReference("   ") === null, "une référence vide est refusée")
+assert(normalizeVirementReference("x".repeat(120))?.length === 80, "la référence de virement est limitée")
+const describedVirement = describeClientPayment({
+  status: "paid",
+  molliePaymentId: "virement_1",
+  metadata: JSON.stringify({ type: "virement_externe", label: "Échéance 2", virementReference: "VIR 08/10" }),
+})
+assert(describedVirement.methodLabel === "Virement" && describedVirement.echeanceLabel === "Échéance 2", "l'historique client nomme le virement")
+assert(describedVirement.virementReference === "VIR 08/10" && describedVirement.statusLabel === "Payé", "l'historique client montre la référence")
+assert(
+  clientPaymentStatusLabel("pending", "Prélèvement SEPA") === "En attente",
+  "un prélèvement en attente n'est pas un lien carte"
+)
+assert(
+  contractLifecyclePresentation({ productType: "do", contractNumber: "DO-1", status: "paid" }).echeanceLabel === "Dommage ouvrage DO-1",
+  "un contrat virement porte son produit"
+)
+assert(
+  contractLifecyclePresentation({ productType: "do", contractNumber: "DO-1", status: "pending" }).methodLabel === "Virement",
+  "un paiement de contrat est un virement"
+)
+
+const suiviRows = attachOpenCardLinks(open, [
+  {
+    status: "pending",
+    molliePaymentId: "pl_open_1",
+    createdAt: new Date("2026-01-20T00:00:00.000Z"),
+    metadata: JSON.stringify({
+      type: "echeance_carte",
+      echeanceId: "decennale:1",
+      checkoutUrl: "https://pay.example/open",
+      cardLinkExpiresAt: "2026-06-01T00:00:00+00:00",
+    }),
+  },
+], new Date("2026-05-01T00:00:00.000Z"))
+const suiviNow = new Date("2026-05-01T00:00:00.000Z")
+const suivi = selectEcheancesASuivre([
+  {
+    userId: "user-1",
+    clientLabel: "Atelier",
+    rows: suiviRows,
+    sepaPendingPaymentId: null,
+  },
+], suiviNow)
+assert(suivi.some((row) => row.echeanceId === "decennale:2"), "une échéance due sans lien est à suivre")
+assert(!suivi.some((row) => row.echeanceId === "decennale:1"), "un lien carte encore ouvert sort de la liste")
+assert(!suivi.some((row) => row.echeanceId === "decennale:3"), "une échéance future n'est pas à suivre")
+const blocked = selectEcheancesASuivre([
+  {
+    userId: "user-1",
+    clientLabel: "Atelier",
+    rows: open,
+    sepaPendingPaymentId: "tr_debit",
+    pendingLocalPayment: null,
+  },
+], suiviNow)
+assert(sepaDebitIsInFlight({ sepaPendingPaymentId: "tr_debit", localPayment: null }), "un prélèvement sans ligne locale est en cours")
+assert(!blocked.some((row) => row.echeanceId === "decennale:1"), "le prélèvement en cours retire la prochaine décennale")
+assert(blocked.some((row) => row.echeanceId === "decennale:2"), "les autres échéances dues restent visibles")
+assert(!sepaDebitIsInFlight({ sepaPendingPaymentId: "pl_card" }), "un lien carte n'est pas un prélèvement")
+assert(
+  !sepaDebitIsInFlight({
+    sepaPendingPaymentId: "tr_card",
+    localPayment: { status: "pending", metadata: JSON.stringify({ type: "echeance_carte", paiementCarteRelance: "true" }) },
+  }),
+  "une relance carte en attente n'est pas un prélèvement"
+)
+const expiredSuivi = selectEcheancesASuivre([
+  {
+    userId: "user-1",
+    clientLabel: "Atelier",
+    rows: withExpiry,
+  },
+], new Date("2026-05-01T00:00:00.000Z"))
+assert(
+  expiredSuivi.find((row) => row.echeanceId === "decennale:2")?.cardLinkStatus === "expired",
+  "un lien expiré reste dans les échéances à suivre"
+)
+
+const refAt = adminEcheance.indexOf("Indiquez le libellé ou la date du virement.")
+assert(refAt > 0 && refAt < refreshAt, "la référence du virement est exigée avant toute lecture Mollie")
+assert(adminEcheance.includes("virementReference"), "la référence est enregistrée avec le virement")
+const clientPayments = readFileSync(new URL("../app/api/client/payments/route.ts", import.meta.url), "utf8")
+assert(clientPayments.includes("describeClientPayment"), "l'historique client reprend l'échéance et le mode")
+assert(clientPayments.includes("contractLifecyclePresentation"), "les virements de contrat sont nommés")
+assert(!clientPayments.includes("checkoutUrl"), "l'historique client ne renvoie pas l'adresse de paiement")
+const dashboard = readFileSync(new URL("../app/api/gestion/dashboard/route.ts", import.meta.url), "utf8")
+assert(dashboard.includes("loadEcheancesASuivre"), "le tableau de bord charge les échéances à suivre")
+assert(!dashboard.includes("payments.create") && !dashboard.includes("paymentLinks.create"), "la liste à suivre n'appelle pas Mollie")
+const fiche = readFileSync(new URL("../app/gestion/clients/[id]/page.tsx", import.meta.url), "utf8")
+assert(fiche.includes("virementReference") && fiche.includes("Lien expiré"), "la fiche saisit la référence et montre le lien expiré")
+assert(clientEcheance.includes("Le lien de paiement a expiré"), "l'espace client ne recrée pas un lien expiré")
 
 console.log("Échéances fiche client : OK")

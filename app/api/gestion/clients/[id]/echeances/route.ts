@@ -8,7 +8,7 @@ import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { applyEcheancePaidEffects, loadClientEcheances } from "@/lib/client-echeance-service"
-import { findClientEcheance, readEcheanceCardLink, stringRecordFromMetadata } from "@/lib/client-echeances"
+import { findClientEcheance, normalizeVirementReference, readEcheanceCardLink, stringRecordFromMetadata } from "@/lib/client-echeances"
 import { createStoredCardPayment, readRemoteCardLink, readRemotePaymentLock, retireRemoteCardLink } from "@/lib/gestion-card-link"
 import { sendEcheancePaidReceipt, sendSepaFailureNotice } from "@/lib/echeance-receipt"
 import { SITE_URL } from "@/lib/site-url"
@@ -244,6 +244,17 @@ export async function POST(
     if (echeance.avenantFeeId) metadata.avenantFeeId = echeance.avenantFeeId
     if (echeance.attestationId) metadata.attestationId = echeance.attestationId
 
+    if (action === "virement") {
+      const virementReference = normalizeVirementReference(raw.virementReference)
+      if (!virementReference) {
+        return NextResponse.json(
+          { error: "Indiquez le libellé ou la date du virement." },
+          { status: 400 }
+        )
+      }
+      metadata.virementReference = virementReference
+    }
+
     const apiKey = process.env.MOLLIE_API_KEY
     const mollie = apiKey ? createMollieClient({ apiKey }) : null
     const refreshed = await refreshPendingCardPayment(mollie, userId, echeance.id, raisonSociale)
@@ -347,7 +358,14 @@ export async function POST(
         action: action === "virement" ? "echeance_virement_externe" : "echeance_marquee_reglee",
         targetType: "user",
         targetId: user.id,
-        details: { echeanceId: echeance.id, amount: echeance.amount, paymentId, emailSent, mode: action },
+        details: {
+          echeanceId: echeance.id,
+          amount: echeance.amount,
+          paymentId,
+          emailSent,
+          mode: action,
+          ...(metadata.virementReference ? { virementReference: metadata.virementReference } : {}),
+        },
       })
       const echeances = await loadClientEcheances(userId)
       if (!emailSent) {

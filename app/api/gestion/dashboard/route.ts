@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { stripSignatureBinariesFromJsonString } from "@/lib/esign/local-signature-fallback"
+import { loadEcheancesASuivre } from "@/lib/client-echeance-service"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -1062,6 +1063,8 @@ export async function GET() {
     }
     const conversionFunnel = buildConversionFunnel(conversionLogs)
 
+    const echeancesASuivre = await loadEcheancesASuivre()
+
     const devisLeadsWithSla = devisLeads.map((lead) => {
       const slaHours = Math.max(0, Math.floor((Date.now() - lead.createdAt.getTime()) / (60 * 60 * 1000)))
       return {
@@ -1091,6 +1094,7 @@ export async function GET() {
       devisDrafts,
       pendingSignatures,
       sepaSubscriptions: sepaSubscriptionsRows,
+      echeancesASuivre,
       insuranceContractsCount,
       insuranceContracts: insuranceContractsList,
       dashboardActions: dashboardActionsLimited,

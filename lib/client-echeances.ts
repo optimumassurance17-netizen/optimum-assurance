@@ -14,7 +14,7 @@ export type ClientEcheance = {
   sepaSubscriptionId: string | null
   avenantFeeId: string | null
   attestationId: string | null
-  cardLinkStatus: "none" | "open"
+  cardLinkStatus: "none" | "open" | "expired"
   checkoutUrl: string | null
   cardLinkSentAt: string | null
   sepaFailure: string | null
@@ -225,31 +225,61 @@ export function stringRecordFromMetadata(metadata: string | null | undefined): R
   }
 }
 
-/** Le lien le plus récent encore en attente est affiché. Une échéance déjà réglée n'en montre pas. */
-export function attachOpenCardLinks(rows: ClientEcheance[], payments: PendingCardPayment[]): ClientEcheance[] {
-  const latest = new Map<string, { checkoutUrl: string | null; createdAt: number }>()
+/** Date d'expiration enregistrée à la création du lien. Sans cette date, le lien reste « ouvert ». */
+export function cardLinkIsExpired(metadata: string | null | undefined, now = new Date()): boolean {
+  const parsed = parseMetadataRecord(metadata)
+  const raw = parsed?.cardLinkExpiresAt
+  if (typeof raw !== "string" || !raw.trim()) return false
+  const expires = Date.parse(raw)
+  return Number.isFinite(expires) && expires <= now.getTime()
+}
+
+/**
+ * Le lien encore payable le plus récent est affiché.
+ * S'il ne reste que des liens dont les 7 jours sont passés, l'échéance est « expirée » sans appel Mollie.
+ */
+export function attachOpenCardLinks(
+  rows: ClientEcheance[],
+  payments: PendingCardPayment[],
+  now = new Date()
+): ClientEcheance[] {
+  const openLinks = new Map<string, { checkoutUrl: string | null; createdAt: number }>()
+  const expiredLinks = new Map<string, { checkoutUrl: string | null; createdAt: number }>()
   for (const payment of payments) {
     if (payment.status !== "pending") continue
-    if (!payment.molliePaymentId || payment.molliePaymentId.startsWith("manuel_")) continue
+    const paymentId = payment.molliePaymentId
+    if (!paymentId || paymentId.startsWith("manuel_") || paymentId.startsWith("virement_")) continue
     const link = readOpenCardTarget(payment.metadata)
     if (!link) continue
     const createdAt = payment.createdAt.getTime()
-    const previous = latest.get(link.echeanceId)
+    const bucket = cardLinkIsExpired(payment.metadata, now) ? expiredLinks : openLinks
+    const previous = bucket.get(link.echeanceId)
     if (!previous || createdAt >= previous.createdAt) {
-      latest.set(link.echeanceId, { checkoutUrl: link.checkoutUrl, createdAt })
+      bucket.set(link.echeanceId, { checkoutUrl: link.checkoutUrl, createdAt })
     }
   }
 
   return rows.map((row) => {
     if (row.paid) return { ...row, cardLinkStatus: "none", checkoutUrl: null, cardLinkSentAt: null }
-    const link = latest.get(row.id)
-    if (!link) return { ...row, cardLinkStatus: "none", checkoutUrl: null, cardLinkSentAt: null }
-    return {
-      ...row,
-      cardLinkStatus: "open",
-      checkoutUrl: link.checkoutUrl,
-      cardLinkSentAt: new Date(link.createdAt).toISOString(),
+    const openLink = openLinks.get(row.id)
+    if (openLink) {
+      return {
+        ...row,
+        cardLinkStatus: "open",
+        checkoutUrl: openLink.checkoutUrl,
+        cardLinkSentAt: new Date(openLink.createdAt).toISOString(),
+      }
     }
+    const expiredLink = expiredLinks.get(row.id)
+    if (expiredLink) {
+      return {
+        ...row,
+        cardLinkStatus: "expired",
+        checkoutUrl: null,
+        cardLinkSentAt: new Date(expiredLink.createdAt).toISOString(),
+      }
+    }
+    return { ...row, cardLinkStatus: "none", checkoutUrl: null, cardLinkSentAt: null }
   })
 }
 
@@ -274,10 +304,11 @@ export function paidAttestationMoments(
   return moments
 }
 
-export function paymentStatusLabel(status: string): string {
+export function paymentStatusLabel(status: string, metadata?: string | null, now = new Date()): string {
   if (status === "paid") return "Payé"
+  if (status === "pending" && cardLinkIsExpired(metadata, now)) return "Lien expiré"
   if (status === "pending") return "Lien envoyé"
-  if (status === "failed") return "Échoué"
+  if (status === "failed" || status === "expired" || status === "canceled" || status === "cancelled") return "Échoué"
   return status
 }
 
@@ -335,14 +366,19 @@ export function nextUnpaidEcheance<T extends { paid: boolean }>(rows: T[]): T | 
   return rows.find((row) => !row.paid) ?? null
 }
 
-/** Identifiant d'échéance d'un lien carte encore en attente, sinon null. */
-export function pendingCardEcheanceId(payment: {
-  status: string
-  molliePaymentId?: string | null
-  metadata?: string | null
-}): string | null {
+/** Identifiant d'échéance d'un lien carte encore payable, sinon null. Un lien dont les 7 jours sont passés ne compte plus. */
+export function pendingCardEcheanceId(
+  payment: {
+    status: string
+    molliePaymentId?: string | null
+    metadata?: string | null
+  },
+  now = new Date()
+): string | null {
   if (payment.status !== "pending") return null
-  if (!payment.molliePaymentId || payment.molliePaymentId.startsWith("manuel_")) return null
+  const paymentId = payment.molliePaymentId
+  if (!paymentId || paymentId.startsWith("manuel_") || paymentId.startsWith("virement_")) return null
+  if (cardLinkIsExpired(payment.metadata, now)) return null
   return readOpenCardTarget(payment.metadata)?.echeanceId ?? null
 }
 
@@ -406,4 +442,150 @@ export function echeanceReceiptLabel(metadata: Record<string, unknown>): string 
   if (id.startsWith("avenant:")) return "Frais d'avenant"
   if (id.startsWith("attestation:")) return "Régularisation"
   return "Échéance"
+}
+
+const VIREMENT_REFERENCE_MAX = 80
+
+export function normalizeVirementReference(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const trimmed = value.replace(/\s+/g, " ").trim()
+  if (!trimmed) return null
+  return trimmed.slice(0, VIREMENT_REFERENCE_MAX)
+}
+
+export function virementReferenceFromMetadata(metadata: string | null | undefined): string | null {
+  return normalizeVirementReference(parseMetadataRecord(metadata)?.virementReference)
+}
+
+export function clientPaymentStatusLabel(
+  status: string,
+  methodLabel: string | null,
+  metadata?: string | null,
+  now = new Date()
+): string {
+  if (status === "paid") return "Payé"
+  if (status === "failed" || status === "expired" || status === "canceled" || status === "cancelled") return "Échoué"
+  const waiting = status === "pending" || status === "open" || status === "authorized"
+  if (waiting && methodLabel === "Carte" && cardLinkIsExpired(metadata, now)) return "Lien expiré"
+  if (waiting) return methodLabel === "Carte" ? "Lien envoyé" : "En attente"
+  return paymentStatusLabel(status, metadata, now)
+}
+
+export function describeClientPayment(input: {
+  metadata?: string | null
+  molliePaymentId?: string | null
+  status: string
+  now?: Date
+}): {
+  echeanceLabel: string | null
+  methodLabel: string | null
+  statusLabel: string
+  virementReference: string | null
+} {
+  const now = input.now ?? new Date()
+  const methodLabel = paymentMethodLabel(input.metadata, input.molliePaymentId)
+  return {
+    echeanceLabel: paymentEcheanceLabel(input.metadata),
+    methodLabel,
+    statusLabel: clientPaymentStatusLabel(input.status, methodLabel, input.metadata, now),
+    virementReference: virementReferenceFromMetadata(input.metadata),
+  }
+}
+
+export function contractLifecyclePresentation(input: {
+  productType?: string | null
+  contractNumber?: string | null
+  status: string
+}): {
+  echeanceLabel: string
+  methodLabel: "Virement"
+  statusLabel: string
+  virementReference: null
+} {
+  const product =
+    input.productType === "do"
+      ? "Dommage ouvrage"
+      : input.productType === "rc_fabriquant"
+        ? "RC Fabriquant"
+        : input.productType === "decennale"
+          ? "Décennale"
+          : "Contrat"
+  const number = input.contractNumber?.trim()
+  return {
+    echeanceLabel: number ? `${product} ${number}` : product,
+    methodLabel: "Virement",
+    statusLabel: clientPaymentStatusLabel(input.status, "Virement"),
+    virementReference: null,
+  }
+}
+
+function pendingPaymentIsCardLink(metadata: string | null | undefined): boolean {
+  const parsed = parseMetadataRecord(metadata)
+  if (!parsed) return false
+  const type = typeof parsed.type === "string" ? parsed.type : ""
+  if (type === "echeance_carte" || type === "regularisation" || type === "decennale_premier_trimestre") return true
+  return parsed.paiementCarteRelance === "true" || parsed.paiementCarteRelance === true
+}
+
+/** Un identifiant Mollie posé par le cron est un prélèvement, sauf si la ligne locale est un lien carte. */
+export function sepaDebitIsInFlight(input: {
+  sepaPendingPaymentId?: string | null
+  localPayment?: { status: string; metadata?: string | null; molliePaymentId?: string | null } | null
+}): boolean {
+  const id = input.sepaPendingPaymentId?.trim() || ""
+  if (!id) return false
+  if (id.startsWith("pl_") || id.startsWith("manuel_") || id.startsWith("virement_")) return false
+  const local = input.localPayment
+  if (!local) return true
+  if (local.status !== "pending") return false
+  if (pendingPaymentIsCardLink(local.metadata)) return false
+  return true
+}
+
+export type EcheanceSuiviInput = {
+  userId: string
+  clientLabel: string
+  rows: ClientEcheance[]
+  sepaPendingPaymentId?: string | null
+  pendingLocalPayment?: { status: string; metadata?: string | null; molliePaymentId?: string | null } | null
+}
+
+export type EcheanceASuivre = {
+  userId: string
+  clientLabel: string
+  echeanceId: string
+  label: string
+  amount: number
+  dueDate: string
+  cardLinkStatus: "none" | "expired"
+}
+
+/** Échéances dues, sans lien carte encore payable, et sans prélèvement déjà parti sur la prochaine décennale. */
+export function selectEcheancesASuivre(inputs: EcheanceSuiviInput[], now = new Date()): EcheanceASuivre[] {
+  const nowMs = now.getTime()
+  const out: EcheanceASuivre[] = []
+  for (const input of inputs) {
+    const debitInFlight = sepaDebitIsInFlight({
+      sepaPendingPaymentId: input.sepaPendingPaymentId,
+      localPayment: input.pendingLocalPayment,
+    })
+    const nextDecennaleId = input.rows.find((row) => row.kind === "decennale" && !row.paid)?.id ?? null
+    for (const row of input.rows) {
+      if (row.paid || row.cardLinkStatus === "open" || !row.dueDate) continue
+      const due = Date.parse(row.dueDate)
+      if (!Number.isFinite(due) || due > nowMs) continue
+      if (debitInFlight && nextDecennaleId && row.id === nextDecennaleId) continue
+      out.push({
+        userId: input.userId,
+        clientLabel: input.clientLabel,
+        echeanceId: row.id,
+        label: row.label,
+        amount: row.amount,
+        dueDate: row.dueDate,
+        cardLinkStatus: row.cardLinkStatus === "expired" ? "expired" : "none",
+      })
+    }
+  }
+  out.sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.clientLabel.localeCompare(right.clientLabel, "fr"))
+  return out
 }

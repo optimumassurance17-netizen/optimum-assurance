@@ -11,7 +11,7 @@ function publicEcheance(row: {
   label: string
   amount: number
   dueDate: string | null
-  cardLinkStatus: "none" | "open"
+  cardLinkStatus: "none" | "open" | "expired"
   cardLinkSentAt: string | null
 }) {
   return {
@@ -67,6 +67,12 @@ export async function POST(request: NextRequest) {
     }
     if (echeance.paid) {
       return NextResponse.json({ ok: true, alreadyPaid: true })
+    }
+    if (echeance.cardLinkStatus === "expired") {
+      return NextResponse.json(
+        { error: "Le lien de paiement a expiré. Aucun nouveau lien n'a été créé." },
+        { status: 409 }
+      )
     }
     if (echeance.cardLinkStatus !== "open") {
       return NextResponse.json(
