@@ -169,6 +169,7 @@ interface ClientData {
     checkoutUrl?: string | null
     cardLinkSentAt?: string | null
     sepaFailure?: string | null
+    clientNotifiedAt?: string | null
   }[]
   sepa?: {
     present: boolean
@@ -177,6 +178,7 @@ interface ClientData {
     nextDue: string | null
     lastError: string | null
     pendingPaymentId: string | null
+    pendingLabel?: "aucun" | "Lien carte" | "Prélèvement SEPA"
     trimestresSepaPayes: number
     amount: number | null
     cronWouldCharge: boolean
@@ -1673,7 +1675,7 @@ export default function ClientDetailPage() {
                     {data.sepa.amount != null ? ` · ${data.sepa.amount.toLocaleString("fr-FR")} €` : ""}
                   </li>
                   <li>Trimestres déjà prélevés : {data.sepa.trimestresSepaPayes}</li>
-                  <li>Paiement en attente : {data.sepa.pendingPaymentId ?? "aucun"}</li>
+                  <li>Paiement en attente : {data.sepa.pendingLabel ?? "aucun"}</li>
                   <li className="break-words">Dernier incident : {data.sepa.lastError ?? "aucun"}</li>
                   <li>Le cron prélèverait maintenant : {data.sepa.cronWouldCharge ? "oui" : "non"}</li>
                 </ul>
@@ -1700,6 +1702,11 @@ export default function ClientDetailPage() {
                         <div>{echeance.label}</div>
                         {echeance.sepaFailure ? (
                           <p className="mt-1 max-w-sm text-xs text-red-300">Prélèvement refusé — {echeance.sepaFailure}</p>
+                        ) : null}
+                        {echeance.sepaFailure && echeance.clientNotifiedAt ? (
+                          <p className="mt-1 text-xs text-amber-100">
+                            Prévenu le {new Date(echeance.clientNotifiedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}
+                          </p>
                         ) : null}
                       </td>
                       <td className="p-4">

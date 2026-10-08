@@ -299,9 +299,11 @@ interface DashboardData {
     id: string
     adminEmail: string
     action: string
+    actionLabel?: string
     targetType: string | null
     targetId: string | null
     createdAt: string
+    href?: string | null
   }[]
   doStats?: {
     attestationsCount: number
@@ -5170,8 +5172,16 @@ export default function GestionPage() {
                     <tr key={l.id} className="border-b border-gray-700/50">
                       <td className="p-4">{new Date(l.createdAt).toLocaleString("fr-FR")}</td>
                       <td className="p-4 text-gray-200">{l.adminEmail}</td>
-                      <td className="p-4">{l.action}</td>
-                      <td className="p-4 text-gray-200">{l.targetType} {l.targetId ? `#${l.targetId.slice(-6)}` : ""}</td>
+                      <td className="p-4" title={l.action}>{l.actionLabel || l.action}</td>
+                      <td className="p-4 text-gray-200">
+                        {l.href ? (
+                          <Link href={l.href} className="text-sky-200 hover:underline">
+                            Fiche client
+                          </Link>
+                        ) : (
+                          <>{l.targetType} {l.targetId ? `#${l.targetId.slice(-6)}` : ""}</>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

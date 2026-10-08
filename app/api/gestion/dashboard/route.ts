@@ -8,6 +8,7 @@ import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statut
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { stripSignatureBinariesFromJsonString } from "@/lib/esign/local-signature-fallback"
 import { loadEcheancesASuivre } from "@/lib/client-echeance-service"
+import { adminActivityClientHref, adminActivityLabel } from "@/lib/admin-activity-label"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -1088,7 +1089,16 @@ export async function GET() {
       devisEtudeLeads,
       resiliationLogs,
       resiliationRequests,
-      adminActivityLogs,
+      adminActivityLogs: adminActivityLogs.map((log) => ({
+        id: log.id,
+        adminEmail: log.adminEmail,
+        action: log.action,
+        actionLabel: adminActivityLabel(log.action),
+        targetType: log.targetType,
+        targetId: log.targetId,
+        createdAt: log.createdAt,
+        href: adminActivityClientHref(log),
+      })),
       doStats,
       devisLeads: devisLeadsWithSla,
       devisDrafts,

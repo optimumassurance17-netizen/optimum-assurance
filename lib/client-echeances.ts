@@ -18,6 +18,7 @@ export type ClientEcheance = {
   checkoutUrl: string | null
   cardLinkSentAt: string | null
   sepaFailure: string | null
+  clientNotifiedAt: string | null
 }
 
 export type ClientEcheanceSource = {
@@ -122,6 +123,7 @@ export function buildClientEcheances(source: ClientEcheanceSource): ClientEchean
         checkoutUrl: null,
         cardLinkSentAt: null,
         sepaFailure: !paid && failureInstallment === installment && failureText ? shortenSepaFailure(failureText) : null,
+        clientNotifiedAt: null,
       })
     }
   }
@@ -144,6 +146,7 @@ export function buildClientEcheances(source: ClientEcheanceSource): ClientEchean
       checkoutUrl: null,
       cardLinkSentAt: null,
       sepaFailure: null,
+      clientNotifiedAt: null,
     })
   }
 
@@ -166,6 +169,7 @@ export function buildClientEcheances(source: ClientEcheanceSource): ClientEchean
       checkoutUrl: null,
       cardLinkSentAt: null,
       sepaFailure: null,
+      clientNotifiedAt: null,
     })
   }
 
@@ -588,4 +592,40 @@ export function selectEcheancesASuivre(inputs: EcheanceSuiviInput[], now = new D
   }
   out.sort((left, right) => left.dueDate.localeCompare(right.dueDate) || left.clientLabel.localeCompare(right.clientLabel, "fr"))
   return out
+}
+
+/** Dernier email « Prévenir le client » réellement parti, par échéance. Une lecture ne renvoie rien. */
+export function attachSepaNotices<T extends { id: string }>(
+  rows: T[],
+  logs: { action: string; details: string | null; createdAt: Date }[]
+): (T & { clientNotifiedAt: string | null })[] {
+  const latest = new Map<string, number>()
+  for (const log of logs) {
+    if (log.action !== "echeance_refus_sepa_prevenu") continue
+    const parsed = parseMetadataRecord(log.details)
+    if (!parsed) continue
+    if (parsed.emailSent === false || parsed.emailSent === "false") continue
+    const echeanceId = typeof parsed.echeanceId === "string" ? parsed.echeanceId.trim() : ""
+    if (!echeanceId) continue
+    const at = log.createdAt.getTime()
+    const previous = latest.get(echeanceId)
+    if (previous == null || at >= previous) latest.set(echeanceId, at)
+  }
+  return rows.map((row) => {
+    const at = latest.get(row.id)
+    return { ...row, clientNotifiedAt: at == null ? null : new Date(at).toISOString() }
+  })
+}
+
+export function clientEcheanceStatusLabel(
+  row: { paid: boolean; dueDate: string | null; cardLinkStatus: "none" | "open" | "expired" },
+  now = new Date()
+): "Réglé" | "Lien envoyé" | "Lien expiré" | "À venir" | "À régler" {
+  if (row.paid) return "Réglé"
+  if (row.cardLinkStatus === "open") return "Lien envoyé"
+  if (row.cardLinkStatus === "expired") return "Lien expiré"
+  if (!row.dueDate) return "À venir"
+  const due = Date.parse(row.dueDate)
+  if (!Number.isFinite(due) || due > now.getTime()) return "À venir"
+  return "À régler"
 }

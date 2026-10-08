@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { findClientEcheance, nextUnpaidEcheance } from "@/lib/client-echeances"
+import { clientEcheanceStatusLabel, findClientEcheance, nextUnpaidEcheance } from "@/lib/client-echeances"
 import { loadClientEcheances } from "@/lib/client-echeance-service"
 import { createMollieClientFromEnv, echeanceCardMatch, resolveOpenCardLink } from "@/lib/open-card-link"
 import { prisma } from "@/lib/prisma"
@@ -11,16 +11,19 @@ function publicEcheance(row: {
   label: string
   amount: number
   dueDate: string | null
+  paid: boolean
   cardLinkStatus: "none" | "open" | "expired"
   cardLinkSentAt: string | null
-}) {
+}, now: Date) {
   return {
     id: row.id,
     label: row.label,
     amount: row.amount,
     dueDate: row.dueDate,
+    paid: row.paid,
     cardLinkStatus: row.cardLinkStatus,
     cardLinkSentAt: row.cardLinkSentAt,
+    statusLabel: clientEcheanceStatusLabel(row, now),
   }
 }
 
@@ -31,8 +34,12 @@ export async function GET() {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
     const rows = await loadClientEcheances(session.user.id)
+    const now = new Date()
     const next = nextUnpaidEcheance(rows)
-    return NextResponse.json({ echeance: next ? publicEcheance(next) : null })
+    return NextResponse.json({
+      echeance: next ? publicEcheance(next, now) : null,
+      echeances: rows.map((row) => publicEcheance(row, now)),
+    })
   } catch (error) {
     console.error("[client/prochaine-echeance] GET", error)
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })

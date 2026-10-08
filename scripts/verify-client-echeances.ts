@@ -22,7 +22,10 @@ import {
   readEcheanceCardLink,
   selectEcheancesASuivre,
   sepaDebitIsInFlight,
+  attachSepaNotices,
+  clientEcheanceStatusLabel,
 } from "../lib/client-echeances"
+import { adminActivityClientHref, adminActivityLabel } from "../lib/admin-activity-label"
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message)
@@ -395,6 +398,53 @@ assert(dashboard.includes("loadEcheancesASuivre"), "le tableau de bord charge le
 assert(!dashboard.includes("payments.create") && !dashboard.includes("paymentLinks.create"), "la liste à suivre n'appelle pas Mollie")
 const fiche = readFileSync(new URL("../app/gestion/clients/[id]/page.tsx", import.meta.url), "utf8")
 assert(fiche.includes("virementReference") && fiche.includes("Lien expiré"), "la fiche saisit la référence et montre le lien expiré")
+assert(fiche.includes("Prévenu le"), "la fiche affiche la date du dernier avertissement")
+assert(fiche.includes("pendingLabel"), "la fiche nomme le paiement en attente sans identifiant")
+assert(!fiche.includes("data.sepa.pendingPaymentId"), "la fiche n'affiche plus l'identifiant Mollie")
 assert(clientEcheance.includes("Le lien de paiement a expiré"), "l'espace client ne recrée pas un lien expiré")
+assert(clientEcheance.includes("echeances: rows.map"), "l'espace client reçoit tout le calendrier")
+assert(!clientEcheance.includes("paymentLinks.create"), "le calendrier client ne crée pas de lien")
+assert(dashboard.includes("adminActivityLabel"), "le journal d'audit est traduit avant l'envoi")
+
+const noticed = attachSepaNotices(
+  [{ id: "decennale:3" }, { id: "decennale:4" }],
+  [
+    {
+      action: "echeance_refus_sepa_prevenu",
+      details: JSON.stringify({ echeanceId: "decennale:3", emailSent: false }),
+      createdAt: new Date("2026-10-01T10:00:00.000Z"),
+    },
+    {
+      action: "echeance_refus_sepa_prevenu",
+      details: JSON.stringify({ echeanceId: "decennale:3", emailSent: true }),
+      createdAt: new Date("2026-10-02T10:00:00.000Z"),
+    },
+    {
+      action: "echeance_lien_carte",
+      details: JSON.stringify({ echeanceId: "decennale:3" }),
+      createdAt: new Date("2026-10-03T10:00:00.000Z"),
+    },
+  ]
+)
+assert(noticed[0]?.clientNotifiedAt === "2026-10-02T10:00:00.000Z", "la date Prévenu le est celle du dernier email parti")
+assert(noticed[1]?.clientNotifiedAt === null, "une autre échéance ne reprend pas l'avertissement")
+assert(
+  clientEcheanceStatusLabel({ paid: true, dueDate: "2026-01-01T00:00:00.000Z", cardLinkStatus: "none" }) === "Réglé",
+  "une échéance payée est réglée"
+)
+assert(
+  clientEcheanceStatusLabel({ paid: false, dueDate: "2026-12-01T00:00:00.000Z", cardLinkStatus: "none" }, new Date("2026-10-08T00:00:00.000Z")) === "À venir",
+  "une échéance future est à venir"
+)
+assert(
+  clientEcheanceStatusLabel({ paid: false, dueDate: "2026-01-01T00:00:00.000Z", cardLinkStatus: "expired" }) === "Lien expiré",
+  "un lien expiré garde ce statut dans le calendrier"
+)
+assert(adminActivityLabel("echeance_virement_externe") === "Virement externe validé", "le journal nomme le virement")
+assert(
+  adminActivityClientHref({ targetType: "user", targetId: "cm1234567890abcd" }) === "/gestion/clients/cm1234567890abcd",
+  "le journal ouvre la fiche client"
+)
+assert(adminActivityClientHref({ targetType: "document", targetId: "doc1234567890" }) === null, "une cible document sans compte ne devient pas un lien")
 
 console.log("Échéances fiche client : OK")

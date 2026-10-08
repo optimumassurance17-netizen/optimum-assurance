@@ -19,7 +19,7 @@ import { loadClientEcheances } from "@/lib/client-echeance-service"
 import { clientDeleteErrorMessage, deleteClientAccount } from "@/lib/client-account"
 import { purgeClientExternalResidue } from "@/lib/purge-client-residue"
 import { describeSepaReadiness } from "@/lib/sepa-readiness"
-import { paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel, virementReferenceFromMetadata } from "@/lib/client-echeances"
+import { attachSepaNotices, paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel, virementReferenceFromMetadata } from "@/lib/client-echeances"
 
 function parseLogDetails(raw: string | null | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null
@@ -245,7 +245,18 @@ export async function GET(
       () => fetchUserDocumentReviews(userDocuments.map((d) => d.id)),
       {}
     )
-    const echeances = await withSchemaDriftFallback(() => loadClientEcheances(id), [])
+    const echeances = await withSchemaDriftFallback(async () => {
+      const [rows, notices] = await Promise.all([
+        loadClientEcheances(id),
+        prisma.adminActivityLog.findMany({
+          where: { targetType: "user", targetId: id, action: "echeance_refus_sepa_prevenu" },
+          select: { action: true, details: true, createdAt: true },
+          orderBy: { createdAt: "desc" },
+          take: 40,
+        }),
+      ])
+      return attachSepaNotices(rows, notices)
+    }, [])
     const sepa = await withSchemaDriftFallback(async () => {
       const subscription = await prisma.sepaSubscription.findUnique({
         where: { userId: id },
@@ -259,7 +270,13 @@ export async function GET(
           primeAnnuelle: true,
         },
       })
-      return describeSepaReadiness(subscription)
+      if (!subscription) return describeSepaReadiness(null)
+      const pendingId = subscription.sepaPendingPaymentId?.trim() || ""
+      const local = pendingId ? payments.find((payment) => payment.molliePaymentId === pendingId) : undefined
+      return describeSepaReadiness({
+        ...subscription,
+        pendingLocalMetadata: local?.metadata ?? null,
+      })
     }, describeSepaReadiness(null))
     const canGenerateDecennaleAttestation =
       insuranceContracts.some((contract) => contract.productType === "decennale") ||
