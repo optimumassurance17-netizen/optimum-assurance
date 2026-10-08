@@ -417,7 +417,16 @@ export default function ClientDetailPage() {
   const { user, documents, payments, avenantFees } = data
   const echeances = data.echeances ?? []
 
-  const handleEcheance = async (echeanceId: string, action: "carte" | "regler" | "prevenir") => {
+  const handleEcheance = async (echeanceId: string, action: "carte" | "regler" | "virement" | "prevenir") => {
+    if (action === "virement") {
+      const echeance = echeances.find((row) => row.id === echeanceId)
+      const amount = echeance ? `${echeance.amount.toLocaleString("fr-FR")} €` : "cette échéance"
+      const label = echeance?.label || "cette échéance"
+      const confirmed = window.confirm(
+        `Valider le virement reçu pour ${label} (${amount}) ? Aucun paiement Mollie ne sera créé.`
+      )
+      if (!confirmed) return
+    }
     setEcheanceBusy(`${echeanceId}:${action}`)
     try {
       const res = await fetch(`/api/gestion/clients/${clientId}/echeances`, {
@@ -462,11 +471,12 @@ export default function ClientDetailPage() {
         })
         return
       }
-      if (action === "regler") {
+      if (action === "regler" || action === "virement") {
+        const recorded = action === "virement" ? "Virement enregistré" : "Échéance marquée comme réglée"
         setToast({
           message: body.emailSent === false
-            ? body.warning || "Échéance marquée comme réglée. Le reçu n'a pas pu être envoyé."
-            : `Échéance marquée comme réglée. Reçu envoyé à ${body.sentTo || user.email}.`,
+            ? body.warning || `${recorded}. Le reçu n'a pas pu être envoyé.`
+            : `${recorded}. Reçu envoyé à ${body.sentTo || user.email}.`,
           type: body.emailSent === false ? "warning" : "success",
         })
         return
@@ -1623,8 +1633,9 @@ export default function ClientDetailPage() {
         <section>
           <h2 className="text-lg font-semibold text-white mb-2">Échéances</h2>
           <p className="text-sm text-gray-300 mb-4">
-            Chaque échéance peut être envoyée en règlement par carte bancaire, ou marquée réglée si le paiement est déjà reçu.
-            Un lien carte encore ouvert est renvoyé, sans créer un second paiement.
+            Chaque échéance peut être envoyée en règlement par carte bancaire, marquée réglée, ou validée
+            lorsqu’un virement est arrivé sur le compte en dehors de Mollie. Un lien carte encore ouvert est renvoyé,
+            sans créer un second paiement. Valider le virement ferme ce lien et n’appelle pas Mollie pour encaisser.
           </p>
           {data.sepa ? (
             <div className="mb-4 rounded-xl border border-gray-700 bg-[#252525] p-4 text-sm text-gray-200">
@@ -1710,6 +1721,15 @@ export default function ClientDetailPage() {
                                 {echeanceBusy === `${echeance.id}:prevenir` ? "Envoi…" : "Prévenir le client"}
                               </button>
                             ) : null}
+                            <button
+                              type="button"
+                              disabled={echeanceBusy !== null}
+                              title="Le virement est arrivé sur le compte, en dehors de Mollie"
+                              onClick={() => void handleEcheance(echeance.id, "virement")}
+                              className="rounded-lg border border-emerald-600 px-3 py-1.5 text-xs font-semibold text-emerald-100 hover:border-emerald-400 disabled:opacity-50"
+                            >
+                              {echeanceBusy === `${echeance.id}:virement` ? "…" : "Virement reçu"}
+                            </button>
                             <button
                               type="button"
                               disabled={echeanceBusy !== null}

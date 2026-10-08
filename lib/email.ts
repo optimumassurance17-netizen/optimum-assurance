@@ -259,11 +259,26 @@ export const EMAIL_TEMPLATES = {
       `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Vous pouvez régler <strong>${escapeHtmlForEmail(label.toLowerCase())}</strong> par carte bancaire.</p><p><strong>Montant :</strong> ${montant.toLocaleString("fr-FR")} €</p><p><a href="${checkoutUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Payer par carte</a></p><p style="font-size:13px;color:#64748b;">Ce lien reste valable 7 jours.</p><p>Cordialement,<br>Optimum Assurance</p>` +
       reminderUnsubscribeHtmlFooter("paiement", recipientEmail),
   }),
-  confirmationEcheancePayee: (raisonSociale: string, label: string, montant: number) => ({
-    subject: `Paiement reçu — ${label} - Optimum Assurance`,
-    text: `Bonjour ${raisonSociale},\n\nNous avons bien reçu le paiement de ${label.toLowerCase()}.\n\nMontant : ${montant.toLocaleString("fr-FR")} €\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Nous avons bien reçu le paiement de <strong>${escapeHtmlForEmail(label.toLowerCase())}</strong>.</p><p><strong>Montant :</strong> ${montant.toLocaleString("fr-FR")} €</p><p>Cordialement,<br>Optimum Assurance</p>`,
-  }),
+  confirmationEcheancePayee: (
+    raisonSociale: string,
+    label: string,
+    montant: number,
+    mode?: "virement"
+  ) => {
+    const recu =
+      mode === "virement"
+        ? `votre virement pour ${label.toLowerCase()}`
+        : `le paiement de ${label.toLowerCase()}`
+    const safeRecu =
+      mode === "virement"
+        ? `votre virement pour <strong>${escapeHtmlForEmail(label.toLowerCase())}</strong>`
+        : `le paiement de <strong>${escapeHtmlForEmail(label.toLowerCase())}</strong>`
+    return {
+      subject: `${mode === "virement" ? "Virement reçu" : "Paiement reçu"} — ${label} - Optimum Assurance`,
+      text: `Bonjour ${raisonSociale},\n\nNous avons bien reçu ${recu}.\n\nMontant : ${montant.toLocaleString("fr-FR")} €\n\nCordialement,\nOptimum Assurance`,
+      html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Nous avons bien reçu ${safeRecu}.</p><p><strong>Montant :</strong> ${montant.toLocaleString("fr-FR")} €</p><p>Cordialement,<br>Optimum Assurance</p>`,
+    }
+  },
   informationRefusSepa: (
     raisonSociale: string,
     label: string,

@@ -69,7 +69,8 @@ export async function sendEcheancePaidReceipt(params: {
   const email = params.email.trim()
   if (!email) return false
   const label = echeanceReceiptLabel(params.metadata)
-  const template = EMAIL_TEMPLATES.confirmationEcheancePayee(params.raisonSociale || email, label, params.amount)
+  const mode = params.metadata.type === "virement_externe" ? "virement" : undefined
+  const template = EMAIL_TEMPLATES.confirmationEcheancePayee(params.raisonSociale || email, label, params.amount, mode)
   try {
     const sent = await sendEmail({
       to: email,

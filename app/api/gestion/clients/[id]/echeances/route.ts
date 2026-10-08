@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { applyEcheancePaidEffects, loadClientEcheances } from "@/lib/client-echeance-service"
 import { findClientEcheance, readEcheanceCardLink, stringRecordFromMetadata } from "@/lib/client-echeances"
-import { createStoredCardPayment, readRemoteCardLink, retireRemoteCardLink } from "@/lib/gestion-card-link"
+import { createStoredCardPayment, readRemoteCardLink, readRemotePaymentLock, retireRemoteCardLink } from "@/lib/gestion-card-link"
 import { sendEcheancePaidReceipt, sendSepaFailureNotice } from "@/lib/echeance-receipt"
 import { SITE_URL } from "@/lib/site-url"
 
@@ -175,7 +175,10 @@ export async function POST(
       return NextResponse.json({ error: "Objet JSON attendu" }, { status: 400 })
     }
     const raw = body as Record<string, unknown>
-    const action = raw.action === "carte" || raw.action === "regler" || raw.action === "prevenir" ? raw.action : null
+    const action =
+      raw.action === "carte" || raw.action === "regler" || raw.action === "virement" || raw.action === "prevenir"
+        ? raw.action
+        : null
     const echeanceId = typeof raw.echeanceId === "string" ? raw.echeanceId.trim() : ""
     if (!action || !ECHEANCE_ID_RE.test(echeanceId)) {
       return NextResponse.json({ error: "Échéance ou action invalide." }, { status: 400 })
@@ -229,7 +232,7 @@ export async function POST(
     }
 
     const metadata: Record<string, string> = {
-      type: action === "carte" ? "echeance_carte" : "echeance_manuelle",
+      type: action === "carte" ? "echeance_carte" : action === "virement" ? "virement_externe" : "echeance_manuelle",
       echeanceId: echeance.id,
       label: echeance.label,
       userId: user.id,
@@ -257,8 +260,71 @@ export async function POST(
       )
     }
 
-    if (action === "regler") {
-      const paymentId = `manuel_${randomUUID()}`
+    let closedCardPaymentId = ""
+    if (action === "virement" && refreshed.kind === "open") {
+      closedCardPaymentId = refreshed.paymentId
+      if (!mollie) {
+        return NextResponse.json(
+          { error: "Un lien carte est encore ouvert et Mollie n'est pas joignable. Le virement n'a pas été validé." },
+          { status: 409 }
+        )
+      }
+      try {
+        await retireRemoteCardLink(mollie, closedCardPaymentId)
+      } catch (error) {
+        console.warn("[gestion/clients/echeances] fermeture du lien avant virement", closedCardPaymentId, error)
+        return NextResponse.json(
+          { error: "Le lien carte encore ouvert n'a pas pu être fermé. Le virement n'a pas été validé." },
+          { status: 409 }
+        )
+      }
+      await prisma.payment.updateMany({
+        where: { molliePaymentId: closedCardPaymentId, status: "pending" },
+        data: { status: "failed" },
+      })
+    }
+
+    if (action === "virement" && echeance.kind === "decennale" && echeance.sepaSubscriptionId) {
+      const subscription = await prisma.sepaSubscription.findUnique({
+        where: { id: echeance.sepaSubscriptionId },
+        select: { sepaPendingPaymentId: true, trimestresSepaPayes: true, firstTrimesterPaidAt: true },
+      })
+      const nextInstallment =
+        (subscription?.firstTrimesterPaidAt ? 1 : 0) + Math.max(0, subscription?.trimestresSepaPayes ?? 0) + 1
+      const pendingId = subscription?.sepaPendingPaymentId?.trim() || ""
+      if (pendingId && echeance.installmentNumber === nextInstallment && pendingId !== closedCardPaymentId) {
+        if (!mollie) {
+          return NextResponse.json(
+            { error: "Un prélèvement est déjà enregistré et Mollie n'est pas joignable. Le virement n'a pas été validé." },
+            { status: 409 }
+          )
+        }
+        const lock = await readRemotePaymentLock(mollie, pendingId)
+        if (lock.kind === "debit-open" || lock.kind === "card-open") {
+          return NextResponse.json(
+            {
+              error:
+                lock.kind === "debit-open"
+                  ? "Un prélèvement SEPA est déjà parti à la banque. Le virement n'a pas été validé."
+                  : "Un lien carte est encore ouvert. Le virement n'a pas été validé.",
+            },
+            { status: 409 }
+          )
+        }
+        if (lock.kind === "paid") {
+          return NextResponse.json(
+            { error: "Le prélèvement Mollie est déjà payé. Le virement n'a pas été enregistré." },
+            { status: 409 }
+          )
+        }
+        if (lock.kind === "blocked") {
+          return NextResponse.json({ error: lock.message }, { status: 409 })
+        }
+      }
+    }
+
+    if (action === "regler" || action === "virement") {
+      const paymentId = action === "virement" ? `virement_${randomUUID()}` : `manuel_${randomUUID()}`
       await prisma.payment.create({
         data: {
           userId: user.id,
@@ -278,17 +344,20 @@ export async function POST(
       })
       await logAdminActivity({
         adminEmail: session.user.email,
-        action: "echeance_marquee_reglee",
+        action: action === "virement" ? "echeance_virement_externe" : "echeance_marquee_reglee",
         targetType: "user",
         targetId: user.id,
-        details: { echeanceId: echeance.id, amount: echeance.amount, paymentId, emailSent },
+        details: { echeanceId: echeance.id, amount: echeance.amount, paymentId, emailSent, mode: action },
       })
       const echeances = await loadClientEcheances(userId)
       if (!emailSent) {
         return NextResponse.json({
           ok: true,
           emailSent: false,
-          warning: "Échéance marquée comme réglée, mais le reçu n'a pas pu être envoyé.",
+          warning:
+            action === "virement"
+              ? "Virement enregistré, mais le reçu n'a pas pu être envoyé."
+              : "Échéance marquée comme réglée, mais le reçu n'a pas pu être envoyé.",
           echeances,
         })
       }

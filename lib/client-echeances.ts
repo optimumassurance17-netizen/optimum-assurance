@@ -347,9 +347,11 @@ export function pendingCardEcheanceId(payment: {
 }
 
 export function paymentMethodLabel(metadata: string | null | undefined, molliePaymentId?: string | null): string | null {
+  if (molliePaymentId?.startsWith("virement_")) return "Virement"
   if (molliePaymentId?.startsWith("manuel_")) return "Règlement manuel"
   const parsed = parseMetadataRecord(metadata)
   const type = typeof parsed?.type === "string" ? parsed.type : ""
+  if (type === "virement_externe") return "Virement"
   if (type === "echeance_manuelle") return "Règlement manuel"
   if (type === "sepa_trimestre") return "Prélèvement SEPA"
   if (type === "echeance_carte" || type === "regularisation" || type === "decennale_premier_trimestre") return "Carte"
@@ -370,6 +372,7 @@ export function paymentEcheanceLabel(metadata: string | null | undefined): strin
     parsed.type === "sepa_trimestre" ||
     parsed.type === "echeance_carte" ||
     parsed.type === "echeance_manuelle" ||
+    parsed.type === "virement_externe" ||
     typeof parsed.echeanceId === "string"
   ) {
     return echeanceReceiptLabel(parsed)

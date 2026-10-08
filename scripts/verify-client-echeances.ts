@@ -153,6 +153,15 @@ const moments = paidAttestationMoments([
 assert(attestationIdFromPaymentMetadata(JSON.stringify({ attestationId: "doc2" })) === "doc2", "le paiement identifie l'attestation")
 assert(moments.get("doc2")?.toISOString() === "2026-06-02T00:00:00.000Z", "la date de règlement de l'attestation est conservée")
 assert(paymentMethodLabel(null, "manuel_1") === "Règlement manuel", "un paiement manuel est identifié")
+assert(paymentMethodLabel(JSON.stringify({ type: "virement_externe" }), "virement_1") === "Virement", "un virement externe est identifié")
+assert(
+  paymentEcheanceLabel(JSON.stringify({ type: "virement_externe", label: "Échéance 2" })) === "Échéance 2",
+  "le virement externe garde le nom de l'échéance"
+)
+assert(
+  !cardPaymentMatches(JSON.stringify({ type: "virement_externe", echeanceId: "decennale:2" }), { echeanceId: "decennale:2" }),
+  "un virement externe n'est pas un lien carte"
+)
 assert(paymentMethodLabel(JSON.stringify({ type: "sepa_trimestre" })) === "Prélèvement SEPA", "un prélèvement SEPA est identifié")
 assert(paymentMethodLabel(JSON.stringify({ type: "echeance_carte" })) === "Carte", "un paiement carte est identifié")
 assert(nextUnpaidEcheance(partial)?.id === "decennale:3", "la prochaine échéance est la première non réglée")
@@ -200,9 +209,12 @@ const prevenirAt = adminEcheance.indexOf('action === "prevenir"')
 const refreshAt = adminEcheance.indexOf("await refreshPendingCardPayment")
 assert(prevenirAt > 0 && refreshAt > prevenirAt, "l'information de refus SEPA part avant toute lecture Mollie")
 assert(adminEcheance.includes("sendSepaFailureNotice"), "le refus SEPA prévient le client par email")
-const reglerAt = adminEcheance.indexOf('if (action === "regler")')
+const reglerAt = adminEcheance.indexOf('if (action === "regler" || action === "virement")')
 const receiptAt = adminEcheance.indexOf("sendEcheancePaidReceipt", reglerAt)
-assert(reglerAt > 0 && receiptAt > reglerAt, "le règlement manuel envoie le reçu")
+assert(reglerAt > 0 && receiptAt > reglerAt, "le règlement manuel et le virement envoient le reçu")
+assert(adminEcheance.includes("virement_externe"), "le virement externe est enregistré comme tel")
+assert(adminEcheance.includes("Un prélèvement SEPA est déjà parti à la banque"), "un prélèvement déjà parti bloque le virement")
+assert(!adminEcheance.includes("payments.create"), "la fiche ne crée pas un paiement Mollie pour le virement")
 
 const adoptedLink = JSON.stringify({
   type: "echeance_carte",

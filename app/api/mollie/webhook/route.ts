@@ -495,7 +495,8 @@ export async function POST(request: NextRequest) {
           metadata.type !== "decennale_premier_trimestre" &&
           metadata.type !== "regularisation" &&
           metadata.type !== "echeance_carte" &&
-          metadata.type !== "echeance_manuelle"
+          metadata.type !== "echeance_manuelle" &&
+          metadata.type !== "virement_externe"
         ) {
           const template = EMAIL_TEMPLATES.confirmationSouscription(
             metadata.raisonSociale || user.raisonSociale || user.email
