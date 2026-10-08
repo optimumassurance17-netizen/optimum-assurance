@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { onSepaTrimestrePaid } from "@/lib/mollie-sepa"
 import { isDecennaleContractData, parseJsonObject } from "@/lib/decennale-contract-data"
 import {
+  attachOpenCardLinks,
   buildClientEcheances,
   installmentFromPaymentMetadata,
   type ClientEcheance,
@@ -34,7 +35,7 @@ export async function loadClientEcheances(userId: string): Promise<ClientEcheanc
     prisma.sepaSubscription.findUnique({ where: { userId } }),
     prisma.payment.findMany({
       where: { userId },
-      select: { status: true, paidAt: true, metadata: true, createdAt: true },
+      select: { status: true, paidAt: true, metadata: true, createdAt: true, molliePaymentId: true },
       orderBy: { createdAt: "asc" },
     }),
     prisma.avenantFee.findMany({
@@ -77,7 +78,7 @@ export async function loadClientEcheances(userId: string): Promise<ClientEcheanc
     return [{ installment, paidAt: payment.paidAt ?? payment.createdAt }]
   })
 
-  return buildClientEcheances({
+  return attachOpenCardLinks(buildClientEcheances({
     primeAnnuelle: subscription && subscription.primeAnnuelle > 0
       ? subscription.primeAnnuelle
       : documentPremium ?? contractPremium,
@@ -98,7 +99,7 @@ export async function loadClientEcheances(userId: string): Promise<ClientEcheanc
         amount: attestationAmount(document.data),
         createdAt: document.createdAt,
       })),
-  })
+  }), payments)
 }
 
 export async function applyEcheancePaidEffects(metadata: Record<string, string>): Promise<void> {

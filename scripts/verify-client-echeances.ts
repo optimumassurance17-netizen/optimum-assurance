@@ -1,4 +1,12 @@
-import { buildClientEcheances, installmentFromPaymentMetadata } from "../lib/client-echeances"
+import {
+  attachOpenCardLinks,
+  buildClientEcheances,
+  echeanceReceiptLabel,
+  installmentFromPaymentMetadata,
+  mollieCardLinkIsClosed,
+  molliePaymentIsOpen,
+  readEcheanceCardLink,
+} from "../lib/client-echeances"
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message)
@@ -43,5 +51,39 @@ assert(byId.get("attestation:doc1")?.amount === 200 && byId.get("attestation:doc
 assert(installmentFromPaymentMetadata(JSON.stringify({ type: "decennale_premier_trimestre" })) === 1, "le premier paiement carte compte pour l'échéance 1")
 assert(installmentFromPaymentMetadata(JSON.stringify({ echeanceId: "decennale:3" })) === 3, "l'identifiant d'échéance donne son numéro")
 assert(installmentFromPaymentMetadata("pas-json") === null, "un metadata illisible est ignoré")
+assert(open.every((row) => row.cardLinkStatus === "none" && row.checkoutUrl === null), "aucune échéance neuve n'a de lien carte")
+
+const withLink = attachOpenCardLinks(open, [
+  {
+    status: "pending",
+    molliePaymentId: "tr_old",
+    createdAt: new Date("2026-02-01T00:00:00.000Z"),
+    metadata: JSON.stringify({ type: "echeance_carte", echeanceId: "decennale:2", checkoutUrl: "https://pay.example/old" }),
+  },
+  {
+    status: "pending",
+    molliePaymentId: "tr_new",
+    createdAt: new Date("2026-02-02T00:00:00.000Z"),
+    metadata: JSON.stringify({ type: "echeance_carte", echeanceId: "decennale:2", checkoutUrl: "https://pay.example/new" }),
+  },
+  {
+    status: "paid",
+    molliePaymentId: "tr_paid",
+    createdAt: new Date("2026-02-03T00:00:00.000Z"),
+    metadata: JSON.stringify({ type: "echeance_carte", echeanceId: "decennale:1", checkoutUrl: "https://pay.example/paid" }),
+  },
+])
+assert(withLink.find((row) => row.id === "decennale:2")?.cardLinkStatus === "open", "le lien carte en attente est visible")
+assert(
+  withLink.find((row) => row.id === "decennale:2")?.checkoutUrl === "https://pay.example/new",
+  "le lien le plus récent est conservé"
+)
+assert(withLink.find((row) => row.id === "decennale:1")?.cardLinkStatus === "none", "un paiement déjà payé n'affiche pas de lien ouvert")
+assert(readEcheanceCardLink(JSON.stringify({ type: "echeance_manuelle", echeanceId: "decennale:1" })) === null, "un règlement manuel n'est pas un lien carte")
+assert(molliePaymentIsOpen("open") && molliePaymentIsOpen("pending") && molliePaymentIsOpen("authorized"), "un paiement Mollie ouvert bloque un second lien")
+assert(mollieCardLinkIsClosed("expired") && mollieCardLinkIsClosed("canceled") && mollieCardLinkIsClosed("failed"), "un lien expiré peut être remplacé")
+assert(echeanceReceiptLabel({ label: "Échéance 2" }) === "Échéance 2", "le reçu reprend le libellé enregistré")
+assert(echeanceReceiptLabel({ type: "sepa_trimestre", sepaInstallmentNumber: "3" }) === "Prélèvement SEPA n°3", "le reçu SEPA indique le numéro")
+assert(echeanceReceiptLabel({ type: "echeance_carte", echeanceId: "avenant:fee1" }) === "Frais d'avenant", "le reçu d'avenant a un libellé")
 
 console.log("Échéances fiche client : OK")

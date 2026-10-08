@@ -11,6 +11,8 @@ const register = readFileSync(new URL("../app/api/auth/register/route.ts", impor
 const devis = readFileSync(new URL("../lib/devis-alert.ts", import.meta.url), "utf8")
 const email = readFileSync(new URL("../lib/email.ts", import.meta.url), "utf8")
 const contact = readFileSync(new URL("../lib/public-contact-email.ts", import.meta.url), "utf8")
+const receipt = readFileSync(new URL("../lib/echeance-receipt.ts", import.meta.url), "utf8")
+const webhook = readFileSync(new URL("../app/api/mollie/webhook/route.ts", import.meta.url), "utf8")
 
 assert(
   alert.includes('export const ACCOUNT_CREATION_INBOX = DEFAULT_PUBLIC_CONTACT_EMAIL'),
@@ -33,5 +35,13 @@ assert(
   contact.includes("return DEFAULT_PUBLIC_CONTACT_EMAIL"),
   "le formulaire de contact arrive sur info@"
 )
+assert(email.includes("confirmationEcheancePayee"), "le reçu d'échéance existe")
+assert(receipt.includes("shouldCopyEcheanceReceipt"), "la copie du reçu part sur info@ seulement si le client est ailleurs")
+assert(receipt.includes("[Copie]"), "la copie du reçu est identifiée")
+assert(
+  webhook.includes('metadata.type === "echeance_carte" || metadata.type === "sepa_trimestre"'),
+  "le reçu part à l'encaissement carte ou SEPA"
+)
+assert(webhook.includes("!alreadyProcessed"), "un webhook déjà traité ne renvoie pas le reçu")
 
 console.log("Boîte création de compte : OK")

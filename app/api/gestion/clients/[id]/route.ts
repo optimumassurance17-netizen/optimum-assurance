@@ -1,7 +1,4 @@
-import { existsSync } from "fs"
-import { unlink } from "fs/promises"
 import { NextRequest, NextResponse } from "next/server"
-import { createMollieClient } from "@mollie/api-client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
@@ -9,9 +6,6 @@ import { Prisma } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { syncContratAvenantDocumentsFromUser } from "@/lib/sync-user-document-identity"
-import { getLocalGedPathCandidates, isGedDatabaseFile, isGedSupabasePath } from "@/lib/user-documents"
-import { createSupabaseServiceClient } from "@/lib/supabase"
-import { GED_SUPABASE_BUCKET } from "@/lib/user-documents"
 import { asJsonObject } from "@/lib/json-object"
 import { fetchUserDocumentReviews } from "@/lib/user-document-review"
 import { isDecennaleContractData, parseJsonObject } from "@/lib/decennale-contract-data"
@@ -23,6 +17,8 @@ import {
 } from "@/lib/client-devis-autonomy"
 import { loadClientEcheances } from "@/lib/client-echeance-service"
 import { clientDeleteErrorMessage, deleteClientAccount } from "@/lib/client-account"
+import { purgeClientExternalResidue } from "@/lib/purge-client-residue"
+import { describeSepaReadiness } from "@/lib/sepa-readiness"
 
 function parseLogDetails(raw: string | null | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null
@@ -249,6 +245,21 @@ export async function GET(
       {}
     )
     const echeances = await withSchemaDriftFallback(() => loadClientEcheances(id), [])
+    const sepa = await withSchemaDriftFallback(async () => {
+      const subscription = await prisma.sepaSubscription.findUnique({
+        where: { userId: id },
+        select: {
+          status: true,
+          mollieMandateId: true,
+          nextSepaDue: true,
+          lastError: true,
+          sepaPendingPaymentId: true,
+          trimestresSepaPayes: true,
+          primeAnnuelle: true,
+        },
+      })
+      return describeSepaReadiness(subscription)
+    }, describeSepaReadiness(null))
     const canGenerateDecennaleAttestation =
       insuranceContracts.some((contract) => contract.productType === "decennale") ||
       documents.some((document) => {
@@ -272,6 +283,7 @@ export async function GET(
       payments,
       avenantFees,
       echeances,
+      sepa,
       notes,
       sinistres,
       userDocuments,
@@ -539,44 +551,10 @@ export async function DELETE(
     })
 
     await deleteClientAccount(id)
-
-    if (sepaMollie?.mollieCustomerId) {
-      const apiKey = process.env.MOLLIE_API_KEY
-      if (apiKey) {
-        try {
-          const mollie = createMollieClient({ apiKey })
-          await mollie.customers.delete(sepaMollie.mollieCustomerId)
-        } catch (e) {
-          console.warn("[gestion] Mollie customers.delete après suppression client (non bloquant):", e)
-        }
-      }
-    }
-
-    const supabaseGedPaths = gedFiles
-      .map((row) => row.filepath)
-      .filter((path): path is string => isGedSupabasePath(path))
-    if (supabaseGedPaths.length > 0) {
-      const supabase = createSupabaseServiceClient()
-      if (supabase) {
-        try {
-          await supabase.storage.from(GED_SUPABASE_BUCKET).remove(supabaseGedPaths)
-        } catch (e) {
-          console.warn("[gestion] suppression GED Supabase après delete user:", e)
-        }
-      }
-    }
-
-    for (const row of gedFiles) {
-      if (isGedDatabaseFile(row.filepath) || isGedSupabasePath(row.filepath)) continue
-      const candidates = getLocalGedPathCandidates(row.filepath)
-      try {
-        for (const fullPath of candidates) {
-          if (existsSync(fullPath)) await unlink(fullPath)
-        }
-      } catch (e) {
-        console.warn("[gestion] suppression fichier GED après delete user:", row.filepath, e)
-      }
-    }
+    await purgeClientExternalResidue({
+      gedFilepaths: gedFiles.map((row) => row.filepath),
+      mollieCustomerId: sepaMollie?.mollieCustomerId ?? null,
+    })
 
     await logAdminActivity({
       adminEmail: session.user.email || "admin",

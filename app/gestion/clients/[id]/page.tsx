@@ -155,7 +155,21 @@ interface ClientData {
     dueDate: string | null
     paid: boolean
     paidAt: string | null
+    cardLinkStatus?: "none" | "open"
+    checkoutUrl?: string | null
   }[]
+  sepa?: {
+    present: boolean
+    status: string | null
+    mandatePresent: boolean
+    nextDue: string | null
+    lastError: string | null
+    pendingPaymentId: string | null
+    trimestresSepaPayes: number
+    amount: number | null
+    cronWouldCharge: boolean
+    summary: string
+  }
   notes?: { id: string; content: string; adminEmail: string; createdAt: string }[]
   sinistres?: { id: string; dateSinistre: string; montantIndemnisation: number | null; description: string | null; userDocument: { id: string; filename: string; type: string } | null }[]
   userDocuments?: { id: string; type: string; filename: string; size?: number; createdAt?: string }[]
@@ -404,6 +418,7 @@ export default function ClientDetailPage() {
         error?: string
         ok?: boolean
         alreadyPaid?: boolean
+        reused?: boolean
         sentTo?: string
         checkoutUrl?: string
         emailSent?: boolean
@@ -414,11 +429,10 @@ export default function ClientDetailPage() {
       }
       if (body.echeances) {
         setData((current) => (current ? { ...current, echeances: body.echeances } : current))
-      } else {
-        const reload = await fetch(`/api/gestion/clients/${clientId}`)
-        if (reload.ok) {
-          setData(await readResponseJson<ClientData>(reload))
-        }
+      }
+      const reload = await fetch(`/api/gestion/clients/${clientId}`)
+      if (reload.ok) {
+        setData(await readResponseJson<ClientData>(reload))
       }
       if (action === "carte" && body.checkoutUrl && body.emailSent === false) {
         setToast({
@@ -431,7 +445,9 @@ export default function ClientDetailPage() {
         message:
           action === "regler" || body.alreadyPaid
             ? "Échéance marquée comme réglée."
-            : `Lien de paiement carte envoyé à ${body.sentTo || user.email}.`,
+            : body.reused
+              ? `Lien déjà ouvert, renvoyé à ${body.sentTo || user.email}.`
+              : `Lien de paiement carte envoyé à ${body.sentTo || user.email}.`,
         type: "success",
       })
     } catch (err) {
@@ -1579,7 +1595,31 @@ export default function ClientDetailPage() {
           <h2 className="text-lg font-semibold text-white mb-2">Échéances</h2>
           <p className="text-sm text-gray-300 mb-4">
             Chaque échéance peut être envoyée en règlement par carte bancaire, ou marquée réglée si le paiement est déjà reçu.
+            Un lien carte encore ouvert est renvoyé, sans créer un second paiement.
           </p>
+          {data.sepa ? (
+            <div className="mb-4 rounded-xl border border-gray-700 bg-[#252525] p-4 text-sm text-gray-200">
+              <p className="font-medium text-white">Prélèvement SEPA</p>
+              <p className="mt-1 text-gray-300">
+                Lecture en base uniquement. Aucun prélèvement n&apos;est lancé depuis cette fiche.
+              </p>
+              <p className="mt-2 text-white">{data.sepa.summary}</p>
+              {data.sepa.present ? (
+                <ul className="mt-3 space-y-1 text-gray-300">
+                  <li>Mandat : {data.sepa.mandatePresent ? "enregistré" : "absent"}</li>
+                  <li>
+                    Prochaine échéance :{" "}
+                    {data.sepa.nextDue ? new Date(data.sepa.nextDue).toLocaleDateString("fr-FR") : "—"}
+                    {data.sepa.amount != null ? ` · ${data.sepa.amount.toLocaleString("fr-FR")} €` : ""}
+                  </li>
+                  <li>Trimestres déjà prélevés : {data.sepa.trimestresSepaPayes}</li>
+                  <li>Paiement en attente : {data.sepa.pendingPaymentId ?? "aucun"}</li>
+                  <li className="break-words">Dernier incident : {data.sepa.lastError ?? "aucun"}</li>
+                  <li>Le cron prélèverait maintenant : {data.sepa.cronWouldCharge ? "oui" : "non"}</li>
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
           <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
             {echeances.length === 0 ? (
               <p className="p-4 text-gray-200">Aucune échéance sur cette fiche.</p>
@@ -1611,10 +1651,15 @@ export default function ClientDetailPage() {
                             <button
                               type="button"
                               disabled={echeanceBusy !== null}
+                              title={echeance.cardLinkStatus === "open" ? "Renvoyer le lien déjà ouvert" : "Envoyer un lien de paiement par carte"}
                               onClick={() => void handleEcheance(echeance.id, "carte")}
                               className="rounded-lg bg-[#2563eb] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
                             >
-                              {echeanceBusy === `${echeance.id}:carte` ? "Envoi…" : "Règlement par carte bancaire"}
+                              {echeanceBusy === `${echeance.id}:carte`
+                                ? "Envoi…"
+                                : echeance.cardLinkStatus === "open"
+                                  ? "Lien envoyé"
+                                  : "Règlement par carte bancaire"}
                             </button>
                             <button
                               type="button"

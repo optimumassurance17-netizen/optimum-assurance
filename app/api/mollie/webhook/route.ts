@@ -16,6 +16,7 @@ import {
 import { processInsuranceContractPaymentSuccess } from "@/lib/insurance-contract-service"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 import { applyEcheancePaidEffects } from "@/lib/client-echeance-service"
+import { sendEcheancePaidReceipt } from "@/lib/echeance-receipt"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -397,6 +398,18 @@ export async function POST(request: NextRequest) {
           },
         })
 
+        if (
+          !alreadyProcessed &&
+          (metadata.type === "echeance_carte" || metadata.type === "sepa_trimestre")
+        ) {
+          await sendEcheancePaidReceipt({
+            email: user.email,
+            raisonSociale: metadata.raisonSociale || user.raisonSociale || user.email,
+            metadata,
+            amount,
+          })
+        }
+
         if (metadata.type === "devis_do") {
           const template = EMAIL_TEMPLATES.confirmationPaiementDo(
             metadata.raisonSociale || user.raisonSociale || user.email,
@@ -473,6 +486,14 @@ export async function POST(request: NextRequest) {
           "Échec du prélèvement SEPA"
         await onSepaTrimestreFailed(metadata.sepaSubscriptionId, reason)
       }
+    } else if (
+      (payment.status === "expired" || payment.status === "canceled") &&
+      metadata.type === "echeance_carte"
+    ) {
+      await prisma.payment.updateMany({
+        where: { molliePaymentId: paymentId, status: { not: "paid" } },
+        data: { status: "failed" },
+      })
     }
 
     return NextResponse.json({ received: true })

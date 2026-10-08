@@ -32,6 +32,7 @@ import Link from "next/link"
 import { Toast } from "@/components/Toast"
 import { ClientQuickSearch } from "@/components/gestion/ClientQuickSearch"
 import { InsuranceContractsGestionBlock } from "@/components/gestion/InsuranceContractsGestionBlock"
+import { DuplicateAccountsPanel } from "@/components/gestion/DuplicateAccountsPanel"
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { extractClientIdentityFromRecord } from "@/lib/client-identity-extract"
@@ -3191,6 +3192,16 @@ export default function GestionPage() {
               if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
             }}
             setToast={setToast}
+          />
+        )}
+
+        {data && (
+          <DuplicateAccountsPanel
+            setToast={setToast}
+            onMerged={async () => {
+              const dashRes = await fetch("/api/gestion/dashboard")
+              if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+            }}
           />
         )}
 

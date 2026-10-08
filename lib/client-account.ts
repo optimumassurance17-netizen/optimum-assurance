@@ -1,5 +1,6 @@
 import { Prisma } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
+import { purgeClientExternalResidue } from "@/lib/purge-client-residue"
 import {
   buildUserCleanupPlan,
   normalizeAccountEmail,
@@ -181,4 +182,231 @@ export async function findDuplicateClientAccount(params: {
 
 export function duplicateSiretAccountMessage(email: string): string {
   return `Un compte existe déjà pour ce SIRET (${email}). Aucun nouveau compte n'a été créé.`
+}
+
+const PROFILE_FIELDS = [
+  "raisonSociale",
+  "siret",
+  "adresse",
+  "codePostal",
+  "ville",
+  "telephone",
+  "doInitialQuestionnaireJson",
+  "doEtudeQuestionnaireJson",
+  "titleInitialQuestionnaireJson",
+  "titleEtudeQuestionnaireJson",
+] as const
+
+type ProfileField = (typeof PROFILE_FIELDS)[number]
+
+type MergeUser = {
+  id: string
+  email: string
+  raisonSociale: string | null
+  siret: string | null
+  adresse: string | null
+  codePostal: string | null
+  ville: string | null
+  telephone: string | null
+  doInitialQuestionnaireJson: string | null
+  doEtudeQuestionnaireJson: string | null
+  titleInitialQuestionnaireJson: string | null
+  titleEtudeQuestionnaireJson: string | null
+}
+
+function hasText(value: string | null | undefined): boolean {
+  return Boolean(value?.trim())
+}
+
+function isMissingColumn(error: unknown, names: string[]): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false
+  if (error.code !== "P2021" && error.code !== "P2022") return false
+  const message = error.message.toLowerCase()
+  return names.some((name) => message.includes(name.toLowerCase()))
+}
+
+async function ignoreMissingTable(run: () => Promise<unknown>): Promise<void> {
+  try {
+    await run()
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === "P2021" || error.code === "P2022")
+    ) {
+      return
+    }
+    throw error
+  }
+}
+
+async function loadMergeUser(id: string): Promise<MergeUser | null> {
+  const base = {
+    id: true,
+    email: true,
+    raisonSociale: true,
+    siret: true,
+    adresse: true,
+    codePostal: true,
+    ville: true,
+    telephone: true,
+    doInitialQuestionnaireJson: true,
+    doEtudeQuestionnaireJson: true,
+  } as const
+  try {
+    return await prisma.user.findUnique({
+      where: { id },
+      select: {
+        ...base,
+        titleInitialQuestionnaireJson: true,
+        titleEtudeQuestionnaireJson: true,
+      },
+    })
+  } catch (error) {
+    if (!isMissingColumn(error, ["titleinitialquestionnairejson", "titleetudequestionnairejson"])) throw error
+    const user = await prisma.user.findUnique({ where: { id }, select: base })
+    if (!user) return null
+    return {
+      ...user,
+      titleInitialQuestionnaireJson: null,
+      titleEtudeQuestionnaireJson: null,
+    }
+  }
+}
+
+async function moveDroppedAccount(keepId: string, dropId: string): Promise<void> {
+  const keeper = await loadMergeUser(keepId)
+  const dropped = await loadMergeUser(dropId)
+  if (!keeper || !dropped) throw new Error("Client introuvable")
+
+  const profile: Partial<Record<ProfileField, string>> = {}
+  for (const field of PROFILE_FIELDS) {
+    if (!hasText(keeper[field]) && hasText(dropped[field])) {
+      profile[field] = dropped[field]!.trim()
+    }
+  }
+
+  await prisma.$transaction(
+    async (tx) => {
+      if (Object.keys(profile).length > 0) {
+        try {
+          await tx.user.update({ where: { id: keepId }, data: profile })
+        } catch (error) {
+          if (!isMissingColumn(error, ["titleinitialquestionnairejson", "titleetudequestionnairejson"])) throw error
+          const safe = { ...profile }
+          delete safe.titleInitialQuestionnaireJson
+          delete safe.titleEtudeQuestionnaireJson
+          if (Object.keys(safe).length > 0) {
+            await tx.user.update({ where: { id: keepId }, data: safe })
+          }
+        }
+      }
+
+      await tx.document.updateMany({ where: { userId: dropId }, data: { userId: keepId } })
+      await tx.payment.updateMany({ where: { userId: dropId }, data: { userId: keepId } })
+      await tx.avenantFee.updateMany({ where: { userId: dropId }, data: { userId: keepId } })
+      await tx.clientNote.updateMany({ where: { userId: dropId }, data: { userId: keepId } })
+      await tx.resiliationRequest.updateMany({ where: { userId: dropId }, data: { userId: keepId } })
+      await tx.sinistre.updateMany({ where: { userId: dropId }, data: { userId: keepId } })
+      await tx.passwordResetToken.deleteMany({ where: { userId: dropId } })
+
+      await ignoreMissingTable(() =>
+        tx.insuranceContract.updateMany({ where: { userId: dropId }, data: { userId: keepId } })
+      )
+      await ignoreMissingTable(() =>
+        tx.devoirConseilLog.updateMany({ where: { userId: dropId }, data: { userId: keepId } })
+      )
+      await ignoreMissingTable(() =>
+        tx.whatsappClickLog.updateMany({ where: { userId: dropId }, data: { userId: keepId } })
+      )
+      await ignoreMissingTable(() =>
+        tx.pdfGenerationLog.updateMany({ where: { userId: dropId }, data: { userId: keepId } })
+      )
+      await ignoreMissingTable(() =>
+        tx.pendingSignature.updateMany({ where: { userId: dropId }, data: { userId: keepId } })
+      )
+
+      const keeperDocs = await tx.userDocument.findMany({
+        where: { userId: keepId },
+        select: { type: true },
+      })
+      const types = new Set(keeperDocs.map((doc) => doc.type))
+      const dropDocs = await tx.userDocument.findMany({
+        where: { userId: dropId },
+        select: { id: true, type: true },
+      })
+      for (const doc of dropDocs) {
+        if (types.has(doc.type)) continue
+        try {
+          await tx.userDocument.update({ where: { id: doc.id }, data: { userId: keepId } })
+          types.add(doc.type)
+        } catch (error) {
+          if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") continue
+          throw error
+        }
+      }
+
+      const keeperInputs = await tx.missingSubActivity.findMany({
+        where: { userId: keepId },
+        select: { userInput: true },
+      })
+      const inputs = new Set(keeperInputs.map((row) => row.userInput))
+      const dropInputs = await tx.missingSubActivity.findMany({
+        where: { userId: dropId },
+        select: { id: true, userInput: true },
+      })
+      for (const row of dropInputs) {
+        if (inputs.has(row.userInput)) continue
+        try {
+          await tx.missingSubActivity.update({ where: { id: row.id }, data: { userId: keepId } })
+          inputs.add(row.userInput)
+        } catch (error) {
+          if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") continue
+          throw error
+        }
+      }
+
+      const keeperSepa = await tx.sepaSubscription.findUnique({
+        where: { userId: keepId },
+        select: { id: true },
+      })
+      if (!keeperSepa) {
+        await tx.sepaSubscription.updateMany({ where: { userId: dropId }, data: { userId: keepId } })
+      }
+    },
+    { timeout: 20000 }
+  )
+
+  const residueDocs = await prisma.userDocument.findMany({
+    where: { userId: dropId },
+    select: { filepath: true },
+  })
+  const residueSepa = await prisma.sepaSubscription.findUnique({
+    where: { userId: dropId },
+    select: { mollieCustomerId: true },
+  })
+  await deleteClientAccount(dropId)
+  await purgeClientExternalResidue({
+    gedFilepaths: residueDocs.map((row) => row.filepath),
+    mollieCustomerId: residueSepa?.mollieCustomerId ?? null,
+  })
+}
+
+/** Réunit les fiches doublons dans le compte conservé, puis supprime les autres. */
+export async function mergeClientAccounts(keepId: string, dropIds: string[]): Promise<string[]> {
+  const unique = [...new Set(dropIds)].filter((id) => id && id !== keepId)
+  if (unique.length === 0) throw new Error("Aucune fiche à fusionner")
+  const merged: string[] = []
+  for (const dropId of unique) {
+    try {
+      await moveDroppedAccount(keepId, dropId)
+      merged.push(dropId)
+    } catch (error) {
+      if (merged.length > 0) {
+        const detail = error instanceof Error ? error.message : "erreur"
+        throw new Error(`Fusion incomplète (${merged.length} fiche(s) déjà réunie(s)). ${detail}`)
+      }
+      throw error
+    }
+  }
+  return merged
 }
