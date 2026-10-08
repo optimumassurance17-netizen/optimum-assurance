@@ -146,7 +146,15 @@ interface ClientData {
   documents: { id: string; type: string; numero: string; status: string; createdAt: string }[]
   insuranceContracts?: { id: string; contractNumber: string; productType: string; createdAt: string }[]
   canGenerateDecennaleAttestation?: boolean
-  payments: { id: string; amount: number; status: string; paidAt: string | null; createdAt: string }[]
+  payments: {
+    id: string
+    amount: number
+    status: string
+    statusLabel?: string | null
+    echeanceLabel?: string | null
+    paidAt: string | null
+    createdAt: string
+  }[]
   avenantFees: { id: string; amount: number; status: string; createdAt: string }[]
   echeances?: {
     id: string
@@ -157,6 +165,8 @@ interface ClientData {
     paidAt: string | null
     cardLinkStatus?: "none" | "open"
     checkoutUrl?: string | null
+    cardLinkSentAt?: string | null
+    sepaFailure?: string | null
   }[]
   sepa?: {
     present: boolean
@@ -1636,7 +1646,12 @@ export default function ClientDetailPage() {
                 <tbody>
                   {echeances.map((echeance) => (
                     <tr key={echeance.id} className="border-b border-gray-700/50">
-                      <td className="p-4 text-white">{echeance.label}</td>
+                      <td className="p-4 text-white">
+                        <div>{echeance.label}</div>
+                        {echeance.sepaFailure ? (
+                          <p className="mt-1 max-w-sm text-xs text-red-300">Prélèvement refusé — {echeance.sepaFailure}</p>
+                        ) : null}
+                      </td>
                       <td className="p-4">
                         {echeance.dueDate ? new Date(echeance.dueDate).toLocaleDateString("fr-FR") : "—"}
                       </td>
@@ -1661,6 +1676,11 @@ export default function ClientDetailPage() {
                                   ? "Lien envoyé"
                                   : "Règlement par carte bancaire"}
                             </button>
+                            {echeance.cardLinkStatus === "open" && echeance.cardLinkSentAt ? (
+                              <span className="self-center text-xs text-sky-200">
+                                Envoyé le {new Date(echeance.cardLinkSentAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}
+                              </span>
+                            ) : null}
                             <button
                               type="button"
                               disabled={echeanceBusy !== null}
@@ -1690,6 +1710,7 @@ export default function ClientDetailPage() {
                 <thead>
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-4 font-medium">Date</th>
+                    <th className="text-left p-4 font-medium">Échéance</th>
                     <th className="text-left p-4 font-medium">Montant</th>
                     <th className="text-left p-4 font-medium">Statut</th>
                   </tr>
@@ -1698,10 +1719,17 @@ export default function ClientDetailPage() {
                   {payments.map((p) => (
                     <tr key={p.id} className="border-b border-gray-700/50">
                       <td className="p-4">{new Date(p.paidAt || p.createdAt).toLocaleDateString("fr-FR")}</td>
+                      <td className="p-4">{p.echeanceLabel || "—"}</td>
                       <td className="p-4">{p.amount.toLocaleString("fr-FR")} €</td>
                       <td className="p-4">
-                        <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-green-900/50 text-green-300" : "bg-blue-900/50 text-sky-200"}`}>
-                          {p.status}
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          p.status === "paid"
+                            ? "bg-green-900/50 text-green-300"
+                            : p.status === "failed"
+                              ? "bg-red-900/50 text-red-200"
+                              : "bg-blue-900/50 text-sky-200"
+                        }`}>
+                          {p.statusLabel || (p.status === "paid" ? "Payé" : p.status === "pending" ? "Lien envoyé" : p.status === "failed" ? "Échoué" : p.status)}
                         </span>
                       </td>
                     </tr>

@@ -1,10 +1,14 @@
 import {
   attachOpenCardLinks,
+  attestationIdFromPaymentMetadata,
   buildClientEcheances,
   echeanceReceiptLabel,
   installmentFromPaymentMetadata,
   mollieCardLinkIsClosed,
   molliePaymentIsOpen,
+  paidAttestationMoments,
+  paymentEcheanceLabel,
+  paymentStatusLabel,
   readEcheanceCardLink,
 } from "../lib/client-echeances"
 
@@ -47,6 +51,41 @@ assert(byId.get("decennale:4")?.paid === true, "une échéance marquée explicit
 assert(byId.get("avenant:fee1")?.paid === false, "les frais d'avenant en attente restent ouverts")
 assert(byId.get("avenant:fee2")?.paid === true, "les frais d'avenant payés sont réglés")
 assert(byId.get("attestation:doc1")?.amount === 200 && byId.get("attestation:doc1")?.paid === false, "la régularisation suspendue est ouverte")
+assert(byId.get("decennale:3")?.sepaFailure == null, "sans incident, l'échéance ouverte n'est pas marquée refusée")
+
+const settled = buildClientEcheances({
+  primeAnnuelle: null,
+  anchorDate: null,
+  firstTrimesterPaidAt: null,
+  trimestresSepaPayes: 0,
+  sepaSubscriptionId: null,
+  explicitPaidInstallments: [],
+  avenantFees: [],
+  suspendedAttestations: [{
+    id: "doc2",
+    numero: "AT-2",
+    amount: 150,
+    createdAt: new Date("2026-06-01T00:00:00.000Z"),
+    paid: true,
+    paidAt: new Date("2026-06-02T00:00:00.000Z"),
+  }],
+})
+assert(settled[0]?.id === "attestation:doc2" && settled[0]?.paid === true, "une régularisation payée reste affichée comme réglée")
+
+const refused = buildClientEcheances({
+  primeAnnuelle: 400,
+  anchorDate: new Date("2026-01-01T00:00:00.000Z"),
+  firstTrimesterPaidAt: new Date("2026-01-01T00:00:00.000Z"),
+  trimestresSepaPayes: 1,
+  sepaSubscriptionId: "sepa-1",
+  sepaLastError: "Solde insuffisant",
+  explicitPaidInstallments: [],
+  avenantFees: [],
+  suspendedAttestations: [],
+})
+assert(refused.find((row) => row.id === "decennale:2")?.sepaFailure == null, "une échéance déjà réglée ne porte pas le refus")
+assert(refused.find((row) => row.id === "decennale:3")?.sepaFailure === "Solde insuffisant", "le refus SEPA est sur la prochaine échéance")
+assert(refused.find((row) => row.id === "decennale:4")?.sepaFailure == null, "les échéances suivantes ne répètent pas le refus")
 
 assert(installmentFromPaymentMetadata(JSON.stringify({ type: "decennale_premier_trimestre" })) === 1, "le premier paiement carte compte pour l'échéance 1")
 assert(installmentFromPaymentMetadata(JSON.stringify({ echeanceId: "decennale:3" })) === 3, "l'identifiant d'échéance donne son numéro")
@@ -75,6 +114,10 @@ const withLink = attachOpenCardLinks(open, [
 ])
 assert(withLink.find((row) => row.id === "decennale:2")?.cardLinkStatus === "open", "le lien carte en attente est visible")
 assert(
+  withLink.find((row) => row.id === "decennale:2")?.cardLinkSentAt === "2026-02-02T00:00:00.000Z",
+  "la date d'envoi du lien est celle du paiement en attente"
+)
+assert(
   withLink.find((row) => row.id === "decennale:2")?.checkoutUrl === "https://pay.example/new",
   "le lien le plus récent est conservé"
 )
@@ -85,5 +128,24 @@ assert(mollieCardLinkIsClosed("expired") && mollieCardLinkIsClosed("canceled") &
 assert(echeanceReceiptLabel({ label: "Échéance 2" }) === "Échéance 2", "le reçu reprend le libellé enregistré")
 assert(echeanceReceiptLabel({ type: "sepa_trimestre", sepaInstallmentNumber: "3" }) === "Prélèvement SEPA n°3", "le reçu SEPA indique le numéro")
 assert(echeanceReceiptLabel({ type: "echeance_carte", echeanceId: "avenant:fee1" }) === "Frais d'avenant", "le reçu d'avenant a un libellé")
+assert(paymentStatusLabel("paid") === "Payé" && paymentStatusLabel("pending") === "Lien envoyé" && paymentStatusLabel("failed") === "Échoué", "les statuts de paiement sont en français")
+assert(
+  paymentEcheanceLabel(JSON.stringify({ type: "echeance_carte", label: "Échéance 2" })) === "Échéance 2",
+  "le tableau des paiements reprend le nom de l'échéance"
+)
+assert(
+  paymentEcheanceLabel(JSON.stringify({ type: "regularisation", attestationNumero: "AT-9" })) === "Régularisation AT-9",
+  "une régularisation porte son numéro"
+)
+const moments = paidAttestationMoments([
+  {
+    status: "paid",
+    metadata: JSON.stringify({ attestationId: "doc2" }),
+    paidAt: new Date("2026-06-02T00:00:00.000Z"),
+    createdAt: new Date("2026-06-01T00:00:00.000Z"),
+  },
+])
+assert(attestationIdFromPaymentMetadata(JSON.stringify({ attestationId: "doc2" })) === "doc2", "le paiement identifie l'attestation")
+assert(moments.get("doc2")?.toISOString() === "2026-06-02T00:00:00.000Z", "la date de règlement de l'attestation est conservée")
 
 console.log("Échéances fiche client : OK")

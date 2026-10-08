@@ -16,6 +16,8 @@ export type ClientEcheance = {
   attestationId: string | null
   cardLinkStatus: "none" | "open"
   checkoutUrl: string | null
+  cardLinkSentAt: string | null
+  sepaFailure: string | null
 }
 
 export type ClientEcheanceSource = {
@@ -24,9 +26,17 @@ export type ClientEcheanceSource = {
   firstTrimesterPaidAt: Date | null
   trimestresSepaPayes: number
   sepaSubscriptionId: string | null
+  sepaLastError?: string | null
   explicitPaidInstallments: { installment: number; paidAt: Date | null }[]
   avenantFees: { id: string; amount: number; status: string; paidAt: Date | null; createdAt: Date }[]
-  suspendedAttestations: { id: string; numero: string; amount: number; createdAt: Date }[]
+  suspendedAttestations: {
+    id: string
+    numero: string
+    amount: number
+    createdAt: Date
+    paid?: boolean
+    paidAt?: Date | null
+  }[]
 }
 
 function addMonths(date: Date, months: number): Date {
@@ -37,6 +47,12 @@ function addMonths(date: Date, months: number): Date {
 
 function roundMoney(value: number): number {
   return Math.round(value * 100) / 100
+}
+
+function shortenSepaFailure(value: string): string {
+  const trimmed = value.trim()
+  if (trimmed.length <= 180) return trimmed
+  return `${trimmed.slice(0, 177)}…`
 }
 
 export function installmentFromPaymentMetadata(metadata: string | null | undefined): number | null {
@@ -83,6 +99,10 @@ export function buildClientEcheances(source: ClientEcheanceSource): ClientEchean
     const maxPaid = paidNumbers.size > 0 ? Math.max(...paidNumbers) : 0
     const count = Math.max(4, maxPaid >= 4 ? maxPaid + 1 : 4)
     const anchor = source.anchorDate ?? source.firstTrimesterPaidAt
+    const failureText = source.sepaLastError?.trim() || null
+    const failureInstallment = source.sepaSubscriptionId && failureText
+      ? (source.firstTrimesterPaidAt ? 1 : 0) + Math.max(0, Math.floor(source.trimestresSepaPayes)) + 1
+      : null
     for (let installment = 1; installment <= count; installment += 1) {
       const paid = paidNumbers.has(installment)
       const paidAt = paidAtByNumber.get(installment) ?? null
@@ -100,6 +120,8 @@ export function buildClientEcheances(source: ClientEcheanceSource): ClientEchean
         attestationId: null,
         cardLinkStatus: "none",
         checkoutUrl: null,
+        cardLinkSentAt: null,
+        sepaFailure: !paid && failureInstallment === installment && failureText ? shortenSepaFailure(failureText) : null,
       })
     }
   }
@@ -120,25 +142,30 @@ export function buildClientEcheances(source: ClientEcheanceSource): ClientEchean
       attestationId: null,
       cardLinkStatus: "none",
       checkoutUrl: null,
+      cardLinkSentAt: null,
+      sepaFailure: null,
     })
   }
 
   for (const attestation of source.suspendedAttestations) {
-    if (!(attestation.amount > 0)) continue
+    const paid = attestation.paid === true
+    if (!(attestation.amount > 0) && !paid) continue
     rows.push({
       id: `attestation:${attestation.id}`,
       kind: "attestation",
       label: `Régularisation ${attestation.numero}`,
       amount: roundMoney(attestation.amount),
       dueDate: attestation.createdAt.toISOString(),
-      paid: false,
-      paidAt: null,
+      paid,
+      paidAt: paid && attestation.paidAt ? attestation.paidAt.toISOString() : null,
       installmentNumber: null,
       sepaSubscriptionId: null,
       avenantFeeId: null,
       attestationId: attestation.id,
       cardLinkStatus: "none",
       checkoutUrl: null,
+      cardLinkSentAt: null,
+      sepaFailure: null,
     })
   }
 
@@ -214,11 +241,76 @@ export function attachOpenCardLinks(rows: ClientEcheance[], payments: PendingCar
   }
 
   return rows.map((row) => {
-    if (row.paid) return { ...row, cardLinkStatus: "none", checkoutUrl: null }
+    if (row.paid) return { ...row, cardLinkStatus: "none", checkoutUrl: null, cardLinkSentAt: null }
     const link = latest.get(row.id)
-    if (!link) return { ...row, cardLinkStatus: "none", checkoutUrl: null }
-    return { ...row, cardLinkStatus: "open", checkoutUrl: link.checkoutUrl }
+    if (!link) return { ...row, cardLinkStatus: "none", checkoutUrl: null, cardLinkSentAt: null }
+    return {
+      ...row,
+      cardLinkStatus: "open",
+      checkoutUrl: link.checkoutUrl,
+      cardLinkSentAt: new Date(link.createdAt).toISOString(),
+    }
   })
+}
+
+export function attestationIdFromPaymentMetadata(metadata: string | null | undefined): string | null {
+  const record = parseMetadataRecord(metadata)
+  const id = record?.attestationId
+  return typeof id === "string" && id.trim() ? id.trim() : null
+}
+
+export function paidAttestationMoments(
+  payments: { status: string; metadata: string | null; paidAt: Date | null; createdAt: Date }[]
+): Map<string, Date> {
+  const moments = new Map<string, Date>()
+  for (const payment of payments) {
+    if (payment.status !== "paid") continue
+    const id = attestationIdFromPaymentMetadata(payment.metadata)
+    if (!id) continue
+    const at = payment.paidAt ?? payment.createdAt
+    const previous = moments.get(id)
+    if (!previous || at.getTime() >= previous.getTime()) moments.set(id, at)
+  }
+  return moments
+}
+
+export function paymentStatusLabel(status: string): string {
+  if (status === "paid") return "Payé"
+  if (status === "pending") return "Lien envoyé"
+  if (status === "failed") return "Échoué"
+  return status
+}
+
+export function paymentEcheanceLabel(metadata: string | null | undefined): string | null {
+  const parsed = parseMetadataRecord(metadata)
+  if (!parsed) return null
+  if (typeof parsed.label === "string" && parsed.label.trim()) return parsed.label.trim()
+  if (parsed.type === "decennale_premier_trimestre") return "Échéance 1"
+  if (parsed.type === "devis_do") return "Dommage ouvrage"
+  if (parsed.type === "regularisation") {
+    const numero = typeof parsed.attestationNumero === "string" ? parsed.attestationNumero.trim() : ""
+    return numero ? `Régularisation ${numero}` : "Régularisation"
+  }
+  if (
+    parsed.type === "sepa_trimestre" ||
+    parsed.type === "echeance_carte" ||
+    parsed.type === "echeance_manuelle" ||
+    typeof parsed.echeanceId === "string"
+  ) {
+    return echeanceReceiptLabel(parsed)
+  }
+  return null
+}
+
+function parseMetadataRecord(metadata: string | null | undefined): Record<string, unknown> | null {
+  if (!metadata?.trim()) return null
+  try {
+    const parsed = JSON.parse(metadata) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null
+    return parsed as Record<string, unknown>
+  } catch {
+    return null
+  }
 }
 
 export function echeanceReceiptLabel(metadata: Record<string, unknown>): string {

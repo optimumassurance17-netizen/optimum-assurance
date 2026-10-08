@@ -19,6 +19,7 @@ import { loadClientEcheances } from "@/lib/client-echeance-service"
 import { clientDeleteErrorMessage, deleteClientAccount } from "@/lib/client-account"
 import { purgeClientExternalResidue } from "@/lib/purge-client-residue"
 import { describeSepaReadiness } from "@/lib/sepa-readiness"
+import { paymentEcheanceLabel, paymentStatusLabel } from "@/lib/client-echeances"
 
 function parseLogDetails(raw: string | null | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null
@@ -133,7 +134,7 @@ export async function GET(
       }),
       prisma.payment.findMany({
         where: { userId: id },
-        select: { id: true, amount: true, status: true, paidAt: true, createdAt: true },
+        select: { id: true, amount: true, status: true, paidAt: true, createdAt: true, metadata: true },
         orderBy: { createdAt: "desc" },
       }),
       prisma.avenantFee.findMany({
@@ -266,6 +267,15 @@ export async function GET(
         if (document.type !== "contrat" || !isDecennaleContractData(document.data)) return false
         return extractStructuredActivities(parseJsonObject(document.data)).length > 0
       })
+    const paymentsForClient = payments.map((payment) => ({
+      id: payment.id,
+      amount: payment.amount,
+      status: payment.status,
+      statusLabel: paymentStatusLabel(payment.status),
+      echeanceLabel: paymentEcheanceLabel(payment.metadata),
+      paidAt: payment.paidAt,
+      createdAt: payment.createdAt,
+    }))
     const documentsForClient = documents.map((document) => ({
       id: document.id,
       type: document.type,
@@ -280,7 +290,7 @@ export async function GET(
       documents: documentsForClient,
       canGenerateDecennaleAttestation,
       insuranceContracts,
-      payments,
+      payments: paymentsForClient,
       avenantFees,
       echeances,
       sepa,

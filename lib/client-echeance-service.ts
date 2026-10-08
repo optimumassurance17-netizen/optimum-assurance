@@ -5,6 +5,7 @@ import {
   attachOpenCardLinks,
   buildClientEcheances,
   installmentFromPaymentMetadata,
+  paidAttestationMoments,
   type ClientEcheance,
 } from "@/lib/client-echeances"
 
@@ -71,6 +72,7 @@ export async function loadClientEcheances(userId: string): Promise<ClientEcheanc
     .find((value): value is number => value != null) ?? null
   const documentAnchor = documents.find((document) => annualPremiumFromDocument(document.data) != null)?.createdAt ?? null
 
+  const attestationPaidAt = paidAttestationMoments(payments)
   const explicitPaidInstallments = payments.flatMap((payment) => {
     if (payment.status !== "paid") return []
     const installment = installmentFromPaymentMetadata(payment.metadata)
@@ -86,19 +88,24 @@ export async function loadClientEcheances(userId: string): Promise<ClientEcheanc
     firstTrimesterPaidAt: subscription?.firstTrimesterPaidAt ?? null,
     trimestresSepaPayes: subscription?.trimestresSepaPayes ?? 0,
     sepaSubscriptionId: subscription?.id ?? null,
+    sepaLastError: subscription?.lastError ?? null,
     explicitPaidInstallments,
     avenantFees: fees,
-    suspendedAttestations: documents
-      .filter((document) =>
-        (document.type === "attestation" || document.type === "attestation_nominative") &&
-        document.status === "suspendu"
-      )
-      .map((document) => ({
+    suspendedAttestations: documents.flatMap((document) => {
+      const isAttestation = document.type === "attestation" || document.type === "attestation_nominative"
+      if (!isAttestation) return []
+      const paidAt = attestationPaidAt.get(document.id) ?? null
+      const paid = paidAt != null
+      if (document.status !== "suspendu" && !paid) return []
+      return [{
         id: document.id,
         numero: document.numero,
         amount: attestationAmount(document.data),
         createdAt: document.createdAt,
-      })),
+        paid,
+        paidAt,
+      }]
+    }),
   }), payments)
 }
 
