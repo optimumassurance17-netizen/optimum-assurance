@@ -132,7 +132,7 @@ export async function POST(
         userId: sub.userId,
         amount: next.amount,
         description: `${next.label} — carte — ${raisonSociale}`,
-        redirectPath: "/espace-client",
+        redirectTo: "/espace-client",
         metadata,
       })
       if (created.kind === "blocked") {

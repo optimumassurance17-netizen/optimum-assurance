@@ -108,7 +108,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         userId: document.userId,
         amount,
         description: `Régularisation décennale — ${raisonSociale} (${document.numero})`,
-        redirectPath: "/confirmation?regularisation=1",
+        redirectTo: "/confirmation?regularisation=1",
         metadata,
       })
       if (created.kind === "blocked") {

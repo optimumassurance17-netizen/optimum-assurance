@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createMollieClient, Locale, PaymentMethod } from "@mollie/api-client"
+import { createMollieClient, PaymentMethod } from "@mollie/api-client"
+import { stringMapFromUnknown } from "@/lib/card-link-lifetime"
+import { createStoredCardPayment } from "@/lib/gestion-card-link"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
@@ -184,6 +186,28 @@ export async function POST(request: NextRequest) {
       (methodRaw === "sepa" || methodRaw === "directdebit")
     const isCard = mollieMethod === PaymentMethod.creditcard
 
+    if (isCard) {
+      const created = await createStoredCardPayment({
+        mollie: mollieClient,
+        userId: session.user.id,
+        amount,
+        description,
+        redirectTo: redirectUrl,
+        metadata: {
+          ...stringMapFromUnknown(metadata),
+          userId: session.user.id,
+        },
+      })
+      if (created.kind === "blocked") {
+        return NextResponse.json({ error: created.message }, { status: 502 })
+      }
+      return NextResponse.json({
+        id: created.paymentId,
+        checkoutUrl: created.checkoutUrl,
+        status: "open",
+      })
+    }
+
     // Le webhook est toujours piloté côté serveur: on ignore toute valeur client.
     const paymentParams = {
       amount: {
@@ -198,7 +222,6 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
       },
       method: mollieMethod,
-      ...(isCard && { locale: Locale.fr_FR }),
       ...(customerEmail && { consumerEmail: customerEmail }),
       ...(consumerName && { consumerName }),
       ...(isSepa &&

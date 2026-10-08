@@ -1,13 +1,8 @@
 import { createMollieClient, type MollieClient } from "@mollie/api-client"
 import { applyEcheancePaidEffects } from "@/lib/client-echeance-service"
-import {
-  cardPaymentMatches,
-  mollieCardLinkIsClosed,
-  molliePaymentIsOpen,
-  readOpenCardTarget,
-  stringRecordFromMetadata,
-} from "@/lib/client-echeances"
+import { cardPaymentMatches, stringRecordFromMetadata } from "@/lib/client-echeances"
 import { sendEcheancePaidReceipt } from "@/lib/echeance-receipt"
+import { readRemoteCardLink } from "@/lib/gestion-card-link"
 import { prisma } from "@/lib/prisma"
 
 export type OpenCardLinkResult =
@@ -58,24 +53,27 @@ export async function resolveOpenCardLink(params: {
   }
 
   for (const pending of pendingRows) {
-    let remote
-    try {
-      remote = await params.mollie.payments.get(pending.molliePaymentId)
-    } catch (error) {
-      console.error("[open-card-link] lecture du lien carte", error)
+    const metadata = stringRecordFromMetadata(pending.metadata)
+    const remote = await readRemoteCardLink(params.mollie, pending.molliePaymentId, metadata.checkoutUrl)
+    if (remote.kind === "blocked") return remote
+    if (remote.kind === "debit-open") {
       return {
         kind: "blocked",
-        message: "Impossible de vérifier le lien carte déjà envoyé. Aucun second lien n'a été créé.",
+        message: "Un prélèvement SEPA est déjà en cours. Aucun second lien n'a été créé.",
       }
     }
 
-    const metadata = stringRecordFromMetadata(pending.metadata)
-    if (remote.status === "paid") {
+    if (remote.kind === "paid") {
+      if (params.onPaid === "mark-only") return { kind: "paid" }
       const claimed = await prisma.payment.updateMany({
         where: { id: pending.id, status: "pending" },
-        data: { status: "paid", paidAt: new Date() },
+        data: {
+          status: "paid",
+          paidAt: new Date(),
+          metadata: JSON.stringify({ ...metadata, effectsApplied: "true" }),
+        },
       })
-      if (claimed.count === 1 && params.onPaid !== "mark-only") {
+      if (claimed.count === 1) {
         await applyEcheancePaidEffects(metadata)
         await sendEcheancePaidReceipt({
           email: metadata.email || "",
@@ -87,37 +85,20 @@ export async function resolveOpenCardLink(params: {
       return { kind: "paid" }
     }
 
-    if (molliePaymentIsOpen(remote.status)) {
-      const storedCheckout = metadata.checkoutUrl?.startsWith("https://") ? metadata.checkoutUrl : ""
-      const checkoutUrl =
-        remote._links?.checkout?.href || readOpenCardTarget(pending.metadata)?.checkoutUrl || storedCheckout
-      if (!checkoutUrl) {
-        return {
-          kind: "blocked",
-          message: "Le lien carte est encore ouvert, mais Mollie n'a pas renvoyé son adresse.",
-        }
-      }
-      if (remote._links?.checkout?.href && remote._links.checkout.href !== metadata.checkoutUrl) {
+    if (remote.kind === "card-open") {
+      if (remote.checkoutUrl !== metadata.checkoutUrl) {
         await prisma.payment.update({
           where: { id: pending.id },
-          data: { metadata: JSON.stringify({ ...metadata, checkoutUrl: remote._links.checkout.href }) },
+          data: { metadata: JSON.stringify({ ...metadata, checkoutUrl: remote.checkoutUrl }) },
         })
       }
-      return { kind: "open", checkoutUrl, paymentId: pending.molliePaymentId }
+      return { kind: "open", checkoutUrl: remote.checkoutUrl, paymentId: pending.molliePaymentId }
     }
 
-    if (mollieCardLinkIsClosed(remote.status)) {
-      await prisma.payment.updateMany({
-        where: { id: pending.id, status: "pending" },
-        data: { status: "failed" },
-      })
-      continue
-    }
-
-    return {
-      kind: "blocked",
-      message: "Le lien carte est dans un état inattendu. Aucun second lien n'a été créé.",
-    }
+    await prisma.payment.updateMany({
+      where: { id: pending.id, status: "pending" },
+      data: { status: "failed" },
+    })
   }
 
   return { kind: "cleared" }

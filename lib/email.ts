@@ -238,10 +238,10 @@ export const EMAIL_TEMPLATES = {
   ) => ({
     subject: "Paiement de votre échéance décennale par carte - Optimum Assurance",
     text:
-      `Bonjour ${raisonSociale},\n\nLe prélèvement de votre échéance n'a pas abouti. Vous pouvez la régler par carte bancaire.\n\nMontant : ${montant.toLocaleString("fr-FR")} €\n\nLien de paiement :\n${checkoutUrl}\n\nCordialement,\nOptimum Assurance` +
+      `Bonjour ${raisonSociale},\n\nLe prélèvement de votre échéance n'a pas abouti. Vous pouvez la régler par carte bancaire.\n\nMontant : ${montant.toLocaleString("fr-FR")} €\n\nLien de paiement (valable 7 jours) :\n${checkoutUrl}\n\nCordialement,\nOptimum Assurance` +
       reminderUnsubscribeTextFooter("paiement", recipientEmail),
     html:
-      `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Le prélèvement de votre échéance n'a pas abouti. Vous pouvez la régler par <strong>carte bancaire</strong>.</p><p><strong>Montant :</strong> ${montant.toLocaleString("fr-FR")} €</p><p><a href="${checkoutUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Payer par carte</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
+      `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Le prélèvement de votre échéance n'a pas abouti. Vous pouvez la régler par <strong>carte bancaire</strong>.</p><p><strong>Montant :</strong> ${montant.toLocaleString("fr-FR")} €</p><p><a href="${checkoutUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Payer par carte</a></p><p style="font-size:13px;color:#64748b;">Ce lien reste valable 7 jours.</p><p>Cordialement,<br>Optimum Assurance</p>` +
       reminderUnsubscribeHtmlFooter("paiement", recipientEmail),
   }),
   paiementEcheanceCarte: (
@@ -253,10 +253,10 @@ export const EMAIL_TEMPLATES = {
   ) => ({
     subject: `Règlement par carte — ${label} - Optimum Assurance`,
     text:
-      `Bonjour ${raisonSociale},\n\nVous pouvez régler ${label.toLowerCase()} par carte bancaire.\n\nMontant : ${montant.toLocaleString("fr-FR")} €\n\nLien de paiement :\n${checkoutUrl}\n\nCordialement,\nOptimum Assurance` +
+      `Bonjour ${raisonSociale},\n\nVous pouvez régler ${label.toLowerCase()} par carte bancaire.\n\nMontant : ${montant.toLocaleString("fr-FR")} €\n\nLien de paiement (valable 7 jours) :\n${checkoutUrl}\n\nCordialement,\nOptimum Assurance` +
       reminderUnsubscribeTextFooter("paiement", recipientEmail),
     html:
-      `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Vous pouvez régler <strong>${escapeHtmlForEmail(label.toLowerCase())}</strong> par carte bancaire.</p><p><strong>Montant :</strong> ${montant.toLocaleString("fr-FR")} €</p><p><a href="${checkoutUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Payer par carte</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
+      `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Vous pouvez régler <strong>${escapeHtmlForEmail(label.toLowerCase())}</strong> par carte bancaire.</p><p><strong>Montant :</strong> ${montant.toLocaleString("fr-FR")} €</p><p><a href="${checkoutUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Payer par carte</a></p><p style="font-size:13px;color:#64748b;">Ce lien reste valable 7 jours.</p><p>Cordialement,<br>Optimum Assurance</p>` +
       reminderUnsubscribeHtmlFooter("paiement", recipientEmail),
   }),
   confirmationEcheancePayee: (raisonSociale: string, label: string, montant: number) => ({

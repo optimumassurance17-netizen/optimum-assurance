@@ -1,21 +1,15 @@
 import { randomUUID } from "node:crypto"
 import { NextRequest, NextResponse } from "next/server"
-import { createMollieClient, Locale, PaymentMethod, type MollieClient } from "@mollie/api-client"
+import { createMollieClient, type MollieClient } from "@mollie/api-client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
-import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { applyEcheancePaidEffects, loadClientEcheances } from "@/lib/client-echeance-service"
-import {
-  findClientEcheance,
-  mollieCardLinkIsClosed,
-  molliePaymentIsOpen,
-  readEcheanceCardLink,
-  stringRecordFromMetadata,
-} from "@/lib/client-echeances"
+import { findClientEcheance, readEcheanceCardLink, stringRecordFromMetadata } from "@/lib/client-echeances"
+import { createStoredCardPayment, readRemoteCardLink, retireRemoteCardLink } from "@/lib/gestion-card-link"
 import { sendEcheancePaidReceipt, sendSepaFailureNotice } from "@/lib/echeance-receipt"
 import { SITE_URL } from "@/lib/site-url"
 
@@ -63,22 +57,24 @@ async function refreshPendingCardPayment(
   }
 
   for (const pending of pendingRows) {
-    let remote
-    try {
-      remote = await mollie.payments.get(pending.molliePaymentId)
-    } catch (error) {
-      console.error("[gestion/clients/echeances] lecture du lien carte", error)
+    const metadata = stringRecordFromMetadata(pending.metadata)
+    const remote = await readRemoteCardLink(mollie, pending.molliePaymentId, metadata.checkoutUrl)
+    if (remote.kind === "blocked") return remote
+    if (remote.kind === "debit-open") {
       return {
         kind: "blocked",
-        message: "Impossible de vérifier le lien carte déjà envoyé. Aucun second lien n'a été créé.",
+        message: "Un prélèvement SEPA est déjà en cours. Aucun second lien n'a été créé.",
       }
     }
 
-    const metadata = stringRecordFromMetadata(pending.metadata)
-    if (remote.status === "paid") {
+    if (remote.kind === "paid") {
       const claimed = await prisma.payment.updateMany({
         where: { id: pending.id, status: "pending" },
-        data: { status: "paid", paidAt: new Date() },
+        data: {
+          status: "paid",
+          paidAt: new Date(),
+          metadata: JSON.stringify({ ...metadata, effectsApplied: "true" }),
+        },
       })
       if (claimed.count === 1) {
         await applyEcheancePaidEffects(metadata)
@@ -92,71 +88,67 @@ async function refreshPendingCardPayment(
       return { kind: "paid" }
     }
 
-    if (molliePaymentIsOpen(remote.status)) {
-      const checkoutUrl = remote._links?.checkout?.href || readEcheanceCardLink(pending.metadata)?.checkoutUrl || ""
-      if (!checkoutUrl) {
-        return {
-          kind: "blocked",
-          message: "Le lien carte est encore ouvert, mais Mollie n'a pas renvoyé son adresse.",
-        }
-      }
+    if (remote.kind === "card-open") {
       for (const other of pendingRows) {
         if (other.id === pending.id) continue
-        try {
-          const otherPayment = await mollie.payments.get(other.molliePaymentId)
-          if (otherPayment.status === "paid") {
-            const claimed = await prisma.payment.updateMany({
-              where: { id: other.id, status: "pending" },
-              data: { status: "paid", paidAt: new Date() },
+        const otherMetadata = stringRecordFromMetadata(other.metadata)
+        const otherRemote = await readRemoteCardLink(mollie, other.molliePaymentId, otherMetadata.checkoutUrl)
+        if (otherRemote.kind === "paid") {
+          const claimed = await prisma.payment.updateMany({
+            where: { id: other.id, status: "pending" },
+            data: {
+              status: "paid",
+              paidAt: new Date(),
+              metadata: JSON.stringify({ ...otherMetadata, effectsApplied: "true" }),
+            },
+          })
+          if (claimed.count === 1) {
+            await applyEcheancePaidEffects(otherMetadata)
+            await sendEcheancePaidReceipt({
+              email: otherMetadata.email || "",
+              raisonSociale: otherMetadata.raisonSociale || raisonSociale,
+              metadata: otherMetadata,
+              amount: other.amount,
             })
-            if (claimed.count === 1) {
-              const otherMetadata = stringRecordFromMetadata(other.metadata)
-              await applyEcheancePaidEffects(otherMetadata)
-              await sendEcheancePaidReceipt({
-                email: otherMetadata.email || "",
-                raisonSociale: otherMetadata.raisonSociale || raisonSociale,
-                metadata: otherMetadata,
-                amount: other.amount,
-              })
-            }
-            return { kind: "paid" }
           }
-          if (molliePaymentIsOpen(otherPayment.status)) {
-            try {
-              await mollie.payments.cancel(other.molliePaymentId)
-            } catch (error) {
-              console.warn("[gestion/clients/echeances] annulation d'un ancien lien carte", other.molliePaymentId, error)
+          return { kind: "paid" }
+        }
+        if (otherRemote.kind === "card-open") {
+          try {
+            await retireRemoteCardLink(mollie, other.molliePaymentId)
+          } catch (error) {
+            console.warn("[gestion/clients/echeances] fermeture d'un ancien lien carte", other.molliePaymentId, error)
+            return {
+              kind: "blocked",
+              message: "Un ancien lien carte est encore ouvert et n'a pas pu être fermé. Aucun second lien n'a été créé.",
             }
           }
-        } catch (error) {
-          console.warn("[gestion/clients/echeances] lecture d'un ancien lien carte", other.molliePaymentId, error)
+        } else if (otherRemote.kind === "blocked" || otherRemote.kind === "debit-open") {
+          return otherRemote.kind === "debit-open"
+            ? {
+                kind: "blocked",
+                message: "Un prélèvement SEPA est déjà en cours. Aucun second lien n'a été créé.",
+              }
+            : otherRemote
         }
         await prisma.payment.updateMany({
           where: { id: other.id, status: "pending" },
           data: { status: "failed" },
         })
       }
-      if (remote._links?.checkout?.href && remote._links.checkout.href !== metadata.checkoutUrl) {
+      if (remote.checkoutUrl !== metadata.checkoutUrl) {
         await prisma.payment.update({
           where: { id: pending.id },
-          data: { metadata: JSON.stringify({ ...metadata, checkoutUrl: remote._links.checkout.href }) },
+          data: { metadata: JSON.stringify({ ...metadata, checkoutUrl: remote.checkoutUrl }) },
         })
       }
-      return { kind: "open", checkoutUrl, paymentId: pending.molliePaymentId }
+      return { kind: "open", checkoutUrl: remote.checkoutUrl, paymentId: pending.molliePaymentId }
     }
 
-    if (mollieCardLinkIsClosed(remote.status)) {
-      await prisma.payment.updateMany({
-        where: { id: pending.id, status: "pending" },
-        data: { status: "failed" },
-      })
-      continue
-    }
-
-    return {
-      kind: "blocked",
-      message: "Le lien carte est dans un état inattendu. Aucun second lien n'a été créé.",
-    }
+    await prisma.payment.updateMany({
+      where: { id: pending.id, status: "pending" },
+      data: { status: "failed" },
+    })
   }
 
   return { kind: "cleared" }
@@ -356,30 +348,19 @@ export async function POST(
       return NextResponse.json({ error: "Mollie non configuré" }, { status: 500 })
     }
 
-    const baseUrl = getMolliePublicBaseUrl()
-    const payment = await mollie.payments.create({
-      amount: { currency: "EUR", value: echeance.amount.toFixed(2) },
+    const created = await createStoredCardPayment({
+      mollie,
+      userId: user.id,
+      amount: echeance.amount,
       description: `${echeance.label} — carte — ${raisonSociale}`,
-      redirectUrl: `${baseUrl}/espace-client`,
-      webhookUrl: `${baseUrl}/api/mollie/webhook`,
-      method: PaymentMethod.creditcard,
-      locale: Locale.fr_FR,
+      redirectTo: "/espace-client",
       metadata,
     })
-    const checkoutUrl = payment._links?.checkout?.href
-    if (!checkoutUrl) {
-      return NextResponse.json({ error: "Mollie n'a pas renvoyé de lien de paiement." }, { status: 502 })
+    if (created.kind === "blocked") {
+      return NextResponse.json({ error: created.message }, { status: 502 })
     }
-
-    await prisma.payment.create({
-      data: {
-        userId: user.id,
-        molliePaymentId: payment.id,
-        amount: echeance.amount,
-        status: "pending",
-        metadata: JSON.stringify({ ...metadata, checkoutUrl }),
-      },
-    })
+    const checkoutUrl = created.checkoutUrl
+    const paymentId = created.paymentId
 
     const template = EMAIL_TEMPLATES.paiementEcheanceCarte(
       raisonSociale,
@@ -400,7 +381,7 @@ export async function POST(
       action: "echeance_lien_carte",
       targetType: "user",
       targetId: user.id,
-      details: { echeanceId: echeance.id, amount: echeance.amount, paymentId: payment.id, emailSent: sent },
+      details: { echeanceId: echeance.id, amount: echeance.amount, paymentId, emailSent: sent },
     })
 
     const echeances = await loadClientEcheances(userId)
@@ -409,7 +390,7 @@ export async function POST(
         ...emailNotSentBody(),
         checkoutUrl,
         amount: echeance.amount,
-        paymentId: payment.id,
+        paymentId,
         echeances,
       })
     }
@@ -418,7 +399,7 @@ export async function POST(
       ok: true,
       sentTo: email,
       amount: echeance.amount,
-      paymentId: payment.id,
+      paymentId,
       checkoutUrl,
       echeances,
     })

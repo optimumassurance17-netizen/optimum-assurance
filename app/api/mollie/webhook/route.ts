@@ -15,8 +15,11 @@ import {
 } from "@/lib/mollie-sepa"
 import { processInsuranceContractPaymentSuccess } from "@/lib/insurance-contract-service"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
+import { isPaymentLinkId, stringMapFromUnknown } from "@/lib/card-link-lifetime"
+import { stringRecordFromMetadata } from "@/lib/client-echeances"
 import { applyEcheancePaidEffects } from "@/lib/client-echeance-service"
 import { sendEcheancePaidReceipt } from "@/lib/echeance-receipt"
+import { findStoredCardLinkForPayment, markStoredCardLinkPaid } from "@/lib/gestion-card-link"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ received: true, acknowledged: "event_payload" })
           }
           const jsonId = typeof body.id === "string" ? body.id.trim() : ""
-          if (/^tr_[A-Za-z0-9]+$/.test(jsonId)) {
+          if (/^(?:tr|pl)_[A-Za-z0-9]+$/.test(jsonId)) {
             paymentId = jsonId
           } else {
             return NextResponse.json({ received: true, acknowledged: "json_body" })
@@ -75,6 +78,20 @@ export async function POST(request: NextRequest) {
     }
 
     const mollieClient = createMollieClient({ apiKey })
+    if (isPaymentLinkId(paymentId)) {
+      try {
+        const link = await mollieClient.paymentLinks.get(paymentId)
+        const paidChild = await link.getPayments().find((item) => item.status === "paid")
+        if (!paidChild) {
+          return NextResponse.json({ received: true, acknowledged: "link_not_paid" })
+        }
+        paymentId = paidChild.id
+      } catch (e) {
+        console.warn("[webhook] lien carte illisible:", paymentId, e)
+        return NextResponse.json({ received: true, acknowledged: "payment_unavailable" })
+      }
+    }
+
     let payment
     try {
       payment = await mollieClient.payments.get(paymentId)
@@ -83,7 +100,19 @@ export async function POST(request: NextRequest) {
       console.warn("[webhook] payments.get impossible:", paymentId, e)
       return NextResponse.json({ received: true, acknowledged: "payment_unavailable" })
     }
-    const metadata = (payment.metadata as Record<string, string>) || {}
+    const remoteMetadata = stringMapFromUnknown(payment.metadata)
+    let metadata = remoteMetadata
+    let cardLinkId: string | null = null
+    if (!remoteMetadata.type) {
+      const linked = await findStoredCardLinkForPayment(mollieClient, {
+        id: payment.id,
+        description: payment.description,
+      })
+      if (linked) {
+        metadata = { ...linked.metadata, ...remoteMetadata }
+        cardLinkId = linked.molliePaymentId
+      }
+    }
     const email = metadata.email || (payment as { consumerEmail?: string }).consumerEmail
 
     if (payment.status === "paid") {
@@ -123,7 +152,14 @@ export async function POST(request: NextRequest) {
         where: { molliePaymentId: paymentId },
         select: { status: true },
       })
-      const alreadyProcessed = existingPayment?.status === "paid"
+      let alreadyProcessed = existingPayment?.status === "paid"
+      if (!alreadyProcessed && cardLinkId) {
+        const linkRow = await prisma.payment.findUnique({
+          where: { molliePaymentId: cardLinkId },
+          select: { metadata: true },
+        })
+        alreadyProcessed = stringRecordFromMetadata(linkRow?.metadata).effectsApplied === "true"
+      }
 
       if (metadata.type === "devis_do" && metadata.documentId) {
         const doc = await prisma.document.findUnique({
@@ -408,6 +444,10 @@ export async function POST(request: NextRequest) {
             metadata,
             amount,
           })
+        }
+
+        if (cardLinkId && cardLinkId !== paymentId) {
+          await markStoredCardLinkPaid(cardLinkId)
         }
 
         if (metadata.type === "devis_do") {

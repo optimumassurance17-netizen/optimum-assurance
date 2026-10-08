@@ -8,6 +8,7 @@ import {
 } from "@/lib/mollie-sepa"
 import { primeTrimestrielle } from "@/lib/premium"
 import { prisma } from "@/lib/prisma"
+import { readPendingChargeLock } from "@/lib/gestion-card-link"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 
 /**
@@ -76,16 +77,11 @@ export async function GET(request: NextRequest) {
 
     for (const sub of due) {
       if (sub.sepaPendingPaymentId) {
-        try {
-          const existing = await mollie.payments.get(sub.sepaPendingPaymentId)
-          const stillOpen = existing.status === "open" || existing.status === "pending" || existing.status === "authorized"
-          if (stillOpen) continue
-          if (existing.status === "paid") {
-            await onSepaTrimestrePaid(sub.id)
-            continue
-          }
-        } catch {
-          // Paiement introuvable : on libère le verrou et on peut relancer.
+        const lock = await readPendingChargeLock(mollie, sub.sepaPendingPaymentId)
+        if (lock === "skip") continue
+        if (lock === "mark-paid") {
+          await onSepaTrimestrePaid(sub.id)
+          continue
         }
         await prisma.sepaSubscription.update({
           where: { id: sub.id },
