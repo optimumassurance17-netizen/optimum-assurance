@@ -136,7 +136,7 @@ model UserDocument {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      String   // kbis | piece_identite | ... | releve_sinistralite | ...
   filename  String
-  filepath  String   // chemin relatif sur le serveur
+  filepath  String   // clé Supabase, fichier local, ou contenu dbged:v1:base64
   mimeType  String
   size      Int      // octets
   createdAt DateTime @default(now())

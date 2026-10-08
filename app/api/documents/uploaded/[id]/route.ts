@@ -39,7 +39,12 @@ export async function GET(
 
     const readTarget = resolveGedFileReadTarget(doc.filepath)
     let buffer: Buffer
-    if (readTarget.kind === "supabase") {
+    if (readTarget.kind === "database") {
+      if (readTarget.bytes.length === 0) {
+        return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
+      }
+      buffer = readTarget.bytes
+    } else if (readTarget.kind === "supabase") {
       const supabase = createSupabaseServiceClient()
       let downloaded: Blob | null = null
       if (supabase) {
@@ -143,11 +148,11 @@ export async function DELETE(
         }
       }
     }
-    const localPaths =
-      storageTarget.kind === "local" ? storageTarget.paths : getLocalGedPathCandidates(doc.filepath)
-    for (const fullPath of localPaths) {
-      if (existsSync(fullPath)) {
-        await unlink(fullPath).catch(() => {})
+    if (storageTarget.kind === "local") {
+      for (const fullPath of storageTarget.paths) {
+        if (existsSync(fullPath)) {
+          await unlink(fullPath).catch(() => {})
+        }
       }
     }
 

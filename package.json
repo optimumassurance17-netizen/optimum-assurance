@@ -34,6 +34,7 @@
     "test:pdf-contractual": "tsx scripts/verify-pdf-contractual-mentions.ts",
     "test:activity-fallback": "tsx scripts/verify-activity-hierarchy-fallback.ts",
     "test:local-signature": "tsx scripts/verify-local-signature-fallback.ts",
+    "test:ged-database": "tsx scripts/verify-ged-database-file.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "e2e:seed-admin": "node scripts/seed-e2e-admin.mjs",

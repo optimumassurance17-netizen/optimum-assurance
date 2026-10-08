@@ -120,6 +120,7 @@ export async function POST(
           userId,
           type: { in: [...UPLOAD_DOC_TYPES] },
         },
+        select: { id: true },
       })
       if (!doc) {
         return NextResponse.json(

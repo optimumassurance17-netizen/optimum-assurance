@@ -13,6 +13,7 @@ import { SITE_URL } from "@/lib/site-url"
 import {
   GED_SUPABASE_BUCKET,
   getLocalGedPathCandidates,
+  isGedDatabaseFile,
   resolveGedFileReadTarget,
   sanitizeFilenameBase,
 } from "@/lib/user-documents"
@@ -224,6 +225,9 @@ async function downloadDocBytes(
   userId: string
 ): Promise<Uint8Array | null> {
   const resolved = resolveGedFileReadTarget(doc.filepath)
+  if (resolved.kind === "database") {
+    return resolved.bytes.length > 0 ? new Uint8Array(resolved.bytes) : null
+  }
   if (resolved.kind === "local") {
     if (!existsSync(resolved.path)) return null
     const buffer = await readFile(resolved.path)
@@ -291,6 +295,11 @@ async function buildDocAccessLink(
   doc: { id: string; filepath: string; filename: string; type: string; createdAt: Date },
   userId: string
 ): Promise<string> {
+  if (isGedDatabaseFile(doc.filepath)) {
+    const appUrl = SITE_URL.replace(/\/+$/, "")
+    return `${appUrl}/api/gestion/clients/${userId}/documents/${doc.id}`
+  }
+
   const raw = doc.filepath.trim()
   if (/^https?:\/\//i.test(raw)) {
     return raw

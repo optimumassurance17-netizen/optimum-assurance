@@ -23,6 +23,7 @@ export async function GET() {
 
     const docs = await prisma.userDocument.findMany({
       where: { userId: session.user.id, type: { in: [...UPLOAD_DOC_TYPES] } },
+      select: { id: true, type: true, filename: true, size: true, createdAt: true },
       orderBy: { type: "asc" },
     })
 

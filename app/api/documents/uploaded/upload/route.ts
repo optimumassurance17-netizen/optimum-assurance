@@ -10,11 +10,12 @@ import {
   UPLOAD_DIR,
   ALLOWED_TYPES,
   MAX_FILE_SIZE,
+  GED_DATABASE_FILE_PREFIX,
   GED_SUPABASE_BUCKET,
   resolveGedFileStorageTarget,
-  getLocalGedPathCandidates,
   buildGedStoragePath,
   detectUploadMimeAndExt,
+  encodeGedDatabaseFile,
   ensureUploadDir,
   sanitizeFilenameBase,
 } from "@/lib/user-documents"
@@ -133,26 +134,25 @@ export async function POST(request: NextRequest) {
     }
     if (!persistedInSupabase) {
       if (!allowLocalGedFallback()) {
-        console.error("[ged-upload] Aucun bucket GED Supabase utilisable:", uploadErrors.join(" | "))
-        return NextResponse.json(
-          {
-            error:
-              "Stockage GED indisponible (bucket Supabase absent/inaccessible). Merci de contacter la gestion.",
-          },
-          { status: 503 }
+        console.error(
+          "[ged-upload] Supabase indisponible, conservation du fichier en base:",
+          uploadErrors.join(" | ") || "client absent"
         )
+        persistedPath = encodeGedDatabaseFile(buffer)
+      } else {
+        await ensureUploadDir()
+        const localFilename = `${session.user.id}_${type}_${now}.${extension}`
+        const filepath = join(UPLOAD_DIR, localFilename)
+        await writeFile(filepath, buffer)
+        persistedPath = localFilename
       }
-      await ensureUploadDir()
-      const localFilename = `${session.user.id}_${type}_${now}.${extension}`
-      const filepath = join(UPLOAD_DIR, localFilename)
-      await writeFile(filepath, buffer)
-      persistedPath = localFilename
     }
 
     const existing = await prisma.userDocument.findUnique({
       where: {
         userId_type: { userId: session.user.id, type },
       },
+      select: { filepath: true },
     })
 
     if (existing) {
@@ -173,14 +173,11 @@ export async function POST(request: NextRequest) {
             // Suppression best-effort
           }
         }
-      }
-      const localPaths =
-        storageTarget.kind === "local"
-          ? storageTarget.paths
-          : getLocalGedPathCandidates(existing.filepath)
-      for (const fullPath of localPaths) {
-        if (existsSync(fullPath)) {
-          await unlink(fullPath).catch(() => {})
+      } else if (storageTarget.kind === "local") {
+        for (const fullPath of storageTarget.paths) {
+          if (existsSync(fullPath)) {
+            await unlink(fullPath).catch(() => {})
+          }
         }
       }
     }
@@ -219,7 +216,12 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       )
     }
-    console.error("Erreur upload document:", error)
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes(GED_DATABASE_FILE_PREFIX) || message.length > 500) {
+      console.error("Erreur upload document (détail omis pour ne pas journaliser le fichier)")
+    } else {
+      console.error("Erreur upload document:", error)
+    }
     return NextResponse.json(
       { error: "Erreur lors de l'upload" },
       { status: 500 }

@@ -301,7 +301,7 @@ export async function runInsuranceContractStepAfterSouscription(
   data: SouscriptionData | DoSouscriptionInsurancePayload
 ): Promise<
   | { outcome: "mollie_redirect"; checkoutUrl: string }
-  | { outcome: "continue_flow" }
+  | { outcome: "continue_flow"; error?: string }
 > {
   if (typeof sessionStorage !== "undefined") {
     const sessionCreatedId = sessionStorage.getItem(STORAGE_KEYS.insuranceContractSessionCreatedId)
@@ -323,7 +323,7 @@ export async function runInsuranceContractStepAfterSouscription(
     : await createInsuranceContractFromSouscription(data)
   if (!created.ok) {
     console.warn("[souscription] contrat assurance non créé:", created.error)
-    return { outcome: "continue_flow" }
+    return { outcome: "continue_flow", error: created.error }
   }
 
   const { contractId, contractNumber, status, rejectedReason } = created.contract

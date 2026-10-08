@@ -394,6 +394,15 @@ export default function EspaceClientPage() {
 
   const topAutonomyAction = autonomyStatus ? pickTopAutonomyAction(autonomyStatus.actions) : null
   const decennaleTimeline = autonomyStatus ? buildDecennaleTimeline(autonomyStatus) : []
+  const hasOpenDoContract = insuranceContracts.some(
+    (c) =>
+      c.productType === "do" &&
+      (c.status === CONTRACT_STATUS.pending_validation ||
+        c.status === CONTRACT_STATUS.approved ||
+        c.status === CONTRACT_STATUS.active ||
+        c.status === CONTRACT_STATUS.paid)
+  )
+  const latestDoContract = insuranceContracts.find((c) => c.productType === "do") ?? null
 
   return (
     <main className="min-h-screen bg-[var(--background)]">
@@ -551,24 +560,24 @@ export default function EspaceClientPage() {
         {!loading && doEtudeBanner?.show && (
           <div className="mb-8 rounded-2xl border border-[#2563eb]/30 bg-[#eff6ff] p-5 text-[#0a0a0a]">
             <p className="font-semibold mb-1">Dommage ouvrage — suite du dossier</p>
-            {suiteDo ? (
+            {suiteDo && hasOpenDoContract ? (
               <p className="text-sm text-[#171717] mb-3">
                 Votre souscription est enregistrée. Le règlement est un virement unique. S&apos;il est déjà
                 accepté, le bouton est dans la liste des contrats. S&apos;il est en étude, le même virement
                 unique apparaîtra ici après acceptation.
               </p>
             ) : null}
-            {doEtudeBanner.canContinueOnline &&
-            !insuranceContracts.some(
-              (c) =>
-                c.productType === "do" &&
-                (c.status === CONTRACT_STATUS.pending_validation ||
-                  c.status === CONTRACT_STATUS.approved ||
-                  c.status === CONTRACT_STATUS.active ||
-                  c.status === CONTRACT_STATUS.paid)
-            ) ? (
+            {!hasOpenDoContract &&
+            suiteDo &&
+            latestDoContract?.status === CONTRACT_STATUS.rejected ? (
               <p className="text-sm text-[#171717] mb-3">
-                Prochaine étape : finaliser la souscription pour ouvrir le virement unique du montant indiqué.
+                La souscription a été refusée. Le motif figure sur le contrat, dans la liste ci-dessous.
+              </p>
+            ) : !hasOpenDoContract && (suiteDo || doEtudeBanner.canContinueOnline) ? (
+              <p className="text-sm text-[#171717] mb-3">
+                {suiteDo
+                  ? "Le contrat n'a pas été ouvert. Reprenez la souscription pour lancer le virement unique du montant indiqué."
+                  : "Prochaine étape : finaliser la souscription pour ouvrir le virement unique du montant indiqué."}
               </p>
             ) : (
               <p className="text-sm text-[#171717] mb-3">
@@ -578,15 +587,7 @@ export default function EspaceClientPage() {
               </p>
             )}
             <div className="flex flex-wrap gap-x-4 gap-y-2">
-              {doEtudeBanner.canContinueOnline &&
-              !insuranceContracts.some(
-                (c) =>
-                  c.productType === "do" &&
-                  (c.status === CONTRACT_STATUS.pending_validation ||
-                    c.status === CONTRACT_STATUS.approved ||
-                    c.status === CONTRACT_STATUS.active ||
-                    c.status === CONTRACT_STATUS.paid)
-              ) ? (
+              {doEtudeBanner.canContinueOnline && !hasOpenDoContract ? (
                 <Link
                   href="/souscription-dommage-ouvrage"
                   className="inline-flex items-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"

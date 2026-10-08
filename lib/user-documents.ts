@@ -34,6 +34,27 @@ const MIME_TO_EXT: Record<string, string> = {
 
 export const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 Mo
 
+/** Contenu conservé dans UserDocument.filepath quand Supabase est injoignable. Pas de nouvelle colonne. */
+export const GED_DATABASE_FILE_PREFIX = "dbged:v1:"
+
+export function isGedDatabaseFile(filepath: string | null | undefined): boolean {
+  return typeof filepath === "string" && filepath.startsWith(GED_DATABASE_FILE_PREFIX)
+}
+
+export function encodeGedDatabaseFile(bytes: Buffer): string {
+  return GED_DATABASE_FILE_PREFIX + bytes.toString("base64")
+}
+
+export function decodeGedDatabaseFile(filepath: string): Buffer | null {
+  if (!isGedDatabaseFile(filepath)) return null
+  const payload = filepath.slice(GED_DATABASE_FILE_PREFIX.length)
+  if (!payload) return null
+  const bytes = Buffer.from(payload, "base64")
+  if (bytes.length === 0) return null
+  if (bytes.toString("base64") !== payload) return null
+  return bytes
+}
+
 export async function ensureUploadDir() {
   await mkdir(UPLOAD_DIR, { recursive: true })
 }
@@ -85,6 +106,7 @@ export function buildGedStoragePath(
  * Exemples gérés: "ged/..", "/ged/..", "client_documents/ged/..", URL publique Supabase.
  */
 export function normalizeGedSupabaseObjectPath(filepath: string): string | null {
+  if (isGedDatabaseFile(filepath)) return null
   const raw = filepath.trim()
   if (!raw) return null
 
@@ -122,6 +144,7 @@ export function normalizeGedSupabaseObjectPath(filepath: string): string | null 
 }
 
 export function resolveGedSupabaseObjectCandidates(filepath: string): GedSupabaseObjectCandidate[] {
+  if (isGedDatabaseFile(filepath)) return []
   const raw = filepath.trim()
   if (!raw) return []
 
@@ -193,6 +216,7 @@ export function resolveGedSupabaseObjectCandidates(filepath: string): GedSupabas
  * Génère les chemins locaux candidats pour compatibilité avec anciens formats.
  */
 export function getLocalGedPathCandidates(filepath: string): string[] {
+  if (isGedDatabaseFile(filepath)) return []
   const raw = filepath.trim()
   if (!raw) return []
 
@@ -210,7 +234,7 @@ export function getLocalGedPathCandidates(filepath: string): string[] {
 }
 
 export function isGedSupabasePath(filepath: string | null | undefined): boolean {
-  if (!filepath) return false
+  if (!filepath || isGedDatabaseFile(filepath)) return false
   return resolveGedSupabaseObjectCandidates(filepath).length > 0
 }
 
@@ -224,7 +248,14 @@ export function isLikelySupabaseGedPath(filepath: string | null | undefined): bo
 
 export function resolveGedFileReadTarget(
   filepath: string
-): { kind: "supabase"; candidates: GedSupabaseObjectCandidate[] } | { kind: "local"; path: string } {
+):
+  | { kind: "database"; bytes: Buffer }
+  | { kind: "supabase"; candidates: GedSupabaseObjectCandidate[] }
+  | { kind: "local"; path: string } {
+  if (isGedDatabaseFile(filepath)) {
+    return { kind: "database", bytes: decodeGedDatabaseFile(filepath) ?? Buffer.alloc(0) }
+  }
+
   const supabaseCandidates = resolveGedSupabaseObjectCandidates(filepath)
   if (supabaseCandidates.length > 0) {
     return { kind: "supabase", candidates: supabaseCandidates }
@@ -244,7 +275,14 @@ export function resolveGedFileReadTarget(
 
 export function resolveGedFileStorageTarget(
   filepath: string
-): { kind: "supabase"; candidates: GedSupabaseObjectCandidate[] } | { kind: "local"; paths: string[] } {
+):
+  | { kind: "database" }
+  | { kind: "supabase"; candidates: GedSupabaseObjectCandidate[] }
+  | { kind: "local"; paths: string[] } {
+  if (isGedDatabaseFile(filepath)) {
+    return { kind: "database" }
+  }
+
   const supabaseCandidates = resolveGedSupabaseObjectCandidates(filepath)
   if (supabaseCandidates.length > 0) {
     return { kind: "supabase", candidates: supabaseCandidates }

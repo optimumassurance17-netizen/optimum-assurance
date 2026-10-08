@@ -9,7 +9,7 @@ import { Prisma } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { syncContratAvenantDocumentsFromUser } from "@/lib/sync-user-document-identity"
-import { getLocalGedPathCandidates, isGedSupabasePath } from "@/lib/user-documents"
+import { getLocalGedPathCandidates, isGedDatabaseFile, isGedSupabasePath } from "@/lib/user-documents"
 import { createSupabaseServiceClient } from "@/lib/supabase"
 import { GED_SUPABASE_BUCKET } from "@/lib/user-documents"
 import { asJsonObject } from "@/lib/json-object"
@@ -571,7 +571,7 @@ export async function DELETE(
     }
 
     for (const row of gedFiles) {
-      if (isGedSupabasePath(row.filepath)) continue
+      if (isGedDatabaseFile(row.filepath) || isGedSupabasePath(row.filepath)) continue
       const candidates = getLocalGedPathCandidates(row.filepath)
       try {
         for (const fullPath of candidates) {

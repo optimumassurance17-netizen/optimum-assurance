@@ -54,7 +54,12 @@ export async function GET(
     const resolved = resolveGedFileReadTarget(doc.filepath)
 
     let fileBytes: Uint8Array
-    if (resolved.kind === "supabase") {
+    if (resolved.kind === "database") {
+      if (resolved.bytes.length === 0) {
+        return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
+      }
+      fileBytes = new Uint8Array(resolved.bytes)
+    } else if (resolved.kind === "supabase") {
       const fromSupabase = await downloadFromSupabaseWithFallback(resolved.candidates)
       if (fromSupabase) {
         fileBytes = fromSupabase

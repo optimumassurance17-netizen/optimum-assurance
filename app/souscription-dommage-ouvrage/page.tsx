@@ -24,6 +24,7 @@ export default function SouscriptionDommageOuvragePage() {
   const [dateCreationSociete, setDateCreationSociete] = useState("")
   const [devoirConseilAccepte, setDevoirConseilAccepte] = useState(false)
   const [insuranceLoading, setInsuranceLoading] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [resumeState, setResumeState] = useState<"loading" | "ready" | "missing">("loading")
   const hydrated = useRef(false)
 
@@ -138,11 +139,16 @@ export default function SouscriptionDommageOuvragePage() {
     })
 
     if (sessionStatus === "authenticated") {
+      setSubmitError(null)
       setInsuranceLoading(true)
       try {
         const ins = await runInsuranceContractStepAfterSouscription(merged)
         if (ins.outcome === "mollie_redirect") {
           window.location.href = ins.checkoutUrl
+          return
+        }
+        if (ins.error) {
+          setSubmitError(ins.error)
           return
         }
       } finally {
@@ -266,6 +272,12 @@ export default function SouscriptionDommageOuvragePage() {
             onCheckedChange={setDevoirConseilAccepte}
             labelCheckbox="Je confirme avoir reçu le devoir de conseil pour cette souscription dommage ouvrage."
           />
+
+          {submitError ? (
+            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+              {submitError}
+            </p>
+          ) : null}
 
           <button
             type="submit"

@@ -85,6 +85,10 @@ export default function CreerComptePage() {
     }
 
     if (isDoSouscriptionPayload(payload)) {
+      if (ins.error) {
+        setError(ins.error)
+        return
+      }
       router.push("/espace-client?suite=do")
       return
     }
@@ -224,6 +228,17 @@ export default function CreerComptePage() {
           <p className="text-sm text-[#171717] mt-1">{data.raisonSociale}</p>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+            <p>{error}</p>
+            {error.toLowerCase().includes("existe déjà") ? (
+              <Link href={loginHref} className="mt-2 inline-block font-semibold text-[#2563eb] hover:underline">
+                Se connecter pour continuer
+              </Link>
+            ) : null}
+          </div>
+        )}
+
         {sameSession ? (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
             <p className="text-sm text-emerald-900">
@@ -282,17 +297,6 @@ export default function CreerComptePage() {
               className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] outline-none bg-[#e4e4e4]"
             />
           </div>
-
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-              <p>{error}</p>
-              {error.toLowerCase().includes("existe déjà") ? (
-                <Link href={loginHref} className="mt-2 inline-block font-semibold text-[#2563eb] hover:underline">
-                  Se connecter pour continuer
-                </Link>
-              ) : null}
-            </div>
-          )}
 
           <button
             type="submit"
