@@ -343,6 +343,7 @@ export default function ClientDetailPage() {
     note: "",
   })
   const [attestationGenerating, setAttestationGenerating] = useState(false)
+  const [suspendingQrId, setSuspendingQrId] = useState<string | null>(null)
   const [clientAccessLoading, setClientAccessLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type?: "success" | "warning" | "error" } | null>(null)
   const [echeanceBusy, setEcheanceBusy] = useState<string | null>(null)
@@ -422,6 +423,52 @@ export default function ClientDetailPage() {
 
   const { user, documents, payments, avenantFees } = data
   const echeances = data.echeances ?? []
+
+  const suspendAttestationQr = async (documentId: string, numero: string) => {
+    const confirmed = window.confirm(
+      `Suspendre l'attestation décennale ${numero} ? Le QR code affichera une attestation suspendue. Un email d'impayé sera envoyé au client.`
+    )
+    if (!confirmed) return
+    setSuspendingQrId(documentId)
+    try {
+      const res = await fetch(`/api/gestion/documents/${documentId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "suspendu" }),
+      })
+      const body = await readResponseJson<{ error?: string; warning?: string; emailSent?: boolean }>(res)
+      if (!res.ok) throw new Error(body.error || "Impossible de suspendre l'attestation.")
+      const reload = await fetch(`/api/gestion/clients/${clientId}`)
+      if (reload.ok) {
+        setData(await readResponseJson<ClientData>(reload))
+      } else {
+        setData((current) =>
+          current
+            ? {
+                ...current,
+                documents: current.documents.map((document) =>
+                  document.id === documentId ? { ...document, status: "suspendu" } : document
+                ),
+              }
+            : current
+        )
+      }
+      setToast({
+        message:
+          body.emailSent === false
+            ? body.warning || `QR code suspendu pour ${numero}. L'email d'impayé n'a pas pu être envoyé.`
+            : `QR code suspendu pour ${numero}. Email d'impayé envoyé au client.`,
+        type: body.emailSent === false ? "warning" : "success",
+      })
+    } catch (error) {
+      setToast({
+        message: error instanceof Error ? error.message : "Impossible de suspendre l'attestation.",
+        type: "error",
+      })
+    } finally {
+      setSuspendingQrId(null)
+    }
+  }
 
   const handleEcheance = async (
     echeanceId: string,
@@ -1366,12 +1413,27 @@ export default function ClientDetailPage() {
                       </td>
                       <td className="p-4">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-4">
-                        <Link
-                          href={`/gestion/documents/${d.id}`}
-                          className="text-[#2563eb] hover:text-[#1d4ed8] text-sm"
-                        >
-                          Voir
-                        </Link>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <Link
+                            href={`/gestion/documents/${d.id}`}
+                            className="text-[#2563eb] hover:text-[#1d4ed8] text-sm"
+                          >
+                            Voir
+                          </Link>
+                          {(d.type === "attestation" || d.type === "attestation_nominative") && d.status === "valide" ? (
+                            <button
+                              type="button"
+                              disabled={suspendingQrId !== null}
+                              onClick={() => void suspendAttestationQr(d.id, d.numero)}
+                              className="rounded-lg border border-red-500 px-3 py-1.5 text-xs font-semibold text-red-200 hover:border-red-300 disabled:opacity-50"
+                            >
+                              {suspendingQrId === d.id ? "Suspension…" : "Suspendre le QR code"}
+                            </button>
+                          ) : null}
+                          {(d.type === "attestation" || d.type === "attestation_nominative") && d.status === "suspendu" ? (
+                            <span className="text-xs font-semibold text-red-300">QR suspendu</span>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   ))}
