@@ -33,13 +33,14 @@ export default function SignaturePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    trackConversion("signature_started", { product: "decennale", source: "signature-page" })
+    let snapshotProduct: InsuranceContractSnapshot["productType"] | undefined
     try {
       const insRaw = sessionStorage.getItem(STORAGE_KEYS.insuranceContract)
       if (insRaw) {
         const parsed = JSON.parse(insRaw) as InsuranceContractSnapshot
         if (parsed?.contractId && parsed?.contractNumber && parsed?.status) {
           setInsuranceSnapshot(parsed)
+          snapshotProduct = parsed.productType
         }
       }
     } catch {
@@ -47,12 +48,25 @@ export default function SignaturePage() {
     }
     const stored = sessionStorage.getItem(STORAGE_KEYS.signature) || sessionStorage.getItem(STORAGE_KEYS.souscription)
     if (!stored) {
+      const doRaw = sessionStorage.getItem(STORAGE_KEYS.doSouscription)
+      if (doRaw) {
+        router.replace("/souscription-dommage-ouvrage")
+        return
+      }
+      if (snapshotProduct === "do") {
+        router.replace("/espace-client?suite=do")
+        return
+      }
       router.replace("/devis")
       return
     }
     try {
       const data = JSON.parse(stored) as SouscriptionData
       setSouscription(data)
+      trackConversion("signature_started", {
+        product: data.insuranceProduct === "do" ? "do" : "decennale",
+        source: "signature-page",
+      })
     } catch {
       router.replace("/devis")
     }
@@ -174,7 +188,7 @@ export default function SignaturePage() {
         </h1>
         <p className="text-[#171717] mb-8">
           {souscription.insuranceProduct === "do"
-            ? "Votre dossier dommage ouvrage est pris en charge. Le contrat plateforme et les paiements sont gérés depuis votre espace client."
+            ? "Votre dossier dommage ouvrage se règle par un virement unique Mollie. S'il est déjà accepté, le virement s'ouvre depuis l'espace client. S'il est encore en étude, le même virement unique s'y ouvre après acceptation."
             : "Signez électroniquement votre contrat d’assurance décennale sur notre page de signature sécurisée."}
         </p>
 
@@ -198,20 +212,29 @@ export default function SignaturePage() {
               </>
             ) : null}
             <li>
-              Prime :{" "}
-              {souscription.tarif?.primeMensuelle != null
-                ? `${souscription.tarif.primeMensuelle.toLocaleString("fr-FR")} €/mois`
-                : souscription.tarif?.primeAnnuelle != null
-                  ? `${Math.round((souscription.tarif.primeAnnuelle / 12) * 100) / 100} €/mois`
-                  : "—"}{" "}
-              (équivalent
-              {souscription.tarif?.primeAnnuelle != null
-                ? ` · ${souscription.tarif.primeAnnuelle.toLocaleString("fr-FR")} €/an`
-                : ""}
-              )
-              {souscription.insuranceProduct === "do"
-                ? " — indicative (contrat plateforme)"
-                : ` — prélèvement ${souscription.tarif?.primeTrimestrielle ?? (souscription.tarif?.primeAnnuelle ? Math.round((souscription.tarif.primeAnnuelle / 4) * 100) / 100 : "—")} €/trimestre`}
+              {souscription.insuranceProduct === "do" ? (
+                <>
+                  Virement unique :{" "}
+                  {souscription.tarif?.primeAnnuelle != null
+                    ? `${souscription.tarif.primeAnnuelle.toLocaleString("fr-FR")} €`
+                    : "—"}
+                </>
+              ) : (
+                <>
+                  Prime :{" "}
+                  {souscription.tarif?.primeMensuelle != null
+                    ? `${souscription.tarif.primeMensuelle.toLocaleString("fr-FR")} €/mois`
+                    : souscription.tarif?.primeAnnuelle != null
+                      ? `${Math.round((souscription.tarif.primeAnnuelle / 12) * 100) / 100} €/mois`
+                      : "—"}{" "}
+                  (équivalent
+                  {souscription.tarif?.primeAnnuelle != null
+                    ? ` · ${souscription.tarif.primeAnnuelle.toLocaleString("fr-FR")} €/an`
+                    : ""}
+                  )
+                  {` — prélèvement ${souscription.tarif?.primeTrimestrielle ?? (souscription.tarif?.primeAnnuelle ? Math.round((souscription.tarif.primeAnnuelle / 4) * 100) / 100 : "—")} €/trimestre`}
+                </>
+              )}
             </li>
             {souscription.insuranceProduct !== "do" ? (
               <li>Activités : {souscription.activites?.join(", ") || "—"}</li>
@@ -224,8 +247,8 @@ export default function SignaturePage() {
         {souscription.insuranceProduct === "do" ? (
           <div className="bg-[#ebe6e0] border border-[#d4d4d4] rounded-2xl p-6 mb-8">
             <p className="text-sm text-[#171717]">
-              Le dommage-ouvrage suit un parcours plateforme séparé de la signature décennale. Retrouvez la
-              validation du contrat, le paiement et les attestations directement dans votre espace client.
+              Le dommage ouvrage se règle par un virement unique. L&apos;attestation est délivrée après
+              réception des fonds. Le suivi et le virement sont dans l&apos;espace client.
             </p>
           </div>
         ) : null}
@@ -243,7 +266,7 @@ export default function SignaturePage() {
         <div className="bg-[#ebe6e0] border border-[#d4d4d4] rounded-2xl p-6 mb-8 mt-6">
           <p className="text-sm text-[#171717] mb-4">
             {souscription.insuranceProduct === "do"
-              ? "Le dossier dommage-ouvrage se pilote depuis votre espace client (contrat plateforme, paiement et attestations)."
+              ? "Ouvrez l'espace client pour lancer le virement unique, ou le retrouver dès que le dossier est accepté."
               : "Vous serez redirigé vers la page de signature pour apposer votre signature sur le PDF. Poursuivez ensuite vers le mandat SEPA et le paiement."}
           </p>
           <button

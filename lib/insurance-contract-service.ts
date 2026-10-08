@@ -45,12 +45,35 @@ export async function logContractAction(
   })
 }
 
+const REUSABLE_DO_STATUSES = [
+  CONTRACT_STATUS.pending_validation,
+  CONTRACT_STATUS.approved,
+  CONTRACT_STATUS.paid,
+  CONTRACT_STATUS.active,
+] as const
+
+/** Évite un second contrat DO si le client reprend le même chantier. */
+export async function findReusableDoContract(userId: string, projectAddress: string) {
+  const address = projectAddress.trim()
+  if (!userId || !address) return null
+  return prisma.insuranceContract.findFirst({
+    where: {
+      userId,
+      productType: "do",
+      projectAddress: address,
+      status: { in: [...REUSABLE_DO_STATUSES] },
+    },
+    orderBy: { createdAt: "desc" },
+  })
+}
+
 export async function createInsuranceContract(input: CreateContractInput) {
   const risk = calculateRiskScore({
     siret: input.siret,
     activities: input.activities,
     missingDocuments: input.missingDocuments,
     companyAgeMonths: input.companyAgeMonths,
+    allowMissingSiret: input.productType === "do",
   })
 
   const contractNumber = await allocateNextContractNumber(input.productType)

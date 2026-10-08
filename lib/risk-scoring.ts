@@ -11,6 +11,11 @@ export type RiskInput = {
   missingDocuments?: boolean
   /** Ancienneté entreprise en mois (si connu) */
   companyAgeMonths?: number | null
+  /**
+   * DO particulier : le SIRET est optionnel.
+   * La décennale laisse ce drapeau vide et conserve le blocage SIRET.
+   */
+  allowMissingSiret?: boolean
 }
 
 export type RiskResult = {
@@ -30,7 +35,10 @@ export function calculateRiskScore(data: RiskInput): RiskResult {
   let score = 0
 
   if (!data.siret?.trim()) {
-    return { score: 100, reject: true, reasons: ["SIRET requis — validation manuelle obligatoire"] }
+    if (!data.allowMissingSiret) {
+      return { score: 100, reject: true, reasons: ["SIRET requis — validation manuelle obligatoire"] }
+    }
+    reasons.push("SIRET non fourni (particulier dommage ouvrage)")
   }
 
   if (data.missingDocuments) {

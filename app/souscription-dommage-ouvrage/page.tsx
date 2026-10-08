@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
@@ -24,33 +24,74 @@ export default function SouscriptionDommageOuvragePage() {
   const [dateCreationSociete, setDateCreationSociete] = useState("")
   const [devoirConseilAccepte, setDevoirConseilAccepte] = useState(false)
   const [insuranceLoading, setInsuranceLoading] = useState(false)
+  const [resumeState, setResumeState] = useState<"loading" | "ready" | "missing">("loading")
+  const hydrated = useRef(false)
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    trackConversion("souscription_started", { product: "do", source: "do-online" })
-    const raw = sessionStorage.getItem(STORAGE_KEYS.doSouscription)
-    if (!raw) {
-      router.replace("/devis-dommage-ouvrage")
-      return
-    }
-    try {
-      const p = JSON.parse(raw) as DoSouscriptionInsurancePayload
-      if (p.productType !== "do" || !p.email) {
-        router.replace("/devis-dommage-ouvrage")
-        return
-      }
+    if (hydrated.current) return
+
+    const apply = (p: DoSouscriptionInsurancePayload) => {
       setPayload(p)
-      setRepresentantLegal(p.representantLegal?.trim() || "")
+      setRepresentantLegal(p.representantLegal?.trim() || p.raisonSociale || "")
       setCivilite(p.civilite ?? "M")
       setDateCreationSociete(p.dateCreationSociete ?? "")
-    } catch {
-      router.replace("/devis-dommage-ouvrage")
+      setResumeState("ready")
+      hydrated.current = true
+      trackConversion("souscription_started", { product: "do", source: "do-online" })
     }
-  }, [router])
+
+    const raw = sessionStorage.getItem(STORAGE_KEYS.doSouscription)
+    if (raw) {
+      try {
+        const p = JSON.parse(raw) as DoSouscriptionInsurancePayload
+        if (p.productType === "do" && p.email) {
+          apply(p)
+          return
+        }
+      } catch {
+        /* reprise serveur */
+      }
+    }
+
+    if (sessionStatus === "loading") return
+    if (sessionStatus !== "authenticated") {
+      router.replace(`/connexion?callbackUrl=${encodeURIComponent("/souscription-dommage-ouvrage")}`)
+      return
+    }
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch("/api/client/do-souscription")
+        const json = (await res.json().catch(() => ({}))) as {
+          payload?: DoSouscriptionInsurancePayload | null
+        }
+        if (cancelled) return
+        const p = json.payload
+        if (res.ok && p?.productType === "do" && p.email) {
+          sessionStorage.setItem(STORAGE_KEYS.doSouscription, JSON.stringify(p))
+          apply(p)
+          return
+        }
+      } catch {
+        /* demande introuvable */
+      }
+      if (!cancelled) {
+        hydrated.current = true
+        setResumeState("missing")
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [router, sessionStatus])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!payload || !representantLegal.trim() || !devoirConseilAccepte) return
+    if (sessionStatus === "loading") return
 
     try {
       await fetch("/api/devoir-conseil/log", {
@@ -107,11 +148,32 @@ export default function SouscriptionDommageOuvragePage() {
       } finally {
         setInsuranceLoading(false)
       }
-      router.push("/signature")
+      router.push("/espace-client?suite=do")
       return
     }
 
     router.push("/creer-compte")
+  }
+
+  if (resumeState === "missing") {
+    return (
+      <main className="min-h-screen bg-slate-50">
+        <Header />
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-16">
+          <h1 className="text-2xl font-semibold mb-3 text-black">Souscription introuvable</h1>
+          <p className="text-[#171717] mb-6">
+            Aucune demande dommage ouvrage exploitable n&apos;est associée à ce compte. Déposez la demande avec
+            la même adresse email pour reprendre la souscription.
+          </p>
+          <Link
+            href="/devis-dommage-ouvrage"
+            className="inline-flex items-center rounded-xl bg-[#2563eb] px-5 py-3 font-semibold text-white hover:bg-[#1d4ed8]"
+          >
+            Déposer une demande
+          </Link>
+        </div>
+      </main>
+    )
   }
 
   if (!payload) {
@@ -137,12 +199,13 @@ export default function SouscriptionDommageOuvragePage() {
         <Stepper currentStep="souscription" />
         <h1 className="text-3xl font-semibold mb-2 text-black">Souscription dommage ouvrage</h1>
         <p className="text-[#171717] mb-8">
-          Complétez les informations pour créer votre contrat plateforme (après création de compte : paiement sécurisé
-          Mollie si le dossier est accepté).
+          Le règlement est un virement unique Mollie du montant indiqué. Après validation, la page de virement
+          s&apos;ouvre. Si le dossier reste en étude, le même virement unique se fait depuis l&apos;espace client
+          après acceptation.
         </p>
 
         <div className="bg-[#ebe0db] border border-[#d4c9c4] rounded-xl p-4 mb-8">
-          <p className="font-medium text-black">Prime indicative : {payload.premium.toLocaleString("fr-FR")} € / an</p>
+          <p className="font-medium text-black">Virement unique : {payload.premium.toLocaleString("fr-FR")} €</p>
           <p className="text-sm text-[#171717] mt-1">Chantier : {payload.projectName}</p>
           <p className="text-sm text-[#171717]">{payload.projectAddress}</p>
         </div>
@@ -206,7 +269,7 @@ export default function SouscriptionDommageOuvragePage() {
 
           <button
             type="submit"
-            disabled={insuranceLoading || !devoirConseilAccepte}
+            disabled={insuranceLoading || !devoirConseilAccepte || sessionStatus === "loading"}
             className="w-full bg-[#2563eb] text-white py-4 rounded-xl hover:bg-[#1d4ed8] transition font-medium disabled:bg-slate-300 disabled:cursor-not-allowed"
           >
             {insuranceLoading ? "Traitement…" : sessionStatus === "authenticated" ? "Valider et continuer" : "Créer mon compte et continuer"}

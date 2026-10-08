@@ -510,7 +510,7 @@ export const GUIDES_SEO = [
     shortAnswer:
       "Un dossier dommage ouvrage décrit l'opération, son coût, le terrain et les intervenants. Permis, plans, étude de sol et attestations décennales des entreprises évitent les allers-retours.",
     datePublished: "2026-10-01T09:50:00+02:00",
-    dateModified: "2026-10-01T09:50:00+02:00",
+    dateModified: "2026-10-08T12:00:00+02:00",
     content: [
       {
         type: "p",
@@ -538,7 +538,7 @@ export const GUIDES_SEO = [
       },
       {
         type: "p",
-        text: "La demande se lance sur le formulaire dommage ouvrage. Après création du compte, les pièces se déposent dans l'espace client. Le questionnaire d'étude reprend l'opération, l'ouvrage, les coûts et les éléments techniques. Le prix définitif est communiqué après cette lecture, pas à partir du seul formulaire de départ.",
+        text: "La demande se lance sur le formulaire dommage ouvrage, puis la souscription se poursuit en ligne avec le même email. Le règlement est un virement unique du montant indiqué. Les pièces se déposent dans l'espace client. Le questionnaire d'étude reprend l'opération, l'ouvrage, les coûts et les éléments techniques.",
       },
     ],
   },

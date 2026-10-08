@@ -14,6 +14,17 @@ function isParticulierMaitreOuvrage(value: unknown): boolean {
   return QUALITES_PARTICULIERES.includes(value as QualiteMaitreOuvrage)
 }
 
+/** Somme des postes de coût saisis dans le questionnaire DO. */
+export function coutTotalFromDoData(data: Partial<DevisDommageOuvrageData>): number {
+  return (
+    (Number(data.coutTravauxVrd) || 0) +
+    (Number(data.coutMateriauxMaitreOuvrage) || 0) +
+    (Number(data.coutControleTechnique) || 0) +
+    (Number(data.coutEtudeSol) || 0) +
+    (Number(data.coutMaitriseOeuvre) || 0)
+  )
+}
+
 /** Construit le payload API contrat DO + session.
  * SIRET requis pour promoteur/mandataire/pro, optionnel pour particulier sans société.
  */

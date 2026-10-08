@@ -412,11 +412,26 @@ export const EMAIL_TEMPLATES = {
       html: `<p>Bonjour,</p>${pdfHtml}<p>Vous avez sauvegardé votre devis en cours. Cliquez sur le lien ci-dessous pour le reprendre :</p><p><a href="${resumeUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Reprendre mon devis</a></p><p>Ce lien est valable 7 jours.</p><p>Cordialement,<br>Optimum Assurance</p>`,
     }
   },
-  devisDoEstimationJointe: (raisonSociale: string, numeroReference: string) => ({
-    subject: `Votre estimation dommage ouvrage ${numeroReference} - Optimum Assurance`,
-    text: `Bonjour ${raisonSociale},\n\nNous avons bien enregistré votre demande de devis dommage ouvrage. Vous trouverez en pièce jointe une estimation indicative (PDF), sous réserve d’étude de votre dossier.\n\nUn conseiller peut vous confirmer le montant définitif sous 24 h ouvrées.\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour ${raisonSociale},</p><p>Nous avons bien enregistré votre <strong>demande de devis dommage ouvrage</strong>. Vous trouverez en pièce jointe une <strong>estimation indicative</strong> (PDF), sous réserve d’étude de votre dossier.</p><p>Un conseiller peut vous confirmer le montant définitif sous <strong>24 h ouvrées</strong>.</p><p>Cordialement,<br>Optimum Assurance</p>`,
-  }),
+  devisDoEstimationJointe: (
+    raisonSociale: string,
+    numeroReference: string,
+    opts?: { canContinueOnline?: boolean }
+  ) => {
+    const safeName = escapeHtmlForEmail(raisonSociale)
+    const safeRef = escapeHtmlForEmail(numeroReference)
+    const continueUrl = `${APP_URL}/souscription-dommage-ouvrage`
+    const nextText = opts?.canContinueOnline
+      ? `\n\nProchaine étape : connectez-vous ou créez votre compte avec cette adresse email, puis poursuivez la souscription :\n${continueUrl}\n\nLe règlement est un virement unique Mollie du montant indiqué dans le PDF. L'attestation est délivrée après réception des fonds.\n`
+      : `\n\nNotre équipe étudie votre dossier. Vous pouvez créer votre espace client pour déposer les pièces :\n${APP_URL}/espace-client\n`
+    const nextHtml = opts?.canContinueOnline
+      ? `<p>Prochaine étape : connectez-vous ou créez votre compte avec cette adresse email, puis poursuivez la souscription.</p><p><a href="${continueUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Poursuivre ma souscription</a></p><p>Le règlement est un <strong>virement unique</strong> Mollie du montant indiqué dans le PDF. L'attestation est délivrée après réception des fonds.</p>`
+      : `<p>Notre équipe étudie votre dossier. Vous pouvez créer votre espace client pour déposer les pièces.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à l'espace client</a></p>`
+    return {
+      subject: `Votre estimation dommage ouvrage ${numeroReference} - Optimum Assurance`,
+      text: `Bonjour ${raisonSociale},\n\nNous avons bien enregistré votre demande de devis dommage ouvrage (référence ${numeroReference}). Vous trouverez en pièce jointe une estimation indicative (PDF).${nextText}\nCordialement,\nOptimum Assurance`,
+      html: `<p>Bonjour ${safeName},</p><p>Nous avons bien enregistré votre <strong>demande de devis dommage ouvrage</strong> (référence <strong>${safeRef}</strong>). Vous trouverez en pièce jointe une <strong>estimation indicative</strong> (PDF).</p>${nextHtml}<p>Cordialement,<br>Optimum Assurance</p>`,
+    }
+  },
   demandeAssuranceTitreRecue: (nomComplet: string) => ({
     subject: "Demande Assurance titre bien reçue - Optimum Assurance",
     text: `Bonjour ${nomComplet},\n\nNous avons bien enregistré votre demande d'étude pour une assurance titre.\n\nNotre équipe analyse votre dossier (type d'actif, opération, calendrier et points de risque identifiés) et revient vers vous en général sous 24 à 48 h ouvrées.\n\nL'assurance titre est étudiée au cas par cas et intervient en complément des vérifications notariales / juridiques.\n\nPour toute précision : répondez à cet email ou écrivez-nous via ${APP_URL}/contact\n\nCordialement,\nOptimum Assurance`,

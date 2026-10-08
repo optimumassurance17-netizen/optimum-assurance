@@ -7,18 +7,26 @@ import { sendDoEtudeSavedAlert } from "@/lib/devis-alert"
 import { mergeDoEtudeForm, prefillDoEtudeFromInitial, sanitizeDoEtudeForm } from "@/lib/do-etude-prefill"
 import { DO_ETUDE_VERSION, emptyDoEtudeQuestionnaire, type DoEtudeQuestionnaireV1 } from "@/lib/do-etude-questionnaire-types"
 import { asJsonObject } from "@/lib/json-object"
+import {
+  buildDoSouscriptionInsurancePayload,
+  coutTotalFromDoData,
+} from "@/lib/build-do-souscription-payload"
+import { loadDoSouscriptionPayloadForUser } from "@/lib/do-souscription-resume"
 
 async function getInitialForUser(
   userId: string,
   emailNorm: string
-): Promise<Partial<DevisDommageOuvrageData> | null> {
+): Promise<{ data: Partial<DevisDommageOuvrageData>; coutTotal: number | null } | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { doInitialQuestionnaireJson: true },
   })
   if (user?.doInitialQuestionnaireJson) {
     try {
-      return JSON.parse(user.doInitialQuestionnaireJson) as Partial<DevisDommageOuvrageData>
+      return {
+        data: JSON.parse(user.doInitialQuestionnaireJson) as Partial<DevisDommageOuvrageData>,
+        coutTotal: null,
+      }
     } catch {
       /* ignore */
     }
@@ -38,7 +46,10 @@ async function getInitialForUser(
       console.error("[do-questionnaire] copie demande initiale:", error)
     }
     try {
-      return JSON.parse(lead.data) as Partial<DevisDommageOuvrageData>
+      return {
+        data: JSON.parse(lead.data) as Partial<DevisDommageOuvrageData>,
+        coutTotal: lead.coutTotal,
+      }
     } catch {
       return null
     }
@@ -66,7 +77,21 @@ export async function GET() {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
     const emailNorm = session.user.email.trim()
-    const initial = await getInitialForUser(session.user.id, emailNorm)
+    const storedInitial = await getInitialForUser(session.user.id, emailNorm)
+    const initial = storedInitial?.data ?? null
+    const coutInitial = storedInitial
+      ? storedInitial.coutTotal && storedInitial.coutTotal > 0
+        ? storedInitial.coutTotal
+        : coutTotalFromDoData(storedInitial.data)
+      : 0
+    let canContinueOnline = Boolean(
+      initial && buildDoSouscriptionInsurancePayload(initial, coutInitial)
+    )
+    if (!canContinueOnline) {
+      canContinueOnline = Boolean(
+        await loadDoSouscriptionPayloadForUser(session.user.id, emailNorm)
+      )
+    }
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { doEtudeQuestionnaireJson: true },
@@ -85,6 +110,7 @@ export async function GET() {
     return NextResponse.json({
       useEspaceClientOnly: initial != null,
       hasInitial: initial != null,
+      canContinueOnline,
       hasEtudeSaved: Boolean(user?.doEtudeQuestionnaireJson?.trim()),
       form,
     })

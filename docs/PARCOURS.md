@@ -10,13 +10,13 @@ Documentation de référence pour les parcours **dommage ouvrage (DO)** et **ass
 |--------|-------------|
 | **Entrée** | Page [`/devis-dommage-ouvrage`](https://www.optimum-assurance.fr/devis-dommage-ouvrage), fiches SEO `/dommage-ouvrage/...`, guides. |
 | **Devis en ligne** | Formulaire en **5 étapes** : Souscripteur → Opération → Ouvrage & coûts → Terrain & technique → Garanties & réalisateurs. Brouillon possible (localStorage). |
-| **Envoi** | Enregistrement d’une demande (lead) via l’API ; message indiquant un **prix définitif sous ~24 h** après étude. |
-| **Suite (hors formulaire)** | Le devis est **ajouté à l’espace client** après traitement ; le client dispose d’un **compte** pour la **GED** (permis, DOC, plans, etc.). |
-| **Signature** | **Signature électronique** du contrat (lien ou étapes communiqués depuis l’espace client / l’équipe). |
-| **Paiement** | **Virement bancaire** via **Mollie** (instructions sur la page sécurisée). |
+| **Envoi** | Enregistrement d’une demande (lead) + email d’estimation avec le lien **/souscription-dommage-ouvrage**. |
+| **Souscription** | **/souscription-dommage-ouvrage** reprend la demande (session du navigateur ou, une fois connecté, dernière demande du même email). Le particulier sans SIRET reste éligible. |
+| **Paiement** | **Virement unique** Mollie du montant indiqué (prime entière). Un dossier à risque reste en étude : le même virement unique s’ouvre dans l’espace client après acceptation. |
+| **Espace client** | Suivi, questionnaire d’étude en complément, **GED** (permis, DOC, plans), bouton de virement unique. |
 | **Attestation** | Délivrée après **réception des fonds** sur le compte indiqué. |
 
-**Résumé** : demande web → étude / devis → intégration du document → compte → signature → virement → attestation.
+**Résumé** : demande web → souscription en ligne → virement unique → attestation après encaissement.
 
 ---
 

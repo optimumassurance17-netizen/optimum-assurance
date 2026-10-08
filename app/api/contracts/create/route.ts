@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { createInsuranceContract } from "@/lib/insurance-contract-service"
+import { createInsuranceContract, findReusableDoContract } from "@/lib/insurance-contract-service"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
@@ -89,6 +89,21 @@ export async function POST(request: NextRequest) {
     }
     if (productType === "do" && (!projectName || !projectAddress)) {
       return NextResponse.json({ error: "projectName et projectAddress requis (DO)" }, { status: 400 })
+    }
+    if (productType === "do" && projectAddress) {
+      const existing = await findReusableDoContract(session.user.id, projectAddress)
+      if (existing) {
+        return NextResponse.json({
+          contract: {
+            id: existing.id,
+            contractNumber: existing.contractNumber,
+            status: existing.status,
+            riskScore: existing.riskScore ?? 0,
+            riskReasons: [] as string[],
+            rejectedReason: existing.rejectedReason,
+          },
+        })
+      }
     }
     if (companyAgeMonths === undefined) {
       return NextResponse.json({ error: "companyAgeMonths invalide" }, { status: 400 })

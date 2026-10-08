@@ -10,6 +10,7 @@ import { logPdfGeneration } from "@/lib/pdf/logPdfGeneration"
 import { insuranceDataFromDoQuestionnaire } from "@/lib/pdf/quote-email-data"
 import { asJsonObject } from "@/lib/json-object"
 import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
+import { buildDoSouscriptionInsurancePayload } from "@/lib/build-do-souscription-payload"
 import {
   buildConversionTrackingLines,
   type ConversionTrackingContext,
@@ -91,7 +92,10 @@ export async function POST(request: NextRequest) {
           metadata: { source: "devis_dommage_ouvrage_lead" },
         })
         const raison = (parsed.raisonSociale || "").trim() || "Madame, Monsieur"
-        const template = EMAIL_TEMPLATES.devisDoEstimationJointe(raison, contractNumber)
+        const canContinueOnline = Boolean(buildDoSouscriptionInsurancePayload(parsed, cout))
+        const template = EMAIL_TEMPLATES.devisDoEstimationJointe(raison, contractNumber, {
+          canContinueOnline,
+        })
         const sent = await sendEmail({
           to: String(email).trim(),
           subject: template.subject,

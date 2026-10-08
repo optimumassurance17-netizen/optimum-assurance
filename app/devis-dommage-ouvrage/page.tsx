@@ -77,7 +77,7 @@ export default function DevisDommageOuvragePage() {
               <li>• <strong>Reprise du passé</strong> — Jusqu&apos;à 2 ans en arrière (sous réserve de non sinistralité) — soumis à étude</li>
             </ul>
           <p className="text-sm text-black mt-3">
-            Prix indicatifs selon le coût de construction. Prix définitif à la fin de l&apos;étude sous 24h.
+            Prix selon le coût de construction. Après l&apos;envoi, poursuivez la souscription : le règlement est un virement unique.
           </p>
           <p className="text-sm text-black mt-2">
             Après création de compte, vous pourrez déposer vos documents (permis, DOC, plans, conventions, étude de sol) dans votre espace client GED.
@@ -98,7 +98,7 @@ export default function DevisDommageOuvragePage() {
           {[
             ["5 étapes guidées", "Le formulaire est découpé pour avancer sans tout remplir d'un coup."],
             ["Brouillon auto-sauvegardé", "Votre progression reste enregistrée sur cet appareil pendant la saisie."],
-            ["Étude sous 24 h", "Prix définitif communiqué après analyse du dossier et des pièces."],
+            ["Virement unique", "Après l'envoi, poursuivez la souscription. Le montant indiqué se règle en un seul virement."],
           ].map(([title, body]) => (
             <div key={title} className="rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-sm">
               <p className="text-sm font-semibold text-black mb-1">{title}</p>

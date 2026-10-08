@@ -42,16 +42,15 @@ export const SITE_KNOWLEDGE = `
 5. Le produit reste présenté comme un **complément** aux vérifications notariales / juridiques ; la faisabilité, les garanties et exclusions dépendent du montage et de la police finalement proposée.
 
 ## Parcours dommage ouvrage (DO)
-1. **/devis-dommage-ouvrage** — Questionnaire en **5 étapes** (souscripteur, opération, ouvrage et coûts, terrain et technique, garanties). Brouillon enregistré localement dans le navigateur. **Compte connecté** : après une première demande, suite du dossier via **/espace-client/questionnaire-do-etude** (alerte e-mail équipe à chaque enregistrement du questionnaire d’étude, si Resend + destinataires configurés).
-2. Envoi → demande enregistrée ; **prix définitif sous ~24 h** après étude par l’équipe.
-3. Le devis est **ajouté à l’espace client** après traitement ; dépôt de pièces (permis, DOC, plans…) en **GED**.
-4. **Signature électronique** du contrat.
-5. **Paiement par virement bancaire** via **Mollie** (instructions sécurisées).
-6. **Attestation** après **réception des fonds** (pas immédiate comme la décennale carte).
+1. **/devis-dommage-ouvrage** — Questionnaire en **5 étapes** (souscripteur, opération, ouvrage et coûts, terrain et technique, garanties). Brouillon enregistré localement dans le navigateur.
+2. Envoi → demande enregistrée, email avec le lien **/souscription-dommage-ouvrage**.
+3. **Compte connecté** : la souscription se reprend sur **/souscription-dommage-ouvrage** (même email, même si le navigateur a perdu le brouillon). Le questionnaire **/espace-client/questionnaire-do-etude** complète le dossier (alerte e-mail équipe à chaque enregistrement, si Resend + destinataires configurés).
+4. Contrat plateforme : **paiement par virement unique Mollie** du montant indiqué (prime entière, pas de trimestrialisation). Un particulier sans SIRET peut suivre ce virement. Un dossier à risque reste en étude, puis le même virement unique s’ouvre dans l’espace client après acceptation. Pièces (permis, DOC, plans…) en **GED**.
+5. **Attestation** après **réception des fonds**.
 
 ## Différences décennale vs DO (résumé)
 - **Décennale** : tarif tout de suite (affichage **équivalent mensuel** sur le site, **prélèvement réel trimestriel**) ; **1er trimestre + frais en CB** puis **SEPA trimestriel** ; attestation après paiement, contrôle du dossier et acceptation du risque.
-- **DO** : tarif après étude ; **virement** ; attestation après encaissement.
+- **DO** : souscription en ligne puis **virement unique** Mollie du montant indiqué ; attestation après encaissement.
 
 ## Outils techniques (information générale)
 - **Paiements** : **Mollie** (carte, virement selon produit). **Signature** : parcours **/signature** puis page **/sign/[id]** (PDF + signature manuscrite sur le document).

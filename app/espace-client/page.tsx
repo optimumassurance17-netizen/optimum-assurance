@@ -257,7 +257,12 @@ export default function EspaceClientPage() {
   const [exportingPdf, setExportingPdf] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const [insuranceContracts, setInsuranceContracts] = useState<InsuranceContractListItem[]>([])
-  const [doEtudeBanner, setDoEtudeBanner] = useState<{ show: boolean; hasSaved: boolean } | null>(null)
+  const [doEtudeBanner, setDoEtudeBanner] = useState<{
+    show: boolean
+    hasSaved: boolean
+    canContinueOnline: boolean
+  } | null>(null)
+  const [suiteDo, setSuiteDo] = useState(false)
   const [caDeclarationByContractId, setCaDeclarationByContractId] = useState<Record<string, string>>({})
   const [caCalcByContractId, setCaCalcByContractId] = useState<Record<string, CaRegularisationDraft | null>>({})
   const [caLoadingContractId, setCaLoadingContractId] = useState<string | null>(null)
@@ -271,6 +276,11 @@ export default function EspaceClientPage() {
   const [nominativeError, setNominativeError] = useState<string | null>(null)
   const [nominativeSuccess, setNominativeSuccess] = useState<string | null>(null)
   const [titleEtudeBanner, setTitleEtudeBanner] = useState<{ show: boolean; hasSaved: boolean } | null>(null)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    setSuiteDo(new URLSearchParams(window.location.search).get("suite") === "do")
+  }, [])
 
   useEffect(() => {
     if (status !== "authenticated") return
@@ -306,8 +316,16 @@ export default function EspaceClientPage() {
           setInsuranceContracts(Array.isArray(j.contracts) ? j.contracts : [])
         }
         if (doqRes.ok) {
-          const dq = (await doqRes.json()) as { hasInitial?: boolean; hasEtudeSaved?: boolean }
-          setDoEtudeBanner({ show: !!dq.hasInitial, hasSaved: !!dq.hasEtudeSaved })
+          const dq = (await doqRes.json()) as {
+            hasInitial?: boolean
+            hasEtudeSaved?: boolean
+            canContinueOnline?: boolean
+          }
+          setDoEtudeBanner({
+            show: !!dq.hasInitial,
+            hasSaved: !!dq.hasEtudeSaved,
+            canContinueOnline: !!dq.canContinueOnline,
+          })
         } else {
           setDoEtudeBanner(null)
         }
@@ -532,18 +550,57 @@ export default function EspaceClientPage() {
 
         {!loading && doEtudeBanner?.show && (
           <div className="mb-8 rounded-2xl border border-[#2563eb]/30 bg-[#eff6ff] p-5 text-[#0a0a0a]">
-            <p className="font-semibold mb-1">Dommage ouvrage — questionnaire d&apos;étude</p>
-            <p className="text-sm text-[#171717] mb-3">
-              {doEtudeBanner.hasSaved
-                ? "Vous pouvez mettre à jour votre dossier technique détaillé (données préremplies depuis votre première demande)."
-                : "Complétez le questionnaire d’étude pour faciliter l’analyse de votre dossier (champs repris de votre première demande lorsque possible)."}
-            </p>
-            <Link
-              href="/espace-client/questionnaire-do-etude"
-              className="inline-flex text-sm font-semibold text-[#2563eb] hover:underline"
-            >
-              {doEtudeBanner.hasSaved ? "Modifier le questionnaire d’étude →" : "Remplir le questionnaire d’étude →"}
-            </Link>
+            <p className="font-semibold mb-1">Dommage ouvrage — suite du dossier</p>
+            {suiteDo ? (
+              <p className="text-sm text-[#171717] mb-3">
+                Votre souscription est enregistrée. Le règlement est un virement unique. S&apos;il est déjà
+                accepté, le bouton est dans la liste des contrats. S&apos;il est en étude, le même virement
+                unique apparaîtra ici après acceptation.
+              </p>
+            ) : null}
+            {doEtudeBanner.canContinueOnline &&
+            !insuranceContracts.some(
+              (c) =>
+                c.productType === "do" &&
+                (c.status === CONTRACT_STATUS.pending_validation ||
+                  c.status === CONTRACT_STATUS.approved ||
+                  c.status === CONTRACT_STATUS.active ||
+                  c.status === CONTRACT_STATUS.paid)
+            ) ? (
+              <p className="text-sm text-[#171717] mb-3">
+                Prochaine étape : finaliser la souscription pour ouvrir le virement unique du montant indiqué.
+              </p>
+            ) : (
+              <p className="text-sm text-[#171717] mb-3">
+                {doEtudeBanner.hasSaved
+                  ? "Vous pouvez mettre à jour le questionnaire d'étude (données préremplies depuis votre première demande)."
+                  : "Le questionnaire d'étude complète le dossier technique. Les champs déjà connus sont repris de votre première demande."}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {doEtudeBanner.canContinueOnline &&
+              !insuranceContracts.some(
+                (c) =>
+                  c.productType === "do" &&
+                  (c.status === CONTRACT_STATUS.pending_validation ||
+                    c.status === CONTRACT_STATUS.approved ||
+                    c.status === CONTRACT_STATUS.active ||
+                    c.status === CONTRACT_STATUS.paid)
+              ) ? (
+                <Link
+                  href="/souscription-dommage-ouvrage"
+                  className="inline-flex items-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+                >
+                  Continuer la souscription
+                </Link>
+              ) : null}
+              <Link
+                href="/espace-client/questionnaire-do-etude"
+                className="inline-flex items-center text-sm font-semibold text-[#2563eb] hover:underline"
+              >
+                {doEtudeBanner.hasSaved ? "Modifier le questionnaire d’étude →" : "Compléter le questionnaire d’étude →"}
+              </Link>
+            </div>
           </div>
         )}
 
@@ -728,13 +785,17 @@ export default function EspaceClientPage() {
                             ? "Payer l\u2019échéance — virement Mollie"
                             : c.productType === "assurance_titre"
                               ? "Payer le dossier — virement Mollie"
-                            : "Payer (virement Mollie)"
+                            : c.productType === "do"
+                              ? "Payer par virement unique"
+                              : "Payer (virement Mollie)"
                         }
                       />
                     )}
                     {c.status === CONTRACT_STATUS.pending_validation && (
                       <span className="inline-block rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-blue-900">
-                        En examen assureur
+                        {c.productType === "do"
+                          ? "En étude — virement unique après acceptation"
+                          : "En examen assureur"}
                       </span>
                     )}
                   </div>

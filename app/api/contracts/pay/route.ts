@@ -152,7 +152,10 @@ export async function POST(request: NextRequest) {
 
       const payment = await mollieClient.payments.create({
         amount: { currency: "EUR", value: String(amount.toFixed(2)) },
-        description: `${getInsuranceProductLabel(contract.productType)} — ${contract.contractNumber}`,
+        description:
+          contract.productType === "do"
+            ? `${getInsuranceProductLabel(contract.productType)} — virement unique — ${contract.contractNumber}`
+            : `${getInsuranceProductLabel(contract.productType)} — ${contract.contractNumber}`,
         redirectUrl: `${baseUrl}/confirmation`,
         webhookUrl: `${baseUrl}/api/mollie/webhook`,
         method: PaymentMethod.banktransfer,

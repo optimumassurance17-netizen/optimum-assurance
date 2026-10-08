@@ -84,6 +84,11 @@ export default function CreerComptePage() {
       return
     }
 
+    if (isDoSouscriptionPayload(payload)) {
+      router.push("/espace-client?suite=do")
+      return
+    }
+
     router.push("/signature")
   }
 

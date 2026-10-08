@@ -91,14 +91,22 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
     }
     return (
       <div className="mb-8 p-5 rounded-2xl border border-[#2563eb]/40 bg-[#eff6ff] text-left">
-        <p className="font-semibold text-[#0a0a0a] mb-1">Paiement du contrat (virement)</p>
+        <p className="font-semibold text-[#0a0a0a] mb-1">
+          {isDoPlatform ? "Paiement du contrat (virement unique)" : "Paiement du contrat (virement)"}
+        </p>
         <p className="text-sm text-[#171717] mb-4">
           {productLabel} <span className="font-mono">{contractNumber}</span> est prêt. Le lien Mollie n&apos;a pas pu
           s&apos;ouvrir ou a été fermé — vous pouvez lancer le virement depuis ce bouton.
         </p>
         <PayInsuranceContractButton
           contractId={contractId}
-          label={isTitlePlatform ? "Payer le dossier — virement Mollie" : undefined}
+          label={
+            isDoPlatform
+              ? "Payer par virement unique"
+              : isTitlePlatform
+                ? "Payer le dossier — virement Mollie"
+                : undefined
+          }
         />
       </div>
     )

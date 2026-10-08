@@ -316,15 +316,18 @@ export function FormulaireDevisDommageOuvrage() {
       <div className={sectionClass}>
         <h2 className="text-xl font-bold text-black mb-4">Demande envoyée</h2>
         <p className="text-black mb-4">
-          Votre demande de devis dommage ouvrage a bien été enregistrée. Notre équipe vous transmettra le prix définitif sous 24h après étude de votre dossier.
+          {eligibleOnlineDo
+            ? "Votre demande est enregistrée. Prochaine étape : finaliser la souscription en ligne avec cette adresse email, puis régler par un virement unique Mollie. Le montant ci-dessous est celui du virement. Le même lien est dans l'email d'estimation."
+            : "Votre demande de devis dommage ouvrage a bien été enregistrée. Notre équipe vous transmettra le prix définitif sous 24 h après étude de votre dossier."}
         </p>
         <div className="bg-[#dbeafe] border border-[#E8D5CF] rounded-xl p-4 mb-6">
           <p className="font-semibold text-black mb-2">Prochaines étapes :</p>
           <ol className="text-black text-sm space-y-1 list-decimal list-inside">
             {eligibleOnlineDo ? (
               <>
-                <li>Création de compte et souscription en ligne (contrat plateforme, paiement sécurisé)</li>
-                <li>Signature et documents selon votre dossier</li>
+                <li>Créer le compte ou se connecter avec le même email</li>
+                <li>Valider la souscription : un virement unique Mollie s&apos;ouvre pour le montant indiqué</li>
+                <li>L&apos;attestation est délivrée après réception des fonds</li>
               </>
             ) : (
               <>
@@ -374,7 +377,7 @@ export function FormulaireDevisDommageOuvrage() {
         </p>
         {tarifEstime && (
           <p className="text-sm text-black mb-4">
-            Estimation indicative : <strong>{tarifEstime.primeAnnuelle.toLocaleString("fr-FR")} €</strong> / an
+            Virement unique : <strong>{tarifEstime.primeAnnuelle.toLocaleString("fr-FR")} €</strong>
             {(tarifEstime.remiseWeb ?? 0) > 0 && (
               <> (remise web 5 % : -{tarifEstime.remiseWeb!.toLocaleString("fr-FR")} €)</>
             )}
@@ -384,7 +387,6 @@ export function FormulaireDevisDommageOuvrage() {
             {(tarifEstime.supplementRcmo ?? 0) > 0 && (
               <>{(tarifEstime.remiseWeb ?? 0) > 0 || (tarifEstime.supplementTrc ?? 0) > 0 ? ", " : " "}(dont RCMO +0,2 % : +{tarifEstime.supplementRcmo!.toLocaleString("fr-FR")} €)</>
             )}
-            {" "}— prix définitif à la fin de l&apos;étude.
           </p>
         )}
         <div className="flex gap-4">
@@ -973,11 +975,11 @@ export function FormulaireDevisDommageOuvrage() {
                 if (!tarif) return null
                 return (
                   <div className="bg-[#eff6ff] border border-[#2563eb]/30 rounded-xl p-5">
-                    <p className="font-semibold text-black mb-1">Prix approximatif (estimation)</p>
+                    <p className="font-semibold text-black mb-1">Montant du virement unique</p>
                     {tarif.remiseWeb != null && tarif.remiseWeb > 0 && (
                       <p className="text-sm text-emerald-800 font-medium mb-1">Remise web 5 % sur DO : -{tarif.remiseWeb.toLocaleString("fr-FR")} €</p>
                     )}
-                    <p className="text-2xl font-bold text-[#2563eb]">{tarif.primeAnnuelle.toLocaleString("fr-FR")} € <span className="text-base font-normal text-black">/ an</span></p>
+                    <p className="text-2xl font-bold text-[#2563eb]">{tarif.primeAnnuelle.toLocaleString("fr-FR")} €</p>
                     {tarif.supplementTrc != null && tarif.supplementTrc > 0 && (
                       <p className="text-sm text-black mt-1">Dont TRC (+0,4 % du chantier) : +{tarif.supplementTrc.toLocaleString("fr-FR")} €</p>
                     )}
@@ -986,7 +988,7 @@ export function FormulaireDevisDommageOuvrage() {
                     )}
                     <p className="text-sm text-black mt-1">Tranche : {tarif.tranche}</p>
                     <p className="text-sm text-black mt-2 font-medium">
-                      Prix définitif à la fin de l&apos;étude sous 24h.
+                      Ce montant est réglé en une fois par virement après l&apos;envoi de la demande.
                     </p>
                   </div>
                 )
