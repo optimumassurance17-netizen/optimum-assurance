@@ -66,7 +66,7 @@ const checks = [
     name: "ai-llms",
     path: "/llms.txt",
     contentType: /text\/plain/i,
-    mustContain: ["Pages sources prioritaires", "comparatifs/decennale-vs-rc-pro"],
+    mustContain: ["## Optional", "Informations clés et cadre juridique", "comparatifs/decennale-vs-rc-pro"],
   },
   {
     name: "ai-about",
