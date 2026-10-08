@@ -14,6 +14,7 @@ import type { PeriodicitePrelevement } from "@/lib/types"
 import { getIbanValidationMessage, normalizeIban } from "@/lib/iban"
 import { readResponseJson } from "@/lib/read-response-json"
 import { trackConversion } from "@/lib/conversion-tracking"
+import { safeRepriseHref } from "@/lib/decennale-reprise"
 
 /** Unique mode : trimestriel — 1er trimestre + frais en CB, puis prélèvements SEPA trimestriels automatiques. */
 const PERIODICITE: PeriodicitePrelevement = "trimestriel"
@@ -75,6 +76,7 @@ export default function MandatSepaPage() {
         const res = await fetch("/api/client/decennale-paiement-session")
         const json = await readResponseJson<{
           available?: boolean
+          reason?: string
           signaturePayload?: SouscriptionData & {
             signedContractNumero?: string
             signedContractData?: Record<string, unknown>
@@ -84,13 +86,23 @@ export default function MandatSepaPage() {
         }>(res)
         if (cancelled) return
         if (!res.ok || !json.available || !json.signaturePayload) {
-          router.replace("/devis")
+          if (json.reason === "deja_paye") {
+            router.replace("/espace-client")
+            return
+          }
+          try {
+            const reprise = await fetch("/api/client/decennale-reprise")
+            const body = await readResponseJson<{ href?: string }>(reprise)
+            router.replace(reprise.ok ? safeRepriseHref(body.href, "/mandat-sepa") : "/espace-client")
+          } catch {
+            router.replace("/espace-client")
+          }
           return
         }
         sessionStorage.setItem(STORAGE_KEYS.signature, JSON.stringify(json.signaturePayload))
         applyStored(sessionStorage.getItem(STORAGE_KEYS.signature) || "")
       } catch {
-        if (!cancelled) router.replace("/devis")
+        if (!cancelled) router.replace("/espace-client")
       }
     })()
 

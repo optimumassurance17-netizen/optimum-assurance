@@ -317,6 +317,20 @@ export function cardPaymentMatches(
   return false
 }
 
+/** Lien carte du premier trimestre, rattaché au numéro de contrat quand il est connu. */
+export function premierTrimestrePaymentMatches(
+  metadata: string | null | undefined,
+  contractNumero?: string | null
+): boolean {
+  const parsed = parseMetadataRecord(metadata)
+  if (!parsed || parsed.type !== "decennale_premier_trimestre") return false
+  const expected = contractNumero?.trim() || ""
+  const stored = typeof parsed.contractNumero === "string" ? parsed.contractNumero.trim() : ""
+  if (expected && stored) return stored === expected
+  if (expected || stored) return false
+  return true
+}
+
 export function nextUnpaidEcheance<T extends { paid: boolean }>(rows: T[]): T | null {
   return rows.find((row) => !row.paid) ?? null
 }

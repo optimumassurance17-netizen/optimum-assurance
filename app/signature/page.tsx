@@ -14,6 +14,7 @@ import { InsuranceContractParcoursBanner } from "@/components/insurance/Insuranc
 import type { InsuranceContractSnapshot } from "@/lib/insurance-contract-types"
 import { readResponseJson } from "@/lib/read-response-json"
 import { trackConversion } from "@/lib/conversion-tracking"
+import { safeRepriseHref } from "@/lib/decennale-reprise"
 
 export default function SignaturePage() {
   const router = useRouter()
@@ -25,13 +26,11 @@ export default function SignaturePage() {
   const [devoirConseilAccepte, setDevoirConseilAccepte] = useState(false)
 
   useEffect(() => {
+    if (status === "loading") return
     if (status === "unauthenticated") {
-      router.replace("/connexion?from=signature")
+      router.replace("/connexion?callbackUrl=/signature")
       return
     }
-  }, [status, router])
-
-  useEffect(() => {
     if (typeof window === "undefined") return
     let snapshotProduct: InsuranceContractSnapshot["productType"] | undefined
     try {
@@ -57,7 +56,15 @@ export default function SignaturePage() {
         router.replace("/espace-client?suite=do")
         return
       }
-      router.replace("/devis")
+      void (async () => {
+        try {
+          const res = await fetch("/api/client/decennale-reprise")
+          const body = await readResponseJson<{ href?: string }>(res)
+          router.replace(res.ok ? safeRepriseHref(body.href, "/signature") : "/devis?from=espace-client")
+        } catch {
+          router.replace("/devis?from=espace-client")
+        }
+      })()
       return
     }
     try {
@@ -68,9 +75,9 @@ export default function SignaturePage() {
         source: "signature-page",
       })
     } catch {
-      router.replace("/devis")
+      router.replace("/devis?from=espace-client")
     }
-  }, [router])
+  }, [router, status])
 
   const handleSignContract = async () => {
     if (!souscription) return

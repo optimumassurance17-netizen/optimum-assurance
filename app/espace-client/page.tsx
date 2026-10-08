@@ -174,6 +174,7 @@ function buildDecennaleTimeline(status: AutonomyStatusPayload): DecennaleTimelin
   const pendingSignature = status.pendingSignaturesDecennale > 0
   const hasDecennaleJourney = status.hasDecennaleContract || pendingSignature || status.firstDecennalePaymentDone
   const sepaStatus = status.sepaSubscription?.status ?? null
+  const sepaReady = sepaStatus === "active" || sepaStatus === "completed"
   const sepaBlocked = sepaStatus === "pending_mandate" || sepaStatus === "failed"
   const paymentDone = status.firstDecennalePaymentDone
   const certificateAvailable = status.decennaleCertificateAvailable
@@ -200,22 +201,34 @@ function buildDecennaleTimeline(status: AutonomyStatusPayload): DecennaleTimelin
     {
       id: "sepa",
       title: "Mandat SEPA",
-      description: "Validation de l’IBAN pour activer les prélèvements trimestriels.",
-      state: paymentDone ? "done" : paymentStepOpen ? (sepaBlocked ? "blocked" : "current") : "todo",
-      href: hrefFor("continue-sepa-and-payment", "/mandat-sepa"),
+      description: paymentDone && !sepaReady
+        ? "Le mandat s’active à la confirmation du paiement carte. L’espace client se met à jour sans ressaisir l’IBAN."
+        : "Validation de l’IBAN pour activer les prélèvements trimestriels.",
+      state: paymentDone ? (sepaReady ? "done" : sepaBlocked ? "blocked" : "current") : paymentStepOpen ? "current" : "todo",
+      href: paymentDone && !sepaReady ? "/espace-client" : hrefFor("continue-sepa-and-payment", "/mandat-sepa"),
     },
     {
       id: "payment",
       title: "Paiement d’activation",
       description: "Paiement du premier trimestre et des frais de gestion.",
       state: paymentDone ? "done" : paymentStepOpen ? "current" : "todo",
-      href: hrefFor("pay-approved-contracts", "#contrats-plateforme"),
+      href: paymentDone
+        ? "/espace-client"
+        : paymentStepOpen
+          ? "/paiement"
+          : hrefFor("resume-signature-decennale", "/signature"),
     },
     {
       id: "attestation",
       title: "Attestation active",
       description: "Attestation disponible après paiement, contrôle du dossier et acceptation du risque.",
-      state: status.suspendedAttestationsCount > 0 ? "blocked" : certificateAvailable ? "done" : "todo",
+      state: status.suspendedAttestationsCount > 0
+        ? "blocked"
+        : certificateAvailable
+          ? "done"
+          : paymentDone
+            ? "current"
+            : "todo",
       href:
         status.suspendedAttestationsCount > 0
           ? hrefFor("regularize-suspended-attestation", "/espace-client/regularisation")

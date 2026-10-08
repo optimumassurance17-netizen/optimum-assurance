@@ -5,6 +5,10 @@ import {
   isDecennaleContractData,
   isDecennalePendingSignatureData,
 } from "@/lib/decennale-contract-data"
+import {
+  hasCurrentDecennaleFirstPayment,
+  isSepaSubscriptionForCurrentDecennale,
+} from "@/lib/decennale-payment-progress"
 import { isDecennaleAttestationType } from "@/lib/decennale-impaye"
 import { prisma } from "@/lib/prisma"
 
@@ -61,6 +65,7 @@ export async function GET() {
       paidPayments,
       sepa,
       approvedUnpaidContracts,
+      decennaleApprovedUnpaid,
       docs,
     ] =
       await Promise.all([
@@ -77,7 +82,7 @@ export async function GET() {
           where: { userId, type: "contrat" },
           orderBy: { createdAt: "desc" },
           take: 20,
-          select: { id: true, data: true },
+          select: { id: true, numero: true, data: true, createdAt: true },
         }),
         prisma.insuranceContract.findFirst({
           where: {
@@ -92,7 +97,7 @@ export async function GET() {
         }),
         prisma.payment.findMany({
           where: { userId, status: "paid" },
-          select: { metadata: true },
+          select: { metadata: true, createdAt: true },
           orderBy: { createdAt: "desc" },
           take: 100,
         }),
@@ -103,10 +108,15 @@ export async function GET() {
             nextSepaDue: true,
             trimestresSepaPayes: true,
             lastError: true,
+            createdAt: true,
+            firstTrimesterPaidAt: true,
           },
         }),
         prisma.insuranceContract.count({
           where: { userId, status: "approved", paidAt: null },
+        }),
+        prisma.insuranceContract.count({
+          where: { userId, productType: "decennale", status: "approved", paidAt: null },
         }),
         prisma.document.findMany({
           where: { userId },
@@ -148,11 +158,16 @@ export async function GET() {
       (doc) => isDecennaleAttestationType(doc.type) && doc.status !== "suspendu"
     )
     const decennaleCertificateAvailable = Boolean(activeDecennaleContract || validLegacyDecennaleAttestation)
-    const decennaleFirstPaymentDone =
-      decennaleFirstPaymentLogged || decennaleCertificateAvailable
+    const currentContract = latestDecennaleContract
+      ? { numero: latestDecennaleContract.numero, createdAt: latestDecennaleContract.createdAt }
+      : null
+    const decennaleFirstPaymentDone = currentContract
+      ? hasCurrentDecennaleFirstPayment(paidPayments, currentContract) ||
+        isSepaSubscriptionForCurrentDecennale(sepa, currentContract)
+      : Boolean(activeDecennaleContract || decennaleFirstPaymentLogged)
 
     const hasDecennaleContract = Boolean(
-      latestDecennaleContract || activeDecennaleContract || approvedUnpaidContracts > 0
+      latestDecennaleContract || activeDecennaleContract || decennaleApprovedUnpaid > 0
     )
     const actions: AutonomyAction[] = []
     const advisories: string[] = []

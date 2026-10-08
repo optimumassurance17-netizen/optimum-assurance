@@ -3,6 +3,7 @@ import { createMollieClient, Locale, PaymentMethod } from "@mollie/api-client"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
+import { premierTrimestrePaymentMatches } from "@/lib/client-echeances"
 import { attestationCardMatch, resolveOpenCardLink } from "@/lib/open-card-link"
 import { prisma } from "@/lib/prisma"
 
@@ -108,17 +109,40 @@ export async function POST(request: NextRequest) {
     const mollieClient = createMollieClient({ apiKey })
     const attestationId = typeof metadata.attestationId === "string" ? metadata.attestationId.trim() : ""
     const isRegularisation = metadata.type === "regularisation" && attestationId.length > 0
+    const contractNumero = typeof metadata.contractNumero === "string" ? metadata.contractNumero.trim() : ""
+    const isPremierTrimestre = metadata.type === "decennale_premier_trimestre"
+    const account = isRegularisation || isPremierTrimestre
+      ? await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { raisonSociale: true, email: true },
+        })
+      : null
+    const raisonSociale = account?.raisonSociale || account?.email || customerEmail || ""
 
-    if (isRegularisation) {
-      const account = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { raisonSociale: true, email: true },
+    if (isPremierTrimestre) {
+      const paidRows = await prisma.payment.findMany({
+        where: { userId: session.user.id, status: "paid" },
+        select: { metadata: true },
+        orderBy: { createdAt: "desc" },
+        take: 100,
       })
+      if (paidRows.some((row) => premierTrimestrePaymentMatches(row.metadata, contractNumero))) {
+        return NextResponse.json(
+          { error: "Le premier trimestre est déjà payé.", alreadyPaid: true },
+          { status: 409 }
+        )
+      }
+    }
+
+    if (isRegularisation || isPremierTrimestre) {
       const existing = await resolveOpenCardLink({
         mollie: mollieClient,
         userId: session.user.id,
-        match: attestationCardMatch(attestationId),
-        raisonSociale: account?.raisonSociale || account?.email || customerEmail || "",
+        match: isRegularisation
+          ? attestationCardMatch(attestationId)
+          : (row) => premierTrimestrePaymentMatches(row, contractNumero),
+        raisonSociale,
+        onPaid: isPremierTrimestre ? "mark-only" : "effects",
       })
       if (existing.kind === "open") {
         return NextResponse.json({
@@ -130,7 +154,12 @@ export async function POST(request: NextRequest) {
       }
       if (existing.kind === "paid") {
         return NextResponse.json(
-          { error: "Cette régularisation est déjà payée.", alreadyPaid: true },
+          {
+            error: isPremierTrimestre
+              ? "Le premier trimestre est déjà payé."
+              : "Cette régularisation est déjà payée.",
+            alreadyPaid: true,
+          },
           { status: 409 }
         )
       }
@@ -181,12 +210,29 @@ export async function POST(request: NextRequest) {
     const payment = await mollieClient.payments.create(paymentParams)
     const checkoutUrl = payment._links?.checkout?.href
 
-    if (isRegularisation && checkoutUrl) {
+    if ((isRegularisation || isPremierTrimestre) && checkoutUrl) {
       const numero = typeof metadata.attestationNumero === "string" ? metadata.attestationNumero.trim() : ""
-      const account = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { raisonSociale: true, email: true },
-      })
+      const storedMetadata = isRegularisation
+        ? {
+            type: "regularisation",
+            attestationId,
+            attestationNumero: numero,
+            label: numero ? `Régularisation ${numero}` : "Régularisation",
+            userId: session.user.id,
+            email: (customerEmail || account?.email || "").trim().toLowerCase(),
+            raisonSociale: account?.raisonSociale || "",
+            checkoutUrl,
+          }
+        : {
+            type: "decennale_premier_trimestre",
+            contractNumero,
+            label: "Premier trimestre",
+            premierPaiementCarte: "true",
+            userId: session.user.id,
+            email: (customerEmail || account?.email || "").trim().toLowerCase(),
+            raisonSociale: account?.raisonSociale || "",
+            checkoutUrl,
+          }
       try {
         await prisma.payment.create({
           data: {
@@ -194,20 +240,11 @@ export async function POST(request: NextRequest) {
             molliePaymentId: payment.id,
             amount,
             status: "pending",
-            metadata: JSON.stringify({
-              type: "regularisation",
-              attestationId,
-              attestationNumero: numero,
-              label: numero ? `Régularisation ${numero}` : "Régularisation",
-              userId: session.user.id,
-              email: (customerEmail || account?.email || "").trim().toLowerCase(),
-              raisonSociale: account?.raisonSociale || "",
-              checkoutUrl,
-            }),
+            metadata: JSON.stringify(storedMetadata),
           },
         })
       } catch (error) {
-        console.error("[mollie/create-payment] enregistrement du lien de régularisation", error)
+        console.error("[mollie/create-payment] enregistrement du lien carte", error)
       }
     }
 

@@ -12,6 +12,7 @@ import { STORAGE_KEYS, FRAIS_GESTION_PRELEVEMENT } from "@/lib/types"
 import type { PeriodicitePrelevement } from "@/lib/types"
 import { readResponseJson } from "@/lib/read-response-json"
 import { trackConversion } from "@/lib/conversion-tracking"
+import { safeRepriseHref } from "@/lib/decennale-reprise"
 
 /** Échéancier trimestriel : 1er trimestre + frais (CB), puis prélèvements SEPA trimestriels en reconduction automatique. */
 function calculerEcheancierTrimestriel(primeAnnuelle: number) {
@@ -73,7 +74,7 @@ export default function PaiementPage() {
         setData(JSON.parse(stored))
         return true
       } catch {
-        router.replace("/devis")
+        router.replace("/espace-client")
         return true
       }
     }
@@ -82,25 +83,41 @@ export default function PaiementPage() {
 
     if (sessionStatus === "loading") return
 
-    const hydrateFromApi = async (): Promise<boolean> => {
-      if (sessionStatus !== "authenticated") return false
+    const hydrateFromApi = async (): Promise<"ready" | "paid" | "missing"> => {
+      if (sessionStatus !== "authenticated") return "missing"
       const res = await fetch("/api/client/decennale-paiement-session")
       const json = await readResponseJson<{
         available?: boolean
+        reason?: string
         signaturePayload?: Record<string, unknown>
       }>(res)
-      if (!res.ok || !json.available || !json.signaturePayload) return false
+      if (json.reason === "deja_paye") return "paid"
+      if (!res.ok || !json.available || !json.signaturePayload) return "missing"
       sessionStorage.setItem(STORAGE_KEYS.signature, JSON.stringify(json.signaturePayload))
-      return true
+      return "ready"
     }
 
     void (async () => {
       if (!stored && sessionStatus === "authenticated") {
-        const ok = await hydrateFromApi()
-        if (ok) stored = sessionStorage.getItem(STORAGE_KEYS.signature)
+        const hydrated = await hydrateFromApi()
+        if (hydrated === "paid") {
+          router.replace("/espace-client")
+          return
+        }
+        if (hydrated === "ready") stored = sessionStorage.getItem(STORAGE_KEYS.signature)
       }
       if (!stored) {
-        router.replace("/devis")
+        if (sessionStatus !== "authenticated") {
+          router.replace("/connexion?callbackUrl=/paiement")
+          return
+        }
+        try {
+          const reprise = await fetch("/api/client/decennale-reprise")
+          const body = await readResponseJson<{ href?: string }>(reprise)
+          router.replace(reprise.ok ? safeRepriseHref(body.href, "/paiement") : "/espace-client")
+        } catch {
+          router.replace("/espace-client")
+        }
         return
       }
       const m = sessionStorage.getItem(STORAGE_KEYS.mandatSepa)
@@ -120,7 +137,7 @@ export default function PaiementPage() {
         }
         setData(JSON.parse(stored))
       } catch {
-        router.replace("/devis")
+        router.replace("/espace-client")
       }
     })()
   }, [router, sessionStatus])
@@ -191,10 +208,16 @@ export default function PaiementPage() {
         error?: string
         checkoutUrl?: string
         id?: string
+        alreadyPaid?: boolean
       }>(res)
 
       if (res.status === 401) {
         window.location.assign(`/connexion?callbackUrl=${encodeURIComponent("/paiement")}`)
+        return
+      }
+
+      if (result.alreadyPaid) {
+        window.location.assign("/espace-client")
         return
       }
 

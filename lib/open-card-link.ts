@@ -45,6 +45,8 @@ export async function resolveOpenCardLink(params: {
   userId: string
   match: (metadata: string | null) => boolean
   raisonSociale: string
+  /** mark-only : le webhook métier envoie le reçu et active le mandat. */
+  onPaid?: "effects" | "mark-only"
 }): Promise<OpenCardLinkResult> {
   const pendingRows = await listMatchingPendingPayments(params.userId, params.match)
   if (pendingRows.length === 0) return { kind: "none" }
@@ -73,7 +75,7 @@ export async function resolveOpenCardLink(params: {
         where: { id: pending.id, status: "pending" },
         data: { status: "paid", paidAt: new Date() },
       })
-      if (claimed.count === 1) {
+      if (claimed.count === 1 && params.onPaid !== "mark-only") {
         await applyEcheancePaidEffects(metadata)
         await sendEcheancePaidReceipt({
           email: metadata.email || "",
@@ -86,7 +88,9 @@ export async function resolveOpenCardLink(params: {
     }
 
     if (molliePaymentIsOpen(remote.status)) {
-      const checkoutUrl = remote._links?.checkout?.href || readOpenCardTarget(pending.metadata)?.checkoutUrl || ""
+      const storedCheckout = metadata.checkoutUrl?.startsWith("https://") ? metadata.checkoutUrl : ""
+      const checkoutUrl =
+        remote._links?.checkout?.href || readOpenCardTarget(pending.metadata)?.checkoutUrl || storedCheckout
       if (!checkoutUrl) {
         return {
           kind: "blocked",
