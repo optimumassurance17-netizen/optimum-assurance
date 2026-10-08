@@ -3,7 +3,7 @@ import { hash } from "bcryptjs"
 import { Prisma } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
-import { sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
+import { sendAccountCreationMailCopy, sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
 
 function isPlausibleEmail(value: string): boolean {
   return value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
@@ -70,15 +70,22 @@ export async function POST(request: NextRequest) {
     })
 
     const template = EMAIL_TEMPLATES.bienvenue(raisonSociale ?? user.email)
+    const welcomeHtml = (template as { html?: string }).html
     const welcomeEmailSent = await sendEmail({
       to: user.email,
       subject: template.subject,
       text: template.text,
-      html: (template as { html?: string }).html,
+      html: welcomeHtml,
     })
     if (!welcomeEmailSent) {
       console.warn("[auth/register] Email bienvenue non envoyé", { userId: user.id, email: user.email })
     }
+    await sendAccountCreationMailCopy({
+      clientEmail: user.email,
+      subject: template.subject,
+      text: template.text,
+      html: welcomeHtml,
+    })
 
     void sendAccountCreationSummaryAlert({
       source: "register_public",

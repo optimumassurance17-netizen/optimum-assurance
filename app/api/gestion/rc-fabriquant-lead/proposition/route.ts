@@ -9,7 +9,7 @@ import { logAdminActivity } from "@/lib/admin-activity"
 import { buildDdaNeedSummary, buildDdaSuitabilityStatement } from "@/lib/dda-compliance"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
-import { sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
+import { sendAccountCreationMailCopy, sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
 
 const MESSAGE_MIN = 20
 const MESSAGE_MAX = 12000
@@ -163,6 +163,15 @@ export async function POST(request: NextRequest) {
       html: template.html,
       ...(replyTo ? { replyTo } : {}),
     })
+
+    if (createdClientSpace) {
+      await sendAccountCreationMailCopy({
+        clientEmail: email,
+        subject: template.subject,
+        text: template.text,
+        html: template.html,
+      })
+    }
 
     if (!sent) {
       const notSent = emailNotSentBody()

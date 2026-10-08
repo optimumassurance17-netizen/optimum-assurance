@@ -1,5 +1,5 @@
 import { isAdmin } from "@/lib/admin"
-import { getDevisAlertRecipientEmails } from "@/lib/devis-alert"
+import { ACCOUNT_CREATION_INBOX } from "@/lib/account-creation-alert"
 import { sendEmail } from "@/lib/email"
 import { escapeHtmlForEmail } from "@/lib/email-layout"
 import { prisma } from "@/lib/prisma"
@@ -34,6 +34,7 @@ function formatParisDate(date: Date): string {
 
 /**
  * Email interne à chaque connexion réussie d'un compte client.
+ * Destinataire : info@optimum-assurance.eu.
  * Les doubles soumissions (double clic, requête répétée) n'envoient que la dernière.
  * Une connexion admin vers la gestion n'est pas signalée.
  */
@@ -103,27 +104,17 @@ export async function notifyClientSpaceLogin(user: LoginAlertUser): Promise<bool
     <p style="margin-top:16px;"><a href="${ficheUrl}" style="color:#2563eb;font-weight:bold;">Ouvrir la fiche client</a></p>
   `.trim()
 
-  const recipients = getDevisAlertRecipientEmails()
   let sent = false
-  if (recipients.length === 0) {
-    console.warn("[client-login-alert] Aucun destinataire d'alerte configuré.")
-  } else {
-    try {
-      const results = await Promise.all(
-        recipients.map((to) =>
-          sendEmail({
-            to,
-            subject,
-            text,
-            html,
-            replyTo: email,
-          })
-        )
-      )
-      sent = results.some(Boolean)
-    } catch (error) {
-      console.error("[client-login-alert] envoi:", error)
-    }
+  try {
+    sent = await sendEmail({
+      to: ACCOUNT_CREATION_INBOX,
+      subject,
+      text,
+      html,
+      replyTo: email,
+    })
+  } catch (error) {
+    console.error("[client-login-alert] envoi:", error)
   }
 
   await prisma.adminActivityLog
