@@ -20,7 +20,9 @@ import { clientDeleteErrorMessage, deleteClientAccount } from "@/lib/client-acco
 import { purgeClientExternalResidue } from "@/lib/purge-client-residue"
 import { describeSepaReadiness } from "@/lib/sepa-readiness"
 import { attachSepaNotices, paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel, virementReferenceFromMetadata } from "@/lib/client-echeances"
+import { describeClientActivity } from "@/lib/admin-activity-label"
 import { describeClientSignature } from "@/lib/signature-reminder"
+import { SITE_URL } from "@/lib/site-url"
 
 function parseLogDetails(raw: string | null | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null
@@ -313,11 +315,56 @@ export async function GET(
         }),
       []
     )
+    const pendingIds = pendingSignatures.map((row) => row.signatureRequestId)
+    const activityDocumentIds = documentIds.slice(0, 40)
+    const activityWhere: Prisma.AdminActivityLogWhereInput[] = [{ targetType: "user", targetId: id }]
+    if (pendingIds.length > 0) {
+      activityWhere.push({ targetType: "pending_signature", targetId: { in: pendingIds } })
+    }
+    if (activityDocumentIds.length > 0) {
+      activityWhere.push({ targetType: "document", targetId: { in: activityDocumentIds } })
+    }
+    const [signatureReminderLogs, activityLogs] = await Promise.all([
+      pendingIds.length === 0
+        ? Promise.resolve([])
+        : withSchemaDriftFallback(
+            () =>
+              prisma.adminActivityLog.findMany({
+                where: {
+                  OR: [
+                    { action: "signature_relance_manuelle", targetType: "user", targetId: id },
+                    {
+                      action: "cron_signature_reminder_client_sent",
+                      targetType: "pending_signature",
+                      targetId: { in: pendingIds },
+                    },
+                  ],
+                },
+                select: { action: true, targetType: true, targetId: true, details: true, createdAt: true },
+                orderBy: { createdAt: "desc" },
+                take: 40,
+              }),
+            []
+          ),
+      withSchemaDriftFallback(
+        () =>
+          prisma.adminActivityLog.findMany({
+            where: { OR: activityWhere },
+            select: { id: true, action: true, adminEmail: true, createdAt: true },
+            orderBy: { createdAt: "desc" },
+            take: 12,
+          }),
+        []
+      ),
+    ])
     const signature = describeClientSignature({
       documents,
       insuranceContracts,
       pending: pendingSignatures,
+      siteUrl: SITE_URL,
+      reminderLogs: signatureReminderLogs,
     })
+    const activity = describeClientActivity(activityLogs)
 
     return NextResponse.json({
       user,
@@ -325,6 +372,7 @@ export async function GET(
       documents: documentsForClient,
       canGenerateDecennaleAttestation,
       signature,
+      activity,
       insuranceContracts,
       payments: paymentsForClient,
       avenantFees,

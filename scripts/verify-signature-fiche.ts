@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs"
-import { adminActivityLabel } from "../lib/admin-activity-label"
-import { describeClientSignature, signatureReminderPayload } from "../lib/signature-reminder"
+import { adminActivityLabel, describeClientActivity } from "../lib/admin-activity-label"
+import {
+  describeClientSignature,
+  latestSignatureReminderByRequest,
+  signatureReminderPayload,
+} from "../lib/signature-reminder"
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message)
@@ -74,6 +78,64 @@ const customLink = signatureReminderPayload(
 assert(customLink.produitLabel === "Assurance titre", "le flux PDF garde le produit")
 assert(customLink.signatureLink.includes("next=%2Fespace-client"), "un next externe retombe sur l'espace client")
 
+const reminded = describeClientSignature({
+  documents: [],
+  insuranceContracts: [],
+  pending: [
+    {
+      signatureRequestId: "req-1",
+      contractNumero: "DEC-1",
+      contractData: "{}",
+      createdAt: signedAt,
+    },
+  ],
+  siteUrl: "https://www.optimum-assurance.fr",
+  reminderLogs: [
+    {
+      action: "signature_relance_manuelle",
+      details: JSON.stringify({ signatureRequestId: "req-1", emailSent: false }),
+      createdAt: "2026-04-02T08:00:00.000Z",
+    },
+    {
+      action: "signature_relance_manuelle",
+      details: JSON.stringify({ signatureRequestId: "req-1", emailSent: true }),
+      createdAt: "2026-04-01T08:00:00.000Z",
+    },
+    {
+      action: "cron_signature_reminder_client_sent",
+      targetType: "pending_signature",
+      targetId: "req-1",
+      createdAt: "2026-04-03T08:00:00.000Z",
+    },
+  ],
+})
+assert(
+  reminded.pending[0]?.remindedAt === "2026-04-03T08:00:00.000Z",
+  "la date Relancé le retient le dernier envoi réussi"
+)
+assert(
+  reminded.pending[0]?.signatureLink === "https://www.optimum-assurance.fr/sign/req-1?next=%2Fmandat-sepa",
+  "le lien copiable est celui déjà ouvert"
+)
+const failedOnly = latestSignatureReminderByRequest([
+  {
+    action: "signature_relance_manuelle",
+    details: JSON.stringify({ signatureRequestId: "req-1", emailSent: false }),
+    createdAt: "2026-04-02T08:00:00.000Z",
+  },
+])
+assert(failedOnly.size === 0, "un email non parti ne date pas la relance")
+
+const activity = describeClientActivity([
+  {
+    id: "log-1",
+    action: "cron_signature_reminder_client_sent",
+    adminEmail: "cron@system",
+    createdAt: "2026-04-03T08:00:00.000Z",
+  },
+])
+assert(activity[0]?.actionLabel === "Rappel de signature envoyé", "la fiche traduit le rappel cron")
+
 assert(
   adminActivityLabel("signature_relance_manuelle") === "Signature électronique relancée",
   "le journal nomme la relance manuelle"
@@ -87,13 +149,28 @@ assert(!route.includes("payments.create"), "la relance ne crée pas de paiement"
 
 const fiche = readFileSync("app/gestion/clients/[id]/page.tsx", "utf8")
 assert(fiche.includes("Relancer la signature"), "la fiche affiche le bouton de relance")
+assert(fiche.includes("Copier le lien"), "la fiche copie le lien déjà ouvert")
+assert(fiche.includes("Relancé le"), "la fiche affiche la date de relance")
+assert(fiche.includes("Dernières actions"), "la fiche affiche le journal du client")
 assert(fiche.includes("Contrat signé"), "la fiche affiche l'indicateur signé")
 assert(fiche.includes("Aucune signature en attente à relancer."), "sans demande le bouton de création est absent")
 assert(!fiche.includes("createSignRequest"), "la page ne crée pas de signature")
 
 const getRoute = readFileSync("app/api/gestion/clients/[id]/route.ts", "utf8")
 assert(getRoute.includes("describeClientSignature"), "le GET fiche calcule l'état de signature")
+assert(getRoute.includes("describeClientActivity"), "le GET fiche prépare les dernières actions")
 assert(getRoute.includes("pendingSignature.findMany"), "le GET lit les signatures déjà ouvertes")
+assert(getRoute.includes("siteUrl: SITE_URL"), "le lien copiable utilise l'adresse publique")
+
+const dashboardRoute = readFileSync("app/api/gestion/dashboard/route.ts", "utf8")
+assert(dashboardRoute.includes("latestSignatureReminderByRequest"), "le tableau de bord date les relances")
+assert(dashboardRoute.includes("href: p.userId ? `/gestion/clients/${p.userId}`"), "l'action signature ouvre la fiche")
+assert(!dashboardRoute.includes("createSignRequest"), "le tableau de bord ne crée pas de signature")
+
+const dashboardPage = readFileSync("app/gestion/page.tsx", "utf8")
+assert(dashboardPage.includes("Signatures en attente"), "le tableau de bord liste les signatures ouvertes")
+assert(dashboardPage.includes("Relancé le"), "la liste indique la dernière relance")
+assert(!dashboardPage.includes("relance-signature"), "la liste du tableau de bord n'envoie pas de rappel")
 
 const cron = readFileSync("app/api/cron/rappel-signatures-en-attente/route.ts", "utf8")
 assert(cron.includes("signatureReminderPayload(pending, userLabel, SITE_URL)"), "le cron réutilise le même lien")

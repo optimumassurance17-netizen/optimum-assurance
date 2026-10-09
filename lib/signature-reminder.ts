@@ -68,6 +68,43 @@ export type ClientSignaturePending = {
   label: string
   numero: string
   createdAt: string
+  signatureLink: string
+  remindedAt: string | null
+}
+
+export type SignatureReminderLog = {
+  action: string
+  targetType?: string | null
+  targetId?: string | null
+  details?: string | null
+  createdAt: Date | string
+}
+
+function reminderInstant(value: Date | string): number | null {
+  const date = value instanceof Date ? value : new Date(value)
+  const time = date.getTime()
+  return Number.isNaN(time) ? null : time
+}
+
+/** Dernier rappel réellement parti, bouton ou cron. Un échec d'envoi ne compte pas. */
+export function latestSignatureReminderByRequest(logs: SignatureReminderLog[]): Map<string, string> {
+  const latest = new Map<string, number>()
+  for (const log of logs) {
+    let requestId = ""
+    if (log.action === "cron_signature_reminder_client_sent" && log.targetType === "pending_signature") {
+      requestId = log.targetId?.trim() || ""
+    } else if (log.action === "signature_relance_manuelle") {
+      const details = parseContractData(log.details || "")
+      if (details.emailSent === false || details.emailSent === "false") continue
+      requestId = typeof details.signatureRequestId === "string" ? details.signatureRequestId.trim() : ""
+    }
+    if (!requestId) continue
+    const at = reminderInstant(log.createdAt)
+    if (at == null) continue
+    const previous = latest.get(requestId)
+    if (previous == null || at >= previous) latest.set(requestId, at)
+  }
+  return new Map([...latest.entries()].map(([id, at]) => [id, new Date(at).toISOString()]))
 }
 
 export type ClientSignatureState = {
@@ -81,6 +118,8 @@ export function describeClientSignature(input: {
   documents: { type: string; numero: string; status: string; createdAt: Date | string }[]
   insuranceContracts: { productType: string; contractNumber: string; createdAt: Date | string }[]
   pending: { signatureRequestId: string; contractNumero: string; contractData: string; createdAt: Date | string }[]
+  siteUrl?: string
+  reminderLogs?: SignatureReminderLog[]
 }): ClientSignatureState {
   const contracts: ClientSignatureContract[] = []
   for (const document of input.documents) {
@@ -98,6 +137,7 @@ export function describeClientSignature(input: {
       signedAt,
     })
   }
+  const remindedAtByRequest = latestSignatureReminderByRequest(input.reminderLogs ?? [])
   const pending: ClientSignaturePending[] = []
   for (const row of input.pending) {
     const createdAt = isoDate(row.createdAt)
@@ -110,6 +150,10 @@ export function describeClientSignature(input: {
       label: custom ? produitLabelRaw || "Proposition commerciale" : "Décennale",
       numero: row.contractNumero,
       createdAt,
+      signatureLink: input.siteUrl
+        ? signatureReminderPayload(row, "", input.siteUrl).signatureLink
+        : "",
+      remindedAt: remindedAtByRequest.get(row.signatureRequestId) ?? null,
     })
   }
   return {

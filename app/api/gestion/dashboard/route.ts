@@ -9,6 +9,7 @@ import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { stripSignatureBinariesFromJsonString } from "@/lib/esign/local-signature-fallback"
 import { loadEcheancesASuivre } from "@/lib/client-echeance-service"
 import { adminActivityClientHref, adminActivityLabel } from "@/lib/admin-activity-label"
+import { latestSignatureReminderByRequest } from "@/lib/signature-reminder"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -608,6 +609,33 @@ export async function GET() {
         : []
     const pendingUserById = Object.fromEntries(pendingUsers.map((u) => [u.id, u]))
     const sepaUserById = Object.fromEntries(sepaUsers.map((u) => [u.id, u]))
+    const signatureReminderLogs =
+      pendingSignaturesRaw.length === 0
+        ? []
+        : await withSchemaDriftFallback(
+            () =>
+              prisma.adminActivityLog.findMany({
+                where: {
+                  OR: [
+                    {
+                      action: "signature_relance_manuelle",
+                      targetType: "user",
+                      targetId: { in: pendingUserIds },
+                    },
+                    {
+                      action: "cron_signature_reminder_client_sent",
+                      targetType: "pending_signature",
+                      targetId: { in: pendingSignaturesRaw.map((row) => row.signatureRequestId) },
+                    },
+                  ],
+                },
+                select: { action: true, targetType: true, targetId: true, details: true, createdAt: true },
+                orderBy: { createdAt: "desc" },
+                take: 300,
+              }),
+            []
+          )
+    const remindedAtByRequest = latestSignatureReminderByRequest(signatureReminderLogs)
     const pendingSignatures = pendingSignaturesRaw.map((p) => {
       let signatureFlow: "custom_pdf" | "decennale" = "decennale"
       let signatureFlowLabel: string | undefined
@@ -632,6 +660,7 @@ export async function GET() {
         signatureFlow,
         signatureFlowLabel,
         ageHours,
+        remindedAt: remindedAtByRequest.get(p.signatureRequestId) ?? null,
         repairEligible: ageHours >= 24,
       }
     })
@@ -852,7 +881,7 @@ export async function GET() {
         priority: ageMs >= overdue72hMs ? "high" : "medium",
         title: "Signature en attente",
         description: `Référence ${p.contractNumero} — ${ageHours}h`,
-        href: "#signatures-attente",
+        href: p.userId ? `/gestion/clients/${p.userId}` : "#signatures-attente",
         ageHours,
       })
     }

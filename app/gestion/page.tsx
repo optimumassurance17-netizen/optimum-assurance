@@ -341,6 +341,7 @@ interface DashboardData {
     signatureFlow: "custom_pdf" | "decennale"
     signatureFlowLabel?: string
     ageHours?: number
+    remindedAt?: string | null
     repairEligible?: boolean
   }[]
   sepaSubscriptions?: {
@@ -3016,6 +3017,48 @@ export default function GestionPage() {
                         </div>
                       )}
                     </div>
+                    <div className="mt-3 border-t border-gray-700 pt-3">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-300 mb-2">
+                        Signatures en attente
+                      </h4>
+                      {(data?.pendingSignatures ?? []).length === 0 ? (
+                        <p className="text-xs text-gray-300">Aucune signature électronique en attente.</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {(data?.pendingSignatures ?? []).map((row) => {
+                            const hours = row.ageHours ?? 0
+                            const age = hours < 24 ? `${hours} h` : `${Math.floor(hours / 24)} j`
+                            const flowLabel =
+                              row.signatureFlowLabel ||
+                              (row.signatureFlow === "custom_pdf" ? "PDF personnalisé" : "Décennale")
+                            return (
+                              <div
+                                key={row.signatureRequestId}
+                                className="rounded border border-gray-700 bg-[#1a1e2b] px-2.5 py-2"
+                              >
+                                <p className="text-xs text-white">
+                                  {row.user?.raisonSociale || row.user?.email || "Client"}
+                                </p>
+                                <p className="text-[11px] text-gray-300">
+                                  {flowLabel} · {row.contractNumero} · depuis {age}
+                                  {row.remindedAt
+                                    ? ` · Relancé le ${new Date(row.remindedAt).toLocaleDateString("fr-FR")}`
+                                    : ""}
+                                </p>
+                                <div className="mt-1.5">
+                                  <Link
+                                    href={`/gestion/clients/${row.userId}`}
+                                    className="text-[11px] px-2 py-1 rounded border border-gray-600 text-gray-100 hover:border-indigo-500/80"
+                                  >
+                                    Fiche client
+                                  </Link>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -3527,6 +3570,8 @@ export default function GestionPage() {
                     <th className="text-left p-3 sm:p-4 font-medium">Flux</th>
                     <th className="text-left p-3 sm:p-4 font-medium">N° / ref.</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Client</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Âge</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Relancé le</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">ID demande</th>
                     <th className="text-left p-3 sm:p-4 font-medium">CRM</th>
                     <th className="text-left p-3 sm:p-4 font-medium w-[5.5rem]">Action</th>
@@ -3535,7 +3580,7 @@ export default function GestionPage() {
                 <tbody>
                   {filteredPendingSignatures.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-4 text-gray-200">
+                      <td colSpan={9} className="p-4 text-gray-200">
                         {searchQuery.trim()
                           ? "Aucune signature ne correspond à la recherche."
                           : "Aucune signature en attente."}
@@ -3566,6 +3611,16 @@ export default function GestionPage() {
                           <td className="p-3 sm:p-4 font-mono text-white text-xs">{s.contractNumero}</td>
                           <td className="p-3 sm:p-4">
                             {s.user ? s.user.raisonSociale || s.user.email : "—"}
+                          </td>
+                          <td className="p-3 sm:p-4 whitespace-nowrap text-gray-200">
+                            {typeof s.ageHours === "number"
+                              ? s.ageHours < 24
+                                ? `${s.ageHours} h`
+                                : `${Math.floor(s.ageHours / 24)} j`
+                              : "—"}
+                          </td>
+                          <td className="p-3 sm:p-4 whitespace-nowrap text-gray-200">
+                            {s.remindedAt ? new Date(s.remindedAt).toLocaleString("fr-FR") : "—"}
                           </td>
                           <td
                             className="p-3 sm:p-4 font-mono text-xs text-gray-200 hidden sm:table-cell max-w-[12rem] truncate"

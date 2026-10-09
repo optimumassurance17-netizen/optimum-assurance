@@ -148,8 +148,16 @@ interface ClientData {
     signed: boolean
     summary: "Contrat signé" | "Contrat non signé"
     contracts: { label: string; numero: string; signedAt: string }[]
-    pending: { signatureRequestId: string; label: string; numero: string; createdAt: string }[]
+    pending: {
+      signatureRequestId: string
+      label: string
+      numero: string
+      createdAt: string
+      signatureLink?: string
+      remindedAt?: string | null
+    }[]
   }
+  activity?: { id: string; action: string; actionLabel: string; adminEmail: string; createdAt: string }[]
   insuranceContracts?: { id: string; contractNumber: string; productType: string; createdAt: string }[]
   canGenerateDecennaleAttestation?: boolean
   payments: {
@@ -430,6 +438,15 @@ export default function ClientDetailPage() {
 
   const { user, documents, payments, avenantFees } = data
   const echeances = data.echeances ?? []
+
+  const copySignatureLink = async (signatureLink: string) => {
+    try {
+      await navigator.clipboard.writeText(signatureLink)
+      setToast({ message: "Lien de signature copié.", type: "success" })
+    } catch {
+      setToast({ message: `Lien existant : ${signatureLink}`, type: "warning" })
+    }
+  }
 
   const relanceSignature = async (signatureRequestId: string) => {
     const confirmed = window.confirm(
@@ -1493,15 +1510,55 @@ export default function ClientDetailPage() {
                     <p className="text-xs text-gray-400">
                       En attente depuis le {new Date(row.createdAt).toLocaleDateString("fr-FR")}
                     </p>
+                    <p className="text-xs text-gray-400">
+                      {row.remindedAt
+                        ? `Relancé le ${new Date(row.remindedAt).toLocaleString("fr-FR")}`
+                        : "Pas encore relancé"}
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    disabled={signatureBusyId !== null}
-                    onClick={() => void relanceSignature(row.signatureRequestId)}
-                    className="rounded-lg bg-[#2563eb] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
-                  >
-                    {signatureBusyId === row.signatureRequestId ? "Envoi…" : "Relancer la signature"}
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    {row.signatureLink ? (
+                      <button
+                        type="button"
+                        onClick={() => void copySignatureLink(row.signatureLink || "")}
+                        className="rounded-lg border border-gray-500 px-3 py-1.5 text-xs font-semibold text-gray-100 hover:border-gray-300"
+                      >
+                        Copier le lien
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={signatureBusyId !== null}
+                      onClick={() => void relanceSignature(row.signatureRequestId)}
+                      className="rounded-lg bg-[#2563eb] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
+                    >
+                      {signatureBusyId === row.signatureRequestId ? "Envoi…" : "Relancer la signature"}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-3">
+          <h2 className="text-lg font-semibold text-white">Dernières actions</h2>
+          {(data.activity?.length ?? 0) === 0 ? (
+            <p className="text-sm text-gray-400">Aucune action enregistrée sur cette fiche.</p>
+          ) : (
+            <ul className="space-y-2">
+              {data.activity?.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex flex-wrap items-baseline justify-between gap-2 border-b border-gray-700/60 pb-2 text-sm"
+                >
+                  <span className="text-white" title={item.action}>
+                    {item.actionLabel}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {new Date(item.createdAt).toLocaleString("fr-FR")}
+                    {item.adminEmail ? ` · ${item.adminEmail}` : ""}
+                  </span>
                 </li>
               ))}
             </ul>
