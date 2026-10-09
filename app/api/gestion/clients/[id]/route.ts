@@ -20,6 +20,7 @@ import { clientDeleteErrorMessage, deleteClientAccount } from "@/lib/client-acco
 import { purgeClientExternalResidue } from "@/lib/purge-client-residue"
 import { describeSepaReadiness } from "@/lib/sepa-readiness"
 import { attachSepaNotices, paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel, virementReferenceFromMetadata } from "@/lib/client-echeances"
+import { describeClientSignature } from "@/lib/signature-reminder"
 
 function parseLogDetails(raw: string | null | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null
@@ -302,12 +303,28 @@ export async function GET(
       status: document.status,
       createdAt: document.createdAt,
     }))
+    const pendingSignatures = await withSchemaDriftFallback(
+      () =>
+        prisma.pendingSignature.findMany({
+          where: { userId: id },
+          select: { signatureRequestId: true, contractNumero: true, contractData: true, createdAt: true },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        }),
+      []
+    )
+    const signature = describeClientSignature({
+      documents,
+      insuranceContracts,
+      pending: pendingSignatures,
+    })
 
     return NextResponse.json({
       user,
       devisAutonomy,
       documents: documentsForClient,
       canGenerateDecennaleAttestation,
+      signature,
       insuranceContracts,
       payments: paymentsForClient,
       avenantFees,

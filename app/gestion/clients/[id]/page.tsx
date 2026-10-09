@@ -144,6 +144,12 @@ interface ClientData {
     titleEtudeQuestionnaireJson?: string | null
   }
   documents: { id: string; type: string; numero: string; status: string; createdAt: string }[]
+  signature?: {
+    signed: boolean
+    summary: "Contrat signé" | "Contrat non signé"
+    contracts: { label: string; numero: string; signedAt: string }[]
+    pending: { signatureRequestId: string; label: string; numero: string; createdAt: string }[]
+  }
   insuranceContracts?: { id: string; contractNumber: string; productType: string; createdAt: string }[]
   canGenerateDecennaleAttestation?: boolean
   payments: {
@@ -344,6 +350,7 @@ export default function ClientDetailPage() {
   })
   const [attestationGenerating, setAttestationGenerating] = useState(false)
   const [suspendingQrId, setSuspendingQrId] = useState<string | null>(null)
+  const [signatureBusyId, setSignatureBusyId] = useState<string | null>(null)
   const [clientAccessLoading, setClientAccessLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type?: "success" | "warning" | "error" } | null>(null)
   const [echeanceBusy, setEcheanceBusy] = useState<string | null>(null)
@@ -423,6 +430,46 @@ export default function ClientDetailPage() {
 
   const { user, documents, payments, avenantFees } = data
   const echeances = data.echeances ?? []
+
+  const relanceSignature = async (signatureRequestId: string) => {
+    const confirmed = window.confirm(
+      "Relancer la signature électronique ? Le lien déjà ouvert sera renvoyé au client. Aucune nouvelle demande ne sera créée."
+    )
+    if (!confirmed) return
+    setSignatureBusyId(signatureRequestId)
+    try {
+      const res = await fetch(`/api/gestion/clients/${clientId}/relance-signature`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ signatureRequestId }),
+      })
+      const body = await readResponseJson<{
+        error?: string
+        warning?: string
+        emailSent?: boolean
+        sentTo?: string
+        signatureLink?: string
+      }>(res)
+      if (!res.ok) throw new Error(body.error || "Impossible de relancer la signature.")
+      if (body.emailSent) {
+        setToast({ message: `Signature relancée vers ${body.sentTo || "le client"}.`, type: "success" })
+      } else {
+        setToast({
+          message: body.signatureLink
+            ? `${body.warning || "L'email n'a pas été envoyé."} Lien existant : ${body.signatureLink}`
+            : body.warning || "L'email n'a pas été envoyé.",
+          type: "warning",
+        })
+      }
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : "Impossible de relancer la signature.",
+        type: "error",
+      })
+    } finally {
+      setSignatureBusyId(null)
+    }
+  }
 
   const suspendAttestationQr = async (documentId: string, numero: string) => {
     const confirmed = window.confirm(
@@ -1403,6 +1450,63 @@ export default function ClientDetailPage() {
             ) : null}
           </section>
         )}
+
+        <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-white">Signature du contrat</h2>
+            <span
+              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                data.signature?.signed ? "bg-green-900/50 text-green-300" : "bg-amber-900/40 text-amber-200"
+              }`}
+            >
+              {data.signature?.summary ?? "Contrat non signé"}
+            </span>
+          </div>
+          {(data.signature?.contracts.length ?? 0) === 0 ? (
+            <p className="text-sm text-gray-300">Aucun contrat signé sur cette fiche.</p>
+          ) : (
+            <ul className="space-y-2">
+              {data.signature?.contracts.map((contract) => (
+                <li key={`${contract.label}-${contract.numero}-${contract.signedAt}`} className="text-sm text-gray-200">
+                  <span className="font-medium text-white">{contract.label}</span>
+                  {" · "}
+                  {contract.numero}
+                  {" · signé le "}
+                  {new Date(contract.signedAt).toLocaleDateString("fr-FR")}
+                </li>
+              ))}
+            </ul>
+          )}
+          {(data.signature?.pending.length ?? 0) === 0 ? (
+            <p className="text-sm text-gray-400">Aucune signature en attente à relancer.</p>
+          ) : (
+            <ul className="space-y-3">
+              {data.signature?.pending.map((row) => (
+                <li
+                  key={row.signatureRequestId}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-700 bg-[#1a1a1a] p-3"
+                >
+                  <div className="text-sm text-gray-200">
+                    <p className="font-medium text-white">
+                      {row.label} · {row.numero}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      En attente depuis le {new Date(row.createdAt).toLocaleDateString("fr-FR")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={signatureBusyId !== null}
+                    onClick={() => void relanceSignature(row.signatureRequestId)}
+                    className="rounded-lg bg-[#2563eb] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
+                  >
+                    {signatureBusyId === row.signatureRequestId ? "Envoi…" : "Relancer la signature"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">

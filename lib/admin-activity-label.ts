@@ -12,6 +12,7 @@ const ACTION_LABELS: Record<string, string> = {
   clients_fusionnes: "Comptes fusionnés",
   note_created: "Note ajoutée",
   email_sent: "Email envoyé au client",
+  signature_relance_manuelle: "Signature électronique relancée",
   user_update: "Fiche client mise à jour",
   user_client_access_sent: "Accès client envoyé",
   user_create_from_lead: "Compte client créé",

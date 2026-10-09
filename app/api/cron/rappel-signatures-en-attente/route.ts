@@ -7,6 +7,7 @@ import { SITE_URL } from "@/lib/site-url"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { sendOperationsAlert } from "@/lib/operations-alert"
 import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
+import { signatureReminderPayload } from "@/lib/signature-reminder"
 
 const CLIENT_REMINDER_AFTER_HOURS = 24
 const ADMIN_ALERT_AFTER_HOURS = 72
@@ -18,52 +19,6 @@ function startOfUtcDay(d: Date): Date {
 
 function dayKeyUtc(d: Date): string {
   return d.toISOString().slice(0, 10)
-}
-
-function asObject(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : {}
-}
-
-function getSignatureReminderPayload(
-  pending: { contractData: string; contractNumero: string; signatureRequestId: string },
-  userLabel: string
-): {
-  raisonSociale: string
-  signatureLink: string
-  produitLabel: string
-  reference?: string
-} {
-  let data: Record<string, unknown> = {}
-  try {
-    data = asObject(JSON.parse(pending.contractData || "{}"))
-  } catch {
-    data = {}
-  }
-
-  const custom = data.customUploadedDevisFlow === true
-  const produitLabelRaw = typeof data.produitLabel === "string" ? data.produitLabel.trim() : ""
-  const produitLabel = custom
-    ? produitLabelRaw || "proposition commerciale"
-    : "contrat décennale"
-  const referenceRaw =
-    typeof data.devisReference === "string"
-      ? data.devisReference.trim()
-      : pending.contractNumero.trim()
-  const legacyNextPath = typeof data.afterSignNextPath === "string" ? data.afterSignNextPath.trim() : ""
-  const nextPathRaw = custom ? legacyNextPath : "/mandat-sepa"
-  const nextPath = nextPathRaw.startsWith("/") && !nextPathRaw.startsWith("//")
-    ? nextPathRaw
-    : custom
-      ? "/espace-client"
-      : "/mandat-sepa"
-  const signatureLink = `${SITE_URL}/sign/${pending.signatureRequestId}?next=${encodeURIComponent(nextPath)}`
-
-  return {
-    raisonSociale: userLabel,
-    signatureLink,
-    produitLabel,
-    reference: referenceRaw || undefined,
-  }
 }
 
 /**
@@ -146,7 +101,7 @@ export async function GET(request: NextRequest) {
       }
 
       const userLabel = (user?.raisonSociale || user?.email || "Client").trim()
-      const payload = getSignatureReminderPayload(pending, userLabel)
+      const payload = signatureReminderPayload(pending, userLabel, SITE_URL)
       const tpl = EMAIL_TEMPLATES.rappelSignatureEnAttente(
         payload.raisonSociale,
         payload.signatureLink,
