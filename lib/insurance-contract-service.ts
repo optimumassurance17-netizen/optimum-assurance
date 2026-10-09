@@ -11,6 +11,7 @@ import {
   insuranceProductHasSchedule,
 } from "@/lib/insurance-product"
 import { readAssuranceTitreCoverageDurationYears } from "@/lib/assurance-titre-contract-config"
+import { readRcFabDossierConfig, rcFabAttestationWindow } from "@/lib/rc-fabriquant-dossier-config"
 
 export type CreateContractInput = {
   productType: "decennale" | "do"
@@ -296,6 +297,12 @@ export async function processInsuranceContractPaymentSuccess(
       return { ok: false, error: "AMOUNT_MISMATCH" }
     }
     const paidAt = new Date()
+    const coverage = rcFabAttestationWindow({
+      paidAt,
+      validFrom: c.validFrom,
+      validUntil: c.validUntil,
+      monthsStep: readRcFabDossierConfig(c.exclusionsJson, c.premium, c.contractNumber).monthsStep,
+    })
     await prisma.$transaction(async (tx) => {
       await tx.contractLifecyclePayment.upsert({
         where: { molliePaymentId },
@@ -310,17 +317,32 @@ export async function processInsuranceContractPaymentSuccess(
       })
       await tx.insuranceContract.update({
         where: { id: contractId },
-        data: { paidAt },
+        data: { paidAt, validFrom: coverage.validFrom, validUntil: coverage.validUntil },
       })
       await tx.contractActionLog.create({
         data: {
           contractId,
           action: "installment_paid",
-          details: JSON.stringify({ molliePaymentId, amount, productType: c.productType }),
+          details: JSON.stringify({
+            molliePaymentId,
+            amount,
+            productType: c.productType,
+            validUntil: coverage.validUntil.toISOString(),
+          }),
         },
       })
     })
     const fresh = await prisma.insuranceContract.findUniqueOrThrow({ where: { id: contractId } })
+    try {
+      await generatePostPaymentPdfs(contractId, fresh)
+    } catch (e) {
+      console.error("[insurance-contract] attestation échéance:", e)
+      await logContractAction(contractId, "pdf_generation_failed", {
+        message: e instanceof Error ? e.message : String(e),
+        context: "rc_fabriquant_installment",
+      })
+      return { ok: false, error: "PDF_GENERATION_FAILED" }
+    }
     return { ok: true, contract: fresh, idempotent: false }
   }
 
@@ -353,7 +375,14 @@ export async function processInsuranceContractPaymentSuccess(
             paidAt,
             readAssuranceTitreCoverageDurationYears(c.exclusionsJson, 10)
           )
-      : addYears(paidAt, 1)
+        : c.productType === "rc_fabriquant"
+          ? rcFabAttestationWindow({
+              paidAt,
+              validFrom: null,
+              validUntil: null,
+              monthsStep: readRcFabDossierConfig(c.exclusionsJson, c.premium, c.contractNumber).monthsStep,
+            }).validUntil
+          : addYears(paidAt, 1)
 
   await prisma.$transaction(async (tx) => {
     await tx.contractLifecyclePayment.upsert({

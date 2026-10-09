@@ -153,6 +153,32 @@ export function hasRcFabDossierConfig(rawExclusionsJson: string | null | undefin
   return parseConfigEnvelope(rawExclusionsJson) != null
 }
 
+export function addCoverageMonths(date: Date, months: number): Date {
+  const next = new Date(date.getTime())
+  const day = next.getDate()
+  next.setMonth(next.getMonth() + months)
+  if (next.getDate() !== day) next.setDate(0)
+  return next
+}
+
+/** Période imprimée sur l'attestation : une échéance payée, puis chaque échéance suivante l'allonge. */
+export function rcFabAttestationWindow(input: {
+  paidAt: Date
+  validFrom: Date | null
+  validUntil: Date | null
+  monthsStep: number
+}): { validFrom: Date; validUntil: Date } {
+  const months = Number.isFinite(input.monthsStep) && input.monthsStep > 0 ? Math.round(input.monthsStep) : 3
+  if (!input.validUntil) {
+    return { validFrom: input.paidAt, validUntil: addCoverageMonths(input.paidAt, months) }
+  }
+  const anchor = input.validUntil.getTime() > input.paidAt.getTime() ? input.validUntil : input.paidAt
+  return {
+    validFrom: input.validFrom ?? input.paidAt,
+    validUntil: addCoverageMonths(anchor, months),
+  }
+}
+
 export function readRcFabDossierConfig(
   rawExclusionsJson: string | null | undefined,
   fallbackPremiumPerInstallmentTtc: number,
