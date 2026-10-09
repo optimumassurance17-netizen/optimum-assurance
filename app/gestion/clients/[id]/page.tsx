@@ -470,6 +470,49 @@ export default function ClientDetailPage() {
     }
   }
 
+  const restoreAttestationQr = async (documentId: string, numero: string) => {
+    const confirmed = window.confirm(
+      `Remettre en service l'attestation décennale ${numero} ? Le QR code affichera de nouveau une attestation valide. Aucun email ne sera envoyé.`
+    )
+    if (!confirmed) return
+    setSuspendingQrId(documentId)
+    try {
+      const res = await fetch(`/api/gestion/documents/${documentId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "valide" }),
+      })
+      const body = await readResponseJson<{ error?: string }>(res)
+      if (!res.ok) throw new Error(body.error || "Impossible de remettre l'attestation en service.")
+      const reload = await fetch(`/api/gestion/clients/${clientId}`)
+      if (reload.ok) {
+        setData(await readResponseJson<ClientData>(reload))
+      } else {
+        setData((current) =>
+          current
+            ? {
+                ...current,
+                documents: current.documents.map((document) =>
+                  document.id === documentId ? { ...document, status: "valide" } : document
+                ),
+              }
+            : current
+        )
+      }
+      setToast({
+        message: `QR code remis en service pour ${numero}.`,
+        type: "success",
+      })
+    } catch (error) {
+      setToast({
+        message: error instanceof Error ? error.message : "Impossible de remettre l'attestation en service.",
+        type: "error",
+      })
+    } finally {
+      setSuspendingQrId(null)
+    }
+  }
+
   const handleEcheance = async (
     echeanceId: string,
     action: "carte" | "regler" | "virement" | "prevenir",
@@ -1431,7 +1474,17 @@ export default function ClientDetailPage() {
                             </button>
                           ) : null}
                           {(d.type === "attestation" || d.type === "attestation_nominative") && d.status === "suspendu" ? (
-                            <span className="text-xs font-semibold text-red-300">QR suspendu</span>
+                            <>
+                              <span className="text-xs font-semibold text-red-300">QR suspendu</span>
+                              <button
+                                type="button"
+                                disabled={suspendingQrId !== null}
+                                onClick={() => void restoreAttestationQr(d.id, d.numero)}
+                                className="rounded-lg border border-emerald-500 px-3 py-1.5 text-xs font-semibold text-emerald-100 hover:border-emerald-300 disabled:opacity-50"
+                              >
+                                {suspendingQrId === d.id ? "Remise…" : "Remettre en service"}
+                              </button>
+                            </>
                           ) : null}
                         </div>
                       </td>
