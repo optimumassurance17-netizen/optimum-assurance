@@ -845,6 +845,7 @@ export async function GET() {
       description: string
       href: string
       ageHours: number
+      leadId?: string
       remediation?: {
         kind: "dda"
         toEmail: string

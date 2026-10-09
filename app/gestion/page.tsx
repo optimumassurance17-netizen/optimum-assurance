@@ -39,8 +39,9 @@ import { extractClientIdentityFromRecord } from "@/lib/client-identity-extract"
 import {
   DO_DEVIS_LEADS_SECTION_ID,
   doDevisLeadRowId,
-  doLeadMatchesSearch,
+  readDoLeadChantier,
   readDoLeadCompanyName,
+  visibleDoDevisLeads,
 } from "@/lib/devis-do-lead"
 import { buildDoOperationLines } from "@/lib/do-operation-lines"
 import type { DevisDommageOuvrageData } from "@/lib/dommage-ouvrage-types"
@@ -422,6 +423,7 @@ interface DashboardData {
     description: string
     href: string
     ageHours: number
+    leadId?: string
     remediation?: {
       kind: "dda"
       toEmail: string
@@ -661,6 +663,57 @@ export default function GestionPage() {
     },
     []
   )
+
+  const prefillDevisDoFromLead = (leadId: string) => {
+    const lead = data?.devisDoLeads?.find((item) => item.id === leadId)
+    if (!lead) return
+    setDevisDoForm((current) => {
+      const matchingUser = data?.users.find((user) => user.email.toLowerCase() === lead.email.toLowerCase())
+      const tarif = lead.coutTotal && lead.coutTotal > 0 ? calculerTarifDommageOuvrage(lead.coutTotal) : null
+      let adresseOp = ""
+      let tel = ""
+      let typeConstruction = ""
+      let destination = ""
+      let closCouvert = ""
+      let operationLines = current.operationLines
+      try {
+        const leadData = JSON.parse(lead.data || "{}") as Record<string, unknown> & {
+          typeOuvrage?: string
+          destinationConstruction?: string
+          operationClosCouvert?: boolean
+        }
+        const identity = extractClientIdentityFromRecord(leadData)
+        adresseOp = identity.adresse || ""
+        tel = identity.telephone || ""
+        typeConstruction = mapTypeOuvrageToConstruction(leadData.typeOuvrage)
+        destination = mapDestinationConstruction(leadData.destinationConstruction)
+        closCouvert =
+          leadData.operationClosCouvert === true ? "oui" : leadData.operationClosCouvert === false ? "non" : ""
+        operationLines = buildDoOperationLines(
+          leadData as Partial<DevisDommageOuvrageData>,
+          lead.coutTotal ?? undefined
+        )
+      } catch {
+        /* le formulaire reste éditable */
+      }
+      return {
+        ...current,
+        leadId,
+        userId: matchingUser?.id ?? "",
+        coutConstruction: lead.coutTotal ? String(lead.coutTotal) : "",
+        primeAnnuelle: tarif ? String(tarif.primeAnnuelle) : current.primeAnnuelle,
+        adresseOperation: adresseOp || current.adresseOperation,
+        telephone: tel || current.telephone,
+        typeConstruction: typeConstruction || current.typeConstruction,
+        destination: destination || current.destination,
+        closCouvert: closCouvert || current.closCouvert,
+        operationLines,
+      }
+    })
+    window.setTimeout(() => {
+      document.getElementById("devis-do-manuel")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 50)
+  }
 
   const handleCreateLeadAccount = async (leadId: string, leadType: string) => {
     setCreatingLeadAccountId(leadId)
@@ -1127,17 +1180,16 @@ export default function GestionPage() {
     )
   }, [data])
 
-  const filteredDevisDoLeads = useMemo(() => {
-    const list = data?.devisDoLeads ?? []
-    return list.filter((lead) =>
-      doLeadMatchesSearch(
-        {
-          email: lead.email,
-          raisonSociale: lead.raisonSociale ?? readDoLeadCompanyName(lead.data),
-        },
-        searchQuery
-      )
+  const visibleDevisDoLeads = useMemo(() => {
+    const list = (data?.devisDoLeads ?? []).map((lead) => ({
+      ...lead,
+      raisonSociale: lead.raisonSociale ?? readDoLeadCompanyName(lead.data),
+      chantier: readDoLeadChantier(lead.data),
+    }))
+    const knownEmails = new Set(
+      (data?.users ?? []).map((user) => user.email.trim().toLowerCase()).filter(Boolean)
     )
+    return visibleDoDevisLeads(list, knownEmails, searchQuery)
   }, [data, searchQuery])
 
   const filteredRcFabriquantLeads = useMemo(() => {
@@ -3278,6 +3330,16 @@ export default function GestionPage() {
                           <p className="text-xs text-gray-300 mt-1">{a.description}</p>
                         </a>
                         <div className="shrink-0 flex flex-col sm:flex-row items-stretch gap-2">
+                          {a.kind === "do_devis_pending" && a.leadId ? (
+                            <button
+                              type="button"
+                              disabled={creatingLeadAccountId === a.leadId}
+                              onClick={() => void handleCreateLeadAccount(a.leadId ?? "", "dommage_ouvrage")}
+                              className="text-xs px-2.5 py-1.5 rounded border border-[#2563eb] text-[#93c5fd] hover:bg-[#2563eb]/20 disabled:opacity-50"
+                            >
+                              {creatingLeadAccountId === a.leadId ? "Création..." : "Créer le compte"}
+                            </button>
+                          ) : null}
                           {a.remediation?.kind === "dda" ? (
                             <button
                               type="button"
@@ -4471,49 +4533,11 @@ export default function GestionPage() {
                   value={devisDoForm.leadId}
                   onChange={(e) => {
                     const leadId = e.target.value
-                    setDevisDoForm((f) => {
-                      const next = { ...f, leadId }
-                      if (!leadId) return next
-                      const lead = data.devisDoLeads?.find((l) => l.id === leadId)
-                      if (!lead) return next
-                      const matchingUser = data.users.find((u) => u.email.toLowerCase() === lead.email.toLowerCase())
-                      const tarif = lead.coutTotal && lead.coutTotal > 0 ? calculerTarifDommageOuvrage(lead.coutTotal) : null
-                      let adresseOp = ""
-                      let tel = ""
-                      let typeConstruction = ""
-                      let destination = ""
-                      let closCouvert = ""
-                      try {
-                        const leadData = JSON.parse(lead.data || "{}") as Record<string, unknown> & {
-                          typeOuvrage?: string
-                          destinationConstruction?: string
-                          operationClosCouvert?: boolean
-                        }
-                        const identity = extractClientIdentityFromRecord(leadData)
-                        adresseOp = identity.adresse || ""
-                        tel = identity.telephone || ""
-                        typeConstruction = mapTypeOuvrageToConstruction(leadData.typeOuvrage)
-                        destination = mapDestinationConstruction(leadData.destinationConstruction)
-                        closCouvert = leadData.operationClosCouvert === true ? "oui" : leadData.operationClosCouvert === false ? "non" : ""
-                        next.operationLines = buildDoOperationLines(
-                          leadData as Partial<DevisDommageOuvrageData>,
-                          lead.coutTotal ?? undefined
-                        )
-                      } catch {
-                        /* ignore */
-                      }
-                      return {
-                        ...next,
-                        userId: matchingUser?.id ?? "",
-                        coutConstruction: lead.coutTotal ? String(lead.coutTotal) : "",
-                        primeAnnuelle: tarif ? String(tarif.primeAnnuelle) : f.primeAnnuelle,
-                        adresseOperation: adresseOp || f.adresseOperation,
-                        telephone: tel || f.telephone,
-                        typeConstruction: typeConstruction || f.typeConstruction,
-                        destination: destination || f.destination,
-                        closCouvert: closCouvert || f.closCouvert,
-                      }
-                    })
+                    if (!leadId) {
+                      setDevisDoForm((current) => ({ ...current, leadId: "" }))
+                      return
+                    }
+                    prefillDevisDoFromLead(leadId)
                   }}
                   className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
                 >
@@ -5074,14 +5098,19 @@ export default function GestionPage() {
         {data.devisDoLeads && data.devisDoLeads.length > 0 && (
           <section id={DO_DEVIS_LEADS_SECTION_ID} className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-4">Demandes devis dommage ouvrage (en attente)</h2>
-            {filteredDevisDoLeads.length === 0 ? (
-              <p className="text-sm text-gray-300">Aucune demande ne correspond à la recherche.</p>
+            {visibleDevisDoLeads.length === 0 ? (
+              <p className="text-sm text-gray-300">
+                {searchQuery.trim()
+                  ? "Aucune demande ne correspond à la recherche."
+                  : "Aucune demande en attente."}
+              </p>
             ) : (
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[400px]">
                 <thead>
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-3 sm:p-4 font-medium">Société</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Chantier</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Email</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Coût</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">Date</th>
@@ -5090,12 +5119,19 @@ export default function GestionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDevisDoLeads.map((d) => {
+                  {visibleDevisDoLeads.map((d) => {
                     const matchingUser = data.users.find((u) => u.email.toLowerCase() === d.email.toLowerCase())
                     const company = d.raisonSociale ?? readDoLeadCompanyName(d.data)
+                    const chantier = d.chantier ?? readDoLeadChantier(d.data)
+                    const chantierLine = [chantier.typeOuvrage, chantier.destination].filter(Boolean).join(" · ")
+                    const contactLine = [chantier.ville, chantier.telephone].filter(Boolean).join(" · ")
                     return (
                       <tr id={doDevisLeadRowId(d.id)} key={d.id} className="scroll-mt-24 border-b border-gray-700/50">
                         <td className="p-3 sm:p-4">{company || "—"}</td>
+                        <td className="p-3 sm:p-4">
+                          <div>{chantierLine || "—"}</div>
+                          {contactLine ? <div className="text-xs text-gray-300 mt-1">{contactLine}</div> : null}
+                        </td>
                         <td className="p-3 sm:p-4">{d.email}</td>
                         <td className="p-3 sm:p-4">{d.coutTotal ? `${d.coutTotal.toLocaleString("fr-FR")} €` : "—"}</td>
                         <td className="p-3 sm:p-4 hidden sm:table-cell">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
@@ -5107,23 +5143,32 @@ export default function GestionPage() {
                           )}
                         </td>
                         <td className="p-3 sm:p-4">
-                          {!matchingUser ? (
+                          <div className="flex flex-col items-start gap-2">
+                            {!matchingUser ? (
+                              <button
+                                type="button"
+                                disabled={creatingLeadAccountId === d.id}
+                                onClick={() => void handleCreateLeadAccount(d.id, "dommage_ouvrage")}
+                                className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium min-h-[44px] inline-flex items-center px-1 disabled:opacity-40 disabled:pointer-events-none"
+                              >
+                                {creatingLeadAccountId === d.id ? "Création..." : "Créer le compte"}
+                              </button>
+                            ) : (
+                              <Link
+                                href={`/gestion/clients/${matchingUser.id}`}
+                                className="text-sm font-medium text-[#93c5fd] hover:text-white min-h-[44px] inline-flex items-center"
+                              >
+                                Fiche client
+                              </Link>
+                            )}
                             <button
                               type="button"
-                              disabled={creatingLeadAccountId === d.id}
-                              onClick={() => void handleCreateLeadAccount(d.id, "dommage_ouvrage")}
-                              className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 py-2 -m-1 disabled:opacity-40 disabled:pointer-events-none"
+                              onClick={() => prefillDevisDoFromLead(d.id)}
+                              className="text-sm font-medium text-gray-100 min-h-[44px] inline-flex items-center px-1 hover:text-white"
                             >
-                              {creatingLeadAccountId === d.id ? "Création..." : "Créer le compte"}
+                              Préparer le devis
                             </button>
-                          ) : (
-                            <Link
-                              href={`/gestion/clients/${matchingUser.id}`}
-                              className="text-sm font-medium text-[#93c5fd] hover:text-white min-h-[44px] inline-flex items-center"
-                            >
-                              Fiche client
-                            </Link>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     )

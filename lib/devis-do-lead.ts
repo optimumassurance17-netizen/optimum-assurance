@@ -1,5 +1,13 @@
+import { TYPES_OUVRAGE, type DestinationConstruction } from "@/lib/dommage-ouvrage-types"
+
 /** Ancre du bloc « Demandes devis dommage ouvrage » sur /gestion. */
 export const DO_DEVIS_LEADS_SECTION_ID = "demandes-devis-do"
+
+const DESTINATION_LABELS: Record<DestinationConstruction, string> = {
+  location: "Location",
+  vente: "Vente",
+  exploitation_directe: "Exploitation directe",
+}
 
 const DO_DEVIS_ACTION_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 const DO_DEVIS_ACTION_LIMIT = 8
@@ -13,18 +21,52 @@ export function foldSearchText(value: string): string {
     .trim()
 }
 
-export function readDoLeadCompanyName(raw: string | null | undefined): string | null {
+function readDoLeadRecord(raw: string | null | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null
   try {
     const parsed = JSON.parse(raw) as unknown
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null
-    const name = (parsed as { raisonSociale?: unknown }).raisonSociale
-    if (typeof name !== "string") return null
-    const trimmed = name.trim().replace(/\s+/g, " ")
-    if (!trimmed) return null
-    return trimmed.slice(0, 160)
+    return parsed as Record<string, unknown>
   } catch {
     return null
+  }
+}
+
+function readTrimmed(record: Record<string, unknown> | null, key: string, max: number): string | null {
+  const value = record?.[key]
+  if (typeof value !== "string") return null
+  const trimmed = value.trim().replace(/\s+/g, " ")
+  if (!trimmed) return null
+  return trimmed.slice(0, max)
+}
+
+export function readDoLeadCompanyName(raw: string | null | undefined): string | null {
+  return readTrimmed(readDoLeadRecord(raw), "raisonSociale", 160)
+}
+
+export type DoLeadChantier = {
+  typeOuvrage: string | null
+  destination: string | null
+  ville: string | null
+  telephone: string | null
+}
+
+export function readDoLeadChantier(raw: string | null | undefined): DoLeadChantier {
+  const record = readDoLeadRecord(raw)
+  const typeCode = readTrimmed(record, "typeOuvrage", 80)
+  const destinationCode = readTrimmed(record, "destinationConstruction", 80)
+  const typeOuvrage = typeCode
+    ? (TYPES_OUVRAGE.find((item) => item.value === typeCode)?.label ?? null)
+    : null
+  const destination =
+    destinationCode && destinationCode in DESTINATION_LABELS
+      ? DESTINATION_LABELS[destinationCode as DestinationConstruction]
+      : null
+  return {
+    typeOuvrage,
+    destination,
+    ville: readTrimmed(record, "villeConstruction", 80) ?? readTrimmed(record, "ville", 80),
+    telephone: readTrimmed(record, "telephone", 30),
   }
 }
 
@@ -39,15 +81,42 @@ export function doDevisLeadGestionUrl(siteUrl: string, leadId?: string | null): 
   return `${base}/gestion#${doDevisLeadRowId(leadId ?? "")}`
 }
 
-export function doLeadMatchesSearch(
-  lead: { email: string; raisonSociale?: string | null },
-  query: string
-): boolean {
+export type DoLeadSearchFields = {
+  email: string
+  raisonSociale?: string | null
+  chantier?: DoLeadChantier | null
+}
+
+export function doLeadMatchesSearch(lead: DoLeadSearchFields, query: string): boolean {
   const folded = foldSearchText(query)
   if (!folded) return true
-  if (foldSearchText(lead.email).includes(folded)) return true
-  if (foldSearchText(lead.raisonSociale ?? "").includes(folded)) return true
-  return false
+  const chantier = lead.chantier
+  const fields = [
+    lead.email,
+    lead.raisonSociale ?? "",
+    chantier?.typeOuvrage ?? "",
+    chantier?.destination ?? "",
+    chantier?.ville ?? "",
+    chantier?.telephone ?? "",
+  ]
+  if (fields.some((field) => foldSearchText(field).includes(folded))) return true
+  const queryDigits = query.replace(/\D/g, "")
+  const phoneDigits = (chantier?.telephone ?? "").replace(/\D/g, "")
+  return queryDigits.length >= 4 && phoneDigits.includes(queryDigits)
+}
+
+/** Sans recherche : seulement les demandes sans fiche. Avec recherche : toutes les demandes qui correspondent. */
+export function visibleDoDevisLeads<T extends DoLeadSearchFields>(
+  leads: T[],
+  knownEmails: ReadonlySet<string>,
+  query: string
+): T[] {
+  return leads.filter((lead) => {
+    if (!doLeadMatchesSearch(lead, query)) return false
+    if (query.trim()) return true
+    const email = lead.email.trim().toLowerCase()
+    return Boolean(email) && !knownEmails.has(email)
+  })
 }
 
 export type DoDevisLeadActionInput = {
@@ -65,6 +134,7 @@ export type DoDevisDashboardAction = {
   description: string
   href: string
   ageHours: number
+  leadId: string
 }
 
 /**
@@ -99,6 +169,7 @@ export function selectDoDevisDashboardActions(
         description: company ? `${company} — ${email}` : email,
         href: `#${doDevisLeadRowId(lead.id)}`,
         ageHours,
+        leadId: lead.id,
       }
     })
 }

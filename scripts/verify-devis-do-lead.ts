@@ -4,8 +4,10 @@ import {
   doDevisLeadGestionUrl,
   doDevisLeadRowId,
   doLeadMatchesSearch,
+  readDoLeadChantier,
   readDoLeadCompanyName,
   selectDoDevisDashboardActions,
+  visibleDoDevisLeads,
 } from "../lib/devis-do-lead"
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -28,6 +30,43 @@ assert(doLeadMatchesSearch(lead, ""), "une recherche vide garde la demande")
 assert(doLeadMatchesSearch(lead, "PROSPECT"), "la recherche retrouve l'e-mail")
 assert(doLeadMatchesSearch(lead, "demo"), "la recherche ignore les accents")
 assert(!doLeadMatchesSearch(lead, "autre-societe"), "une autre société ne correspond pas")
+
+const chantierRaw = JSON.stringify({
+  raisonSociale: "SCA Démo",
+  typeOuvrage: "immeuble_logements",
+  destinationConstruction: "exploitation_directe",
+  ville: "Paris",
+  villeConstruction: "Lyon",
+  telephone: "06 12 34 56 78",
+})
+const chantier = readDoLeadChantier(chantierRaw)
+assert(chantier.typeOuvrage === "Immeuble logements collectifs", "le type d'ouvrage est en français")
+assert(chantier.destination === "Exploitation directe", "la destination est en français")
+assert(chantier.ville === "Lyon", "la ville du chantier est préférée à la ville du siège")
+assert(chantier.telephone === "06 12 34 56 78", "le téléphone est repris")
+assert(readDoLeadChantier(JSON.stringify({ typeOuvrage: "code_inconnu" })).typeOuvrage === null, "un code inconnu n'est pas affiché brut")
+assert(
+  doLeadMatchesSearch({ email: "prospect@example.com", chantier }, "logements"),
+  "la recherche retrouve le type d'ouvrage"
+)
+assert(
+  doLeadMatchesSearch({ email: "prospect@example.com", chantier }, "061234"),
+  "la recherche retrouve le téléphone"
+)
+
+const waitingLeads = [
+  { email: "prospect@example.com", raisonSociale: "SCA Démo" },
+  { email: "deja@example.com", raisonSociale: "Déjà client" },
+]
+const known = new Set(["deja@example.com"])
+assert(
+  visibleDoDevisLeads(waitingLeads, known, "").length === 1,
+  "sans recherche, une demande avec fiche quitte la liste d'attente"
+)
+assert(
+  visibleDoDevisLeads(waitingLeads, known, "deja").some((item) => item.email === "deja@example.com"),
+  "la recherche retrouve une demande déjà rattachée à une fiche"
+)
 
 const now = new Date("2026-10-09T16:00:00.000Z")
 const recentId = "cldo00000000000000000001"
@@ -87,6 +126,7 @@ assert(actions[0]?.id === `lead-do-${recentId}`, "la demande la plus récente es
 assert(actions[0]?.description === "SCA Démo — prospect@example.com", "l'action nomme la société et l'e-mail")
 assert(actions[0]?.href === `#${doDevisLeadRowId(recentId)}`, "l'action pointe vers la ligne")
 assert(actions[0]?.kind === "do_devis_pending", "l'action est une demande devis DO")
+assert(actions[0]?.leadId === recentId, "l'action porte l'identifiant de la demande")
 assert(actions[0]?.priority === "medium", "une demande du jour n'est pas marquée urgente")
 assert(actions.some((action) => action.id === `lead-do-${olderId}`), "une demande de la semaine reste visible")
 assert(!actions.some((action) => action.description.includes("Déjà client")), "une fiche déjà ouverte n'est pas une action")
@@ -132,10 +172,18 @@ assert(!dashboard.includes("sendClientAccessEmail"), "ouvrir le tableau de bord 
 assert(!dashboard.includes("create-from-lead"), "ouvrir le tableau de bord ne crée pas de fiche")
 
 assert(page.includes("Société"), "le tableau affiche la société")
-assert(page.includes("doLeadMatchesSearch"), "la recherche de la page inclut les demandes DO")
+assert(page.includes("visibleDoDevisLeads"), "la recherche de la page inclut les demandes DO")
 assert(page.includes("DO_DEVIS_LEADS_SECTION_ID"), "le bloc des demandes a une ancre")
 assert(page.includes('handleCreateLeadAccount(d.id, "dommage_ouvrage")'), "la fiche se crée encore par le bouton")
 assert(page.includes("do_devis_pending"), "l'action du jour ouvre la ligne sans créer de compte")
+assert(page.includes("Préparer le devis"), "la ligne prépare le devis déjà présent")
+assert(page.includes("prefillDevisDoFromLead"), "le préremplissage réutilise le formulaire de contrat")
+assert(page.includes("Aucune demande en attente."), "une demande avec fiche sort de la liste d'attente")
+assert(page.includes(">Chantier<"), "le tableau affiche le chantier")
+assert(
+  page.includes('handleCreateLeadAccount(a.leadId ?? "", "dommage_ouvrage")'),
+  "créer le compte depuis l'action du jour reste un clic"
+)
 assert(page.includes("Demandes DO"), "un accès rapide mène au bloc")
 
 assert(search.includes("doLeadMatchesSearch"), "la recherche rapide retrouve les demandes")
