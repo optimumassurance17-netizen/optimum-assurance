@@ -79,7 +79,10 @@ export async function POST(
       amount,
       espaceClientUrl,
       email,
-      { reference: contract.contractNumber }
+      {
+        reference: contract.contractNumber,
+        dossierDoValide: contract.productType === "do",
+      }
     )
 
     const sent = await sendEmail({

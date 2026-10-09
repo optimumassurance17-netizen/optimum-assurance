@@ -12,6 +12,7 @@ import {
   insuranceProductHasSchedule,
   insuranceProductUsesDirectMollieAfterApproval,
 } from "@/lib/insurance-product"
+import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
 
 export type InsuranceContractGestionRow = {
   id: string
@@ -402,7 +403,10 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                                   return
                                 }
                                 setToast({
-                                  message: `Demande paiement envoyée${j.sentTo ? ` à ${j.sentTo}` : ""}.`,
+                                  message:
+                                    c.productType === "do"
+                                      ? `Demande de paiement envoyée${j.sentTo ? ` à ${j.sentTo}` : ""}. ${DO_DOSSIER_VALIDE_MESSAGE}`
+                                      : `Demande paiement envoyée${j.sentTo ? ` à ${j.sentTo}` : ""}.`,
                                   type: "success",
                                 })
                               })

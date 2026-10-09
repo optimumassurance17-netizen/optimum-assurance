@@ -171,7 +171,10 @@ export async function GET(request: NextRequest) {
         contract.premium,
         `${SITE_URL}/espace-client`,
         normalizedEmail,
-        { reference: contract.contractNumber }
+        {
+          reference: contract.contractNumber,
+          dossierDoValide: contract.productType === "do",
+        }
       )
       const emailOk = await sendEmail({
         to: normalizedEmail,

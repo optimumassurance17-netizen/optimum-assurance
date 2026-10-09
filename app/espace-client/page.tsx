@@ -19,6 +19,7 @@ import {
   getInsuranceProductLabel,
   insuranceProductAllowsActiveInstallmentPayments,
 } from "@/lib/insurance-product"
+import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
 
 interface DocumentItem {
   id: string
@@ -810,6 +811,10 @@ export default function EspaceClientPage() {
                         }
                       />
                     )}
+                    {c.productType === "do" &&
+                    (c.status === CONTRACT_STATUS.approved || c.status === CONTRACT_STATUS.active) ? (
+                      <p className="max-w-sm text-xs leading-relaxed text-[#171717]">{DO_DOSSIER_VALIDE_MESSAGE}</p>
+                    ) : null}
                     {c.status === CONTRACT_STATUS.pending_validation && (
                       <span className="inline-block rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-blue-900">
                         {c.productType === "do"

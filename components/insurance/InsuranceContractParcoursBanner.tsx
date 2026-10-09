@@ -7,6 +7,7 @@ import {
   getInsuranceProductLabel,
   insuranceProductUsesDirectMollieAfterApproval,
 } from "@/lib/insurance-product"
+import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
 
 type Props = {
   snapshot: InsuranceContractSnapshot
@@ -95,8 +96,16 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
           {isDoPlatform ? "Paiement du contrat (virement unique)" : "Paiement du contrat (virement)"}
         </p>
         <p className="text-sm text-[#171717] mb-4">
-          {productLabel} <span className="font-mono">{contractNumber}</span> est prêt. Le lien Mollie n&apos;a pas pu
-          s&apos;ouvrir ou a été fermé — vous pouvez lancer le virement depuis ce bouton.
+          {isDoPlatform ? (
+            <>
+              {DO_DOSSIER_VALIDE_MESSAGE} Le virement unique se lance depuis le bouton ci-dessous.
+            </>
+          ) : (
+            <>
+              {productLabel} <span className="font-mono">{contractNumber}</span> est prêt. Le lien Mollie n&apos;a pas pu
+              s&apos;ouvrir ou a été fermé — vous pouvez lancer le virement depuis ce bouton.
+            </>
+          )}
         </p>
         <PayInsuranceContractButton
           contractId={contractId}

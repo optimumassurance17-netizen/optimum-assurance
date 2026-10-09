@@ -10,6 +10,7 @@ import {
 } from "@/lib/email-layout"
 import { buildReminderUnsubscribeUrl, type ReminderUnsubscribeType } from "@/lib/reminder-unsubscribe"
 import { DEFAULT_PUBLIC_CONTACT_EMAIL } from "@/lib/public-contact-email"
+import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
 
 /**
  * Émission et réponses : info@optimum-assurance.eu.
@@ -213,20 +214,28 @@ export const EMAIL_TEMPLATES = {
     montant: number,
     espaceClientUrl: string,
     recipientEmail: string,
-    opts?: { reference?: string }
+    opts?: { reference?: string; dossierDoValide?: boolean }
   ) => {
     const ref = opts?.reference?.trim()
     const refText = ref ? `\nRéférence contrat : ${ref}` : ""
     const refHtml = ref
       ? `<p style="font-size:13px;color:#64748b;margin:8px 0 0;">Référence contrat : <strong>${escapeHtmlForEmail(ref)}</strong></p>`
       : ""
+    const dossierText = opts?.dossierDoValide
+      ? `${DO_DOSSIER_VALIDE_MESSAGE}\n\nLe paiement de votre dossier dommage ouvrage reste en attente.`
+      : `Votre dossier ${produitLabel} est prêt, mais le paiement reste en attente.`
+    const dossierHtml = opts?.dossierDoValide
+      ? `<p>${escapeHtmlForEmail(DO_DOSSIER_VALIDE_MESSAGE)}</p><p>Le paiement de votre dossier <strong>dommage ouvrage</strong> reste en attente.</p>`
+      : `<p>Votre dossier <strong>${escapeHtmlForEmail(produitLabel)}</strong> est prêt, mais le paiement reste en attente.</p>`
     return {
-      subject: `Rappel paiement ${produitLabel} - Optimum Assurance`,
+      subject: opts?.dossierDoValide
+        ? `Dossier dommage ouvrage validé — paiement - Optimum Assurance`
+        : `Rappel paiement ${produitLabel} - Optimum Assurance`,
       text:
-        `Bonjour ${raisonSociale},\n\nVotre dossier ${produitLabel} est prêt, mais le paiement reste en attente.${refText}\n\nMontant attendu : ${montant.toLocaleString("fr-FR")} €\n\nAccédez à votre espace client pour finaliser le règlement :\n${espaceClientUrl}\n\nCordialement,\nOptimum Assurance` +
+        `Bonjour ${raisonSociale},\n\n${dossierText}${refText}\n\nMontant attendu : ${montant.toLocaleString("fr-FR")} €\n\nAccédez à votre espace client pour finaliser le règlement :\n${espaceClientUrl}\n\nCordialement,\nOptimum Assurance` +
         reminderUnsubscribeTextFooter("paiement", recipientEmail),
       html:
-        `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre dossier <strong>${escapeHtmlForEmail(produitLabel)}</strong> est prêt, mais le paiement reste en attente.</p>${refHtml}<p><strong>Montant attendu :</strong> ${montant.toLocaleString("fr-FR")} €</p><p><a href="${espaceClientUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
+        `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p>${dossierHtml}${refHtml}<p><strong>Montant attendu :</strong> ${montant.toLocaleString("fr-FR")} €</p><p><a href="${espaceClientUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
         reminderUnsubscribeHtmlFooter("paiement", recipientEmail),
     }
   },
