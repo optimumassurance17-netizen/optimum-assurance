@@ -815,6 +815,14 @@ export default function EspaceClientPage() {
                     (c.status === CONTRACT_STATUS.approved || c.status === CONTRACT_STATUS.active) ? (
                       <p className="max-w-sm text-xs leading-relaxed text-[#171717]">{DO_DOSSIER_VALIDE_MESSAGE}</p>
                     ) : null}
+                    {c.productType === "do" ? (
+                      <a
+                        href="/api/client/do-pv-reception"
+                        className="inline-flex max-w-sm text-sm font-semibold text-[#2563eb] hover:underline"
+                      >
+                        Télécharger le procès-verbal de réception (modèle vierge)
+                      </a>
+                    ) : null}
                     {c.status === CONTRACT_STATUS.pending_validation && (
                       <span className="inline-block rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-blue-900">
                         {c.productType === "do"
