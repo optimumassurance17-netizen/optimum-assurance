@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { Prisma } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
+import { doDevisLeadRowId, doLeadMatchesSearch, readDoLeadCompanyName } from "@/lib/devis-do-lead"
 
 const CLIENT_SEARCH_LIMIT = 8
 
@@ -105,9 +106,44 @@ export async function GET(request: NextRequest) {
         siret: client.siret,
       }))
 
-    return NextResponse.json({ results })
+    const devisDoLeads = await findDoDevisLeadMatches(rawQuery)
+
+    return NextResponse.json({ results, devisDoLeads })
   } catch (error) {
     console.error("Client search error:", error)
     return NextResponse.json({ error: "Erreur recherche fiche client" }, { status: 500 })
+  }
+}
+
+async function findDoDevisLeadMatches(rawQuery: string) {
+  try {
+    const leads = await prisma.devisDommageOuvrageLead.findMany({
+      select: { id: true, email: true, data: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    })
+    return leads
+      .map((lead) => ({
+        id: lead.id,
+        email: lead.email,
+        raisonSociale: readDoLeadCompanyName(lead.data),
+        createdAt: lead.createdAt,
+      }))
+      .filter((lead) => doLeadMatchesSearch(lead, rawQuery))
+      .slice(0, 5)
+      .map((lead) => ({
+        id: lead.id,
+        email: lead.email,
+        raisonSociale: lead.raisonSociale,
+        href: `/gestion#${doDevisLeadRowId(lead.id)}`,
+      }))
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === "P2021" || error.code === "P2022")
+    ) {
+      return []
+    }
+    throw error
   }
 }

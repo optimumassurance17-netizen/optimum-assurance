@@ -12,8 +12,16 @@ type ClientQuickSearchResult = {
   siret: string | null
 }
 
+type DoDevisSearchResult = {
+  id: string
+  email: string
+  raisonSociale: string | null
+  href: string
+}
+
 type ClientQuickSearchResponse = {
   results?: ClientQuickSearchResult[]
+  devisDoLeads?: DoDevisSearchResult[]
   error?: string
 }
 
@@ -36,6 +44,7 @@ export function ClientQuickSearch({
   const inputId = useId()
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<ClientQuickSearchResult[]>([])
+  const [devisDoLeads, setDevisDoLeads] = useState<DoDevisSearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,6 +54,7 @@ export function ClientQuickSearch({
   useEffect(() => {
     if (!canSearch) {
       setResults([])
+      setDevisDoLeads([])
       setLoading(false)
       setError(null)
       return
@@ -62,10 +72,12 @@ export function ClientQuickSearch({
         }
         if (!cancelled) {
           setResults(Array.isArray(json.results) ? json.results : [])
+          setDevisDoLeads(Array.isArray(json.devisDoLeads) ? json.devisDoLeads : [])
         }
       } catch (err) {
         if (!cancelled) {
           setResults([])
+          setDevisDoLeads([])
           setError(err instanceof Error ? err.message : "Erreur recherche fiche client")
         }
       } finally {
@@ -85,6 +97,10 @@ export function ClientQuickSearch({
     event.preventDefault()
     if (results[0]) {
       router.push(`/gestion/clients/${results[0].id}`)
+      return
+    }
+    if (devisDoLeads[0]?.href.startsWith("/gestion#")) {
+      router.push(devisDoLeads[0].href)
     }
   }
 
@@ -110,29 +126,53 @@ export function ClientQuickSearch({
             <p className="px-4 py-3 text-sm text-gray-300">Recherche en cours…</p>
           ) : error ? (
             <p className="px-4 py-3 text-sm text-red-300">{error}</p>
-          ) : results.length === 0 ? (
+          ) : results.length === 0 && devisDoLeads.length === 0 ? (
             <p className="px-4 py-3 text-sm text-gray-300">Aucune fiche client trouvée.</p>
           ) : (
-            <ul className="divide-y divide-gray-700">
-              {results.map((client) => (
-                <li key={client.id}>
-                  <Link
-                    href={`/gestion/clients/${client.id}`}
-                    className="flex flex-col gap-1 px-4 py-3 hover:bg-[#282828]"
-                  >
-                    <span className="text-sm font-medium text-white">
-                      {client.raisonSociale || client.email}
-                    </span>
-                    <span className="text-xs text-gray-300">{client.email}</span>
-                    {client.siret ? (
-                      <span className="text-[11px] font-mono text-gray-400">{client.siret}</span>
-                    ) : null}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <div>
+              {results.length > 0 ? (
+                <ul className="divide-y divide-gray-700">
+                  {results.map((client) => (
+                    <li key={client.id}>
+                      <Link
+                        href={`/gestion/clients/${client.id}`}
+                        className="flex flex-col gap-1 px-4 py-3 hover:bg-[#282828]"
+                      >
+                        <span className="text-sm font-medium text-white">
+                          {client.raisonSociale || client.email}
+                        </span>
+                        <span className="text-xs text-gray-300">{client.email}</span>
+                        {client.siret ? (
+                          <span className="text-[11px] font-mono text-gray-400">{client.siret}</span>
+                        ) : null}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="px-4 py-3 text-sm text-gray-300">Aucune fiche client trouvée.</p>
+              )}
+              {devisDoLeads.length > 0 ? (
+                <ul className="divide-y divide-gray-700 border-t border-gray-700">
+                  {devisDoLeads.map((lead) => (
+                    <li key={lead.id}>
+                      <Link
+                        href={lead.href.startsWith("/gestion#") ? lead.href : "/gestion#demandes-devis-do"}
+                        className="flex flex-col gap-1 px-4 py-3 hover:bg-[#282828]"
+                      >
+                        <span className="text-[11px] uppercase tracking-wide text-sky-300">Demande devis</span>
+                        <span className="text-sm font-medium text-white">
+                          {lead.raisonSociale || lead.email}
+                        </span>
+                        <span className="text-xs text-gray-300">{lead.email}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
           )}
-          {results.length > 0 ? (
+          {results.length > 0 || devisDoLeads.length > 0 ? (
             <p className="border-t border-gray-700 px-4 py-2 text-[11px] text-gray-500">
               Astuce : appuyez sur Entrée pour ouvrir le premier résultat.
             </p>

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    await prisma.devisDommageOuvrageLead.create({
+    const lead = await prisma.devisDommageOuvrageLead.create({
       data: {
         email,
         data: JSON.stringify(data),
@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
         type: "dommage_ouvrage",
         clientEmail: String(email).trim(),
         lines,
+        gestionLeadId: lead.id,
       })
     } catch (e) {
       console.error("[devis-dommage-ouvrage] alerte interne:", e)

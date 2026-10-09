@@ -10,6 +10,7 @@ import { stripSignatureBinariesFromJsonString } from "@/lib/esign/local-signatur
 import { loadEcheancesASuivre } from "@/lib/client-echeance-service"
 import { adminActivityClientHref, adminActivityLabel } from "@/lib/admin-activity-label"
 import { latestSignatureReminderByRequest } from "@/lib/signature-reminder"
+import { readDoLeadCompanyName, selectDoDevisDashboardActions } from "@/lib/devis-do-lead"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -838,6 +839,7 @@ export async function GET() {
         | "dda_avenant_missing"
         | "dda_rc_fabriquant_missing"
         | "assurance_titre_pending"
+        | "do_devis_pending"
       priority: "high" | "medium"
       title: string
       description: string
@@ -1081,9 +1083,15 @@ export async function GET() {
       })
     }
 
+    const doDevisActions = selectDoDevisDashboardActions(
+      devisDoLeads,
+      new Set(users.map((user) => user.email.trim().toLowerCase()).filter(Boolean)),
+      now
+    )
     const dashboardActionsVisible = dashboardActions.filter((a) => !dismissedActionIds.has(a.id))
     dashboardActionsVisible.sort((a, b) => b.ageHours - a.ageHours)
-    const dashboardActionsLimited = dashboardActionsVisible.slice(0, 20)
+    const doDevisActionsVisible = doDevisActions.filter((action) => !dismissedActionIds.has(action.id))
+    const dashboardActionsLimited = [...doDevisActionsVisible, ...dashboardActionsVisible].slice(0, 20)
     const dashboardActionsSummary = {
       total: dashboardActionsLimited.length,
       high: dashboardActionsLimited.filter((a) => a.priority === "high").length,
@@ -1112,7 +1120,10 @@ export async function GET() {
       })),
       payments,
       avenantFees,
-      devisDoLeads,
+      devisDoLeads: devisDoLeads.map((lead) => ({
+        ...lead,
+        raisonSociale: readDoLeadCompanyName(lead.data),
+      })),
       devisRcFabriquantLeads: devisRcFabriquantLeadsWithUser,
       devisAssuranceTitreLeads: devisAssuranceTitreLeadsWithUser,
       devisEtudeLeads,

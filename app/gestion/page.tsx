@@ -36,6 +36,12 @@ import { DuplicateAccountsPanel } from "@/components/gestion/DuplicateAccountsPa
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { extractClientIdentityFromRecord } from "@/lib/client-identity-extract"
+import {
+  DO_DEVIS_LEADS_SECTION_ID,
+  doDevisLeadRowId,
+  doLeadMatchesSearch,
+  readDoLeadCompanyName,
+} from "@/lib/devis-do-lead"
 import { buildDoOperationLines } from "@/lib/do-operation-lines"
 import type { DevisDommageOuvrageData } from "@/lib/dommage-ouvrage-types"
 import {
@@ -212,7 +218,14 @@ interface DashboardData {
     doQuestionnaireInitial?: boolean
     doQuestionnaireEtude?: boolean
   }[]
-  devisDoLeads?: { id: string; email: string; data?: string; coutTotal: number | null; createdAt: string }[]
+  devisDoLeads?: {
+    id: string
+    email: string
+    data?: string
+    coutTotal: number | null
+    createdAt: string
+    raisonSociale?: string | null
+  }[]
   devisRcFabriquantLeads?: {
     id: string
     email: string
@@ -403,6 +416,7 @@ interface DashboardData {
       | "dda_avenant_missing"
       | "dda_rc_fabriquant_missing"
       | "assurance_titre_pending"
+      | "do_devis_pending"
     priority: "high" | "medium"
     title: string
     description: string
@@ -1112,6 +1126,19 @@ export default function GestionPage() {
         action.remediation?.kind === "dda"
     )
   }, [data])
+
+  const filteredDevisDoLeads = useMemo(() => {
+    const list = data?.devisDoLeads ?? []
+    return list.filter((lead) =>
+      doLeadMatchesSearch(
+        {
+          email: lead.email,
+          raisonSociale: lead.raisonSociale ?? readDoLeadCompanyName(lead.data),
+        },
+        searchQuery
+      )
+    )
+  }, [data, searchQuery])
 
   const filteredRcFabriquantLeads = useMemo(() => {
     const list = data?.devisRcFabriquantLeads ?? []
@@ -1889,9 +1916,14 @@ export default function GestionPage() {
                 onClick={() => {
                   if (!data?.devisDoLeads) return
                   const csv = [
-                    ["Email", "Coût construction (€)", "Date"].join(";"),
+                    ["Société", "Email", "Coût construction (€)", "Date"].join(";"),
                     ...data.devisDoLeads.map((d) =>
-                      [d.email, d.coutTotal ?? "", new Date(d.createdAt).toLocaleDateString("fr-FR")].join(";")
+                      [
+                        d.raisonSociale ?? readDoLeadCompanyName(d.data) ?? "",
+                        d.email,
+                        d.coutTotal ?? "",
+                        new Date(d.createdAt).toLocaleDateString("fr-FR"),
+                      ].join(";")
                     ),
                   ].join("\n")
                   const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" })
@@ -2021,7 +2053,7 @@ export default function GestionPage() {
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <input
                     type="search"
-                    placeholder="Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant)..."
+                    placeholder="Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant, devis DO)..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-[29rem]"
@@ -2047,7 +2079,7 @@ export default function GestionPage() {
               <ClientQuickSearch
                 label="Recherche fiche client"
                 placeholder="Nom, email ou SIRET"
-                helperText="Ouvre directement la fiche client sans scroller le dashboard."
+                helperText="Ouvre une fiche client, ou la demande de devis dommage ouvrage."
               />
             </div>
             <nav
@@ -2117,6 +2149,14 @@ export default function GestionPage() {
               >
                 Devis DO
               </a>
+              {(data.devisDoLeads?.length ?? 0) > 0 && (
+                <a
+                  href={`#${DO_DEVIS_LEADS_SECTION_ID}`}
+                  className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+                >
+                  Demandes DO
+                </a>
+              )}
               <a
                 href="#paiements"
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
@@ -3209,7 +3249,19 @@ export default function GestionPage() {
                       className="rounded-lg border border-gray-700 bg-[#1f1f1f] px-3 py-2"
                     >
                       <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-3">
-                        <a href={a.href} className="block min-w-0 flex-1 hover:text-[#2563eb] transition-colors">
+                        <a
+                          href={a.href}
+                          onClick={(event) => {
+                            if (a.kind !== "do_devis_pending" || !a.href.startsWith("#")) return
+                            event.preventDefault()
+                            const rowId = a.href.slice(1)
+                            setSearchQuery("")
+                            window.setTimeout(() => {
+                              document.getElementById(rowId)?.scrollIntoView({ behavior: "smooth", block: "start" })
+                            }, 50)
+                          }}
+                          className="block min-w-0 flex-1 hover:text-[#2563eb] transition-colors"
+                        >
                           <div className="flex flex-wrap items-center gap-2">
                             <span
                               className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${
@@ -4468,8 +4520,10 @@ export default function GestionPage() {
                   <option value="">— Aucune —</option>
                   {data.devisDoLeads.map((l) => {
                     const match = data.users.find((u) => u.email.toLowerCase() === l.email.toLowerCase())
+                    const company = l.raisonSociale ?? readDoLeadCompanyName(l.data)
                     return (
                       <option key={l.id} value={l.id}>
+                        {company ? `${company} — ` : ""}
                         {l.email} — {l.coutTotal ? `${l.coutTotal.toLocaleString("fr-FR")} €` : "—"} {match ? "✓" : ""}
                       </option>
                     )
@@ -5018,12 +5072,16 @@ export default function GestionPage() {
         )}
 
         {data.devisDoLeads && data.devisDoLeads.length > 0 && (
-          <section>
+          <section id={DO_DEVIS_LEADS_SECTION_ID} className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-4">Demandes devis dommage ouvrage (en attente)</h2>
+            {filteredDevisDoLeads.length === 0 ? (
+              <p className="text-sm text-gray-300">Aucune demande ne correspond à la recherche.</p>
+            ) : (
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[400px]">
                 <thead>
                   <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 sm:p-4 font-medium">Société</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Email</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Coût</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">Date</th>
@@ -5032,10 +5090,12 @@ export default function GestionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.devisDoLeads.map((d) => {
+                  {filteredDevisDoLeads.map((d) => {
                     const matchingUser = data.users.find((u) => u.email.toLowerCase() === d.email.toLowerCase())
+                    const company = d.raisonSociale ?? readDoLeadCompanyName(d.data)
                     return (
-                      <tr key={d.id} className="border-b border-gray-700/50">
+                      <tr id={doDevisLeadRowId(d.id)} key={d.id} className="scroll-mt-24 border-b border-gray-700/50">
+                        <td className="p-3 sm:p-4">{company || "—"}</td>
                         <td className="p-3 sm:p-4">{d.email}</td>
                         <td className="p-3 sm:p-4">{d.coutTotal ? `${d.coutTotal.toLocaleString("fr-FR")} €` : "—"}</td>
                         <td className="p-3 sm:p-4 hidden sm:table-cell">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
@@ -5056,7 +5116,14 @@ export default function GestionPage() {
                             >
                               {creatingLeadAccountId === d.id ? "Création..." : "Créer le compte"}
                             </button>
-                          ) : null}
+                          ) : (
+                            <Link
+                              href={`/gestion/clients/${matchingUser.id}`}
+                              className="text-sm font-medium text-[#93c5fd] hover:text-white min-h-[44px] inline-flex items-center"
+                            >
+                              Fiche client
+                            </Link>
+                          )}
                         </td>
                       </tr>
                     )
@@ -5064,6 +5131,7 @@ export default function GestionPage() {
                 </tbody>
               </table>
             </div>
+            )}
           </section>
         )}
 

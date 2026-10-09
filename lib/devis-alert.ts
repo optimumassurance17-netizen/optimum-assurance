@@ -1,5 +1,6 @@
 import { sendEmail } from "@/lib/email"
 import { escapeHtmlForEmail } from "@/lib/email-layout"
+import { doDevisLeadGestionUrl } from "@/lib/devis-do-lead"
 import { DEFAULT_PUBLIC_CONTACT_EMAIL } from "@/lib/public-contact-email"
 import { SITE_URL } from "@/lib/site-url"
 
@@ -26,6 +27,7 @@ export async function sendNewDevisRequestAlert(params: {
   type: DevisAlertType
   clientEmail: string
   lines: string[]
+  gestionLeadId?: string
 }): Promise<void> {
   const recipients = getDevisAlertRecipientEmails()
 
@@ -41,6 +43,8 @@ export async function sendNewDevisRequestAlert(params: {
             : "Étude personnalisée"
   const subject = `[Optimum] Nouvelle demande de devis — ${label}`
   const clientEmail = params.clientEmail.trim()
+  const gestionUrl =
+    params.type === "dommage_ouvrage" ? doDevisLeadGestionUrl(SITE_URL, params.gestionLeadId) : ""
 
   const textBody = [
     `Nouvelle demande de devis (${label}).`,
@@ -49,6 +53,7 @@ export async function sendNewDevisRequestAlert(params: {
     "",
     ...params.lines,
     "",
+    ...(gestionUrl ? [`Ouvrir la demande dans la gestion : ${gestionUrl}`, ""] : []),
     `Site : ${SITE_URL}`,
     "",
     "---",
@@ -58,9 +63,13 @@ export async function sendNewDevisRequestAlert(params: {
   const htmlLines = params.lines
     .map((l) => `<p style="margin:0 0 8px;color:#0f172a;">${escapeHtmlForEmail(l)}</p>`)
     .join("")
+  const gestionHtml = gestionUrl
+    ? `<p style="margin:16px 0 0;"><a href="${escapeHtmlForEmail(gestionUrl)}" style="color:#2563eb;">Ouvrir la demande dans la gestion</a></p>`
+    : ""
   const html = `<p style="font-weight:600;font-size:16px;margin:0 0 14px;color:#0f172a;">Nouvelle demande de devis — ${escapeHtmlForEmail(label)}</p>
 <p style="margin:0 0 12px;"><strong>Email du prospect :</strong> <a href="mailto:${escapeHtmlForEmail(clientEmail)}" style="color:#2563eb;">${escapeHtmlForEmail(clientEmail)}</a></p>
 ${htmlLines}
+${gestionHtml}
 <p style="margin-top:18px;font-size:12px;color:#64748b;">Alerte reçue sur ${escapeHtmlForEmail(DEFAULT_PUBLIC_CONTACT_EMAIL)}. L'adresse du prospect est indiquée ci-dessus.</p>`.trim()
 
   const results = await Promise.all(
