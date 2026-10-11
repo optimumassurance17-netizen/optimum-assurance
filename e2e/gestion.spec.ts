@@ -476,10 +476,13 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
       },
     }
 
-    let autonomyPayload: { devisAutonomy?: { allowDevisEdition?: boolean } } | null = null
+    const captured: {
+      autonomy: { devisAutonomy?: { allowDevisEdition?: boolean } } | null
+      devis: { data?: { primeAnnuelle?: string; adresseOperation?: string } } | null
+    } = { autonomy: null, devis: null }
     await page.route("**/api/gestion/clients/client_1", async (route) => {
       if (route.request().method() === "PATCH") {
-        autonomyPayload = route.request().postDataJSON()
+        captured.autonomy = route.request().postDataJSON()
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -503,10 +506,9 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
       })
     })
 
-    let devisPayload: { data?: { primeAnnuelle?: string; adresseOperation?: string } } | null = null
     await page.route("**/api/gestion/documents/doc_devis_1", async (route) => {
       if (route.request().method() === "PATCH") {
-        devisPayload = route.request().postDataJSON()
+        captured.devis = route.request().postDataJSON()
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -537,7 +539,7 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
     await expect(page.getByRole("heading", { name: "Autorisation de modification du devis" })).toBeVisible()
     await page.getByRole("checkbox", { name: /Autoriser la modification du devis/ }).check()
     await page.getByRole("button", { name: "Enregistrer autonomie devis" }).click()
-    expect(autonomyPayload?.devisAutonomy?.allowDevisEdition).toBe(true)
+    expect(captured.autonomy?.devisAutonomy?.allowDevisEdition).toBe(true)
     await expect(page.getByText("Modification du devis autorisée pour ce client.")).toBeVisible()
 
     await page.getByRole("button", { name: "Modifier le devis" }).click()
@@ -546,8 +548,8 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
     await page.getByPlaceholder("Prime annuelle").fill("3500")
     await page.getByRole("button", { name: "Enregistrer le devis" }).click()
 
-    expect(devisPayload?.data?.primeAnnuelle).toBe("3500")
-    expect(devisPayload?.data?.adresseOperation).toBe("10 rue du Chantier, 75002 Paris")
+    expect(captured.devis?.data?.primeAnnuelle).toBe("3500")
+    expect(captured.devis?.data?.adresseOperation).toBe("10 rue du Chantier, 75002 Paris")
     await expect(page.getByText("Devis DO-2026-001 mis à jour.")).toBeVisible()
   })
 
