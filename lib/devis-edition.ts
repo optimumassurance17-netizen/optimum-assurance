@@ -39,6 +39,7 @@ const MONEY_KEYS = new Set([
 ])
 
 const LOCKED_CONTRACT_STATUSES = new Set(["valide", "suspendu", "active"])
+const CLIENT_QUOTE_TYPES = new Set(["devis", "devis_do"])
 const PER_DOCUMENT_EDITION_TYPES = new Set(["devis", "devis_do", "contrat"])
 const COST_ACTIVITY_LINE = /co[uû]t\s+construction\s*:/i
 
@@ -176,4 +177,10 @@ export function isContractCoverageLocked(
   if (allowDevisEdition) return false
   if (type !== "contrat") return false
   return LOCKED_CONTRACT_STATUSES.has((status || "").trim().toLowerCase())
+}
+
+/** Un devis ou un devis DO ne se modifie dans l'espace client que s'il est autorisé. */
+export function isClientQuoteEditionLocked(type: string, allowDevisEdition: boolean): boolean {
+  if (allowDevisEdition) return false
+  return CLIENT_QUOTE_TYPES.has(type)
 }

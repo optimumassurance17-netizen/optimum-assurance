@@ -8,7 +8,7 @@ import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 import { getClientDevisAutonomyConfig } from "@/lib/client-devis-autonomy"
 import { getDocumentDevisEdition } from "@/lib/document-devis-edition"
-import { isContractCoverageLocked } from "@/lib/devis-edition"
+import { isClientQuoteEditionLocked, isContractCoverageLocked } from "@/lib/devis-edition"
 import { stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
@@ -119,6 +119,13 @@ export async function PATCH(
       getClientDevisAutonomyConfig(session.user.id),
       getDocumentDevisEdition({ documentId: document.id, userId: session.user.id }),
     ])
+    if (isClientQuoteEditionLocked(document.type, allowDevisEdition)) {
+      return NextResponse.json(
+        { error: "La modification de ce devis n'est pas autorisée. Contactez la gestion." },
+        { status: 409 }
+      )
+    }
+
     const currentData = parseDocumentData(document.data)
     const contractCoverageLocked = isContractCoverageLocked(
       document.type,

@@ -3,6 +3,7 @@ import {
   alignDoDevisStoredData,
   collectDocumentDevisEditionDecisions,
   filterGestionDocumentPatch,
+  isClientQuoteEditionLocked,
   isContractCoverageLocked,
   isGestionEditableDocumentType,
   isPerDocumentDevisEditionType,
@@ -68,8 +69,13 @@ assert(
 assert(isContractCoverageLocked("contrat", "valide", false), "un contrat en vigueur reste verrouillé")
 assert(isContractCoverageLocked("contrat", "active", false), "un contrat actif reste verrouillé")
 assert(!isContractCoverageLocked("contrat", "valide", true), "l'autorisation de ce devis débloque le contrat")
-assert(!isContractCoverageLocked("devis", "valide", false), "un devis non signé reste modifiable")
-assert(!isContractCoverageLocked("devis_do", "valide", false), "un devis DO non signé reste modifiable")
+assert(!isContractCoverageLocked("devis", "valide", false), "le verrou de couverture ne concerne pas le devis")
+assert(!isContractCoverageLocked("devis_do", "valide", false), "le verrou de couverture ne concerne pas le devis DO")
+assert(isClientQuoteEditionLocked("devis", false), "un devis non autorisé reste fermé")
+assert(isClientQuoteEditionLocked("devis_do", false), "un devis DO non autorisé reste fermé")
+assert(!isClientQuoteEditionLocked("devis", true), "un devis autorisé s'ouvre")
+assert(!isClientQuoteEditionLocked("devis_do", true), "un devis DO autorisé s'ouvre")
+assert(!isClientQuoteEditionLocked("contrat", false), "le verrou du devis ne remplace pas celui du contrat")
 
 assert(isPerDocumentDevisEditionType("devis"), "un devis a sa propre autorisation")
 assert(isPerDocumentDevisEditionType("devis_do"), "un devis DO a sa propre autorisation")
@@ -124,6 +130,7 @@ assert(gestionRoute.includes("alignDoDevisStoredData"), "le devis DO aligne l'ad
 assert(!gestionRoute.includes("payments.create"), "modifier un devis ne crée pas de paiement")
 assert(!gestionRoute.includes("allocateNextContractNumber"), "modifier un devis ne prend pas un nouveau numéro")
 assert(clientRoute.includes("getDocumentDevisEdition"), "l'espace client lit l'autorisation de ce devis")
+assert(clientRoute.includes("isClientQuoteEditionLocked"), "l'espace client refuse un devis non autorisé")
 assert(clientRoute.includes("isContractCoverageLocked"), "l'espace client respecte l'autorisation de ce devis")
 assert(clientRoute.includes("allowDevisEdition"), "le document indique si la modification est autorisée")
 assert(ficheRoute.includes("collectDocumentDevisEditionDecisions"), "la fiche distingue l'autorisation de chaque devis")
@@ -134,7 +141,9 @@ assert(fiche.includes("AutoriserDevisButton"), "la fiche autorise chaque devis")
 assert(!fiche.includes("Autoriser la modification du devis"), "la fiche n'autorise plus tous les devis d'un coup")
 assert(fiche.includes("ModifierDevisButton"), "la fiche ouvre la modification du devis")
 assert(fiche.includes('d.type === "devis" || d.type === "devis_do"'), "le bouton vise les devis de la fiche")
+assert(clientPage.includes("isClientQuoteEditionLocked"), "l'écran client ferme le devis non autorisé")
 assert(clientPage.includes("isContractCoverageLocked"), "l'écran client débloque le contrat autorisé")
+assert(fiche.includes("Sans cette autorisation, le client ne peut pas modifier le devis."), "la fiche explique le verrou du devis")
 assert(button.includes("Modifier le devis"), "le bouton annonce la modification du devis")
 assert(button.includes("Enregistrer le devis"), "l'enregistrement met à jour le devis ouvert")
 assert(!button.includes("payments.create"), "le bouton ne crée pas de paiement")

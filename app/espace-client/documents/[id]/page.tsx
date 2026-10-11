@@ -10,7 +10,7 @@ import { Breadcrumb } from "@/components/Breadcrumb"
 import { Toast } from "@/components/Toast"
 import { DevoirConseil } from "@/components/DevoirConseil"
 import { readResponseJson } from "@/lib/read-response-json"
-import { isContractCoverageLocked } from "@/lib/devis-edition"
+import { isClientQuoteEditionLocked, isContractCoverageLocked } from "@/lib/devis-edition"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
 const DevisDoTemplate = dynamic(() => import("@/components/documents/DevisDoTemplate").then((m) => m.DevisDoTemplate), { ssr: false })
@@ -163,9 +163,13 @@ export default function DocumentPage() {
   const canEditDocument = Boolean(
     document && ["devis", "devis_do", "contrat"].includes(document.type)
   )
+  const quoteLocked = document
+    ? isClientQuoteEditionLocked(document.type, document.allowDevisEdition === true)
+    : false
   const coverageLocked = document
     ? isContractCoverageLocked(document.type, document.status, document.allowDevisEdition === true)
     : false
+  const editionLocked = quoteLocked || coverageLocked
 
   useEffect(() => {
     if (!document) return
@@ -258,6 +262,10 @@ export default function DocumentPage() {
   const handleSaveEdition = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!document || !canEditDocument) return
+    if (quoteLocked) {
+      setEditError("La modification de ce devis n'est pas autorisée. Contactez la gestion.")
+      return
+    }
     if (coverageLocked) {
       setEditError("La modification de ce contrat n'est pas autorisée. Contactez la gestion.")
       return
@@ -413,17 +421,19 @@ export default function DocumentPage() {
                 <button
                   type="button"
                   onClick={() => setEditMode(true)}
-                  disabled={coverageLocked}
-                  className="rounded-xl bg-[#2563eb] px-4 py-2 text-sm font-medium text-white hover:bg-[#1d4ed8]"
+                  disabled={editionLocked}
+                  className="rounded-xl bg-[#2563eb] px-4 py-2 text-sm font-medium text-white hover:bg-[#1d4ed8] disabled:opacity-50"
                 >
                   Modifier
                 </button>
               ) : null}
             </div>
 
-            {coverageLocked && (
+            {editionLocked && (
               <p className="mb-3 text-sm text-amber-700">
-                Modification verrouillée. La gestion peut autoriser la modification depuis la fiche client.
+                {quoteLocked
+                  ? "Modification verrouillée. La gestion peut autoriser ce devis depuis la fiche client."
+                  : "Modification verrouillée. La gestion peut autoriser la modification depuis la fiche client."}
               </p>
             )}
 

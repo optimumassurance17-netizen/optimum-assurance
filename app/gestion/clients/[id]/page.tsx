@@ -1204,6 +1204,7 @@ export default function ClientDetailPage() {
           </h2>
           <p className="text-xs text-gray-300 mb-4">
             Chaque devis a sa propre autorisation, dans la liste des documents.
+            Sans cette autorisation, le client ne peut pas modifier le devis.
             Les activités forcées restent ajoutées à l&apos;enregistrement.
           </p>
           <div className="space-y-4">
