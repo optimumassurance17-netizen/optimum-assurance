@@ -160,11 +160,12 @@ export function ModifierDevisButton({
         Modifier le devis
       </button>
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4">
           <form
             onSubmit={(event) => void save(event)}
-            className="max-h-[90vh] w-full max-w-xl space-y-3 overflow-auto rounded-xl border border-gray-700 bg-[#252525] p-6"
+            className="flex max-h-[90vh] w-full max-w-xl flex-col rounded-xl border border-gray-700 bg-[#252525]"
           >
+            <div className="space-y-3 overflow-auto p-6">
             <div>
               <h3 className="text-lg font-semibold text-white">Modifier le devis {numero}</h3>
               <p className="mt-1 text-xs text-gray-300">
@@ -270,7 +271,8 @@ export function ModifierDevisButton({
               placeholder="Activités, une par ligne"
               className="w-full rounded-lg border border-gray-600 bg-[#1a1a1a] px-3 py-2 text-sm text-white"
             />
-            <div className="flex justify-end gap-3">
+            </div>
+            <div className="flex justify-end gap-3 border-t border-gray-700 px-6 py-4">
               <button
                 type="button"
                 onClick={() => setOpen(false)}

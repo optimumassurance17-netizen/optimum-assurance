@@ -452,6 +452,105 @@ test.describe("Gestion CRM — contrats plateforme", () => {
 })
 
 test.describe("Gestion CRM — fiche client actions sensibles", () => {
+  test("Fiche client : autorise la modification puis met à jour le devis", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    const client = {
+      ...buildGestionClientData(),
+      documents: [
+        {
+          id: "doc_devis_1",
+          type: "devis_do",
+          numero: "DO-2026-001",
+          status: "brouillon",
+          createdAt: "2026-10-01T10:00:00.000Z",
+        },
+      ],
+      devisAutonomy: {
+        allowDevisEdition: false,
+        allowForcedActivities: false,
+        forcedActivities: [],
+        note: null,
+        updatedAt: null,
+        updatedBy: null,
+      },
+    }
+
+    let autonomyPayload: { devisAutonomy?: { allowDevisEdition?: boolean } } | null = null
+    await page.route("**/api/gestion/clients/client_1", async (route) => {
+      if (route.request().method() === "PATCH") {
+        autonomyPayload = route.request().postDataJSON()
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            devisAutonomy: {
+              allowDevisEdition: true,
+              allowForcedActivities: false,
+              forcedActivities: [],
+              note: null,
+              updatedAt: "2026-10-11T22:00:00.000Z",
+              updatedBy: "admin@example.com",
+            },
+          }),
+        })
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(client),
+      })
+    })
+
+    let devisPayload: { data?: { primeAnnuelle?: string; adresseOperation?: string } } | null = null
+    await page.route("**/api/gestion/documents/doc_devis_1", async (route) => {
+      if (route.request().method() === "PATCH") {
+        devisPayload = route.request().postDataJSON()
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ ok: true, data: { primeAnnuelle: 3500 } }),
+        })
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "doc_devis_1",
+          type: "devis_do",
+          numero: "DO-2026-001",
+          data: {
+            raisonSociale: "SCA Démo",
+            email: "client@example.com",
+            primeAnnuelle: 3200,
+            adresseOperation: "10 rue du Chantier, 75002 Paris",
+            coutConstruction: 180000,
+            activites: ["Maçonnerie"],
+          },
+        }),
+      })
+    })
+
+    await page.goto("/gestion/clients/client_1")
+    await expect(page.getByRole("heading", { name: "Autorisation de modification du devis" })).toBeVisible()
+    await page.getByRole("checkbox", { name: /Autoriser la modification du devis/ }).check()
+    await page.getByRole("button", { name: "Enregistrer autonomie devis" }).click()
+    expect(autonomyPayload?.devisAutonomy?.allowDevisEdition).toBe(true)
+    await expect(page.getByText("Modification du devis autorisée pour ce client.")).toBeVisible()
+
+    await page.getByRole("button", { name: "Modifier le devis" }).click()
+    await expect(page.getByRole("heading", { name: "Modifier le devis DO-2026-001" })).toBeVisible()
+    await expect(page.getByPlaceholder("Adresse de construction")).toHaveValue("10 rue du Chantier, 75002 Paris")
+    await page.getByPlaceholder("Prime annuelle").fill("3500")
+    await page.getByRole("button", { name: "Enregistrer le devis" }).click()
+
+    expect(devisPayload?.data?.primeAnnuelle).toBe("3500")
+    expect(devisPayload?.data?.adresseOperation).toBe("10 rue du Chantier, 75002 Paris")
+    await expect(page.getByText("Devis DO-2026-001 mis à jour.")).toBeVisible()
+  })
+
   test("Fiche client : envoi email appelle l'endpoint gestion", async ({ page }) => {
     await mockGestionAuth(page)
 
