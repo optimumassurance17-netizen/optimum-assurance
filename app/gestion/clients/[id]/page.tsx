@@ -10,6 +10,8 @@ import {
   type DocumentRequestResult,
 } from "@/components/gestion/DocumentRequestButton"
 import { documentRequestActivityLabel } from "@/lib/document-request"
+import { DO_DEVIS_LEADS_SECTION_ID } from "@/lib/devis-do-lead"
+import { describePendingDoQuote } from "@/lib/do-quote-pending"
 import { getInsuranceProductLabel } from "@/lib/insurance-product"
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
@@ -171,6 +173,8 @@ interface ClientData {
     sentTo: string
     adminEmail: string
     createdAt: string
+    depositedFilename?: string | null
+    depositedAt?: string | null
   }[]
   insuranceContracts?: { id: string; contractNumber: string; productType: string; createdAt: string }[]
   canGenerateDecennaleAttestation?: boolean
@@ -454,6 +458,11 @@ export default function ClientDetailPage() {
   const echeances = data.echeances ?? []
   const documentRequests = data.documentRequests ?? []
   const insuranceContracts = data.insuranceContracts ?? []
+  const pendingDoQuote = describePendingDoQuote({
+    hasDoContract: insuranceContracts.some((contract) => contract.productType === "do"),
+    initialJson: user.doInitialQuestionnaireJson,
+    etudeJson: user.doEtudeQuestionnaireJson,
+  })
 
   const rememberDocumentRequest = (result: DocumentRequestResult) => {
     setToast({ message: result.message, type: result.type })
@@ -1374,6 +1383,38 @@ export default function ClientDetailPage() {
           </section>
         )}
 
+        {pendingDoQuote ? (
+          <section className="bg-[#252525] rounded-xl p-6 border border-amber-800/60 space-y-3">
+            <h2 className="text-lg font-semibold text-white">Devis DO à préparer</h2>
+            <p className="text-sm text-gray-300">
+              La fiche existe et la demande est enregistrée. Le contrat dommage ouvrage n&apos;est pas encore créé.
+              La prime affichée est indicative.
+            </p>
+            <ul className="text-sm text-gray-200 space-y-1">
+              <li>Source : {pendingDoQuote.sourceLabel}</li>
+              <li>
+                Coût de construction :{" "}
+                {pendingDoQuote.constructionCost != null
+                  ? `${pendingDoQuote.constructionCost.toLocaleString("fr-FR")} €`
+                  : "non renseigné"}
+              </li>
+              <li>
+                Prime indicative :{" "}
+                {pendingDoQuote.indicativePremium != null
+                  ? `${pendingDoQuote.indicativePremium.toLocaleString("fr-FR")} €`
+                  : "non calculée"}
+              </li>
+              <li>Chantier : {pendingDoQuote.chantier || "adresse non renseignée"}</li>
+            </ul>
+            <Link
+              href={`/gestion#${DO_DEVIS_LEADS_SECTION_ID}`}
+              className="inline-flex text-sm font-medium text-amber-200 hover:text-amber-100"
+            >
+              Ouvrir la demande DO
+            </Link>
+          </section>
+        ) : null}
+
         {(ddaConsents.length > 0 || ddaEvents.length > 0) && (
           <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-5">
             <div>
@@ -1661,6 +1702,9 @@ export default function ClientDetailPage() {
                     {" · "}
                     {new Date(request.createdAt).toLocaleString("fr-FR")}
                     {request.adminEmail ? ` · ${request.adminEmail}` : ""}
+                    {request.depositedFilename
+                      ? ` · Pièce déposée : ${request.depositedFilename}`
+                      : " · En attente de la pièce"}
                   </p>
                 </li>
               ))}
@@ -1794,7 +1838,9 @@ export default function ClientDetailPage() {
                 <tbody>
                   {userDocuments.map((doc) => (
                     <tr key={doc.id} className="border-b border-gray-700/50">
-                      <td className="p-4">{gedTypeLabels[doc.type] || doc.type}</td>
+                      <td className="p-4">
+                        {doc.type.startsWith("demande_") ? "Pièce demandée" : gedTypeLabels[doc.type] || doc.type}
+                      </td>
                       <td className="p-4">{doc.filename}</td>
                       <td className="p-4">
                         {doc.createdAt

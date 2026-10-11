@@ -28,6 +28,8 @@ export type StoredDocumentRequest = {
   sentTo: string
   adminEmail: string
   createdAt: string
+  depositedFilename: string | null
+  depositedAt: string | null
 }
 
 export function parseDocumentRequestMessage(
@@ -143,6 +145,14 @@ export function readStoredDocumentRequest(log: {
       ? row.assuranceLabel.trim()
       : "Dossier client"
   const sentTo = typeof row.sentTo === "string" ? row.sentTo.trim() : ""
+  const depositedFilename =
+    typeof row.depositedFilename === "string" && row.depositedFilename.trim()
+      ? row.depositedFilename.trim()
+      : null
+  const depositedAtRaw = typeof row.depositedAt === "string" ? row.depositedAt.trim() : ""
+  const depositedAtDate = depositedAtRaw ? new Date(depositedAtRaw) : null
+  const depositedAt =
+    depositedAtDate && !Number.isNaN(depositedAtDate.getTime()) ? depositedAtDate.toISOString() : null
   return {
     id: log.id,
     message,
@@ -150,7 +160,28 @@ export function readStoredDocumentRequest(log: {
     sentTo,
     adminEmail: log.adminEmail,
     createdAt: date.toISOString(),
+    depositedFilename,
+    depositedAt,
   }
+}
+
+export function withDocumentRequestDeposit(
+  details: string,
+  deposit: { filename: string; depositedAt: string; userDocumentId: string }
+): string | null {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(details) as unknown
+  } catch {
+    return null
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null
+  return JSON.stringify({
+    ...(parsed as Record<string, unknown>),
+    depositedFilename: deposit.filename,
+    depositedAt: deposit.depositedAt,
+    userDocumentId: deposit.userDocumentId,
+  })
 }
 
 export function documentRequestActivityLabel(details?: string | null): string {

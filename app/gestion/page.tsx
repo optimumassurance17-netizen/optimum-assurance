@@ -675,8 +675,15 @@ export default function GestionPage() {
   const prefillDevisDoFromLead = (leadId: string) => {
     const lead = data?.devisDoLeads?.find((item) => item.id === leadId)
     if (!lead) return
+    const matchingUser = data?.users.find((user) => user.email.toLowerCase() === lead.email.toLowerCase())
+    if (!matchingUser) {
+      setToast({
+        message: "Créez d'abord la fiche client. Le formulaire DO reste bloqué sans fiche.",
+        type: "error",
+      })
+      return
+    }
     setDevisDoForm((current) => {
-      const matchingUser = data?.users.find((user) => user.email.toLowerCase() === lead.email.toLowerCase())
       const tarif = lead.coutTotal && lead.coutTotal > 0 ? calculerTarifDommageOuvrage(lead.coutTotal) : null
       let adresseOp = ""
       let tel = ""
@@ -707,7 +714,7 @@ export default function GestionPage() {
       return {
         ...current,
         leadId,
-        userId: matchingUser?.id ?? "",
+        userId: matchingUser.id,
         coutConstruction: lead.coutTotal ? String(lead.coutTotal) : "",
         primeAnnuelle: tarif ? String(tarif.primeAnnuelle) : current.primeAnnuelle,
         adresseOperation: adresseOp || current.adresseOperation,
@@ -1853,6 +1860,10 @@ export default function GestionPage() {
 
   const handleCreateDevisDo = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!devisDoForm.userId.trim()) {
+      setToast({ message: "Choisissez une fiche client avant de créer le contrat DO.", type: "error" })
+      return
+    }
     const adresseOperation = devisDoForm.adresseOperation.trim()
     if (!adresseOperation) {
       setToast({ message: "Adresse de l'opération requise pour créer un contrat DO.", type: "error" })
@@ -4593,9 +4604,10 @@ export default function GestionPage() {
         {/* Contrat dommage ouvrage - création depuis gestion */}
         <section id="devis-do-manuel" className="scroll-mt-24">
           <h2 className="text-lg font-semibold text-white mb-4">Créer un contrat dommage ouvrage</h2>
-          <p className="text-sm text-gray-200 mb-4 max-w-2xl">
-            Crée un <strong className="text-white">contrat plateforme DO</strong> rattaché au client. Le client retrouve
-            le PDF <strong className="text-white">Devis et conditions</strong> dans son espace client, puis paie par{" "}
+            <p className="text-sm text-gray-200 mb-4 max-w-2xl">
+            Crée un <strong className="text-white">contrat plateforme DO</strong> rattaché au client. Le formulaire
+            reste bloqué tant qu&apos;une fiche client n&apos;est pas choisie. Le client retrouve le PDF{" "}
+            <strong className="text-white">Devis et conditions</strong> dans son espace client, puis paie par{" "}
             <strong className="text-white">virement bancaire via Mollie</strong>. L’attestation/facture deviennent
             disponibles après paiement et activation.
           </p>
@@ -4638,13 +4650,25 @@ export default function GestionPage() {
                 required
               >
                 <option value="">Sélectionner...</option>
-                {filterUsersBySearch(data.users, searchQuery).map((u) => (
+                {(devisDoForm.userId &&
+                !filterUsersBySearch(data.users, searchQuery).some((user) => user.id === devisDoForm.userId)
+                  ? data.users.filter((user) => user.id === devisDoForm.userId)
+                  : []
+                )
+                  .concat(filterUsersBySearch(data.users, searchQuery))
+                  .map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.raisonSociale || u.email} ({u.email})
                   </option>
                 ))}
               </select>
             </div>
+            {!devisDoForm.userId ? (
+              <p className="text-sm text-amber-200">
+                Choisissez une fiche client pour débloquer le formulaire. Sans fiche, le contrat DO ne se crée pas.
+              </p>
+            ) : null}
+            <fieldset disabled={!devisDoForm.userId} className="space-y-4 disabled:opacity-50">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-200 mb-1">Prime annuelle (€)</label>
@@ -4666,6 +4690,15 @@ export default function GestionPage() {
                   placeholder="Optionnel"
                   className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
                 />
+                {(() => {
+                  const cost = Number(String(devisDoForm.coutConstruction).replace(",", "."))
+                  const tarif = Number.isFinite(cost) && cost > 0 ? calculerTarifDommageOuvrage(cost) : null
+                  return tarif ? (
+                    <p className="mt-1 text-xs text-amber-200">
+                      Prime indicative {tarif.primeAnnuelle.toLocaleString("fr-FR")} €
+                    </p>
+                  ) : null
+                })()}
               </div>
             </div>
             <div>
@@ -4757,9 +4790,10 @@ export default function GestionPage() {
                 />
               </div>
             </div>
+            </fieldset>
             <button
               type="submit"
-              disabled={devisDoSubmitting}
+              disabled={devisDoSubmitting || !devisDoForm.userId}
               className="bg-[#2563eb] text-white px-6 py-2 rounded-xl hover:bg-[#1d4ed8] disabled:opacity-50 font-medium"
             >
               {devisDoSubmitting ? "Création..." : "Créer le contrat DO"}
@@ -5389,7 +5423,15 @@ export default function GestionPage() {
                           {contactLine ? <div className="text-xs text-gray-300 mt-1">{contactLine}</div> : null}
                         </td>
                         <td className="p-3 sm:p-4">{d.email}</td>
-                        <td className="p-3 sm:p-4">{d.coutTotal ? `${d.coutTotal.toLocaleString("fr-FR")} €` : "—"}</td>
+                        <td className="p-3 sm:p-4">
+                          <div>{d.coutTotal ? `${d.coutTotal.toLocaleString("fr-FR")} €` : "—"}</div>
+                          {d.coutTotal && d.coutTotal > 0 ? (
+                            <div className="text-xs text-amber-200 mt-1">
+                              Prime indicative{" "}
+                              {calculerTarifDommageOuvrage(d.coutTotal)?.primeAnnuelle.toLocaleString("fr-FR") ?? "—"} €
+                            </div>
+                          ) : null}
+                        </td>
                         <td className="p-3 sm:p-4 hidden sm:table-cell">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
                         <td className="p-3 sm:p-4">
                           {matchingUser ? (
@@ -5419,8 +5461,10 @@ export default function GestionPage() {
                             )}
                             <button
                               type="button"
+                              disabled={!matchingUser}
+                              title={matchingUser ? undefined : "Créez d'abord la fiche client."}
                               onClick={() => prefillDevisDoFromLead(d.id)}
-                              className="text-sm font-medium text-gray-100 min-h-[44px] inline-flex items-center px-1 hover:text-white"
+                              className="text-sm font-medium text-gray-100 min-h-[44px] inline-flex items-center px-1 hover:text-white disabled:opacity-40 disabled:pointer-events-none"
                             >
                               Préparer le devis
                             </button>

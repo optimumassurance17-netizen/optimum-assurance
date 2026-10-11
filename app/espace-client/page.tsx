@@ -21,6 +21,7 @@ import {
 } from "@/lib/insurance-product"
 import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
 import { DeclarerSinistreCard } from "@/components/espace-client/DeclarerSinistreCard"
+import { DemandesDocumentClient } from "@/components/espace-client/DemandesDocumentClient"
 
 interface DocumentItem {
   id: string
@@ -682,6 +683,8 @@ export default function EspaceClientPage() {
             </Link>
           </div>
         )}
+
+        {!loading ? <DemandesDocumentClient /> : null}
 
         {!loading ? (
           <DeclarerSinistreCard

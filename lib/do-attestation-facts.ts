@@ -120,6 +120,10 @@ export function constructionAddressFromLead(lead: Record<string, unknown> | null
   )
 }
 
+export function readDoLeadConstructionCost(lead: Record<string, unknown> | null | undefined): number | null {
+  return leadCostSum(lead)
+}
+
 function leadCostSum(lead: Record<string, unknown> | null | undefined): number | null {
   if (!lead) return null
   const nested = lead.cout
