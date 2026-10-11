@@ -7,7 +7,9 @@ import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { readResponseJson } from "@/lib/read-response-json"
 import { Toast } from "@/components/Toast"
+import { AutoriserDevisButton } from "@/components/gestion/AutoriserDevisButton"
 import { ModifierDevisButton } from "@/components/gestion/ModifierDevisButton"
+import { isPerDocumentDevisEditionType } from "@/lib/devis-edition"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
 const DevisDoTemplate = dynamic(() => import("@/components/documents/DevisDoTemplate").then((m) => m.DevisDoTemplate), { ssr: false })
@@ -34,6 +36,7 @@ export default function GestionDocumentPage() {
     data: Record<string, unknown>
     userId: string
     verificationToken?: string | null
+    allowDevisEdition?: boolean
   } | null>(null)
   const [loading, setLoading] = useState(true)
   const [signatureSendLoading, setSignatureSendLoading] = useState(false)
@@ -61,6 +64,7 @@ export default function GestionDocumentPage() {
           data: Record<string, unknown>
           userId: string
           verificationToken?: string | null
+          allowDevisEdition?: boolean
         }>(res)
         if (!res.ok) throw new Error("Document introuvable")
         setDocument(data)
@@ -146,6 +150,18 @@ export default function GestionDocumentPage() {
               >
                 {signatureSendLoading ? "Envoi…" : "Envoyer pour signature"}
               </button>
+            )}
+            {isPerDocumentDevisEditionType(document.type) && (
+              <AutoriserDevisButton
+                documentId={document.id}
+                allowed={document.allowDevisEdition === true}
+                onDone={(message, type, allowed) => {
+                  setToast({ message, type })
+                  if (type === "success") {
+                    setDocument((current) => (current ? { ...current, allowDevisEdition: allowed } : current))
+                  }
+                }}
+              />
             )}
             {(document.type === "devis" || document.type === "devis_do") && (
               <ModifierDevisButton

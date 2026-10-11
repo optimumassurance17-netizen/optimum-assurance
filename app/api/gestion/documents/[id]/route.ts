@@ -7,10 +7,12 @@ import { logAdminActivity } from "@/lib/admin-activity"
 import { IDENTITY_DOC_KEYS, syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
 import { DDA_LEGAL_VERSION, buildDdaNeedSummary } from "@/lib/dda-compliance"
 import { stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
+import { getDocumentDevisEdition } from "@/lib/document-devis-edition"
 import {
   alignDoDevisStoredData,
   filterGestionDocumentPatch,
   isGestionEditableDocumentType,
+  isPerDocumentDevisEditionType,
 } from "@/lib/devis-edition"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
@@ -52,7 +54,11 @@ export async function GET(
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { user, ...doc } = document
-    return NextResponse.json({ ...doc, data })
+    const allowDevisEdition =
+      document.userId && isPerDocumentDevisEditionType(document.type)
+        ? await getDocumentDevisEdition({ documentId: document.id, userId: document.userId })
+        : false
+    return NextResponse.json({ ...doc, data, allowDevisEdition })
   } catch (error) {
     console.error("Erreur récupération document:", error)
     return NextResponse.json(

@@ -27,6 +27,7 @@ const ACTION_LABELS: Record<string, string> = {
   rc_fabriquant_contrat_genere: "Contrat RC fabricant généré",
   sinistre_declare_client: "Sinistre déclaré par le client",
   document_request_sent: "Demande de document envoyée",
+  document_devis_edition_updated: "Autorisation de devis mise à jour",
 }
 
 const SAFE_USER_ID = /^[A-Za-z0-9_-]{8,80}$/

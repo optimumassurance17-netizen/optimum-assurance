@@ -24,6 +24,12 @@ import { describeClientActivity } from "@/lib/admin-activity-label"
 import { DOCUMENT_REQUEST_ACTION, readStoredDocumentRequest } from "@/lib/document-request"
 import { sortRequestsByArrival } from "@/lib/devis-do-lead"
 import { describeClientSignature } from "@/lib/signature-reminder"
+import {
+  DOCUMENT_DEVIS_EDITION_ACTION,
+  collectDocumentDevisEditionDecisions,
+  isPerDocumentDevisEditionType,
+  resolveDocumentDevisEdition,
+} from "@/lib/devis-edition"
 import { SITE_URL } from "@/lib/site-url"
 
 function parseLogDetails(raw: string | null | undefined): Record<string, unknown> | null {
@@ -300,12 +306,35 @@ export async function GET(
       paidAt: payment.paidAt,
       createdAt: payment.createdAt,
     }))
+    const editionLogs =
+      documentIds.length === 0
+        ? []
+        : await withSchemaDriftFallback(
+            () =>
+              prisma.adminActivityLog.findMany({
+                where: {
+                  action: DOCUMENT_DEVIS_EDITION_ACTION,
+                  targetType: "document",
+                  targetId: { in: documentIds },
+                },
+                select: { targetId: true, details: true, createdAt: true },
+                orderBy: { createdAt: "desc" },
+              }),
+            []
+          )
+    const editionDecisions = collectDocumentDevisEditionDecisions(editionLogs)
     const documentsForClient = documents.map((document) => ({
       id: document.id,
       type: document.type,
       numero: document.numero,
       status: document.status,
       createdAt: document.createdAt,
+      allowDevisEdition: isPerDocumentDevisEditionType(document.type)
+        ? resolveDocumentDevisEdition({
+            documentDecision: editionDecisions.get(document.id) ?? null,
+            clientWide: devisAutonomy.allowDevisEdition,
+          })
+        : false,
     }))
     const pendingSignatures = await withSchemaDriftFallback(
       () =>

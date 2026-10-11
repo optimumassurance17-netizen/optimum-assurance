@@ -16,7 +16,9 @@ import { getInsuranceProductLabel } from "@/lib/insurance-product"
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { Toast } from "@/components/Toast"
+import { AutoriserDevisButton } from "@/components/gestion/AutoriserDevisButton"
 import { ModifierDevisButton } from "@/components/gestion/ModifierDevisButton"
+import { isPerDocumentDevisEditionType } from "@/lib/devis-edition"
 
 function prettyQuestionnaireJson(raw: string | null | undefined): string {
   if (!raw?.trim()) return ""
@@ -152,7 +154,14 @@ interface ClientData {
     titleInitialQuestionnaireJson?: string | null
     titleEtudeQuestionnaireJson?: string | null
   }
-  documents: { id: string; type: string; numero: string; status: string; createdAt: string }[]
+  documents: {
+    id: string
+    type: string
+    numero: string
+    status: string
+    createdAt: string
+    allowDevisEdition?: boolean
+  }[]
   signature?: {
     signed: boolean
     summary: "Contrat signé" | "Contrat non signé"
@@ -1194,33 +1203,10 @@ export default function ClientDetailPage() {
             Autorisation de modification du devis
           </h2>
           <p className="text-xs text-gray-300 mb-4">
-            Autorise ce client à modifier son devis et la couverture de son contrat dans l&apos;espace client.
+            Chaque devis a sa propre autorisation, dans la liste des documents.
             Les activités forcées restent ajoutées à l&apos;enregistrement.
           </p>
           <div className="space-y-4">
-            <label className="flex items-start gap-3 text-sm text-gray-200">
-              <input
-                type="checkbox"
-                checked={devisAutonomyForm.allowDevisEdition}
-                onChange={(e) =>
-                  setDevisAutonomyForm((prev) => ({
-                    ...prev,
-                    allowDevisEdition: e.target.checked,
-                  }))
-                }
-                className="mt-1 h-4 w-4 rounded border-gray-500 bg-[#1a1a1a]"
-              />
-              <span>
-                <span className="font-medium text-white">
-                  Autoriser la modification du devis
-                </span>
-                <br />
-                <span className="text-xs text-gray-400">
-                  Le client peut alors modifier son devis et la couverture d&apos;un contrat en vigueur.
-                </span>
-              </span>
-            </label>
-
             <label className="flex items-start gap-3 text-sm text-gray-200">
               <input
                 type="checkbox"
@@ -1749,8 +1735,8 @@ export default function ClientDetailPage() {
             <h2 className="text-lg font-semibold text-white">Documents</h2>
             <p className="text-sm text-gray-300">
               {data.devisAutonomy?.allowDevisEdition
-                ? "Modification du devis autorisée pour ce client."
-                : "L'autorisation de modification du devis se règle dans le bloc au-dessus."}
+                ? "Une autorisation générale est encore active. Le réglage d'un devis prime sur cette règle."
+                : "Chaque devis a sa propre autorisation."}
             </p>
           </div>
           <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
@@ -1789,6 +1775,31 @@ export default function ClientDetailPage() {
                             documentId={d.id}
                             onResult={rememberDocumentRequest}
                           />
+                          {isPerDocumentDevisEditionType(d.type) ? (
+                            <>
+                              {d.allowDevisEdition ? (
+                                <span className="text-xs text-emerald-300">Modification autorisée</span>
+                              ) : null}
+                              <AutoriserDevisButton
+                                documentId={d.id}
+                                allowed={d.allowDevisEdition === true}
+                                onDone={(message, type, allowed) => {
+                                  setToast({ message, type })
+                                  if (type !== "success") return
+                                  setData((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          documents: prev.documents.map((doc) =>
+                                            doc.id === d.id ? { ...doc, allowDevisEdition: allowed } : doc
+                                          ),
+                                        }
+                                      : prev
+                                  )
+                                }}
+                              />
+                            </>
+                          ) : null}
                           {(d.type === "devis" || d.type === "devis_do") ? (
                             <ModifierDevisButton
                               documentId={d.id}

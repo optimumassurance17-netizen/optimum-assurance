@@ -39,10 +39,55 @@ const MONEY_KEYS = new Set([
 ])
 
 const LOCKED_CONTRACT_STATUSES = new Set(["valide", "suspendu", "active"])
+const PER_DOCUMENT_EDITION_TYPES = new Set(["devis", "devis_do", "contrat"])
 const COST_ACTIVITY_LINE = /co[uû]t\s+construction\s*:/i
+
+/** Journal : l'autorisation de modification d'un devis, pas de toute la fiche. */
+export const DOCUMENT_DEVIS_EDITION_ACTION = "document_devis_edition_updated"
 
 export function isGestionEditableDocumentType(type: string): boolean {
   return EDITABLE_TYPES.has(type)
+}
+
+/** Devis, devis DO et contrat : l'autorisation se décide document par document. */
+export function isPerDocumentDevisEditionType(type: string): boolean {
+  return PER_DOCUMENT_EDITION_TYPES.has(type)
+}
+
+export function parseDocumentDevisEditionDecision(details: string | null | undefined): boolean | null {
+  if (!details?.trim()) return null
+  try {
+    const parsed = JSON.parse(details) as { allowDevisEdition?: unknown }
+    return typeof parsed.allowDevisEdition === "boolean" ? parsed.allowDevisEdition : null
+  } catch {
+    return null
+  }
+}
+
+/** Le dernier journal de ce devis l'emporte. Sinon, l'ancienne autorisation de fiche reste. */
+export function resolveDocumentDevisEdition(input: {
+  documentDecision: boolean | null
+  clientWide: boolean
+}): boolean {
+  if (typeof input.documentDecision === "boolean") return input.documentDecision
+  return input.clientWide
+}
+
+export function collectDocumentDevisEditionDecisions(
+  logs: { targetId: string | null; details: string | null; createdAt?: Date | string }[]
+): Map<string, boolean> {
+  const sorted = [...logs].sort((left, right) => {
+    const leftTime = left.createdAt ? new Date(left.createdAt).getTime() : 0
+    const rightTime = right.createdAt ? new Date(right.createdAt).getTime() : 0
+    return rightTime - leftTime
+  })
+  const decisions = new Map<string, boolean>()
+  for (const log of sorted) {
+    if (!log.targetId || decisions.has(log.targetId)) continue
+    const decision = parseDocumentDevisEditionDecision(log.details)
+    if (decision != null) decisions.set(log.targetId, decision)
+  }
+  return decisions
 }
 
 function asMoney(value: unknown): number | undefined {
@@ -122,7 +167,7 @@ export function alignDoDevisStoredData(
   return next
 }
 
-/** La couverture d'un contrat déjà en vigueur ne bouge que si la fiche l'autorise. */
+/** La couverture d'un contrat déjà en vigueur ne bouge que si ce document est autorisé. */
 export function isContractCoverageLocked(
   type: string,
   status: string | null | undefined,

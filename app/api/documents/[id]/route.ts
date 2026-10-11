@@ -7,6 +7,7 @@ import { syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identit
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 import { getClientDevisAutonomyConfig } from "@/lib/client-devis-autonomy"
+import { getDocumentDevisEdition } from "@/lib/document-devis-edition"
 import { isContractCoverageLocked } from "@/lib/devis-edition"
 import { stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
 
@@ -58,8 +59,11 @@ export async function GET(
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- user exclu de la réponse
     const { user, ...doc } = document
-    const autonomy = await getClientDevisAutonomyConfig(session.user.id)
-    return NextResponse.json({ ...doc, data, allowDevisEdition: autonomy.allowDevisEdition })
+    const allowDevisEdition = await getDocumentDevisEdition({
+      documentId: document.id,
+      userId: session.user.id,
+    })
+    return NextResponse.json({ ...doc, data, allowDevisEdition })
   } catch (error) {
     console.error("Erreur récupération document:", error)
     return NextResponse.json(
@@ -111,12 +115,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
-    const devisAutonomy = await getClientDevisAutonomyConfig(session.user.id)
+    const [devisAutonomy, allowDevisEdition] = await Promise.all([
+      getClientDevisAutonomyConfig(session.user.id),
+      getDocumentDevisEdition({ documentId: document.id, userId: session.user.id }),
+    ])
     const currentData = parseDocumentData(document.data)
     const contractCoverageLocked = isContractCoverageLocked(
       document.type,
       document.status,
-      devisAutonomy.allowDevisEdition
+      allowDevisEdition
     )
     const editableKeys = [
       "raisonSociale",
@@ -273,7 +280,7 @@ export async function PATCH(
           documentType: document.type,
           changedKeys: Object.keys(filtered),
           lockedCoverage: contractCoverageLocked,
-          allowDevisEditionOverride: devisAutonomy.allowDevisEdition,
+          allowDevisEditionOverride: allowDevisEdition,
           forcedActivitiesApplied: forcedActivities,
         }),
       },

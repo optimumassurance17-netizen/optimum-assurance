@@ -477,32 +477,23 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
     }
 
     const captured: {
-      autonomy: { devisAutonomy?: { allowDevisEdition?: boolean } } | null
+      edition: { allowDevisEdition?: boolean } | null
       devis: { data?: { primeAnnuelle?: string; adresseOperation?: string } } | null
-    } = { autonomy: null, devis: null }
+    } = { edition: null, devis: null }
     await page.route("**/api/gestion/clients/client_1", async (route) => {
-      if (route.request().method() === "PATCH") {
-        captured.autonomy = route.request().postDataJSON()
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            devisAutonomy: {
-              allowDevisEdition: true,
-              allowForcedActivities: false,
-              forcedActivities: [],
-              note: null,
-              updatedAt: "2026-10-11T22:00:00.000Z",
-              updatedBy: "admin@example.com",
-            },
-          }),
-        })
-        return
-      }
       await route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(client),
+      })
+    })
+
+    await page.route("**/api/gestion/documents/doc_devis_1/edition", async (route) => {
+      captured.edition = route.request().postDataJSON()
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ allowDevisEdition: true }),
       })
     })
 
@@ -536,11 +527,11 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
     })
 
     await page.goto("/gestion/clients/client_1")
-    await expect(page.getByRole("heading", { name: "Autorisation de modification du devis" })).toBeVisible()
-    await page.getByRole("checkbox", { name: /Autoriser la modification du devis/ }).check()
-    await page.getByRole("button", { name: "Enregistrer autonomie devis" }).click()
-    expect(captured.autonomy?.devisAutonomy?.allowDevisEdition).toBe(true)
-    await expect(page.getByText("Modification du devis autorisée pour ce client.")).toBeVisible()
+    await expect(page.getByText("Chaque devis a sa propre autorisation.").first()).toBeVisible()
+    await page.getByRole("button", { name: "Autoriser ce devis" }).click()
+    expect(captured.edition?.allowDevisEdition).toBe(true)
+    await expect(page.getByText("Modification autorisée pour ce devis.")).toBeVisible()
+    await expect(page.getByText("Modification autorisée").first()).toBeVisible()
 
     await page.getByRole("button", { name: "Modifier le devis" }).click()
     await expect(page.getByRole("heading", { name: "Modifier le devis DO-2026-001" })).toBeVisible()
