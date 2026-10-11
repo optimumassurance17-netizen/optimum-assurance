@@ -13,6 +13,7 @@ import {
 import { COMPANY_BRAND, INSURER_NAME, LEGAL_ORIAS_LINE } from "@/lib/legal-branding"
 import { DEVOIR_CONSEIL_TEXTE_BY_PRODUCT } from "@/lib/devoir-conseil"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
+import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
 import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
 import {
   DO_COUT_MAX_PROPOSITION_LABEL,
@@ -61,6 +62,9 @@ const COURTIER = {
 
 export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
   const devoirConseil = DEVOIR_CONSEIL_TEXTE_BY_PRODUCT.do
+  const facts = readDoDocumentAttestation(data as unknown as Record<string, unknown>)
+  const guaranteeLabel =
+    facts.guaranteeAmount != null ? `${facts.guaranteeAmount.toLocaleString("fr-FR")} €` : "Non renseigné"
   const dateCreation = data.dateCreation || new Date().toLocaleDateString("fr-FR")
   const fraisGestion = data.fraisGestion ?? 0
   const fraisCourtage = data.fraisCourtage ?? 0
@@ -124,12 +128,14 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
                 <td>{data.email}</td>
               </tr>
             )}
-            {data.adresseOperation && (
-              <tr>
-                <td className="py-1 pr-4 text-[#171717]">Adresse de l&apos;opération</td>
-                <td>{data.adresseOperation}</td>
-              </tr>
-            )}
+            <tr>
+              <td className="py-1 pr-4 text-[#171717]">Adresse de construction</td>
+              <td>{facts.constructionAddress || "Non renseignée"}</td>
+            </tr>
+            <tr>
+              <td className="py-1 pr-4 text-[#171717]">Montant des garanties</td>
+              <td>{guaranteeLabel}</td>
+            </tr>
           </tbody>
         </table>
       </div>

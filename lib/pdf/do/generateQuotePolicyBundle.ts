@@ -9,6 +9,7 @@ import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { doConstructionAddressLine, doGuaranteeAmountLine } from "@/lib/do-attestation-facts"
 import { DEVOIR_CONSEIL_DO } from "@/lib/devoir-conseil"
 import {
   DO_QUOTE_VALIDITY_DAYS,
@@ -98,7 +99,27 @@ export async function generateDOQuotePolicyBundle(
   y -= 14
   y = drawWrappedText(page1, data.projectName!, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, fontBold, 10, 13)
   y -= 8
-  y = drawWrappedText(page1, data.projectAddress!, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 10, 13)
+  y = drawWrappedText(
+    page1,
+    doConstructionAddressLine(data.projectAddress),
+    PDF_PAGE.marginX,
+    y,
+    PDF_PAGE.contentWidth,
+    font,
+    10,
+    13
+  )
+  y -= 8
+  y = drawWrappedText(
+    page1,
+    doGuaranteeAmountLine(data.constructionCost, formatEuro),
+    PDF_PAGE.marginX,
+    y,
+    PDF_PAGE.contentWidth,
+    font,
+    10,
+    13
+  )
   if (data.constructionNature) {
     y -= 8
     y = drawWrappedText(
@@ -254,7 +275,8 @@ export async function generateDOQuotePolicyBundle(
     "Optimum Courtage agit par délégation de Accelerant Insurance.",
     `Souscripteur : ${data.clientName}.`,
     `Adresse : ${data.address}.`,
-    `Chantier / opération : ${data.projectName} — ${data.projectAddress}.`,
+    `Chantier / opération : ${data.projectName} — ${doConstructionAddressLine(data.projectAddress)}`,
+    doGuaranteeAmountLine(data.constructionCost, formatEuro),
     data.constructionNature ? `Nature de la construction : ${data.constructionNature}.` : "",
     `Période couverte : du ${data.startDate} au ${data.endDate}.`,
     `Prime TTC : ${formatEuro(data.premium)}.`,

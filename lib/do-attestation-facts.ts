@@ -50,6 +50,25 @@ export function formatDoConstructionCostActivity(amount: number): string {
   return `Coût construction : ${Math.round(amount)}`
 }
 
+/** Libellé commun aux devis, conditions particulières et attestation. */
+export function doConstructionAddressLine(address: string | null | undefined): string {
+  const value = address?.trim()
+  return value
+    ? `Adresse de construction : ${value}`
+    : "Adresse de construction : non renseignée au dossier."
+}
+
+/** Le montant des garanties DO est le coût total de construction déclaré. */
+export function doGuaranteeAmountLine(
+  amount: number | null | undefined,
+  formatAmount: (value: number) => string
+): string {
+  if (amount != null && Number.isFinite(amount) && amount > 0) {
+    return `Montant des garanties : ${formatAmount(amount)} (coût total de construction déclaré).`
+  }
+  return "Montant des garanties : non renseigné au dossier."
+}
+
 const COST_LINE_PATTERNS = [
   /co[uû]t\s+construction\s*:\s*([0-9][0-9\s\u00a0\u202f.,]*)/i,
   /co[uû]t\s+pr[eé]visionnel(?:\s+de\s+l['’]op[eé]ration)?\s*:\s*([0-9][0-9\s\u00a0\u202f.,]*)/i,

@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 // @ts-expect-error - pdf-parse n'expose pas de types fiables dans cet environnement
 import pdfParse from "pdf-parse"
 import { generateDOCertificate } from "@/lib/pdf/do/generateCertificate"
+import { generateDOQuotePolicyBundle } from "@/lib/pdf/do/generateQuotePolicyBundle"
 import {
   constructionAddressFromLead,
   parseDoConstructionCost,
@@ -98,11 +99,17 @@ async function main(): Promise<void> {
   assert.equal(documentFacts.constructionAddress, "5 rue du Chantier, 44000 Nantes")
   assert.equal(documentFacts.guaranteeAmount, 420000)
 
-  const pdf = await generateDOCertificate(sampleCertificate(513604))
+  const certificate = sampleCertificate(513604)
+  const pdf = await generateDOCertificate(certificate)
   const text = await extractPdfText(pdf)
   assert.match(text, /Adresse de construction : 5 rue du Chantier, 44000 Nantes/)
   assert.match(text, /Montant des garanties : 513 604,00 EUR/)
   assert.doesNotMatch(text, /Montant des garanties : non renseign/)
+
+  const quote = await generateDOQuotePolicyBundle(certificate, "proposition")
+  const quoteText = await extractPdfText(quote)
+  assert.match(quoteText, /Adresse de construction : 5 rue du Chantier, 44000 Nantes/)
+  assert.match(quoteText, /Montant des garanties : 513 604,00 EUR/)
 
   console.log("verify-do-attestation: ok")
 }

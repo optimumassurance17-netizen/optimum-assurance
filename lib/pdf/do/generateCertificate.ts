@@ -9,6 +9,7 @@ import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { doConstructionAddressLine, doGuaranteeAmountLine } from "@/lib/do-attestation-facts"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
 import { doCadreCompletLines } from "@/lib/conditions-particulieres"
 import { drawClausesPaginated } from "../shared/drawClauses"
@@ -102,7 +103,7 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
   y -= 8
   y = drawWrappedText(
     page,
-    `Adresse de construction : ${data.projectAddress}`,
+    doConstructionAddressLine(data.projectAddress),
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,
@@ -111,13 +112,9 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
     13
   )
   y -= 8
-  const guaranteeAmount =
-    data.constructionCost != null && data.constructionCost > 0 ? data.constructionCost : null
   y = drawWrappedText(
     page,
-    guaranteeAmount != null
-      ? `Montant des garanties : ${formatEuro(guaranteeAmount)} (coût total de construction déclaré).`
-      : "Montant des garanties : non renseigné au dossier.",
+    doGuaranteeAmountLine(data.constructionCost, formatEuro),
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,

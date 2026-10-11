@@ -8,6 +8,7 @@ import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { doConstructionAddressLine, doGuaranteeAmountLine } from "@/lib/do-attestation-facts"
 import {
   DEVOIR_CONSEIL_TITLE,
   DEVOIR_CONSEIL_DO_TEXT,
@@ -90,7 +91,27 @@ export async function generateDOQuote(data: InsuranceData): Promise<Uint8Array> 
   y -= 14
   y = drawWrappedText(page, data.projectName!, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, fontBold, 10, 13)
   y -= 8
-  y = drawWrappedText(page, data.projectAddress!, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 10, 13)
+  y = drawWrappedText(
+    page,
+    doConstructionAddressLine(data.projectAddress),
+    PDF_PAGE.marginX,
+    y,
+    PDF_PAGE.contentWidth,
+    font,
+    10,
+    13
+  )
+  y -= 8
+  y = drawWrappedText(
+    page,
+    doGuaranteeAmountLine(data.constructionCost, formatEuro),
+    PDF_PAGE.marginX,
+    y,
+    PDF_PAGE.contentWidth,
+    font,
+    10,
+    13
+  )
   if (data.constructionNature) {
     y -= 8
     y = drawWrappedText(
