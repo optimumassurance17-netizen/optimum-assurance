@@ -544,6 +544,89 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
     await expect(page.getByText("Devis DO-2026-001 mis à jour.")).toBeVisible()
   })
 
+  test("Fiche client : retirer l'autorisation générale laisse les devis déjà réglés", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    let generalAuthorization = true
+    const captured: { allowDevisEdition?: boolean; forcedActivities?: string } = {}
+    await page.route("**/api/gestion/clients/client_1", async (route) => {
+      if (route.request().method() === "PATCH") {
+        const body = route.request().postDataJSON() as {
+          devisAutonomy?: { allowDevisEdition?: boolean; forcedActivities?: string }
+        }
+        captured.allowDevisEdition = body.devisAutonomy?.allowDevisEdition
+        captured.forcedActivities = body.devisAutonomy?.forcedActivities
+        generalAuthorization = body.devisAutonomy?.allowDevisEdition === true
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            devisAutonomy: {
+              allowDevisEdition: false,
+              allowForcedActivities: true,
+              forcedActivities: ["Maçonnerie"],
+              note: null,
+              updatedAt: "2026-10-11T23:00:00.000Z",
+              updatedBy: "admin@example.com",
+            },
+          }),
+        })
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...buildGestionClientData(),
+          devisAutonomy: {
+            allowDevisEdition: generalAuthorization,
+            allowForcedActivities: true,
+            forcedActivities: ["Maçonnerie"],
+            note: null,
+            updatedAt: "2026-10-01T10:00:00.000Z",
+            updatedBy: "admin@example.com",
+          },
+          documents: [
+            {
+              id: "doc_herite",
+              type: "devis",
+              numero: "DEC-HERITE",
+              status: "brouillon",
+              createdAt: "2026-10-01T10:00:00.000Z",
+              allowDevisEdition: generalAuthorization,
+            },
+            {
+              id: "doc_explicite",
+              type: "devis_do",
+              numero: "DO-EXPLICITE",
+              status: "brouillon",
+              createdAt: "2026-10-02T10:00:00.000Z",
+              allowDevisEdition: true,
+            },
+          ],
+        }),
+      })
+    })
+
+    await page.goto("/gestion/clients/client_1")
+    const inherited = page.locator("tr", { hasText: "DEC-HERITE" })
+    const explicit = page.locator("tr", { hasText: "DO-EXPLICITE" })
+    await expect(page.getByText("Elle ouvre aussi les nouveaux devis.")).toBeVisible()
+    await expect(inherited.getByText("Modification autorisée")).toBeVisible()
+    await expect(explicit.getByText("Modification autorisée")).toBeVisible()
+
+    await page.getByRole("button", { name: "Retirer l'autorisation générale" }).click()
+
+    expect(captured.allowDevisEdition).toBe(false)
+    expect(captured.forcedActivities).toBe("Maçonnerie")
+    await expect(page.getByText("Autorisation générale retirée.")).toBeVisible()
+    await expect(page.getByText("Elle ouvre aussi les nouveaux devis.")).toHaveCount(0)
+    await expect(inherited.getByText("Modification autorisée")).toHaveCount(0)
+    await expect(inherited.getByRole("button", { name: "Autoriser ce devis" })).toBeVisible()
+    await expect(explicit.getByText("Modification autorisée")).toBeVisible()
+    await expect(explicit.getByRole("button", { name: "Retirer l'autorisation", exact: true })).toBeVisible()
+  })
+
   test("Fiche client : envoi email appelle l'endpoint gestion", async ({ page }) => {
     await mockGestionAuth(page)
 

@@ -137,6 +137,8 @@ assert(ficheRoute.includes("collectDocumentDevisEditionDecisions"), "la fiche di
 assert(editionRoute.includes("DOCUMENT_DEVIS_EDITION_ACTION"), "l'autorisation est enregistrée sur le devis")
 assert(editionRoute.includes("isPerDocumentDevisEditionType"), "seuls les devis et contrats reçoivent cette autorisation")
 assert(fiche.includes("Chaque devis a sa propre autorisation."), "la fiche annonce l'autorisation par devis")
+assert(fiche.includes("Retirer l'autorisation générale"), "la fiche retire l'autorisation générale")
+assert(fiche.includes("Elle ouvre aussi les nouveaux devis."), "la fiche explique l'effet sur les nouveaux devis")
 assert(fiche.includes("AutoriserDevisButton"), "la fiche autorise chaque devis")
 assert(!fiche.includes("Autoriser la modification du devis"), "la fiche n'autorise plus tous les devis d'un coup")
 assert(fiche.includes("ModifierDevisButton"), "la fiche ouvre la modification du devis")

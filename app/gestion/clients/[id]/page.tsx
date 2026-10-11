@@ -1734,11 +1734,59 @@ export default function ClientDetailPage() {
         <section>
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <h2 className="text-lg font-semibold text-white">Documents</h2>
-            <p className="text-sm text-gray-300">
-              {data.devisAutonomy?.allowDevisEdition
-                ? "Une autorisation générale est encore active. Le réglage d'un devis prime sur cette règle."
-                : "Chaque devis a sa propre autorisation."}
-            </p>
+            {data.devisAutonomy?.allowDevisEdition ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-sm text-gray-300">
+                  Une autorisation générale est encore active. Elle ouvre aussi les nouveaux devis.
+                  Le réglage d&apos;un devis prime sur cette règle.
+                </p>
+                <button
+                  type="button"
+                  disabled={devisAutonomySaving}
+                  onClick={async () => {
+                    setDevisAutonomySaving(true)
+                    try {
+                      const res = await fetch(`/api/gestion/clients/${clientId}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          devisAutonomy: {
+                            allowDevisEdition: false,
+                            allowForcedActivities: devisAutonomyForm.allowForcedActivities,
+                            forcedActivities: devisAutonomyForm.forcedActivitiesText,
+                            note: devisAutonomyForm.note,
+                          },
+                        }),
+                      })
+                      const json = await readResponseJson<{ error?: string }>(res)
+                      if (!res.ok) {
+                        throw new Error(json.error || "Erreur lors du retrait")
+                      }
+                      const reload = await fetch(`/api/gestion/clients/${clientId}`, { cache: "no-store" })
+                      if (!reload.ok) {
+                        throw new Error("Autorisation générale retirée. Rechargez la fiche pour voir les devis.")
+                      }
+                      const next = await readResponseJson<ClientData>(reload)
+                      setData(next)
+                      setDevisAutonomyForm(toDevisAutonomyForm(next.devisAutonomy))
+                      setToast({ message: "Autorisation générale retirée.", type: "success" })
+                    } catch (err) {
+                      setToast({
+                        message: err instanceof Error ? err.message : "Erreur lors du retrait",
+                        type: "error",
+                      })
+                    } finally {
+                      setDevisAutonomySaving(false)
+                    }
+                  }}
+                  className="rounded-lg border border-amber-600 px-3 py-1.5 text-xs font-semibold text-amber-200 hover:border-amber-400 disabled:opacity-50"
+                >
+                  {devisAutonomySaving ? "Enregistrement…" : "Retirer l'autorisation générale"}
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-300">Chaque devis a sa propre autorisation.</p>
+            )}
           </div>
           <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
             {documents.length === 0 ? (
