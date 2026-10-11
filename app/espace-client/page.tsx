@@ -20,6 +20,7 @@ import {
   insuranceProductAllowsActiveInstallmentPayments,
 } from "@/lib/insurance-product"
 import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
+import { DeclarerSinistreCard } from "@/components/espace-client/DeclarerSinistreCard"
 
 interface DocumentItem {
   id: string
@@ -681,6 +682,16 @@ export default function EspaceClientPage() {
             </Link>
           </div>
         )}
+
+        {!loading ? (
+          <DeclarerSinistreCard
+            contracts={insuranceContracts.map((contract) => ({
+              contractNumber: contract.contractNumber,
+              productType: contract.productType,
+            }))}
+            documents={documents.map((document) => ({ numero: document.numero, type: document.type }))}
+          />
+        ) : null}
 
         {/* Onglets */}
         <div className="flex gap-1 p-1 bg-[#e4e4e4] rounded-xl mb-10 w-fit" role="tablist">

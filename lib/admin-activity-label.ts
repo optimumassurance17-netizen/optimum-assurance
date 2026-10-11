@@ -23,6 +23,7 @@ const ACTION_LABELS: Record<string, string> = {
   user_client_access_sent: "Accès client envoyé",
   user_create_from_lead: "Compte client créé",
   rc_fabriquant_contrat_genere: "Contrat RC fabricant généré",
+  sinistre_declare_client: "Sinistre déclaré par le client",
 }
 
 const SAFE_USER_ID = /^[A-Za-z0-9_-]{8,80}$/
