@@ -13,6 +13,7 @@ import {
   withDocumentRequestDeposit,
 } from "@/lib/document-request"
 import { detectUploadMimeAndExt, MAX_FILE_SIZE } from "@/lib/user-documents"
+import { sortRequestsByArrival } from "@/lib/devis-do-lead"
 
 export const runtime = "nodejs"
 
@@ -39,10 +40,12 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
       take: 20,
     })
-    const requests = logs.flatMap((log) => {
-      const request = readStoredDocumentRequest(log)
-      return request ? [request] : []
-    })
+    const requests = sortRequestsByArrival(
+      logs.flatMap((log) => {
+        const request = readStoredDocumentRequest(log)
+        return request ? [request] : []
+      })
+    )
     return NextResponse.json({ requests })
   } catch (error) {
     console.error("[client/demandes-document] GET", error)

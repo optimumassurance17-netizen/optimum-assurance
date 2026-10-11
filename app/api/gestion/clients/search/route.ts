@@ -4,7 +4,13 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { Prisma } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
-import { doDevisLeadRowId, doLeadMatchesSearch, readDoLeadChantier, readDoLeadCompanyName } from "@/lib/devis-do-lead"
+import {
+  doDevisLeadRowId,
+  doLeadMatchesSearch,
+  readDoLeadChantier,
+  readDoLeadCompanyName,
+  sortRequestsByArrival,
+} from "@/lib/devis-do-lead"
 
 const CLIENT_SEARCH_LIMIT = 8
 
@@ -122,17 +128,18 @@ async function findDoDevisLeadMatches(rawQuery: string) {
       orderBy: { createdAt: "desc" },
       take: 50,
     })
-    return leads
-      .map((lead) => ({
-        id: lead.id,
-        email: lead.email,
-        raisonSociale: readDoLeadCompanyName(lead.data),
-        chantier: readDoLeadChantier(lead.data),
-        createdAt: lead.createdAt,
-      }))
-      .filter((lead) => doLeadMatchesSearch(lead, rawQuery))
-      .slice(0, 5)
-      .map((lead) => ({
+    return sortRequestsByArrival(
+      leads
+        .map((lead) => ({
+          id: lead.id,
+          email: lead.email,
+          raisonSociale: readDoLeadCompanyName(lead.data),
+          chantier: readDoLeadChantier(lead.data),
+          createdAt: lead.createdAt,
+        }))
+        .filter((lead) => doLeadMatchesSearch(lead, rawQuery))
+        .slice(0, 5)
+    ).map((lead) => ({
         id: lead.id,
         email: lead.email,
         raisonSociale: lead.raisonSociale,

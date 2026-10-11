@@ -472,7 +472,7 @@ export default function ClientDetailPage() {
       prev
         ? {
             ...prev,
-            documentRequests: [request, ...(prev.documentRequests ?? []).filter((row) => row.id !== request.id)],
+            documentRequests: [...(prev.documentRequests ?? []).filter((row) => row.id !== request.id), request],
             activity: [
               {
                 id: request.id,

@@ -15,6 +15,7 @@ import {
   buildConversionTrackingLines,
   type ConversionTrackingContext,
 } from "@/lib/conversion-tracking"
+import { doDevisMatchKey, findFirstMatchingKey, normalizeIntakeEmail } from "@/lib/devis-intake"
 
 /**
  * Enregistre une demande de devis dommage ouvrage et envoie une estimation PDF par email si possible.
@@ -36,16 +37,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const lead = await prisma.devisDommageOuvrageLead.create({
-      data: {
-        email,
-        data: JSON.stringify(data),
-        coutTotal: coutTotal ? Number(coutTotal) : null,
-      },
+    const emailTrim = normalizeIntakeEmail(String(email))
+    const coutValue = coutTotal ? Number(coutTotal) : null
+    const storedData = JSON.stringify(data)
+    const incomingKey = doDevisMatchKey({ email: emailTrim, data, coutTotal: coutValue })
+    const previousLeads = await prisma.devisDommageOuvrageLead.findMany({
+      where: { email: { equals: emailTrim, mode: "insensitive" } },
+      orderBy: { createdAt: "asc" },
+      take: 30,
+      select: { id: true, email: true, data: true, coutTotal: true },
     })
+    const duplicateLead = findFirstMatchingKey(
+      previousLeads,
+      (lead) => doDevisMatchKey({ email: lead.email, data: lead.data, coutTotal: lead.coutTotal }),
+      incomingKey
+    )
+    const lead = duplicateLead
+      ? await prisma.devisDommageOuvrageLead.update({
+          where: { id: duplicateLead.id },
+          data: { email: emailTrim, data: storedData, coutTotal: coutValue },
+        })
+      : await prisma.devisDommageOuvrageLead.create({
+          data: {
+            email: emailTrim,
+            data: storedData,
+            coutTotal: coutValue,
+          },
+        })
 
     const session = await getServerSession(authOptions)
-    const emailTrim = String(email).trim().toLowerCase()
     if (session?.user?.id && session.user.email?.trim().toLowerCase() === emailTrim) {
       try {
         await prisma.user.update({
@@ -61,6 +81,10 @@ export async function POST(request: NextRequest) {
     const cout = coutTotal ? Number(coutTotal) : 0
     const parsed = data as Partial<DevisDommageOuvrageData>
     const createdAt = new Date().toISOString()
+
+    if (duplicateLead) {
+      return NextResponse.json({ ok: true, duplicate: true })
+    }
 
     try {
       const lines: string[] = []

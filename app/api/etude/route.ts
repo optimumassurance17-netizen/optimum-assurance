@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
 import { asJsonObject } from "@/lib/json-object"
+import { etudeDevisMatchKey, findFirstMatchingKey } from "@/lib/devis-intake"
 
 /**
  * Enregistre une demande d'étude :
@@ -34,6 +35,30 @@ export async function POST(request: NextRequest) {
 
     const emailNorm = email.trim().toLowerCase()
     const dataStr = typeof data === "string" ? data : JSON.stringify(data ?? {})
+    const incomingKey = etudeDevisMatchKey({ email: emailNorm, data })
+    const previousLeads = await prisma.devisEtudeLead.findMany({
+      where: { email: { equals: emailNorm, mode: "insensitive" } },
+      orderBy: { createdAt: "asc" },
+      take: 30,
+      select: { id: true, email: true, data: true },
+    })
+    const duplicateLead = findFirstMatchingKey(
+      previousLeads,
+      (lead) => etudeDevisMatchKey({ email: lead.email, data: lead.data }),
+      incomingKey
+    )
+    if (duplicateLead) {
+      await prisma.devisEtudeLead.update({
+        where: { id: duplicateLead.id },
+        data: {
+          email: emailNorm,
+          raisonSociale: raisonSociale?.trim() || undefined,
+          siret: siret?.replace(/\D/g, "").slice(0, 14) || undefined,
+          data: dataStr,
+        },
+      })
+      return NextResponse.json({ ok: true, duplicate: true })
+    }
 
     await prisma.devisEtudeLead.create({
       data: {

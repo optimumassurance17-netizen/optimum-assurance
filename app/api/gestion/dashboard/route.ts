@@ -10,7 +10,7 @@ import { stripSignatureBinariesFromJsonString } from "@/lib/esign/local-signatur
 import { loadEcheancesASuivre } from "@/lib/client-echeance-service"
 import { adminActivityClientHref, adminActivityLabel } from "@/lib/admin-activity-label"
 import { latestSignatureReminderByRequest } from "@/lib/signature-reminder"
-import { readDoLeadCompanyName, selectDoDevisDashboardActions } from "@/lib/devis-do-lead"
+import { readDoLeadCompanyName, selectDoDevisDashboardActions, sortRequestsByArrival } from "@/lib/devis-do-lead"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -1121,13 +1121,15 @@ export async function GET() {
       })),
       payments,
       avenantFees,
-      devisDoLeads: devisDoLeads.map((lead) => ({
-        ...lead,
-        raisonSociale: readDoLeadCompanyName(lead.data),
-      })),
-      devisRcFabriquantLeads: devisRcFabriquantLeadsWithUser,
-      devisAssuranceTitreLeads: devisAssuranceTitreLeadsWithUser,
-      devisEtudeLeads,
+      devisDoLeads: sortRequestsByArrival(
+        devisDoLeads.map((lead) => ({
+          ...lead,
+          raisonSociale: readDoLeadCompanyName(lead.data),
+        }))
+      ),
+      devisRcFabriquantLeads: sortRequestsByArrival(devisRcFabriquantLeadsWithUser),
+      devisAssuranceTitreLeads: sortRequestsByArrival(devisAssuranceTitreLeadsWithUser),
+      devisEtudeLeads: sortRequestsByArrival(devisEtudeLeads),
       resiliationLogs,
       resiliationRequests,
       adminActivityLogs: adminActivityLogs.map((log) => ({
@@ -1141,7 +1143,7 @@ export async function GET() {
         href: adminActivityClientHref(log),
       })),
       doStats,
-      devisLeads: devisLeadsWithSla,
+      devisLeads: sortRequestsByArrival(devisLeadsWithSla),
       devisDrafts,
       pendingSignatures,
       sepaSubscriptions: sepaSubscriptionsRows,

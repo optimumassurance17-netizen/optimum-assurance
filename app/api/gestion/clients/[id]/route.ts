@@ -22,6 +22,7 @@ import { describeSepaReadiness } from "@/lib/sepa-readiness"
 import { attachSepaNotices, paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel, virementReferenceFromMetadata } from "@/lib/client-echeances"
 import { describeClientActivity } from "@/lib/admin-activity-label"
 import { DOCUMENT_REQUEST_ACTION, readStoredDocumentRequest } from "@/lib/document-request"
+import { sortRequestsByArrival } from "@/lib/devis-do-lead"
 import { describeClientSignature } from "@/lib/signature-reminder"
 import { SITE_URL } from "@/lib/site-url"
 
@@ -376,10 +377,12 @@ export async function GET(
         }),
       []
     )
-    const documentRequests = documentRequestLogs.flatMap((log) => {
-      const request = readStoredDocumentRequest(log)
-      return request ? [request] : []
-    })
+    const documentRequests = sortRequestsByArrival(
+      documentRequestLogs.flatMap((log) => {
+        const request = readStoredDocumentRequest(log)
+        return request ? [request] : []
+      })
+    )
 
     return NextResponse.json({
       user,

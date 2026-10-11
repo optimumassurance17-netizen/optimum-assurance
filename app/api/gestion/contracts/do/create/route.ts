@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { createInsuranceContract } from "@/lib/insurance-contract-service"
+import { createInsuranceContract, findReusableDoContract } from "@/lib/insurance-contract-service"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { formatDoConstructionCostActivity } from "@/lib/do-attestation-facts"
@@ -126,6 +126,21 @@ export async function POST(request: NextRequest) {
       ...buildDoDocumentLinesFromStoredJson(user.doEtudeQuestionnaireJson),
       ...buildDoDocumentLinesFromStoredJson(user.doInitialQuestionnaireJson),
     ])
+
+    const existing = await findReusableDoContract(userId, projectAddress)
+    if (existing) {
+      return NextResponse.json({
+        reused: true,
+        contract: {
+          id: existing.id,
+          contractNumber: existing.contractNumber,
+          status: existing.status,
+          riskScore: existing.riskScore ?? 0,
+          riskReasons: [] as string[],
+        },
+        emailSent: null,
+      })
+    }
 
     const { contract, risk } = await createInsuranceContract({
       productType: "do",

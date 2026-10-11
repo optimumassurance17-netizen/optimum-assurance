@@ -105,18 +105,19 @@ export function doLeadMatchesSearch(lead: DoLeadSearchFields, query: string): bo
   return queryDigits.length >= 4 && phoneDigits.includes(queryDigits)
 }
 
-/** Sans recherche : seulement les demandes sans fiche. Avec recherche : toutes les demandes qui correspondent. */
-export function visibleDoDevisLeads<T extends DoLeadSearchFields>(
+/** Sans recherche : seulement les demandes sans fiche. Avec recherche : toutes les demandes qui correspondent. L'ordre est celui d'arrivée. */
+export function visibleDoDevisLeads<T extends DoLeadSearchFields & { createdAt?: Date | string | null }>(
   leads: T[],
   knownEmails: ReadonlySet<string>,
   query: string
 ): T[] {
-  return leads.filter((lead) => {
+  const visible = leads.filter((lead) => {
     if (!doLeadMatchesSearch(lead, query)) return false
     if (query.trim()) return true
     const email = lead.email.trim().toLowerCase()
     return Boolean(email) && !knownEmails.has(email)
   })
+  return sortRequestsByArrival(visible)
 }
 
 export type DoDevisLeadActionInput = {
@@ -137,8 +138,18 @@ export type DoDevisDashboardAction = {
   leadId: string
 }
 
+export function sortRequestsByArrival<T extends { createdAt?: Date | string | null }>(rows: T[]): T[] {
+  return [...rows].sort((left, right) => arrivalTime(left.createdAt) - arrivalTime(right.createdAt))
+}
+
+function arrivalTime(value: Date | string | null | undefined): number {
+  if (!value) return 0
+  const time = value instanceof Date ? value.getTime() : new Date(value).getTime()
+  return Number.isFinite(time) ? time : 0
+}
+
 /**
- * Demandes DO récentes sans fiche client. Le plus récent reste en tête.
+ * Demandes DO récentes sans fiche client. La plus ancienne reste en tête.
  * Aucun e-mail et aucun compte ne sont créés ici.
  */
 export function selectDoDevisDashboardActions(
@@ -155,7 +166,7 @@ export function selectDoDevisDashboardActions(
       if (!email) return false
       return !knownEmails.has(email)
     })
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
     .slice(0, DO_DEVIS_ACTION_LIMIT)
     .map((lead) => {
       const company = readDoLeadCompanyName(lead.data)

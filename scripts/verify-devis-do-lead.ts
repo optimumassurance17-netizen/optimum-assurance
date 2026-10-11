@@ -7,6 +7,7 @@ import {
   readDoLeadChantier,
   readDoLeadCompanyName,
   selectDoDevisDashboardActions,
+  sortRequestsByArrival,
   visibleDoDevisLeads,
 } from "../lib/devis-do-lead"
 
@@ -67,6 +68,29 @@ assert(
   visibleDoDevisLeads(waitingLeads, known, "deja").some((item) => item.email === "deja@example.com"),
   "la recherche retrouve une demande déjà rattachée à une fiche"
 )
+const orderedWaiting = visibleDoDevisLeads(
+  [
+    { email: "recent@example.com", createdAt: "2026-10-02T00:00:00.000Z" },
+    { email: "ancien@example.com", createdAt: "2026-10-01T00:00:00.000Z" },
+  ],
+  new Set<string>(),
+  ""
+)
+assert(orderedWaiting[0]?.email === "ancien@example.com", "la liste d'attente commence par la demande la plus ancienne")
+assert(orderedWaiting[1]?.email === "recent@example.com", "la demande plus récente arrive ensuite")
+const sameInstantRows = [
+  { id: "a", createdAt: "2026-10-01T00:00:00.000Z" },
+  { id: "b", createdAt: "2026-10-01T00:00:00.000Z" },
+]
+assert(
+  sortRequestsByArrival(sameInstantRows).map((row) => row.id).join(",") === "a,b",
+  "deux demandes à la même heure gardent leur ordre"
+)
+const undatedRows: Array<{ id: string; createdAt?: string | null }> = [{ id: "x" }, { id: "y" }]
+assert(
+  sortRequestsByArrival(undatedRows).map((row) => row.id).join(",") === "x,y",
+  "sans date, l'ordre reçu est conservé"
+)
 
 const now = new Date("2026-10-09T16:00:00.000Z")
 const recentId = "cldo00000000000000000001"
@@ -122,21 +146,21 @@ const actions = selectDoDevisDashboardActions(
   now
 )
 
-assert(actions[0]?.id === `lead-do-${recentId}`, "la demande la plus récente est en tête")
-assert(actions[0]?.description === "SCA Démo — prospect@example.com", "l'action nomme la société et l'e-mail")
-assert(actions[0]?.href === `#${doDevisLeadRowId(recentId)}`, "l'action pointe vers la ligne")
-assert(actions[0]?.kind === "do_devis_pending", "l'action est une demande devis DO")
-assert(actions[0]?.leadId === recentId, "l'action porte l'identifiant de la demande")
-assert(actions[0]?.priority === "medium", "une demande du jour n'est pas marquée urgente")
+const oldestInWindowId = "cldo00000000000000000080"
+const recentAction = actions.find((action) => action.leadId === recentId)
+assert(actions[0]?.id === `lead-do-${oldestInWindowId}`, "la demande la plus ancienne de la fenêtre est en tête")
+assert(actions[0]?.priority === "high" && (actions[0]?.ageHours ?? 0) >= 72, "une demande de plus de 72 heures passe en priorité haute")
+assert(actions.at(-1)?.id === `lead-do-${recentId}`, "la demande la plus récente arrive en dernier")
+assert(recentAction?.description === "SCA Démo — prospect@example.com", "l'action nomme la société et l'e-mail")
+assert(recentAction?.href === `#${doDevisLeadRowId(recentId)}`, "l'action pointe vers la ligne")
+assert(recentAction?.kind === "do_devis_pending", "l'action est une demande devis DO")
+assert(recentAction?.leadId === recentId, "l'action porte l'identifiant de la demande")
+assert(recentAction?.priority === "medium", "une demande du jour n'est pas marquée urgente")
 assert(actions.some((action) => action.id === `lead-do-${olderId}`), "une demande de la semaine reste visible")
 assert(!actions.some((action) => action.description.includes("Déjà client")), "une fiche déjà ouverte n'est pas une action")
 assert(!actions.some((action) => action.description.includes("Trop ancien")), "une demande de plus de 7 jours n'est pas une action")
 assert(!actions.some((action) => action.description.includes("Sans email")), "une demande sans e-mail est ignorée")
 assert(actions.length === 8, "la liste d'actions reste plafonnée")
-assert(
-  actions.some((action) => action.priority === "high" && action.ageHours >= 72),
-  "une demande de plus de 72 heures passe en priorité haute"
-)
 
 assert(
   doDevisLeadGestionUrl("https://www.optimum-assurance.fr/", recentId) ===

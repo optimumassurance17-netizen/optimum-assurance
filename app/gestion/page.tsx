@@ -1890,10 +1890,20 @@ export default function GestionPage() {
       })
       const result = await readResponseJson<{
         error?: string
+        reused?: boolean
         contract?: { contractNumber: string; status: string }
         emailSent?: boolean | null
       }>(res)
       if (!res.ok) throw new Error(result.error || "Erreur")
+      if (result.reused) {
+        setToast({
+          message: `Le devis DO ${result.contract?.contractNumber ?? ""} existe déjà pour cette adresse.`,
+          type: "warning",
+        })
+        const dashRes = await fetch("/api/gestion/dashboard")
+        if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+        return
+      }
       setToast({
         message: `Contrat DO ${result.contract?.contractNumber ?? ""} créé (${result.contract?.status ?? "statut inconnu"}). Devis + CP disponibles dans l’espace client.${result.emailSent === false ? " Email client non envoyé." : ""}`,
         type: "success",

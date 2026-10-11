@@ -8,6 +8,7 @@ import { computeRcFabIndicatif } from "@/lib/rc-fabriquant-underwriting"
 import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { buildDdaNeedSummary } from "@/lib/dda-compliance"
+import { findFirstMatchingKey, rcDevisMatchKey } from "@/lib/devis-intake"
 
 export const runtime = "nodejs"
 
@@ -150,6 +151,26 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const incomingKey = rcDevisMatchKey({ email, siret: data.siret, data })
+    const previousLeads = await prisma.devisRcFabriquantLead.findMany({
+      where: { email: { equals: email, mode: "insensitive" } },
+      orderBy: { createdAt: "asc" },
+      take: 30,
+      select: { id: true, email: true, data: true },
+    })
+    const duplicateLead = findFirstMatchingKey(
+      previousLeads,
+      (lead) => rcDevisMatchKey({ email: lead.email, data: lead.data }),
+      incomingKey
+    )
+    if (duplicateLead) {
+      await prisma.devisRcFabriquantLead.update({
+        where: { id: duplicateLead.id },
+        data: { email, data: JSON.stringify(storedPayload) },
+      })
+      return NextResponse.json({ ok: true, duplicate: true })
+    }
+
     const createdLead = await prisma.devisRcFabriquantLead.create({
       data: {
         email,

@@ -5,6 +5,7 @@ import { ensureUserTitleQuestionnaireColumns } from "@/lib/ensure-user-title-col
 import { authOptions } from "@/lib/auth"
 import { EMAIL_TEMPLATES, sendEmail } from "@/lib/email"
 import { sendNewDevisRequestAlert } from "@/lib/devis-alert"
+import { findFirstMatchingKey, titreDevisMatchKey } from "@/lib/devis-intake"
 import { getClientIp, checkRateLimitMemory } from "@/lib/rate-limit"
 import {
   ASSURANCE_TITRE_BESOIN_LABELS,
@@ -194,13 +195,34 @@ export async function POST(request: NextRequest) {
     ...(tracking ? { tracking } : {}),
   }
 
+  let duplicateLead = false
   try {
-    await prisma.devisAssuranceTitreLead.create({
-      data: {
-        email,
-        data: JSON.stringify(storedPayload),
-      },
+    const incomingKey = titreDevisMatchKey({ email, data: storedPayload })
+    const previousLeads = await prisma.devisAssuranceTitreLead.findMany({
+      where: { email: { equals: email, mode: "insensitive" } },
+      orderBy: { createdAt: "asc" },
+      take: 30,
+      select: { id: true, email: true, data: true },
     })
+    const existing = findFirstMatchingKey(
+      previousLeads,
+      (lead) => titreDevisMatchKey({ email: lead.email, data: lead.data }),
+      incomingKey
+    )
+    if (existing) {
+      duplicateLead = true
+      await prisma.devisAssuranceTitreLead.update({
+        where: { id: existing.id },
+        data: { email, data: JSON.stringify(storedPayload) },
+      })
+    } else {
+      await prisma.devisAssuranceTitreLead.create({
+        data: {
+          email,
+          data: JSON.stringify(storedPayload),
+        },
+      })
+    }
   } catch (error) {
     console.error("[devis-assurance-titre] prisma:", error)
     return NextResponse.json({ error: "Enregistrement impossible" }, { status: 500 })
@@ -224,6 +246,10 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error("[devis-assurance-titre] save user initial JSON:", error)
+  }
+
+  if (duplicateLead) {
+    return NextResponse.json({ ok: true, duplicate: true })
   }
 
   const lines: string[] = [

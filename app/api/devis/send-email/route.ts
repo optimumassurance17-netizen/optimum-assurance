@@ -13,6 +13,7 @@ import {
   buildConversionTrackingLines,
   type ConversionTrackingContext,
 } from "@/lib/conversion-tracking"
+import { decennaleDevisMatchKey, findFirstMatchingKey, normalizeIntakeEmail } from "@/lib/devis-intake"
 
 const DRAFT_EXPIRY_DAYS = 7
 
@@ -42,6 +43,28 @@ export async function POST(request: NextRequest) {
     }
 
     const tarif = devis.tarif
+    const emailNorm = normalizeIntakeEmail(email)
+    const incomingKey = decennaleDevisMatchKey({
+      email: emailNorm,
+      siret: devis.siret,
+      raisonSociale: devis.raisonSociale,
+    })
+    const previousLeads = await prisma.devisLead.findMany({
+      where: { email: { equals: emailNorm, mode: "insensitive" } },
+      orderBy: { createdAt: "asc" },
+      take: 30,
+      select: { id: true, email: true, siret: true, raisonSociale: true },
+    })
+    const duplicateLead = findFirstMatchingKey(
+      previousLeads,
+      (lead) =>
+        decennaleDevisMatchKey({
+          email: lead.email,
+          siret: lead.siret,
+          raisonSociale: lead.raisonSociale,
+        }),
+      incomingKey
+    )
     const token = crypto.randomBytes(24).toString("hex")
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + DRAFT_EXPIRY_DAYS)
@@ -50,7 +73,7 @@ export async function POST(request: NextRequest) {
     await prisma.devisDraft.create({
       data: {
         token,
-        email: String(email).trim().toLowerCase(),
+        email: emailNorm,
         data: JSON.stringify(devis),
         produit: "decennale",
         expiresAt,
@@ -60,19 +83,21 @@ export async function POST(request: NextRequest) {
     const createdAt = new Date().toISOString()
     let pdfBytes: Uint8Array | null = null
     let contractNumberForPdf: string | undefined
-    try {
-      const base = insuranceDataFromDecennaleDevis(devis, createdAt)
-      contractNumberForPdf = await allocateNextContractNumber("decennale")
-      const pdfData = { ...base, contractNumber: contractNumberForPdf }
-      pdfBytes = await generateDecennaleQuote(pdfData)
-      await logPdfGeneration({
-        contractNumber: contractNumberForPdf,
-        productType: "decennale",
-        documentType: "quote",
-        metadata: { source: "devis_send_email" },
-      })
-    } catch (e) {
-      console.error("[devis/send-email] PDF décennale:", e)
+    if (!duplicateLead) {
+      try {
+        const base = insuranceDataFromDecennaleDevis(devis, createdAt)
+        contractNumberForPdf = await allocateNextContractNumber("decennale")
+        const pdfData = { ...base, contractNumber: contractNumberForPdf }
+        pdfBytes = await generateDecennaleQuote(pdfData)
+        await logPdfGeneration({
+          contractNumber: contractNumberForPdf,
+          productType: "decennale",
+          documentType: "quote",
+          metadata: { source: "devis_send_email" },
+        })
+      } catch (e) {
+        console.error("[devis/send-email] PDF décennale:", e)
+      }
     }
 
     const template = EMAIL_TEMPLATES.devisSauvegarde(email, resumeUrl, {
@@ -101,9 +126,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (duplicateLead) {
+      await prisma.devisLead.update({
+        where: { id: duplicateLead.id },
+        data: {
+          email: emailNorm,
+          raisonSociale: devis.raisonSociale || undefined,
+          siret: devis.siret || undefined,
+          primeAnnuelle: tarif?.primeAnnuelle ?? undefined,
+        },
+      })
+      return NextResponse.json({ ok: true, duplicate: true })
+    }
+
     await prisma.devisLead.create({
       data: {
-        email,
+        email: emailNorm,
         raisonSociale: devis.raisonSociale || undefined,
         siret: devis.siret || undefined,
         primeAnnuelle: tarif?.primeAnnuelle ?? undefined,
