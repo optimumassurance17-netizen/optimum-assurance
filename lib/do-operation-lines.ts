@@ -48,6 +48,16 @@ export function buildDoOperationLines(
   const qualite = QUALITES_MAITRE_OUVRAGE.find((item) => item.value === data.qualiteMaitreOuvrage)?.label
   add(lines, "Qualité du maître d'ouvrage", qualite)
   add(lines, "Le maître d'ouvrage est le souscripteur", ouiNon(data.maitreOuvrageEstSouscripteur))
+  add(
+    lines,
+    "Adresse de construction",
+    [
+      data.adresseConstruction,
+      [data.codePostalConstruction, data.villeConstruction].filter(Boolean).join(" "),
+    ]
+      .filter(Boolean)
+      .join(", ")
+  )
   add(lines, "Téléphone", data.telephone)
   add(lines, "Permis de construire", data.permisConstruireNumero)
   add(lines, "Ouverture de chantier prévue", data.dateDroc)

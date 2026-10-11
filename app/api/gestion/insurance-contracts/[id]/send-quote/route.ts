@@ -7,6 +7,7 @@ import { escapeHtmlForEmail } from "@/lib/email-layout"
 import { prisma } from "@/lib/prisma"
 import { logContractAction } from "@/lib/insurance-contract-service"
 import { renderContractPdf } from "@/lib/insurance-contract-pdf"
+import { prepareDoContractForPdf } from "@/lib/do-attestation-source"
 import { SITE_URL } from "@/lib/site-url"
 
 export async function POST(
@@ -49,7 +50,8 @@ export async function POST(
       )
     }
 
-    const pdfBytes = await renderContractPdf(contract, "quote")
+    const ready = await prepareDoContractForPdf(contract)
+    const pdfBytes = await renderContractPdf(ready, "quote")
     const clientLabel = contract.user?.raisonSociale || contract.clientName || email
     const safeClientLabel = escapeHtmlForEmail(clientLabel)
     const safeContractNumber = escapeHtmlForEmail(contract.contractNumber)

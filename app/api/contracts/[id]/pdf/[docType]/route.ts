@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { renderContractPdf, type DocPdfType } from "@/lib/insurance-contract-pdf"
+import { prepareDoContractForPdf } from "@/lib/do-attestation-source"
 import { PdfValidationError } from "@/lib/pdf/errors"
 import { insuranceProductHasBundledQuotePolicy } from "@/lib/insurance-product"
 
@@ -34,7 +35,8 @@ export async function GET(
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    const bytes = await renderContractPdf(contract, docType as DocPdfType)
+    const ready = await prepareDoContractForPdf(contract)
+    const bytes = await renderContractPdf(ready, docType as DocPdfType)
     const bundleDevisCp =
       insuranceProductHasBundledQuotePolicy(contract.productType) &&
       (docType === "quote" || docType === "policy")

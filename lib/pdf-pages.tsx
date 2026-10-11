@@ -11,6 +11,7 @@ import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
 import { decennaleCadreCompletLines, doCadreCompletLines, doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
+import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
 
 function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
   const rows = decennaleGarantieRows(data)
@@ -393,6 +394,9 @@ export function AttestationDoPDFPage({
     verificationQrDataUri?: string
   }
   const typeGarantie = d.closCouvert ? "Clos et couvert" : "DO complète"
+  const facts = readDoDocumentAttestation(data)
+  const guaranteeLabel =
+    facts.guaranteeAmount != null ? `${facts.guaranteeAmount.toLocaleString("fr-FR")} €` : "Non renseigné"
   const cpPages = chunkLinesByLength(doCadreCompletLines(), 1400)
   return (
     <>
@@ -405,9 +409,8 @@ export function AttestationDoPDFPage({
       <View style={pdfTheme.attestCard}>
         <Text style={pdfTheme.p}>La société Optimum Assurance atteste que :</Text>
         <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#0f172a" }]}>{d.raisonSociale ?? "—"}</Text>
-        {(d.adresseOperation || d.codePostal || d.ville) && (
-          <Text style={pdfTheme.p}>{[d.adresseOperation, d.codePostal, d.ville].filter(Boolean).join(", ")}</Text>
-        )}
+        <Text style={pdfTheme.p}>Adresse de construction : {facts.constructionAddress || "Non renseignée"}</Text>
+        <Text style={pdfTheme.p}>Montant des garanties : {guaranteeLabel}</Text>
         <Text style={pdfTheme.p}>Type de garantie : {typeGarantie}</Text>
         <Text style={pdfTheme.p}>
           Validité : du {d.dateSignature ?? "—"} au {d.dateEcheance ?? "—"}. La garantie obligatoire court dix ans à

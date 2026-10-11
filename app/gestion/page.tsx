@@ -44,6 +44,7 @@ import {
   visibleDoDevisLeads,
 } from "@/lib/devis-do-lead"
 import { buildDoOperationLines } from "@/lib/do-operation-lines"
+import { constructionAddressFromLead } from "@/lib/do-attestation-facts"
 import type { DevisDommageOuvrageData } from "@/lib/dommage-ouvrage-types"
 import {
   RC_FABRIQUANT_LEAD_STATUT_LABELS,
@@ -683,7 +684,7 @@ export default function GestionPage() {
           operationClosCouvert?: boolean
         }
         const identity = extractClientIdentityFromRecord(leadData)
-        adresseOp = identity.adresse || ""
+        adresseOp = constructionAddressFromLead(leadData)
         tel = identity.telephone || ""
         typeConstruction = mapTypeOuvrageToConstruction(leadData.typeOuvrage)
         destination = mapDestinationConstruction(leadData.destinationConstruction)

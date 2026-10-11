@@ -100,7 +100,43 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
   y -= 14
   y = drawWrappedText(page, data.projectName!, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, fontBold, 10, 13)
   y -= 8
-  y = drawWrappedText(page, data.projectAddress!, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 10, 13)
+  y = drawWrappedText(
+    page,
+    `Adresse de construction : ${data.projectAddress}`,
+    PDF_PAGE.marginX,
+    y,
+    PDF_PAGE.contentWidth,
+    font,
+    10,
+    13
+  )
+  y -= 8
+  const guaranteeAmount =
+    data.constructionCost != null && data.constructionCost > 0 ? data.constructionCost : null
+  y = drawWrappedText(
+    page,
+    guaranteeAmount != null
+      ? `Montant des garanties : ${formatEuro(guaranteeAmount)} (coût total de construction déclaré).`
+      : "Montant des garanties : non renseigné au dossier.",
+    PDF_PAGE.marginX,
+    y,
+    PDF_PAGE.contentWidth,
+    font,
+    10,
+    13
+  )
+  y -= 6
+  y = drawWrappedText(
+    page,
+    "La garantie dommages-ouvrage couvre le coût de réparation des dommages, dans la limite de ce montant.",
+    PDF_PAGE.marginX,
+    y,
+    PDF_PAGE.contentWidth,
+    font,
+    9,
+    12,
+    PDF_COLORS.muted
+  )
   if (data.constructionNature) {
     y -= 8
     y = drawWrappedText(

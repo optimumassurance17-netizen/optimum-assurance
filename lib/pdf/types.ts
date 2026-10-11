@@ -22,6 +22,8 @@ export type InsuranceData = {
   projectAddress?: string
   /** DO : nature des travaux / construction */
   constructionNature?: string
+  /** DO : coût total de construction déclaré, plafond de la garantie */
+  constructionCost?: number
   startDate: string
   endDate: string
   premium: number

@@ -7,6 +7,7 @@ import { COMPANY_BRAND } from "@/lib/legal-branding"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
 import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
 import { doCadreCompletLines } from "@/lib/conditions-particulieres"
+import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
 
 interface AttestationDoTemplateProps {
   numero: string
@@ -25,6 +26,11 @@ interface AttestationDoTemplateProps {
 
 export function AttestationDoTemplate({ numero, verificationUrl, data }: AttestationDoTemplateProps) {
   const typeGarantie = data.closCouvert ? "Clos et couvert" : "DO complète"
+  const facts = readDoDocumentAttestation(data as unknown as Record<string, unknown>)
+  const guaranteeLabel =
+    facts.guaranteeAmount != null
+      ? `${facts.guaranteeAmount.toLocaleString("fr-FR")} €`
+      : "Non renseigné"
 
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0">
@@ -40,11 +46,12 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
           La société <strong>{COMPANY_BRAND}</strong> atteste que :
         </p>
         <p className="mb-2 font-semibold">{data.raisonSociale}</p>
-        {(data.adresseOperation || data.codePostal || data.ville) && (
-          <p className="mb-4">
-            {[data.adresseOperation, data.codePostal, data.ville].filter(Boolean).join(", ")}
-          </p>
-        )}
+        <p className="mb-2">
+          <strong>Adresse de construction :</strong> {facts.constructionAddress || "Non renseignée"}
+        </p>
+        <p className="mb-4">
+          <strong>Montant des garanties :</strong> {guaranteeLabel}
+        </p>
         <p className="mb-4">
           est garantie au titre de l&apos;<strong>assurance dommage ouvrage</strong>.
         </p>

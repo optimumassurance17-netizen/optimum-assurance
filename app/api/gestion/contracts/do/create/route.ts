@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { createInsuranceContract } from "@/lib/insurance-contract-service"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { formatDoConstructionCostActivity } from "@/lib/do-attestation-facts"
 import { buildDoDocumentLinesFromStoredJson } from "@/lib/do-operation-lines"
 
 function asTrimmedString(value: unknown): string | undefined {
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
       constructionNature,
       destination ? `Destination : ${destination}` : undefined,
       closCouvert != null ? (closCouvert ? "Garantie clos et couvert" : "Dommage ouvrage complète") : undefined,
-      coutConstruction != null ? `Coût construction : ${coutConstruction.toLocaleString("fr-FR")} EUR` : undefined,
+      coutConstruction != null ? formatDoConstructionCostActivity(coutConstruction) : undefined,
       telephone ? `Téléphone : ${telephone}` : undefined,
       fraisGestion != null && fraisGestion > 0 ? `Frais de gestion : ${fraisGestion.toLocaleString("fr-FR")} EUR` : undefined,
       fraisCourtage != null && fraisCourtage > 0

@@ -8,6 +8,7 @@ import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { getInsuranceProductLabel } from "@/lib/insurance-product"
 import { readAssuranceTitreContractConfig } from "@/lib/assurance-titre-contract-config"
+import { loadDoAttestationFacts } from "@/lib/do-attestation-source"
 
 export const dynamic = "force-dynamic"
 export const metadata = {
@@ -44,6 +45,7 @@ export default async function VerifyByContractNumberPage({
       ic.productType === "assurance_titre"
         ? readAssuranceTitreContractConfig(ic.exclusionsJson, ic.premium, ic.contractNumber)
         : null
+    const doFacts = ic.productType === "do" ? await loadDoAttestationFacts(ic) : null
 
     return (
       <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100 px-4 py-12">
@@ -153,11 +155,30 @@ export default async function VerifyByContractNumberPage({
                     </dd>
                   </div>
                 )}
-                {ic.productType === "do" && (ic.projectName || ic.projectAddress) && (
+                {ic.productType === "do" && (ic.projectName || doFacts?.constructionAddress) && (
                   <div className="border-t border-slate-100 pt-3">
                     <dt className="font-semibold text-slate-900">Projet</dt>
                     <dd className="mt-1 text-slate-800">
-                      {ic.projectName} {ic.projectAddress ? `— ${ic.projectAddress}` : ""}
+                      {ic.projectName}
+                      {doFacts?.constructionAddress ? ` — ${doFacts.constructionAddress}` : ""}
+                    </dd>
+                  </div>
+                )}
+                {doFacts && (
+                  <div className="border-t border-slate-100 pt-3">
+                    <dt className="font-semibold text-slate-900">Adresse de construction</dt>
+                    <dd className="mt-1 text-slate-800">
+                      {doFacts.constructionAddress || "Non renseignée"}
+                    </dd>
+                  </div>
+                )}
+                {doFacts && (
+                  <div className="border-t border-slate-100 pt-3">
+                    <dt className="font-semibold text-slate-900">Montant des garanties</dt>
+                    <dd className="mt-1 text-slate-800">
+                      {doFacts.guaranteeAmount != null
+                        ? `${doFacts.guaranteeAmount.toLocaleString("fr-FR")} €`
+                        : "Non renseigné"}
                     </dd>
                   </div>
                 )}

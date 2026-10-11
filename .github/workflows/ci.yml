@@ -56,6 +56,9 @@ jobs:
       - name: Vérification mentions contractuelles PDF
         run: npm run test:pdf-contractual
 
+      - name: Vérification attestation dommage ouvrage
+        run: npm run test:do-attestation
+
       - name: Prisma generate + Next build
         run: npm run build
 

@@ -20,6 +20,7 @@ import { stringRecordFromMetadata } from "@/lib/client-echeances"
 import { applyEcheancePaidEffects } from "@/lib/client-echeance-service"
 import { sendEcheancePaidReceipt } from "@/lib/echeance-receipt"
 import { findStoredCardLinkForPayment, markStoredCardLinkPaid } from "@/lib/gestion-card-link"
+import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -194,12 +195,14 @@ export async function POST(request: NextRequest) {
             const fraisGestion = devisData.fraisGestion ?? 0
             const fraisCourtage = devisData.fraisCourtage ?? 0
             const totalTTC = primeAnnuelle + fraisGestion + fraisCourtage
+            const attestationFacts = readDoDocumentAttestation(devisData as unknown as Record<string, unknown>)
 
             const attestationData = {
               raisonSociale: devisData.raisonSociale || user.raisonSociale || user.email,
-              adresseOperation: devisData.adresseOperation,
+              adresseOperation: attestationFacts.constructionAddress || devisData.adresseOperation,
               codePostal: devisData.codePostal,
               ville: devisData.ville,
+              coutConstruction: attestationFacts.guaranteeAmount ?? undefined,
               closCouvert: devisData.closCouvert ?? false,
               primeAnnuelle,
               dateSignature,

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
 
 export const dynamic = "force-dynamic"
 export const metadata = {
@@ -40,7 +41,8 @@ export default async function VerificationPage({
 
   const isDo = document.type === "attestation_do"
   const isNominative = document.type === "attestation_nominative"
-  const data = JSON.parse(document.data) as {
+  const rawData = JSON.parse(document.data) as Record<string, unknown>
+  const data = rawData as {
     raisonSociale?: string
     dateEcheance?: string
     activites?: string[]
@@ -50,6 +52,7 @@ export default async function VerificationPage({
     chantierAdresse?: string
     objetMission?: string
   }
+  const doFacts = isDo ? readDoDocumentAttestation(rawData) : null
 
   const dateEcheance = parseDate(data.dateEcheance || "")
   const today = new Date()
@@ -147,6 +150,13 @@ export default async function VerificationPage({
             {isDo && (
               <p style={{ color: "#404040", fontSize: "0.8rem", marginTop: "12px" }}>
                 <strong>Type de garantie :</strong> {typeGarantieDo}<br />
+                <strong>Adresse de construction :</strong> {doFacts?.constructionAddress || "Non renseignée"}
+                <br />
+                <strong>Montant des garanties :</strong>{" "}
+                {doFacts?.guaranteeAmount != null
+                  ? `${doFacts.guaranteeAmount.toLocaleString("fr-FR")} €`
+                  : "Non renseigné"}
+                <br />
                 <strong>Validité :</strong> unique de 10 ans, non résiliable
                 {data.dateSignature && data.dateEcheance && (
                   <><br />({data.dateSignature} → {data.dateEcheance})</>

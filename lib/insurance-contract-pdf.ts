@@ -16,6 +16,7 @@ import {
 } from "@/lib/legal-branding"
 import { SITE_URL } from "@/lib/site-url"
 import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
+import { parseDoConstructionCost } from "@/lib/do-attestation-facts"
 import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
@@ -79,6 +80,7 @@ function contractToInsuranceData(c: InsuranceContract): InsuranceData {
     projectName: c.projectName ?? undefined,
     projectAddress: c.projectAddress ?? undefined,
     constructionNature: c.constructionNature ?? undefined,
+    constructionCost: parseDoConstructionCost(activities) ?? undefined,
     startDate: vf.toLocaleDateString("fr-FR"),
     endDate: vu.toLocaleDateString("fr-FR"),
     premium: c.premium,

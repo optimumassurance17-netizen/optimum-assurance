@@ -4,6 +4,7 @@ import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { calculateRiskScore, requiresManualReview } from "@/lib/risk-scoring"
 import { renderContractPdf } from "@/lib/insurance-contract-pdf"
+import { prepareDoContractForPdf } from "@/lib/do-attestation-source"
 import { SITE_URL } from "@/lib/site-url"
 import { primeTrimestrielle } from "@/lib/premium"
 import {
@@ -200,12 +201,13 @@ export function insuranceContractPaymentAmountMatches(
 }
 
 async function generatePostPaymentPdfs(contractId: string, fresh: InsuranceContract): Promise<void> {
-  const certBytes = await renderContractPdf(fresh, "certificate")
-  const invBytes = await renderContractPdf(fresh, "invoice")
+  const ready = await prepareDoContractForPdf(fresh)
+  const certBytes = await renderContractPdf(ready, "certificate")
+  const invBytes = await renderContractPdf(ready, "invoice")
   let scheduleBytes: Uint8Array | null = null
   if (insuranceProductHasSchedule(fresh.productType)) {
     try {
-      scheduleBytes = await renderContractPdf(fresh, "schedule")
+      scheduleBytes = await renderContractPdf(ready, "schedule")
     } catch (e) {
       console.error("[generatePostPaymentPdfs] schedule:", e)
     }
@@ -442,9 +444,10 @@ export async function processInsuranceContractPaymentSuccess(
 export async function regenerateContractPdfs(contractId: string, actorEmail: string) {
   const c = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
   if (!c) throw new Error("NOT_FOUND")
+  const ready = await prepareDoContractForPdf(c)
   for (const t of ["quote", "policy", "certificate", "invoice", "schedule"] as const) {
     try {
-      await renderContractPdf(c, t)
+      await renderContractPdf(ready, t)
     } catch {
       /* cert / invoice / échéancier selon statut ou produit */
     }

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { renderContractPdf, type DocPdfType } from "@/lib/insurance-contract-pdf"
+import { prepareDoContractForPdf } from "@/lib/do-attestation-source"
 import { PdfValidationError } from "@/lib/pdf/errors"
 import { asJsonObject } from "@/lib/json-object"
 
@@ -49,7 +50,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const bytes = await renderContractPdf(contract, body.docType)
+    const ready = await prepareDoContractForPdf(contract)
+    const bytes = await renderContractPdf(ready, body.docType)
     return new NextResponse(Buffer.from(bytes), {
       status: 200,
       headers: {
