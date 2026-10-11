@@ -23,6 +23,10 @@ function devisDocument(allowDevisEdition: boolean) {
       codePostal: "75001",
       ville: "Paris",
       activites: ["Maçonnerie"],
+      chiffreAffaires: 120000,
+      primeAnnuelle: 3200,
+      franchise: 1000,
+      plafond: 160000,
     },
   }
 }
