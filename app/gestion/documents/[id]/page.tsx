@@ -7,6 +7,7 @@ import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { readResponseJson } from "@/lib/read-response-json"
 import { Toast } from "@/components/Toast"
+import { ModifierDevisButton } from "@/components/gestion/ModifierDevisButton"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
 const DevisDoTemplate = dynamic(() => import("@/components/documents/DevisDoTemplate").then((m) => m.DevisDoTemplate), { ssr: false })
@@ -145,6 +146,15 @@ export default function GestionDocumentPage() {
               >
                 {signatureSendLoading ? "Envoi…" : "Envoyer pour signature"}
               </button>
+            )}
+            {(document.type === "devis" || document.type === "devis_do") && (
+              <ModifierDevisButton
+                documentId={document.id}
+                documentType={document.type}
+                numero={document.numero}
+                onDone={(message, type) => setToast({ message, type })}
+                onSaved={(data) => setDocument((current) => (current ? { ...current, data } : current))}
+              />
             )}
             {(document.type === "contrat" || document.type === "avenant") && (
               <Link

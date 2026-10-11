@@ -16,6 +16,7 @@ import { getInsuranceProductLabel } from "@/lib/insurance-product"
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { Toast } from "@/components/Toast"
+import { ModifierDevisButton } from "@/components/gestion/ModifierDevisButton"
 
 function prettyQuestionnaireJson(raw: string | null | undefined): string {
   if (!raw?.trim()) return ""
@@ -1190,11 +1191,11 @@ export default function ClientDetailPage() {
 
         <section className="bg-[#252525] rounded-xl p-6 border border-gray-700">
           <h2 className="text-lg font-semibold text-white mb-2">
-            Auto-autorisation devis & forçage activités
+            Autorisation de modification du devis
           </h2>
           <p className="text-xs text-gray-300 mb-4">
-            Paramétrage par client: autoriser la modification devis/contrat en espace client et
-            imposer des activités lors des sauvegardes du devis.
+            Autorise ce client à modifier son devis et la couverture de son contrat dans l&apos;espace client.
+            Les activités forcées restent ajoutées à l&apos;enregistrement.
           </p>
           <div className="space-y-4">
             <label className="flex items-start gap-3 text-sm text-gray-200">
@@ -1211,11 +1212,11 @@ export default function ClientDetailPage() {
               />
               <span>
                 <span className="font-medium text-white">
-                  Autoriser la modification devis/contrat côté client
+                  Autoriser la modification du devis
                 </span>
                 <br />
                 <span className="text-xs text-gray-400">
-                  Active le déverrouillage des modifications de couverture pour ce client.
+                  Le client peut alors modifier son devis et la couverture d&apos;un contrat en vigueur.
                 </span>
               </span>
             </label>
@@ -1744,7 +1745,14 @@ export default function ClientDetailPage() {
         ) : null}
 
         <section>
-          <h2 className="text-lg font-semibold text-white mb-4">Documents</h2>
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-lg font-semibold text-white">Documents</h2>
+            <p className="text-sm text-gray-300">
+              {data.devisAutonomy?.allowDevisEdition
+                ? "Modification du devis autorisée pour ce client."
+                : "L'autorisation de modification du devis se règle dans le bloc au-dessus."}
+            </p>
+          </div>
           <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
             {documents.length === 0 ? (
               <p className="p-4 text-gray-200">Aucun document</p>
@@ -1781,6 +1789,14 @@ export default function ClientDetailPage() {
                             documentId={d.id}
                             onResult={rememberDocumentRequest}
                           />
+                          {(d.type === "devis" || d.type === "devis_do") ? (
+                            <ModifierDevisButton
+                              documentId={d.id}
+                              documentType={d.type}
+                              numero={d.numero}
+                              onDone={(message, type) => setToast({ message, type })}
+                            />
+                          ) : null}
                           <Link
                             href={`/gestion/documents/${d.id}`}
                             className="text-[#2563eb] hover:text-[#1d4ed8] text-sm"

@@ -7,6 +7,7 @@ import { syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identit
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 import { getClientDevisAutonomyConfig } from "@/lib/client-devis-autonomy"
+import { isContractCoverageLocked } from "@/lib/devis-edition"
 import { stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
@@ -57,7 +58,8 @@ export async function GET(
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- user exclu de la réponse
     const { user, ...doc } = document
-    return NextResponse.json({ ...doc, data })
+    const autonomy = await getClientDevisAutonomyConfig(session.user.id)
+    return NextResponse.json({ ...doc, data, allowDevisEdition: autonomy.allowDevisEdition })
   } catch (error) {
     console.error("Erreur récupération document:", error)
     return NextResponse.json(
@@ -111,10 +113,11 @@ export async function PATCH(
 
     const devisAutonomy = await getClientDevisAutonomyConfig(session.user.id)
     const currentData = parseDocumentData(document.data)
-    const contractCoverageLocked =
-      document.type === "contrat" &&
-      ["valide", "suspendu"].includes((document.status || "").toLowerCase()) &&
-      !devisAutonomy.allowDevisEdition
+    const contractCoverageLocked = isContractCoverageLocked(
+      document.type,
+      document.status,
+      devisAutonomy.allowDevisEdition
+    )
     const editableKeys = [
       "raisonSociale",
       "siret",

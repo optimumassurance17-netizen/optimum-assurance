@@ -7,6 +7,11 @@ import { logAdminActivity } from "@/lib/admin-activity"
 import { IDENTITY_DOC_KEYS, syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
 import { DDA_LEGAL_VERSION, buildDdaNeedSummary } from "@/lib/dda-compliance"
 import { stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
+import {
+  alignDoDevisStoredData,
+  filterGestionDocumentPatch,
+  isGestionEditableDocumentType,
+} from "@/lib/devis-edition"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
   try {
@@ -58,8 +63,8 @@ export async function GET(
 }
 
 /**
- * PATCH - Modification des données d'un contrat ou avenant (admin uniquement)
- * Body: { data: { chiffreAffaires?, primeAnnuelle?, activites?, motifAvenant?, dateEffet?, dateEcheance?, ... } }
+ * PATCH - Modification d'un devis, contrat ou avenant (admin uniquement).
+ * Body: { data: { chiffreAffaires?, primeAnnuelle?, activites?, adresseOperation?, ... } }
  */
 export async function PATCH(
   request: NextRequest,
@@ -88,36 +93,23 @@ export async function PATCH(
     }
 
     const document = await prisma.document.findFirst({
-      where: { id, type: { in: ["contrat", "avenant"] } },
+      where: { id },
     })
 
-    if (!document) {
+    if (!document || !isGestionEditableDocumentType(document.type)) {
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
     const currentData = parseDocumentData(document.data)
-
-    const allowedKeys = [
-      "chiffreAffaires", "primeAnnuelle", "activites", "motifAvenant",
-      "dateEffet", "dateEcheance", "raisonSociale", "siret", "adresse",
-      "codePostal", "ville", "email", "telephone", "representantLegal", "civilite",
-      "primeMensuelle", "primeTrimestrielle", "modePaiement",
-      "periodicitePrelevement", "fraisGestionPrelevement", "franchise", "plafond",
-    ]
-    const filteredModifications: Record<string, unknown> = {}
-    for (const [key, value] of Object.entries(modifications)) {
-      if (allowedKeys.includes(key) && value !== undefined) {
-        if (key === "activites" && Array.isArray(value)) {
-          filteredModifications[key] = value
-        } else if (key === "activites" && typeof value === "string") {
-          filteredModifications[key] = value.split(",").map((a) => a.trim()).filter(Boolean)
-        } else {
-          filteredModifications[key] = value
-        }
-      }
+    const filteredModifications = filterGestionDocumentPatch(modifications)
+    if (Object.keys(filteredModifications).length === 0) {
+      return NextResponse.json({ error: "Aucun champ modifiable fourni" }, { status: 400 })
     }
 
-    const mergedData = { ...currentData, ...filteredModifications }
+    const mergedData = alignDoDevisStoredData(document.type, {
+      ...currentData,
+      ...filteredModifications,
+    }, filteredModifications)
 
     await prisma.document.update({
       where: { id },
@@ -213,7 +205,7 @@ export async function PATCH(
       })
     }
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, data: stripSignatureBinaries(mergedData) })
   } catch (error) {
     console.error("Erreur modification document:", error)
     return NextResponse.json(

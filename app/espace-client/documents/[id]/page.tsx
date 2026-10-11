@@ -10,7 +10,7 @@ import { Breadcrumb } from "@/components/Breadcrumb"
 import { Toast } from "@/components/Toast"
 import { DevoirConseil } from "@/components/DevoirConseil"
 import { readResponseJson } from "@/lib/read-response-json"
-import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import { isContractCoverageLocked } from "@/lib/devis-edition"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
 const DevisDoTemplate = dynamic(() => import("@/components/documents/DevisDoTemplate").then((m) => m.DevisDoTemplate), { ssr: false })
@@ -67,6 +67,7 @@ export default function DocumentPage() {
     status?: string
     data: Record<string, unknown>
     verificationToken?: string | null
+    allowDevisEdition?: boolean
   } | null>(null)
   const [loading, setLoading] = useState(true)
   const [payLoading, setPayLoading] = useState(false)
@@ -107,6 +108,7 @@ export default function DocumentPage() {
           status?: string
           data: Record<string, unknown>
           verificationToken?: string | null
+          allowDevisEdition?: boolean
         }>(res)
         if (!res.ok) throw new Error("Document introuvable")
         setDocument(data)
@@ -159,10 +161,11 @@ export default function DocumentPage() {
     dateEcheance !== null &&
     isInResiliationWindow(dateEffet, dateEcheance)
   const canEditDocument = Boolean(
-    document &&
-      ["devis", "devis_do", "contrat"].includes(document.type) &&
-      !(document.type === "contrat" && document.status === "active")
+    document && ["devis", "devis_do", "contrat"].includes(document.type)
   )
+  const coverageLocked = document
+    ? isContractCoverageLocked(document.type, document.status, document.allowDevisEdition === true)
+    : false
 
   useEffect(() => {
     if (!document) return
@@ -255,8 +258,8 @@ export default function DocumentPage() {
   const handleSaveEdition = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!document || !canEditDocument) return
-    if (document.status === CONTRACT_STATUS.active) {
-      setEditError("Modification verrouillée : contrat actif. Passez par une demande d'avenant.")
+    if (coverageLocked) {
+      setEditError("La modification de ce contrat n'est pas autorisée. Contactez la gestion.")
       return
     }
     setEditSaving(true)
@@ -410,7 +413,7 @@ export default function DocumentPage() {
                 <button
                   type="button"
                   onClick={() => setEditMode(true)}
-                  disabled={document?.status === CONTRACT_STATUS.active}
+                  disabled={coverageLocked}
                   className="rounded-xl bg-[#2563eb] px-4 py-2 text-sm font-medium text-white hover:bg-[#1d4ed8]"
                 >
                   Modifier
@@ -418,9 +421,9 @@ export default function DocumentPage() {
               ) : null}
             </div>
 
-            {document?.status === CONTRACT_STATUS.active && (
+            {coverageLocked && (
               <p className="mb-3 text-sm text-amber-700">
-                Modification verrouillée : ce contrat est actif. Contactez la gestion pour un avenant.
+                Modification verrouillée. La gestion peut autoriser la modification depuis la fiche client.
               </p>
             )}
 
