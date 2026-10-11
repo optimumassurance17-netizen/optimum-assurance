@@ -32,6 +32,7 @@ import Link from "next/link"
 import { Toast } from "@/components/Toast"
 import { ClientQuickSearch } from "@/components/gestion/ClientQuickSearch"
 import { InsuranceContractsGestionBlock } from "@/components/gestion/InsuranceContractsGestionBlock"
+import { DocumentRequestButton } from "@/components/gestion/DocumentRequestButton"
 import { DuplicateAccountsPanel } from "@/components/gestion/DuplicateAccountsPanel"
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
@@ -3569,6 +3570,12 @@ export default function GestionPage() {
                             >
                               {sendingClientAccessId === u.id ? "Envoi accès..." : "Créer / renvoyer accès client"}
                             </button>
+                            <DocumentRequestButton
+                              userId={u.id}
+                              disabled={!u.email?.trim()}
+                              disabledTitle="Aucun email sur cette fiche."
+                              onResult={(result) => setToast({ message: result.message, type: result.type })}
+                            />
                           </div>
                         </td>
                       </tr>
@@ -4130,6 +4137,10 @@ export default function GestionPage() {
                         >
                           Client
                         </Link>
+                        <DocumentRequestButton
+                          documentId={d.id}
+                          onResult={(result) => setToast({ message: result.message, type: result.type })}
+                        />
                         {(d.type === "attestation" || d.type === "attestation_nominative") && d.status === "valide" && (
                           <>
                             <button
@@ -4235,6 +4246,10 @@ export default function GestionPage() {
                         >
                           CRM →
                         </Link>
+                        <DocumentRequestButton
+                          documentId={d.id}
+                          onResult={(result) => setToast({ message: result.message, type: result.type })}
+                        />
                         {d.status === "valide" && (
                           <>
                             <button

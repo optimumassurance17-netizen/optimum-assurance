@@ -5,6 +5,12 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { ClientQuickSearch } from "@/components/gestion/ClientQuickSearch"
+import {
+  DocumentRequestButton,
+  type DocumentRequestResult,
+} from "@/components/gestion/DocumentRequestButton"
+import { documentRequestActivityLabel } from "@/lib/document-request"
+import { getInsuranceProductLabel } from "@/lib/insurance-product"
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { Toast } from "@/components/Toast"
@@ -158,6 +164,14 @@ interface ClientData {
     }[]
   }
   activity?: { id: string; action: string; actionLabel: string; adminEmail: string; createdAt: string }[]
+  documentRequests?: {
+    id: string
+    message: string
+    assuranceLabel: string
+    sentTo: string
+    adminEmail: string
+    createdAt: string
+  }[]
   insuranceContracts?: { id: string; contractNumber: string; productType: string; createdAt: string }[]
   canGenerateDecennaleAttestation?: boolean
   payments: {
@@ -438,6 +452,38 @@ export default function ClientDetailPage() {
 
   const { user, documents, payments, avenantFees } = data
   const echeances = data.echeances ?? []
+  const documentRequests = data.documentRequests ?? []
+  const insuranceContracts = data.insuranceContracts ?? []
+
+  const rememberDocumentRequest = (result: DocumentRequestResult) => {
+    setToast({ message: result.message, type: result.type })
+    const request = result.request
+    if (result.type !== "success" || !request) return
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            documentRequests: [request, ...(prev.documentRequests ?? []).filter((row) => row.id !== request.id)],
+            activity: [
+              {
+                id: request.id,
+                action: "document_request_sent",
+                actionLabel: documentRequestActivityLabel(
+                  JSON.stringify({
+                    message: request.message,
+                    assuranceLabel: request.assuranceLabel,
+                    sentTo: request.sentTo,
+                  })
+                ),
+                adminEmail: request.adminEmail,
+                createdAt: request.createdAt,
+              },
+              ...(prev.activity ?? []).filter((item) => item.id !== request.id),
+            ],
+          }
+        : prev
+    )
+  }
 
   const copySignatureLink = async (signatureLink: string) => {
     try {
@@ -841,6 +887,15 @@ export default function ClientDetailPage() {
                   : canGenerateDecennaleAttestation
                     ? "Générer attestation décennale"
                     : "Aucun contrat décennale"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById("demande-document")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                }}
+                className="text-sm text-amber-300 hover:text-amber-200 font-medium"
+              >
+                Demander un document
               </button>
               <button
                 type="button"
@@ -1584,6 +1639,66 @@ export default function ClientDetailPage() {
           </div>
         </section>
 
+        <section id="demande-document" className="scroll-mt-24 bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Demander un document</h2>
+            <p className="mt-1 text-sm text-gray-300">
+              Le message part par email au client et reste visible sur cette fiche. Il précise le document attendu.
+              L&apos;envoi ne confirme pas la garantie.
+            </p>
+          </div>
+          <DocumentRequestButton variant="card" userId={clientId} onResult={rememberDocumentRequest} />
+          {documentRequests.length === 0 ? (
+            <p className="text-sm text-gray-400">Aucune demande envoyée.</p>
+          ) : (
+            <ul className="space-y-2">
+              {documentRequests.map((request) => (
+                <li key={request.id} className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
+                  <p className="text-sm text-white">{request.message}</p>
+                  <p className="mt-1 text-xs text-gray-400">
+                    {request.assuranceLabel}
+                    {request.sentTo ? ` · ${request.sentTo}` : ""}
+                    {" · "}
+                    {new Date(request.createdAt).toLocaleString("fr-FR")}
+                    {request.adminEmail ? ` · ${request.adminEmail}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {insuranceContracts.length > 0 ? (
+          <section>
+            <h2 className="text-lg font-semibold text-white mb-4">Assurances</h2>
+            <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-4 font-medium">Assurance</th>
+                    <th className="text-left p-4 font-medium">N°</th>
+                    <th className="text-left p-4 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {insuranceContracts.map((contract) => (
+                    <tr key={contract.id} className="border-b border-gray-700/50">
+                      <td className="p-4">{getInsuranceProductLabel(contract.productType)}</td>
+                      <td className="p-4 font-mono">{contract.contractNumber}</td>
+                      <td className="p-4">
+                        <DocumentRequestButton
+                          insuranceContractId={contract.id}
+                          onResult={rememberDocumentRequest}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
+
         <section>
           <h2 className="text-lg font-semibold text-white mb-4">Documents</h2>
           <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
@@ -1618,6 +1733,10 @@ export default function ClientDetailPage() {
                       <td className="p-4">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-4">
                         <div className="flex flex-wrap items-center gap-3">
+                          <DocumentRequestButton
+                            documentId={d.id}
+                            onResult={rememberDocumentRequest}
+                          />
                           <Link
                             href={`/gestion/documents/${d.id}`}
                             className="text-[#2563eb] hover:text-[#1d4ed8] text-sm"

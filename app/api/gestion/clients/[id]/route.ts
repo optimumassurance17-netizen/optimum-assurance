@@ -21,6 +21,7 @@ import { purgeClientExternalResidue } from "@/lib/purge-client-residue"
 import { describeSepaReadiness } from "@/lib/sepa-readiness"
 import { attachSepaNotices, paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel, virementReferenceFromMetadata } from "@/lib/client-echeances"
 import { describeClientActivity } from "@/lib/admin-activity-label"
+import { DOCUMENT_REQUEST_ACTION, readStoredDocumentRequest } from "@/lib/document-request"
 import { describeClientSignature } from "@/lib/signature-reminder"
 import { SITE_URL } from "@/lib/site-url"
 
@@ -350,7 +351,7 @@ export async function GET(
         () =>
           prisma.adminActivityLog.findMany({
             where: { OR: activityWhere },
-            select: { id: true, action: true, adminEmail: true, createdAt: true },
+            select: { id: true, action: true, adminEmail: true, details: true, createdAt: true },
             orderBy: { createdAt: "desc" },
             take: 12,
           }),
@@ -365,6 +366,20 @@ export async function GET(
       reminderLogs: signatureReminderLogs,
     })
     const activity = describeClientActivity(activityLogs)
+    const documentRequestLogs = await withSchemaDriftFallback(
+      () =>
+        prisma.adminActivityLog.findMany({
+          where: { action: DOCUMENT_REQUEST_ACTION, targetType: "user", targetId: id },
+          select: { id: true, adminEmail: true, details: true, createdAt: true },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        }),
+      []
+    )
+    const documentRequests = documentRequestLogs.flatMap((log) => {
+      const request = readStoredDocumentRequest(log)
+      return request ? [request] : []
+    })
 
     return NextResponse.json({
       user,
@@ -373,6 +388,7 @@ export async function GET(
       canGenerateDecennaleAttestation,
       signature,
       activity,
+      documentRequests,
       insuranceContracts,
       payments: paymentsForClient,
       avenantFees,

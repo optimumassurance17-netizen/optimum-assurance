@@ -1,3 +1,5 @@
+import { documentRequestActivityLabel } from "@/lib/document-request"
+
 const ACTION_LABELS: Record<string, string> = {
   echeance_refus_sepa_prevenu: "Client prévenu du refus de prélèvement",
   echeance_lien_carte: "Lien carte envoyé",
@@ -24,6 +26,7 @@ const ACTION_LABELS: Record<string, string> = {
   user_create_from_lead: "Compte client créé",
   rc_fabriquant_contrat_genere: "Contrat RC fabricant généré",
   sinistre_declare_client: "Sinistre déclaré par le client",
+  document_request_sent: "Demande de document envoyée",
 }
 
 const SAFE_USER_ID = /^[A-Za-z0-9_-]{8,80}$/
@@ -42,7 +45,13 @@ export type ClientActivityItem = {
 
 /** Journal de la fiche, lecture seule. */
 export function describeClientActivity(
-  logs: { id: string; action: string; adminEmail: string; createdAt: Date | string }[]
+  logs: {
+    id: string
+    action: string
+    adminEmail: string
+    createdAt: Date | string
+    details?: string | null
+  }[]
 ): ClientActivityItem[] {
   const items: ClientActivityItem[] = []
   for (const log of logs) {
@@ -51,7 +60,10 @@ export function describeClientActivity(
     items.push({
       id: log.id,
       action: log.action,
-      actionLabel: adminActivityLabel(log.action),
+      actionLabel:
+        log.action === "document_request_sent"
+          ? documentRequestActivityLabel(log.details)
+          : adminActivityLabel(log.action),
       adminEmail: log.adminEmail,
       createdAt: date.toISOString(),
     })

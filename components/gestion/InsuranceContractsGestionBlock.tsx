@@ -13,6 +13,7 @@ import {
   insuranceProductUsesDirectMollieAfterApproval,
 } from "@/lib/insurance-product"
 import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
+import { DocumentRequestButton } from "@/components/gestion/DocumentRequestButton"
 
 export type InsuranceContractGestionRow = {
   id: string
@@ -221,6 +222,12 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                     </td>
                     <td className="p-3 sm:p-4">
                       <div className="flex flex-col gap-1.5 items-start">
+                        <DocumentRequestButton
+                          insuranceContractId={c.id}
+                          disabled={!contractHasLinkedClient}
+                          disabledTitle="Rattachez d'abord un compte client au contrat."
+                          onResult={(result) => setToast({ message: result.message, type: result.type })}
+                        />
                         <a
                           href={`/verify/${encodeURIComponent(c.contractNumber)}`}
                           target="_blank"
