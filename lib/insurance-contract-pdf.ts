@@ -232,6 +232,7 @@ function toRcFabDossierData(c: InsuranceContract) {
     dateEcheance: vu.toLocaleDateString("fr-FR"),
     referenceContrat: c.contractNumber,
     config: cfg,
+    demandeLines: cfg.demandeLignes,
   } as const
 }
 

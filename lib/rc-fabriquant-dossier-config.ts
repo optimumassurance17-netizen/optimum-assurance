@@ -32,6 +32,8 @@ export type RcFabDossierConfig = {
   protectionJuridique: number
   plafondGlobalParSinistreEtParAn: number
   franchiseParSinistre: number
+  /** Réponses du client reprises sur les documents. Vide pour les dossiers déjà émis. */
+  demandeLignes: string[]
 }
 
 type RcFabConfigEnvelope = {
@@ -50,6 +52,31 @@ export function normalizeRcFabPeriodicity(value: unknown): RcFabPeriodicity {
   return isRcFabPeriodicity(value) ? value : "trimestriel"
 }
 
+export function normalizeRcFabActivite(value: unknown): string {
+  if (typeof value !== "string") return RC_FAB_BATTERIES_ACTIVITE
+  const trimmed = value.trim().replace(/\s+/g, " ").slice(0, 240)
+  return trimmed || RC_FAB_BATTERIES_ACTIVITE
+}
+
+/** Le pack juridique « batteries » ne s'applique que si l'activité déclarée est celle-là. */
+export function rcFabUsesBatteriesWording(activite: string): boolean {
+  const normalized = activite.trim().toLowerCase()
+  return normalized === RC_FAB_BATTERIES_ACTIVITE || normalized.includes("batter")
+}
+
+export function normalizeRcFabDemandeLignes(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const lines: string[] = []
+  for (const item of value) {
+    if (typeof item !== "string") continue
+    const line = item.trim().replace(/\s+/g, " ").slice(0, 500)
+    if (!line) continue
+    lines.push(line)
+    if (lines.length >= 24) break
+  }
+  return lines
+}
+
 export function getRcFabPeriodicityMeta(periodicity: RcFabPeriodicity): RcFabPeriodicityMeta {
   return RC_FAB_PERIODICITY_META[periodicity]
 }
@@ -59,6 +86,8 @@ export function buildRcFabDossierConfig(input: {
   periodicite: RcFabPeriodicity
   primeAnnuelleTtc: number
   primeAnnuelleHt?: number | null
+  activite?: string | null
+  demandeLignes?: readonly string[] | null
 }): RcFabDossierConfig {
   const periodicite = normalizeRcFabPeriodicity(input.periodicite)
   const meta = getRcFabPeriodicityMeta(periodicite)
@@ -75,7 +104,7 @@ export function buildRcFabDossierConfig(input: {
   return {
     version: "rc_fabriquant_batteries_v1",
     modeEtude: true,
-    activite: RC_FAB_BATTERIES_ACTIVITE,
+    activite: normalizeRcFabActivite(input.activite),
     referenceContrat: input.referenceContrat.trim() || "RCFAB",
     periodicite,
     installmentsPerYear: meta.installmentsPerYear,
@@ -86,6 +115,7 @@ export function buildRcFabDossierConfig(input: {
     protectionJuridique: RC_FAB_BATTERIES_PROTECTION_JURIDIQUE_EUR,
     plafondGlobalParSinistreEtParAn: RC_FAB_BATTERIES_PLAFOND_EUR,
     franchiseParSinistre: RC_FAB_BATTERIES_FRANCHISE_EUR,
+    demandeLignes: normalizeRcFabDemandeLignes(input.demandeLignes),
   }
 }
 
@@ -129,7 +159,7 @@ function parseConfigEnvelope(raw: string | null | undefined): RcFabDossierConfig
     return {
       version: "rc_fabriquant_batteries_v1",
       modeEtude: true,
-      activite: RC_FAB_BATTERIES_ACTIVITE,
+      activite: normalizeRcFabActivite(c.activite),
       referenceContrat:
         typeof c.referenceContrat === "string" && c.referenceContrat.trim()
           ? c.referenceContrat.trim()
@@ -143,6 +173,7 @@ function parseConfigEnvelope(raw: string | null | undefined): RcFabDossierConfig
       protectionJuridique: RC_FAB_BATTERIES_PROTECTION_JURIDIQUE_EUR,
       plafondGlobalParSinistreEtParAn: RC_FAB_BATTERIES_PLAFOND_EUR,
       franchiseParSinistre: RC_FAB_BATTERIES_FRANCHISE_EUR,
+      demandeLignes: normalizeRcFabDemandeLignes(c.demandeLignes),
     }
   } catch {
     return null

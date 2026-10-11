@@ -52,6 +52,12 @@ import {
   normalizeRcFabriquantLeadStatut,
 } from "@/lib/rc-fabriquant-lead-statuts"
 import {
+  parseRcFabDemande,
+  rcFabContratOptionLabel,
+  rcFabDemandeLines,
+  rcFabPrimeIndicativeTtc,
+} from "@/lib/rc-fabriquant-contrat-demande"
+import {
   ASSURANCE_TITRE_BESOIN_LABELS,
   ASSURANCE_TITRE_BIEN_LABELS,
   ASSURANCE_TITRE_OPERATION_LABELS,
@@ -840,6 +846,52 @@ export default function GestionPage() {
     },
     []
   )
+
+  const [rcContratLeadId, setRcContratLeadId] = useState("")
+  const [rcContratPrime, setRcContratPrime] = useState("")
+  const [rcContratPrimeHt, setRcContratPrimeHt] = useState("")
+  const [rcContratPeriodicity, setRcContratPeriodicity] = useState<
+    "mensuel" | "trimestriel" | "semestriel" | "annuel"
+  >("trimestriel")
+  const [rcContratRef, setRcContratRef] = useState("")
+  const [rcContratGenerating, setRcContratGenerating] = useState(false)
+
+  const selectRcContratLead = useCallback(
+    (leadId: string) => {
+      setRcContratLeadId(leadId)
+      const lead = data?.devisRcFabriquantLeads?.find((item) => item.id === leadId)
+      if (!lead) {
+        setRcContratPrime("")
+        setRcContratPrimeHt("")
+        setRcContratRef("")
+        return
+      }
+      const demande = parseRcFabDemande(lead.data, lead.email)
+      const proposed =
+        lead.primeProposee != null && lead.primeProposee > 0
+          ? lead.primeProposee
+          : rcFabPrimeIndicativeTtc(demande)
+      setRcContratPrime(proposed != null && proposed > 0 ? String(Math.round(proposed * 100) / 100) : "")
+      setRcContratPrimeHt("")
+      setRcContratRef(`RCFAB-${lead.id.slice(-8).toUpperCase()}`)
+      setRcContratPeriodicity("trimestriel")
+    },
+    [data?.devisRcFabriquantLeads]
+  )
+
+  const rcContratLead = useMemo(
+    () => data?.devisRcFabriquantLeads?.find((lead) => lead.id === rcContratLeadId) ?? null,
+    [data?.devisRcFabriquantLeads, rcContratLeadId]
+  )
+  const rcContratDemande = useMemo(
+    () => (rcContratLead ? parseRcFabDemande(rcContratLead.data, rcContratLead.email) : null),
+    [rcContratLead]
+  )
+  const rcContratLines = useMemo(
+    () => (rcContratDemande ? rcFabDemandeLines(rcContratDemande) : []),
+    [rcContratDemande]
+  )
+  const rcContratIndicative = rcContratDemande ? rcFabPrimeIndicativeTtc(rcContratDemande) : null
 
   const devisDecUserOptions = useMemo(() => {
     if (!data?.users) return []
@@ -2258,6 +2310,12 @@ export default function GestionPage() {
                   Études
                 </a>
               )}
+              <a
+                href="#rc-fabriquant-contrat"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Contrat RC
+              </a>
               {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
                 <a
                   href="#rc-fabriquant-leads"
@@ -4694,6 +4752,173 @@ export default function GestionPage() {
           </form>
         </section>
 
+        <section id="rc-fabriquant-contrat" className="scroll-mt-24 bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4">
+          <h2 className="text-lg font-semibold text-white">Créer un contrat RC Fabriquant</h2>
+          <p className="text-sm text-gray-200 max-w-3xl">
+            Choisissez la demande du client. Le générateur reprend la société, le SIRET, l&apos;activité, le type de
+            produit, la zone, le chiffre d&apos;affaires et les autres réponses, puis prépare le devis, la fiche
+            d&apos;information et le contrat. Aucun email, aucune signature et aucun paiement.
+          </p>
+          <p className="text-xs text-amber-200/80 border border-amber-900/40 rounded-lg px-3 py-2 bg-amber-950/20">
+            Les montants imprimés restent le plafond 2&nbsp;500&nbsp;000&nbsp;€, la franchise 5&nbsp;000&nbsp;€ et la
+            protection juridique 20&nbsp;000&nbsp;€. La prime est celle que vous confirmez ici.
+          </p>
+          <div className="space-y-2">
+            <label className="text-sm text-gray-300" htmlFor="rc-contrat-demande">
+              Demande du client
+            </label>
+            <select
+              id="rc-contrat-demande"
+              value={rcContratLeadId}
+              onChange={(e) => selectRcContratLead(e.target.value)}
+              className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+            >
+              <option value="">— Choisir une demande client —</option>
+              {(data.devisRcFabriquantLeads ?? []).map((lead) => {
+                const demande = parseRcFabDemande(lead.data, lead.email)
+                return (
+                  <option key={lead.id} value={lead.id}>
+                    {rcFabContratOptionLabel(demande, lead.createdAt)}
+                  </option>
+                )
+              })}
+            </select>
+          </div>
+          {rcContratDemande ? (
+            <div className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-4">
+              <p className="text-sm font-medium text-white mb-2">Ce que le client a demandé</p>
+              <ul className="space-y-1 text-sm text-gray-200">
+                {rcContratLines.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+              {rcContratIndicative != null ? (
+                <p className="text-xs text-gray-400 mt-3">
+                  Prime indicative interne : {rcContratIndicative.toLocaleString("fr-FR")} € TTC. Elle ne s&apos;imprime
+                  que si vous la laissez dans le champ prime.
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">Aucune demande sélectionnée.</p>
+          )}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm text-gray-300">Référence dossier</label>
+              <input
+                value={rcContratRef}
+                onChange={(e) => setRcContratRef(e.target.value)}
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                placeholder="RCFAB-1234"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-gray-300">Échéancier</label>
+              <select
+                value={rcContratPeriodicity}
+                onChange={(e) =>
+                  setRcContratPeriodicity(
+                    e.target.value as "mensuel" | "trimestriel" | "semestriel" | "annuel"
+                  )
+                }
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+              >
+                <option value="mensuel">Mensuel (12 échéances)</option>
+                <option value="trimestriel">Trimestriel (4 échéances)</option>
+                <option value="semestriel">Semestriel (2 échéances)</option>
+                <option value="annuel">Annuel (1 échéance)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-gray-300">Prime annuelle TTC (€)</label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={rcContratPrime}
+                onChange={(e) => setRcContratPrime(e.target.value)}
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                placeholder="Ex. 2400"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-gray-300">Prime annuelle HT (€) — optionnel</label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={rcContratPrimeHt}
+                onChange={(e) => setRcContratPrimeHt(e.target.value)}
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                placeholder="Ex. 2000"
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={rcContratGenerating || !rcContratLeadId}
+            onClick={async () => {
+              if (!rcContratLeadId) {
+                setToast({ message: "Choisissez une demande client.", type: "error" })
+                return
+              }
+              const primeTtc = Number(rcContratPrime.replace(",", "."))
+              if (!Number.isFinite(primeTtc) || primeTtc <= 0) {
+                setToast({ message: "Indiquez une prime annuelle TTC valide (> 0).", type: "error" })
+                return
+              }
+              const primeHtTrim = rcContratPrimeHt.trim()
+              const primeHt = primeHtTrim.length > 0 ? Number(primeHtTrim.replace(",", ".")) : undefined
+              if (primeHt != null && (!Number.isFinite(primeHt) || primeHt <= 0)) {
+                setToast({ message: "Prime annuelle HT invalide.", type: "error" })
+                return
+              }
+              setRcContratGenerating(true)
+              try {
+                const res = await fetch("/api/gestion/rc-fabriquant-lead/generer-contrat", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    leadId: rcContratLeadId,
+                    devisReference: rcContratRef.trim(),
+                    primeAnnuelleTtc: primeTtc,
+                    ...(primeHt != null ? { primeAnnuelleHt: primeHt } : {}),
+                    periodicite: rcContratPeriodicity,
+                  }),
+                })
+                if (!res.ok) {
+                  const json = await readResponseJson<{ error?: string }>(res)
+                  throw new Error(json.error || "Le contrat n'a pas pu être généré.")
+                }
+                const blob = await res.blob()
+                const url = URL.createObjectURL(blob)
+                const link = document.createElement("a")
+                const match = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "")
+                link.href = url
+                link.download = match?.[1] || "contrat-rc-fabricant.zip"
+                document.body.appendChild(link)
+                link.click()
+                link.remove()
+                URL.revokeObjectURL(url)
+                setToast({
+                  message: "Dossier généré : devis, fiche d'information et contrat. Aucun email n'a été envoyé.",
+                  type: "success",
+                })
+              } catch (err) {
+                setToast({
+                  message: err instanceof Error ? err.message : "Le contrat n'a pas pu être généré.",
+                  type: "error",
+                })
+              } finally {
+                setRcContratGenerating(false)
+              }
+            }}
+            className="px-4 py-2 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-500 disabled:opacity-50"
+          >
+            {rcContratGenerating ? "Génération…" : "Générer le contrat"}
+          </button>
+        </section>
+
         {/* Demandes devis DO en attente */}
         {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
           <section id="rc-fabriquant-leads" className="scroll-mt-24">
@@ -4907,6 +5132,21 @@ export default function GestionPage() {
                               className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-emerald-500/70 text-emerald-100 hover:bg-emerald-900/40 disabled:opacity-40 disabled:pointer-events-none"
                             >
                               Créer dossier étude
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                selectRcContratLead(d.id)
+                                window.setTimeout(() => {
+                                  document.getElementById("rc-fabriquant-contrat")?.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  })
+                                }, 50)
+                              }}
+                              className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-teal-400/70 text-teal-50 hover:bg-teal-900/40"
+                            >
+                              Préparer le contrat
                             </button>
                             <button
                               type="button"

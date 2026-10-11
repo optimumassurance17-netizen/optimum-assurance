@@ -10,12 +10,16 @@ import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { buildDdaNeedSummary } from "@/lib/dda-compliance"
 import {
-  buildRcFabDossierConfig,
   normalizeRcFabPeriodicity,
   serializeRcFabDossierConfig,
 } from "@/lib/rc-fabriquant-dossier-config"
 import { runSignatureQualityGates, type SignatureQualityGatePayload } from "@/lib/signature-quality-gates"
 import { generateRcFabBatteriesQuotePdf } from "@/lib/pdf/rc-fabriquant/generateDossier"
+import {
+  RC_FAB_ADRESSE_NON_DECLAREE,
+  buildRcFabContratConfig,
+  parseRcFabDemande,
+} from "@/lib/rc-fabriquant-contrat-demande"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
 
@@ -37,24 +41,6 @@ function parseAmount(input: unknown): number {
 
 function toFrDate(input: Date): string {
   return input.toLocaleDateString("fr-FR")
-}
-
-function parseLeadData(raw: string): {
-  raisonSociale?: string
-  siret?: string
-  activiteFabrication?: string
-} {
-  try {
-    const parsed = JSON.parse(raw || "{}") as Record<string, unknown>
-    return {
-      raisonSociale: typeof parsed.raisonSociale === "string" ? parsed.raisonSociale.trim() : undefined,
-      siret: typeof parsed.siret === "string" ? parsed.siret.trim() : undefined,
-      activiteFabrication:
-        typeof parsed.activiteFabrication === "string" ? parsed.activiteFabrication.trim() : undefined,
-    }
-  } catch {
-    return {}
-  }
 }
 
 export async function POST(request: NextRequest) {
@@ -135,7 +121,9 @@ export async function POST(request: NextRequest) {
       typeof payload.periodicite === "string" ? payload.periodicite.trim().toLowerCase() : null
     )
     const provisionalNumero = `RCFAB-ETUDE-${Date.now()}`
-    const dossierConfig = buildRcFabDossierConfig({
+    const demande = parseRcFabDemande(lead.data, lead.email)
+    const dossierConfig = buildRcFabContratConfig({
+      demande,
       referenceContrat: devisReferenceInput || provisionalNumero,
       periodicite,
       primeAnnuelleTtc,
@@ -182,12 +170,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const leadData = parseLeadData(lead.data)
-    const nomSociete = (user.raisonSociale || leadData.raisonSociale || user.email).trim()
-    const siret = (user.siret || leadData.siret || "").trim() || undefined
+    const nomSociete = (user.raisonSociale || demande.raisonSociale || user.email).trim()
+    const siret = (user.siret || demande.siret || "").trim() || undefined
     const address =
       [user.adresse, user.codePostal, user.ville].filter(Boolean).join(" ").trim() ||
-      "Adresse client à confirmer"
+      RC_FAB_ADRESSE_NON_DECLAREE
 
     const now = new Date()
     const expiry = new Date(now)
@@ -201,6 +188,7 @@ export async function POST(request: NextRequest) {
       dateEcheance: toFrDate(expiry),
       referenceContrat: dossierConfig.referenceContrat,
       config: dossierConfig,
+      demandeLines: dossierConfig.demandeLignes,
     })
     const quoteBuffer = Buffer.from(quoteBytes)
 
@@ -226,7 +214,7 @@ export async function POST(request: NextRequest) {
       sourceLeadType: "rc_fabriquant" as const,
       sourceLeadId: lead.id,
       leadEmail: lead.email,
-      leadActiviteFabrication: leadData.activiteFabrication || null,
+      leadActiviteFabrication: demande.activiteFabrication || null,
     }
 
     const qualityPayload: SignatureQualityGatePayload = {

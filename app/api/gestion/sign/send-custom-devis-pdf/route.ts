@@ -13,6 +13,7 @@ import {
   normalizeRcFabPeriodicity,
   serializeRcFabDossierConfig,
 } from "@/lib/rc-fabriquant-dossier-config"
+import { parseRcFabDemande, rcFabDemandeLines } from "@/lib/rc-fabriquant-contrat-demande"
 import { runSignatureQualityGates, type SignatureQualityGatePayload } from "@/lib/signature-quality-gates"
 import { sendRcFabriquantEmailCopy } from "@/lib/rc-fabriquant-email-copy"
 import {
@@ -285,11 +286,26 @@ export async function POST(request: NextRequest) {
         afterSignNextPath,
       }
     } else {
+      let rcActivite: string | undefined
+      let rcDemandeLignes: string[] | undefined
+      if (sourceLeadType === "rc_fabriquant" && sourceLeadId) {
+        const sourceLead = await prisma.devisRcFabriquantLead.findUnique({
+          where: { id: sourceLeadId },
+          select: { data: true, email: true },
+        })
+        if (sourceLead) {
+          const demande = parseRcFabDemande(sourceLead.data, sourceLead.email)
+          rcActivite = demande.activiteAssuree
+          rcDemandeLignes = rcFabDemandeLines(demande)
+        }
+      }
       const rcConfig = buildRcFabDossierConfig({
         referenceContrat: devisReference || provisionalNumero,
         periodicite,
         primeAnnuelleTtc,
         primeAnnuelleHt: Number.isFinite(primeAnnuelleHt) ? primeAnnuelleHt : undefined,
+        activite: rcActivite,
+        demandeLignes: rcDemandeLignes,
       })
       annualTtc = rcConfig.primeAnnuelleTtc
       amountPerInstallment = rcConfig.montantParEcheanceTtc

@@ -13,6 +13,7 @@ import { IDENTITY_DOC_KEYS, syncUserFromDocumentMergedData } from "@/lib/sync-us
 import {
   buildRcFabDossierConfig,
   normalizeRcFabPeriodicity,
+  readRcFabDossierConfig,
   serializeRcFabDossierConfig,
   type RcFabPeriodicity,
 } from "@/lib/rc-fabriquant-dossier-config"
@@ -138,11 +139,17 @@ export async function applyPendingFinalize(
         Number.isFinite(primeAnnuelleHtRaw) && primeAnnuelleHtRaw > 0
           ? Math.round(primeAnnuelleHtRaw * 100) / 100
           : Math.round((primeAnnuelleTtc / 1.2) * 100) / 100
+      const storedConfig =
+        typeof raw.rcFabriquantDossierConfigSerialized === "string"
+          ? readRcFabDossierConfig(raw.rcFabriquantDossierConfigSerialized, primeAnnuelleTtc, contractNumber)
+          : null
       const dossierConfig = buildRcFabDossierConfig({
         referenceContrat: contractNumber,
         periodicite: periodicite as RcFabPeriodicity,
         primeAnnuelleTtc,
         primeAnnuelleHt,
+        activite: storedConfig?.activite,
+        demandeLignes: storedConfig?.demandeLignes,
       })
       premium = dossierConfig.montantParEcheanceTtc
       exclusionsJson = serializeRcFabDossierConfig(dossierConfig)

@@ -9,7 +9,10 @@ import { finalizeWithFooters } from "@/lib/pdf/shared/finalizePdf"
 import { loadAccelerantLogoImage } from "@/lib/pdf/shared/accelerantLogo"
 import { drawClausesPaginated } from "@/lib/pdf/shared/drawClauses"
 import { rcFabRegimeLines } from "@/lib/conditions-particulieres"
-import type { RcFabDossierConfig } from "@/lib/rc-fabriquant-dossier-config"
+import {
+  rcFabUsesBatteriesWording,
+  type RcFabDossierConfig,
+} from "@/lib/rc-fabriquant-dossier-config"
 
 export type RcFabBatteriesDocumentData = {
   nomSociete: string
@@ -20,6 +23,30 @@ export type RcFabBatteriesDocumentData = {
   dateEcheance: string
   referenceContrat: string
   config: RcFabDossierConfig
+  /** Réponses du formulaire client. Absentes des dossiers émis avant ce bloc. */
+  demandeLines?: readonly string[]
+}
+
+function rcFabHeadings(activite: string): {
+  quote: string
+  fic: string
+  policy: string
+  certificate: string
+} {
+  if (rcFabUsesBatteriesWording(activite)) {
+    return {
+      quote: "DEVIS — Responsabilité Civile Fabricant Batteries",
+      fic: "Responsabilité Civile Fabricant Batteries",
+      policy: "CONTRAT — Responsabilité Civile Fabricant Batteries",
+      certificate: "Responsabilité Civile Fabricant Batteries",
+    }
+  }
+  return {
+    quote: "DEVIS — Responsabilité Civile Fabricant",
+    fic: "Responsabilité Civile Fabricant",
+    policy: "CONTRAT — Responsabilité Civile Fabricant",
+    certificate: "Responsabilité Civile Fabricant",
+  }
 }
 
 const QUOTE_VALIDITY_DAYS = 30
@@ -79,7 +106,8 @@ function drawRegime(
   font: import("pdf-lib").PDFFont,
   fontBold: import("pdf-lib").PDFFont,
   logo: Awaited<ReturnType<typeof loadAccelerantLogoImage>>,
-  continuationTitle: string
+  continuationTitle: string,
+  activite: string
 ): DrawState {
   const next = drawClausesPaginated({
     pdfDoc,
@@ -88,10 +116,37 @@ function drawRegime(
     font,
     fontBold,
     logo,
-    clauses: rcFabRegimeLines(),
+    clauses: rcFabRegimeLines(activite),
     continuationTitle,
   })
   return { page: next.page, y: next.y }
+}
+
+function drawDemandeBlock(
+  pdfDoc: PDFDocument,
+  state: DrawState,
+  data: RcFabBatteriesDocumentData,
+  font: import("pdf-lib").PDFFont,
+  fontBold: import("pdf-lib").PDFFont,
+  logo: Awaited<ReturnType<typeof loadAccelerantLogoImage>>,
+  continuationTitle: string
+): DrawState {
+  const lines = data.demandeLines?.filter((line) => line.trim()) ?? []
+  if (lines.length === 0) return state
+  const makePage = (): DrawState => {
+    const page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+    return {
+      page,
+      y: drawOptimumHeader(page, font, fontBold, continuationTitle, "Demande du client (suite)", logo),
+    }
+  }
+  let next = assureSpace(state, PDF_PAGE.marginBottom + 48, makePage)
+  next = drawSectionTitle(next, "Demande du client", fontBold)
+  for (const line of lines) {
+    next = assureSpace(next, PDF_PAGE.marginBottom + 36, makePage)
+    next = drawParagraph(next, line, font, 9, 12)
+  }
+  return next
 }
 
 function drawBullets(
@@ -150,6 +205,7 @@ export async function generateRcFabBatteriesQuotePdf(
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
   const accelerantLogo = await loadAccelerantLogoImage(pdfDoc)
+  const headings = rcFabHeadings(data.activite)
   const page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
 
   let state: DrawState = {
@@ -158,7 +214,7 @@ export async function generateRcFabBatteriesQuotePdf(
       page,
       font,
       fontBold,
-      "DEVIS — Responsabilité Civile Fabricant Batteries",
+      headings.quote,
       "Mode étude — proposition commerciale",
       accelerantLogo
     ),
@@ -167,8 +223,18 @@ export async function generateRcFabBatteriesQuotePdf(
   state = drawParagraph(state, `Référence contrat : ${data.referenceContrat}`, fontBold, 10, 13)
   state = drawParagraph(state, `Période de couverture : du ${data.dateEffet} au ${data.dateEcheance}.`, font, 9, 12)
   state = drawIdentityBlock(state, data, font, fontBold)
+  state = drawDemandeBlock(pdfDoc, state, data, font, fontBold, accelerantLogo, headings.quote)
+  const continueQuote = (): DrawState => {
+    const nextPage = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+    return {
+      page: nextPage,
+      y: drawOptimumHeader(nextPage, font, fontBold, headings.quote, "Suite", accelerantLogo),
+    }
+  }
+  state = assureSpace(state, PDF_PAGE.marginBottom + 150, continueQuote)
   state = drawGuaranteesBlock(state, data, font, fontBold)
 
+  state = assureSpace(state, PDF_PAGE.marginBottom + 90, continueQuote)
   state = drawSectionTitle(state, "Prime et échéancier", fontBold)
   state = drawBullets(
     state,
@@ -196,7 +262,7 @@ export async function generateRcFabBatteriesQuotePdf(
   )
   state = drawParagraph(state, `Mentions utiles : ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`, font, 8, 11)
   state = drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 11)
-  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "DEVIS — régime juridique (suite)")
+  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "DEVIS — régime juridique (suite)", data.activite)
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }
@@ -207,6 +273,7 @@ export async function generateRcFabBatteriesFicPdf(
   const pdfDoc = await PDFDocument.create()
   const { font, fontBold } = await embedStandardFonts(pdfDoc)
   const accelerantLogo = await loadAccelerantLogoImage(pdfDoc)
+  const headings = rcFabHeadings(data.activite)
   const page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
 
   let state: DrawState = {
@@ -216,7 +283,7 @@ export async function generateRcFabBatteriesFicPdf(
       font,
       fontBold,
       "FICHE D’INFORMATION CONTRACTUELLE (FIC)",
-      "Responsabilité Civile Fabricant Batteries",
+      headings.fic,
       accelerantLogo
     ),
   }
@@ -232,8 +299,18 @@ export async function generateRcFabBatteriesFicPdf(
     font
   )
   state = drawIdentityBlock(state, data, font, fontBold)
+  state = drawDemandeBlock(pdfDoc, state, data, font, fontBold, accelerantLogo, "FIC — Responsabilité Civile Fabricant")
+  const continueFic = (): DrawState => {
+    const nextPage = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+    return {
+      page: nextPage,
+      y: drawOptimumHeader(nextPage, font, fontBold, "FICHE D’INFORMATION CONTRACTUELLE (FIC)", "Suite", accelerantLogo),
+    }
+  }
+  state = assureSpace(state, PDF_PAGE.marginBottom + 150, continueFic)
   state = drawGuaranteesBlock(state, data, font, fontBold)
 
+  state = assureSpace(state, PDF_PAGE.marginBottom + 80, continueFic)
   state = drawSectionTitle(state, "Territorialité, droit applicable et points clés", fontBold)
   state = drawBullets(
     state,
@@ -246,6 +323,7 @@ export async function generateRcFabBatteriesFicPdf(
     font
   )
 
+  state = assureSpace(state, PDF_PAGE.marginBottom + 90, continueFic)
   state = drawSectionTitle(state, "Exclusions principales", fontBold)
   state = drawBullets(
     state,
@@ -261,7 +339,7 @@ export async function generateRcFabBatteriesFicPdf(
 
   state = drawParagraph(state, `Devoir de conseil : ${DEVOIR_CONSEIL_TEXT_BY_PRODUCT.rc_fabriquant.contenu}`, font, 8.8, 11)
   state = drawParagraph(state, getDevoirConseilLinksLine("rc_fabriquant"), font, 8, 10)
-  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "FIC — régime juridique (suite)")
+  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "FIC — régime juridique (suite)", data.activite)
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }
@@ -281,10 +359,8 @@ export async function generateRcFabBatteriesPolicyPdf(
     }
   }
 
-  let state = makePage(
-    "CONTRAT — Responsabilité Civile Fabricant Batteries",
-    "Conditions générales et particulières"
-  )
+  const headings = rcFabHeadings(data.activite)
+  let state = makePage(headings.policy, "Conditions générales et particulières")
 
   const sections: Array<{ title: string; paragraphs: string[] }> = [
     {
@@ -300,7 +376,7 @@ export async function generateRcFabBatteriesPolicyPdf(
     {
       title: "Objet du contrat",
       paragraphs: [
-        "Le présent contrat a pour objet de garantir les conséquences pécuniaires de la responsabilité civile pouvant incomber à l’assuré du fait de son activité de fabrication de batteries.",
+        `Le présent contrat a pour objet de garantir les conséquences pécuniaires de la responsabilité civile pouvant incomber à l’assuré du fait de son activité déclarée : ${data.activite}.`,
         `Référence : ${data.referenceContrat} — période de validité du ${data.dateEffet} au ${data.dateEcheance}.`,
       ],
     },
@@ -379,25 +455,26 @@ export async function generateRcFabBatteriesPolicyPdf(
 
   for (const section of sections) {
     state = assureSpace(state, PDF_PAGE.marginBottom + 80, () =>
-      makePage("CONTRAT — RC Fabricant Batteries", "Suite des conditions générales")
+      makePage(headings.policy, "Suite des conditions générales")
     )
     state = drawSectionTitle(state, section.title, fontBold)
     for (const p of section.paragraphs) {
       state = assureSpace(state, PDF_PAGE.marginBottom + 50, () =>
-        makePage("CONTRAT — RC Fabricant Batteries", "Suite des conditions générales")
+        makePage(headings.policy, "Suite des conditions générales")
       )
       state = drawParagraph(state, p, font, 9, 12)
     }
   }
 
   state = assureSpace(state, PDF_PAGE.marginBottom + 70, () =>
-    makePage("CONTRAT — RC Fabricant Batteries", "Mentions finales")
+    makePage(headings.policy, "Mentions finales")
   )
+  state = drawDemandeBlock(pdfDoc, state, data, font, fontBold, accelerantLogo, headings.policy)
   state = drawParagraph(state, `Devoir de conseil : ${DEVOIR_CONSEIL_TEXT_BY_PRODUCT.rc_fabriquant.contenu}`, font, 8.8, 11)
   state = drawParagraph(state, getDevoirConseilLinksLine("rc_fabriquant"), font, 8, 10)
   state = drawParagraph(state, `Références : ${SITE_URL}/cgv — ${SITE_URL}/conditions-attestations`, font, 8, 10)
   state = drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
-  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "CONTRAT — régime juridique (suite)")
+  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "CONTRAT — régime juridique (suite)", data.activite)
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }
@@ -417,7 +494,7 @@ export async function generateRcFabBatteriesCertificatePdf(
       font,
       fontBold,
       "ATTESTATION D’ASSURANCE",
-      "Responsabilité Civile Fabricant Batteries",
+      rcFabHeadings(data.activite).certificate,
       accelerantLogo
     ),
   }
@@ -431,6 +508,22 @@ export async function generateRcFabBatteriesCertificatePdf(
   state = drawParagraph(state, `Référence contrat : ${data.referenceContrat}`, fontBold, 10, 13)
   state = drawParagraph(state, `Validité : du ${data.dateEffet} au ${data.dateEcheance}.`, font, 9, 12)
 
+  state = drawDemandeBlock(
+    pdfDoc,
+    state,
+    data,
+    font,
+    fontBold,
+    accelerantLogo,
+    "ATTESTATION — Responsabilité Civile Fabricant"
+  )
+  state = assureSpace(state, PDF_PAGE.marginBottom + 140, () => {
+    const nextPage = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+    return {
+      page: nextPage,
+      y: drawOptimumHeader(nextPage, font, fontBold, "ATTESTATION D’ASSURANCE", "Suite", accelerantLogo),
+    }
+  })
   state = drawGuaranteesBlock(state, data, font, fontBold)
 
   state = drawParagraph(
@@ -443,7 +536,15 @@ export async function generateRcFabBatteriesCertificatePdf(
   state = drawParagraph(state, `Vérification publique : ${SITE_URL}/verify/${encodeURIComponent(data.referenceContrat)}`, font, 8.4, 10)
   state = drawParagraph(state, `Mentions utiles : ${SITE_URL}/conditions-attestations`, font, 8, 10)
   state = drawParagraph(state, ANTI_FRAUD_LINE, font, 8, 10)
-  drawRegime(pdfDoc, state, font, fontBold, accelerantLogo, "ATTESTATION — régime juridique (suite)")
+  drawRegime(
+    pdfDoc,
+    state,
+    font,
+    fontBold,
+    accelerantLogo,
+    "ATTESTATION — régime juridique (suite)",
+    data.activite
+  )
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }

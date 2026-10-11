@@ -1,6 +1,7 @@
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
 import { DEFAULT_PUBLIC_CONTACT_EMAIL } from "@/lib/public-contact-email"
+import { rcFabUsesBatteriesWording } from "@/lib/rc-fabriquant-dossier-config"
 import { SITE_URL } from "@/lib/site-url"
 
 /**
@@ -285,8 +286,16 @@ export const ASSURANCE_TITRE_REGIME_EXPERT = [
     ", accusée réception dans les dix jours et traitée dans les deux mois. Le souscripteur peut ensuite saisir La Médiation de l'Assurance, TSA 50110, 75441 Paris Cedex 09, www.mediation-assurance.org. Contrôle : ACPR, 4 place de Budapest, CS 92459, 75436 Paris Cedex 09. Les données sont traitées pour l'étude et la gestion du dossier. Le courtier applique la vigilance des articles L.561-2 et suivants du Code monétaire et financier. Le contrat est soumis au droit français et aux tribunaux français. Les conditions particulières prévalent sur les conditions générales. Courtier : Optimum Courtage, RCS Angers 450 788 278, ORIAS LPS 28931947, 14 rue d'Amboise, 49300 Cholet, articles L.512-6 et L.512-7.",
 ] as const
 
-export function rcFabRegimeLines(): string[] {
-  return [...RC_FAB_REGIME_EXPERT]
+export function rcFabRegimeLines(activite?: string): string[] {
+  const activity = activite?.trim()
+  if (!activity || rcFabUsesBatteriesWording(activity)) {
+    return [...RC_FAB_REGIME_EXPERT]
+  }
+  return RC_FAB_REGIME_EXPERT.map((line) =>
+    line
+      .replaceAll("fabrication de batteries", activity)
+      .replaceAll("les batteries fabriquées", "les produits fabriqués")
+  )
 }
 
 export function assuranceTitreRegimeLines(): string[] {
