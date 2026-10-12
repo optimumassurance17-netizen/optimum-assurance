@@ -1,3 +1,4 @@
+import { documentDevisEditionActivityLabel } from "@/lib/devis-edition"
 import { documentRequestActivityLabel } from "@/lib/document-request"
 
 const ACTION_LABELS: Record<string, string> = {
@@ -28,6 +29,7 @@ const ACTION_LABELS: Record<string, string> = {
   sinistre_declare_client: "Sinistre déclaré par le client",
   document_request_sent: "Demande de document envoyée",
   document_devis_edition_updated: "Autorisation de devis mise à jour",
+  devis_do_pending_updated: "Devis DO en attente corrigé",
 }
 
 const SAFE_USER_ID = /^[A-Za-z0-9_-]{8,80}$/
@@ -64,7 +66,9 @@ export function describeClientActivity(
       actionLabel:
         log.action === "document_request_sent"
           ? documentRequestActivityLabel(log.details)
-          : adminActivityLabel(log.action),
+          : log.action === "document_devis_edition_updated"
+            ? documentDevisEditionActivityLabel(log.details)
+            : adminActivityLabel(log.action),
       adminEmail: log.adminEmail,
       createdAt: date.toISOString(),
     })

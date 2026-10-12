@@ -9,6 +9,8 @@ import {
   isGestionEditableDocumentType,
   isPerDocumentDevisEditionType,
   overlayAccountIdentityOnDocument,
+  describeDocumentDevisEdition,
+  documentDevisEditionActivityLabel,
   parseDocumentDevisEditionDecision,
   quoteKeepsOwnIdentity,
   resolveDocumentDevisEdition,
@@ -99,6 +101,33 @@ assert(
   resolveDocumentDevisEdition({ documentDecision: null, clientWide: true }) === true,
   "sans réglage propre, l'ancienne autorisation de fiche reste"
 )
+const explicitEdition = describeDocumentDevisEdition({ documentDecision: true, clientWide: false })
+assert(explicitEdition.allowed && explicitEdition.source === "document", "un devis réglé se distingue de la règle générale")
+const closedEdition = describeDocumentDevisEdition({ documentDecision: false, clientWide: true })
+assert(!closedEdition.allowed && closedEdition.source === "document", "un retrait propre prime sur la règle générale")
+const inheritedEdition = describeDocumentDevisEdition({ documentDecision: null, clientWide: true })
+assert(inheritedEdition.allowed && inheritedEdition.source === "fiche", "sans réglage propre, l'ouverture vient de la fiche")
+const closedFiche = describeDocumentDevisEdition({ documentDecision: null, clientWide: false })
+assert(!closedFiche.allowed && closedFiche.source === "aucune", "sans règle, le devis reste fermé")
+assert(
+  documentDevisEditionActivityLabel(JSON.stringify({ allowDevisEdition: true, numero: "DO-1" })) ===
+    "Modification autorisée pour le devis DO-1",
+  "le journal nomme le devis ouvert"
+)
+assert(
+  documentDevisEditionActivityLabel(JSON.stringify({ allowDevisEdition: false, numero: "DO-1" })) ===
+    "Autorisation retirée pour le devis DO-1",
+  "le journal nomme le devis fermé"
+)
+assert(
+  documentDevisEditionActivityLabel(JSON.stringify({ allowDevisEdition: true })) ===
+    "Modification autorisée pour un devis",
+  "sans numéro, le journal dit qu'un devis est ouvert"
+)
+assert(
+  documentDevisEditionActivityLabel("pas du json") === "Autorisation de devis mise à jour",
+  "un journal illisible garde le libellé générique"
+)
 const decisions = collectDocumentDevisEditionDecisions([
   {
     targetId: "doc_1",
@@ -148,6 +177,8 @@ const button = read("../components/gestion/ModifierDevisButton.tsx")
 const pdfRoute = read("../app/api/documents/[id]/pdf/route.ts")
 const exportRoute = read("../app/api/documents/export-all-pdf/route.ts")
 const authorizeButton = read("../components/gestion/AutoriserDevisButton.tsx")
+const activityLabel = read("../lib/admin-activity-label.ts")
+const devisDoRoute = read("../app/api/gestion/clients/[id]/devis-do/route.ts")
 
 assert(gestionRoute.includes("documentSyncsAccountIdentity"), "la gestion n'aligne le compte que pour un contrat")
 assert(gestionRoute.includes("overlayAccountIdentityOnDocument"), "la gestion laisse l'identité du devis")
@@ -161,11 +192,29 @@ assert(!gestionRoute.includes("allocateNextContractNumber"), "modifier un devis 
 assert(clientRoute.includes("getDocumentDevisEdition"), "l'espace client lit l'autorisation de ce devis")
 assert(clientRoute.includes("isClientQuoteEditionLocked"), "l'espace client refuse un devis non autorisé")
 assert(clientRoute.includes("isContractCoverageLocked"), "l'espace client respecte l'autorisation de ce devis")
+const coverageRefusal = clientRoute.indexOf("Contrat en vigueur : la modification est verrouillée.")
+const identitySync = clientRoute.lastIndexOf("syncUserFromDocumentMergedData")
+assert(
+  coverageRefusal >= 0 && identitySync > coverageRefusal,
+  "un contrat en vigueur est refusé avant d'aligner le compte"
+)
+assert(
+  !clientRoute.includes('"activites" in filtered || "chiffreAffaires" in filtered'),
+  "le verrou ne se limite plus aux activités et au chiffre d'affaires"
+)
 assert(clientRoute.includes("allowDevisEdition"), "le document indique si la modification est autorisée")
 assert(ficheRoute.includes("collectDocumentDevisEditionDecisions"), "la fiche distingue l'autorisation de chaque devis")
 assert(editionRoute.includes("DOCUMENT_DEVIS_EDITION_ACTION"), "l'autorisation est enregistrée sur le devis")
 assert(editionRoute.includes("isPerDocumentDevisEditionType"), "seuls les devis et contrats reçoivent cette autorisation")
 assert(fiche.includes("Chaque devis a sa propre autorisation."), "la fiche annonce l'autorisation par devis")
+assert(fiche.includes("Ouvert par l'autorisation générale"), "la fiche distingue l'autorisation héritée")
+assert(fiche.includes("devisEditionSource: \"document\""), "un réglage sur ce devis remplace l'héritage")
+assert(ficheRoute.includes("devisEditionSource"), "la fiche indique si l'autorisation est héritée")
+assert(ficheRoute.includes("doLeadId"), "la fiche pointe la demande DO")
+assert(activityLabel.includes("documentDevisEditionActivityLabel"), "le journal nomme le devis autorisé")
+assert(devisDoRoute.includes("applyPendingDoQuoteCorrection"), "la correction réécrit le questionnaire affiché")
+assert(!devisDoRoute.includes("payments.create"), "corriger le devis DO ne crée pas de paiement")
+assert(!devisDoRoute.includes("allocateNextContractNumber"), "corriger le devis DO n'ouvre pas de numéro")
 assert(fiche.includes("Retirer l'autorisation générale"), "la fiche retire l'autorisation générale")
 assert(fiche.includes("Elle ouvre aussi les nouveaux devis."), "la fiche explique l'effet sur les nouveaux devis")
 assert(fiche.includes("AutoriserDevisButton"), "la fiche autorise chaque devis")

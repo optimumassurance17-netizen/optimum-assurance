@@ -120,12 +120,17 @@ export async function PATCH(
       )
     }
 
+    if (isContractCoverageLocked(document.type, document.status, allowDevisEdition)) {
+      return NextResponse.json(
+        {
+          error:
+            "Contrat en vigueur : la modification est verrouillée. Contactez la gestion pour autoriser ce contrat.",
+        },
+        { status: 409 }
+      )
+    }
+
     const currentData = parseDocumentData(document.data)
-    const contractCoverageLocked = isContractCoverageLocked(
-      document.type,
-      document.status,
-      allowDevisEdition
-    )
     const editableKeys = [
       "raisonSociale",
       "siret",
@@ -167,16 +172,6 @@ export async function PATCH(
         continue
       }
       filtered[key] = value
-    }
-
-    if (contractCoverageLocked && ("activites" in filtered || "chiffreAffaires" in filtered)) {
-      return NextResponse.json(
-        {
-          error:
-            "Contrat actif: la modification des activités et du chiffre d'affaires est verrouillée. Contactez la gestion pour un avenant.",
-        },
-        { status: 409 }
-      )
     }
 
     if (Object.keys(filtered).length === 0) {
@@ -280,7 +275,7 @@ export async function PATCH(
           documentNumero: document.numero,
           documentType: document.type,
           changedKeys: Object.keys(filtered),
-          lockedCoverage: contractCoverageLocked,
+          lockedCoverage: false,
           allowDevisEditionOverride: allowDevisEdition,
           forcedActivitiesApplied: forcedActivities,
         }),

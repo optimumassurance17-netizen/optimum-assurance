@@ -596,6 +596,7 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
               status: "brouillon",
               createdAt: "2026-10-01T10:00:00.000Z",
               allowDevisEdition: generalAuthorization,
+              devisEditionSource: generalAuthorization ? "fiche" : "aucune",
             },
             {
               id: "doc_explicite",
@@ -604,6 +605,7 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
               status: "brouillon",
               createdAt: "2026-10-02T10:00:00.000Z",
               allowDevisEdition: true,
+              devisEditionSource: "document",
             },
           ],
         }),
@@ -614,7 +616,8 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
     const inherited = page.locator("tr", { hasText: "DEC-HERITE" })
     const explicit = page.locator("tr", { hasText: "DO-EXPLICITE" })
     await expect(page.getByText("Elle ouvre aussi les nouveaux devis.")).toBeVisible()
-    await expect(inherited.getByText("Modification autorisée")).toBeVisible()
+    await expect(inherited.getByText("Ouvert par l'autorisation générale")).toBeVisible()
+    await expect(inherited.getByText("Modification autorisée")).toHaveCount(0)
     await expect(explicit.getByText("Modification autorisée")).toBeVisible()
 
     await page.getByRole("button", { name: "Retirer l'autorisation générale" }).click()
@@ -623,10 +626,83 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
     expect(captured.forcedActivities).toBe("Maçonnerie")
     await expect(page.getByText("Autorisation générale retirée.")).toBeVisible()
     await expect(page.getByText("Elle ouvre aussi les nouveaux devis.")).toHaveCount(0)
+    await expect(inherited.getByText("Ouvert par l'autorisation générale")).toHaveCount(0)
     await expect(inherited.getByText("Modification autorisée")).toHaveCount(0)
     await expect(inherited.getByRole("button", { name: "Autoriser ce devis" })).toBeVisible()
     await expect(explicit.getByText("Modification autorisée")).toBeVisible()
     await expect(explicit.getByRole("button", { name: "Retirer l'autorisation", exact: true })).toBeVisible()
+  })
+
+  test("Fiche client : corrige le devis DO à préparer sans créer de contrat", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    const initialJson = JSON.stringify({
+      coutTotal: 180000,
+      adresseConstruction: "10 rue Ancienne",
+      codePostalConstruction: "75002",
+      villeConstruction: "Paris",
+    })
+    const base = buildGestionClientData()
+    const client = {
+      ...base,
+      doLeadId: "cldo0001lead",
+      insuranceContracts: [],
+      user: {
+        ...base.user,
+        doInitialQuestionnaireJson: initialJson,
+      },
+    }
+    const captured: { chantier?: string; constructionCost?: string } = {}
+
+    await page.route("**/api/gestion/clients/client_1", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(client),
+      })
+    })
+    await page.route("**/api/gestion/clients/client_1/devis-do", async (route) => {
+      const body = route.request().postDataJSON() as { chantier?: string; constructionCost?: string }
+      captured.chantier = body.chantier
+      captured.constructionCost = body.constructionCost
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          sourceKey: "doInitialQuestionnaireJson",
+          questionnaireJson: JSON.stringify({
+            coutTotal: 250000,
+            coutConstruction: 250000,
+            adresseConstruction: "22 avenue du Port",
+            adresseChantier: "22 avenue du Port",
+            projectAddress: "22 avenue du Port",
+            codePostalConstruction: "75002",
+            villeConstruction: "Paris",
+          }),
+          leadId: "cldo0001lead",
+          chantier: "22 avenue du Port",
+          constructionCost: 250000,
+        }),
+      })
+    })
+
+    await page.goto("/gestion/clients/client_1")
+    await expect(page.getByRole("heading", { name: "Devis DO à préparer" })).toBeVisible()
+    await expect(page.getByText("Chantier : 10 rue Ancienne, 75002 Paris")).toBeVisible()
+    await expect(page.getByText("Elle ne crée ni numéro de contrat ni paiement.")).toBeVisible()
+    await expect(page.getByRole("link", { name: "Ouvrir la demande DO" })).toHaveAttribute(
+      "href",
+      "/gestion#demande-do-cldo0001lead"
+    )
+    await page.getByPlaceholder("Adresse du chantier").fill("22 avenue du Port")
+    await page.getByPlaceholder("Coût de construction").fill("250000")
+    await page.getByRole("button", { name: "Enregistrer le devis DO" }).click()
+
+    expect(captured.chantier).toBe("22 avenue du Port")
+    expect(captured.constructionCost).toBe("250000")
+    await expect(page.getByText("Devis DO à préparer mis à jour.")).toBeVisible()
+    await expect(page.getByText("22 avenue du Port, 75002 Paris")).toBeVisible()
+    await expect(page.getByText(/250\s000 €/)).toBeVisible()
   })
 
   test("Fiche client : envoi email appelle l'endpoint gestion", async ({ page }) => {

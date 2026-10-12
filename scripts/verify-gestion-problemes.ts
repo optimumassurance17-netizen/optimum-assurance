@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { DemandesDocumentClient } from "@/components/espace-client/DemandesDocumentClient"
-import { describePendingDoQuote } from "@/lib/do-quote-pending"
+import { applyPendingDoQuoteCorrection, describePendingDoQuote } from "@/lib/do-quote-pending"
 import { readStoredDocumentRequest, withDocumentRequestDeposit } from "@/lib/document-request"
 
 const hidden = describePendingDoQuote({
@@ -30,6 +30,37 @@ assert.match(pending?.chantier ?? "", /Lyon/)
 const absent = describePendingDoQuote({ hasDoContract: false })
 assert.equal(absent, null)
 
+const correctedInitial = applyPendingDoQuoteCorrection(
+  { coutTotal: 1000, adresseConstruction: "ancienne" },
+  { chantier: "8 quai Neuf", constructionCost: 240000 }
+)
+const shownInitial = describePendingDoQuote({
+  hasDoContract: false,
+  initialJson: JSON.stringify(correctedInitial),
+})
+assert.equal(shownInitial?.constructionCost, 240000)
+assert.match(shownInitial?.chantier ?? "", /8 quai Neuf/)
+
+const correctedEtude = applyPendingDoQuoteCorrection(
+  {
+    operation: { adresseChantier: "ancienne étude", codePostal: "33000", ville: "Bordeaux" },
+    cout: { coutTotalTtc: 1000 },
+  },
+  { chantier: "8 quai Neuf", constructionCost: 240000 }
+)
+const etudeOperation = correctedEtude.operation as { adresseChantier?: string }
+const etudeCost = correctedEtude.cout as { coutTotalTtc?: number }
+assert.equal(etudeOperation.adresseChantier, "8 quai Neuf")
+assert.equal(etudeCost.coutTotalTtc, 240000)
+const shownEtude = describePendingDoQuote({
+  hasDoContract: false,
+  etudeJson: JSON.stringify(correctedEtude),
+  initialJson: JSON.stringify({ adresseConstruction: "autre", coutTotal: 1 }),
+})
+assert.equal(shownEtude?.sourceLabel, "Questionnaire d'étude")
+assert.equal(shownEtude?.constructionCost, 240000)
+assert.equal(shownEtude?.chantier, "8 quai Neuf")
+
 const details = JSON.stringify({
   message: "Merci d'envoyer le permis de construire.",
   assuranceLabel: "Dommages-ouvrage OPT-DO-1",
@@ -54,6 +85,13 @@ const fiche = readFileSync("app/gestion/clients/[id]/page.tsx", "utf8")
 assert.match(fiche, /Devis DO à préparer/)
 assert.match(fiche, /Prime indicative/)
 assert.match(fiche, /Pièce déposée/)
+assert.match(fiche, /Enregistrer le devis DO/)
+assert.match(fiche, /doDevisLeadRowId/)
+assert.match(fiche, /Elle ne crée ni numéro de contrat ni paiement/)
+
+const devisDoRoute = readFileSync("app/api/gestion/clients/[id]/devis-do/route.ts", "utf8")
+assert.match(devisDoRoute, /applyPendingDoQuoteCorrection/)
+assert.doesNotMatch(devisDoRoute, /payments\.create|allocateNextContractNumber/)
 
 const dashboard = readFileSync("app/gestion/page.tsx", "utf8")
 assert.match(dashboard, /Prime indicative/)

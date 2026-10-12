@@ -10,7 +10,7 @@ import {
   type DocumentRequestResult,
 } from "@/components/gestion/DocumentRequestButton"
 import { documentRequestActivityLabel } from "@/lib/document-request"
-import { DO_DEVIS_LEADS_SECTION_ID } from "@/lib/devis-do-lead"
+import { DO_DEVIS_LEADS_SECTION_ID, doDevisLeadRowId } from "@/lib/devis-do-lead"
 import { describePendingDoQuote } from "@/lib/do-quote-pending"
 import { getInsuranceProductLabel } from "@/lib/insurance-product"
 import { readResponseJson } from "@/lib/read-response-json"
@@ -154,6 +154,7 @@ interface ClientData {
     titleInitialQuestionnaireJson?: string | null
     titleEtudeQuestionnaireJson?: string | null
   }
+  doLeadId?: string | null
   documents: {
     id: string
     type: string
@@ -161,6 +162,7 @@ interface ClientData {
     status: string
     createdAt: string
     allowDevisEdition?: boolean
+    devisEditionSource?: "document" | "fiche" | "aucune"
   }[]
   signature?: {
     signed: boolean
@@ -378,6 +380,9 @@ export default function ClientDetailPage() {
   const [profileSireneLoading, setProfileSireneLoading] = useState(false)
   const [profileSireneError, setProfileSireneError] = useState<string | null>(null)
   const [devisAutonomySaving, setDevisAutonomySaving] = useState(false)
+  const [doQuoteChantier, setDoQuoteChantier] = useState("")
+  const [doQuoteCost, setDoQuoteCost] = useState("")
+  const [doQuoteSaving, setDoQuoteSaving] = useState(false)
   const [devisAutonomyForm, setDevisAutonomyForm] = useState<DevisAutonomyForm>({
     allowDevisEdition: false,
     allowForcedActivities: false,
@@ -435,6 +440,13 @@ export default function ClientDetailPage() {
         setUserDocuments(json.userDocuments ?? [])
         setUserDocumentReviews(json.userDocumentReviews ?? {})
         setDevisAutonomyForm(toDevisAutonomyForm(json.devisAutonomy))
+        const pendingQuote = describePendingDoQuote({
+          hasDoContract: (json.insuranceContracts ?? []).some((contract) => contract.productType === "do"),
+          initialJson: json.user.doInitialQuestionnaireJson,
+          etudeJson: json.user.doEtudeQuestionnaireJson,
+        })
+        setDoQuoteChantier(pendingQuote?.chantier ?? "")
+        setDoQuoteCost(pendingQuote?.constructionCost != null ? String(pendingQuote.constructionCost) : "")
       } catch {
         setError("Client introuvable")
       } finally {
@@ -473,6 +485,7 @@ export default function ClientDetailPage() {
     initialJson: user.doInitialQuestionnaireJson,
     etudeJson: user.doEtudeQuestionnaireJson,
   })
+  const doLeadAnchor = data.doLeadId ? doDevisLeadRowId(data.doLeadId) : DO_DEVIS_LEADS_SECTION_ID
 
   const rememberDocumentRequest = (result: DocumentRequestResult) => {
     setToast({ message: result.message, type: result.type })
@@ -1394,12 +1407,99 @@ export default function ClientDetailPage() {
               </li>
               <li>Chantier : {pendingDoQuote.chantier || "adresse non renseignée"}</li>
             </ul>
-            <Link
-              href={`/gestion#${DO_DEVIS_LEADS_SECTION_ID}`}
-              className="inline-flex text-sm font-medium text-amber-200 hover:text-amber-100"
+            <form
+              className="space-y-3"
+              onSubmit={async (event) => {
+                event.preventDefault()
+                setDoQuoteSaving(true)
+                try {
+                  const res = await fetch(`/api/gestion/clients/${clientId}/devis-do`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chantier: doQuoteChantier,
+                      constructionCost: doQuoteCost,
+                    }),
+                  })
+                  const json = await readResponseJson<{
+                    error?: string
+                    sourceKey?: "doEtudeQuestionnaireJson" | "doInitialQuestionnaireJson"
+                    questionnaireJson?: string
+                    leadId?: string | null
+                    chantier?: string
+                    constructionCost?: number
+                  }>(res)
+                  if (!res.ok || !json.sourceKey || typeof json.questionnaireJson !== "string") {
+                    throw new Error(json.error || "Erreur lors de l'enregistrement")
+                  }
+                  const sourceKey = json.sourceKey
+                  const questionnaireJson = json.questionnaireJson
+                  setData((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          doLeadId: json.leadId ?? prev.doLeadId ?? null,
+                          user: { ...prev.user, [sourceKey]: questionnaireJson },
+                        }
+                      : prev
+                  )
+                  if (json.chantier) setDoQuoteChantier(json.chantier)
+                  if (json.constructionCost != null) setDoQuoteCost(String(json.constructionCost))
+                  setToast({ message: "Devis DO à préparer mis à jour.", type: "success" })
+                } catch (err) {
+                  setToast({
+                    message: err instanceof Error ? err.message : "Erreur lors de l'enregistrement",
+                    type: "error",
+                  })
+                } finally {
+                  setDoQuoteSaving(false)
+                }
+              }}
             >
-              Ouvrir la demande DO
-            </Link>
+              <div>
+                <label className="block text-gray-200 mb-1 text-sm" htmlFor="do-quote-chantier">
+                  Adresse du chantier
+                </label>
+                <input
+                  id="do-quote-chantier"
+                  value={doQuoteChantier}
+                  onChange={(event) => setDoQuoteChantier(event.target.value)}
+                  placeholder="Adresse du chantier"
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-200 mb-1 text-sm" htmlFor="do-quote-cost">
+                  Coût de construction
+                </label>
+                <input
+                  id="do-quote-cost"
+                  value={doQuoteCost}
+                  inputMode="decimal"
+                  onChange={(event) => setDoQuoteCost(event.target.value)}
+                  placeholder="Coût de construction"
+                  className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                />
+              </div>
+              <p className="text-xs text-gray-400">
+                La correction reste sur la demande. Elle ne crée ni numéro de contrat ni paiement.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={doQuoteSaving}
+                  className="rounded-lg bg-amber-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
+                >
+                  {doQuoteSaving ? "Enregistrement…" : "Enregistrer le devis DO"}
+                </button>
+                <Link
+                  href={`/gestion#${doLeadAnchor}`}
+                  className="inline-flex text-sm font-medium text-amber-200 hover:text-amber-100"
+                >
+                  Ouvrir la demande DO
+                </Link>
+              </div>
+            </form>
           </section>
         ) : null}
 
@@ -1827,7 +1927,13 @@ export default function ClientDetailPage() {
                           {isPerDocumentDevisEditionType(d.type) ? (
                             <>
                               {d.allowDevisEdition ? (
-                                <span className="text-xs text-emerald-300">Modification autorisée</span>
+                                d.devisEditionSource === "fiche" ? (
+                                  <span className="text-xs text-amber-300">
+                                    {"Ouvert par l'autorisation générale"}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-emerald-300">Modification autorisée</span>
+                                )
                               ) : null}
                               <AutoriserDevisButton
                                 documentId={d.id}
@@ -1840,7 +1946,13 @@ export default function ClientDetailPage() {
                                       ? {
                                           ...prev,
                                           documents: prev.documents.map((doc) =>
-                                            doc.id === d.id ? { ...doc, allowDevisEdition: allowed } : doc
+                                            doc.id === d.id
+                                              ? {
+                                                  ...doc,
+                                                  allowDevisEdition: allowed,
+                                                  devisEditionSource: "document",
+                                                }
+                                              : doc
                                           ),
                                         }
                                       : prev

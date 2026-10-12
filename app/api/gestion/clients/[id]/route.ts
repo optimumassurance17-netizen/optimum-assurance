@@ -27,8 +27,8 @@ import { describeClientSignature } from "@/lib/signature-reminder"
 import {
   DOCUMENT_DEVIS_EDITION_ACTION,
   collectDocumentDevisEditionDecisions,
+  describeDocumentDevisEdition,
   isPerDocumentDevisEditionType,
-  resolveDocumentDevisEdition,
 } from "@/lib/devis-edition"
 import { SITE_URL } from "@/lib/site-url"
 
@@ -323,19 +323,32 @@ export async function GET(
             []
           )
     const editionDecisions = collectDocumentDevisEditionDecisions(editionLogs)
-    const documentsForClient = documents.map((document) => ({
-      id: document.id,
-      type: document.type,
-      numero: document.numero,
-      status: document.status,
-      createdAt: document.createdAt,
-      allowDevisEdition: isPerDocumentDevisEditionType(document.type)
-        ? resolveDocumentDevisEdition({
+    const documentsForClient = documents.map((document) => {
+      const edition = isPerDocumentDevisEditionType(document.type)
+        ? describeDocumentDevisEdition({
             documentDecision: editionDecisions.get(document.id) ?? null,
             clientWide: devisAutonomy.allowDevisEdition,
           })
-        : false,
-    }))
+        : { allowed: false, source: "aucune" as const }
+      return {
+        id: document.id,
+        type: document.type,
+        numero: document.numero,
+        status: document.status,
+        createdAt: document.createdAt,
+        allowDevisEdition: edition.allowed,
+        devisEditionSource: edition.source,
+      }
+    })
+    const doLead = await withSchemaDriftFallback(
+      () =>
+        prisma.devisDommageOuvrageLead.findFirst({
+          where: { email: { equals: user.email.trim(), mode: "insensitive" } },
+          orderBy: { createdAt: "desc" },
+          select: { id: true },
+        }),
+      null
+    )
     const pendingSignatures = await withSchemaDriftFallback(
       () =>
         prisma.pendingSignature.findMany({
@@ -416,6 +429,7 @@ export async function GET(
     return NextResponse.json({
       user,
       devisAutonomy,
+      doLeadId: doLead?.id ?? null,
       documents: documentsForClient,
       canGenerateDecennaleAttestation,
       signature,

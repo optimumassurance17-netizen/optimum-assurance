@@ -70,8 +70,37 @@ export function resolveDocumentDevisEdition(input: {
   documentDecision: boolean | null
   clientWide: boolean
 }): boolean {
-  if (typeof input.documentDecision === "boolean") return input.documentDecision
-  return input.clientWide
+  return describeDocumentDevisEdition(input).allowed
+}
+
+export type DocumentDevisEditionSource = "document" | "fiche" | "aucune"
+
+/** Distingue un devis réglé un par un d'un devis seulement ouvert par la règle générale. */
+export function describeDocumentDevisEdition(input: {
+  documentDecision: boolean | null
+  clientWide: boolean
+}): { allowed: boolean; source: DocumentDevisEditionSource } {
+  if (typeof input.documentDecision === "boolean") {
+    return { allowed: input.documentDecision, source: "document" }
+  }
+  if (input.clientWide) return { allowed: true, source: "fiche" }
+  return { allowed: false, source: "aucune" }
+}
+
+/** Le journal nomme le devis et dit s'il a été ouvert ou fermé. */
+export function documentDevisEditionActivityLabel(details: string | null | undefined): string {
+  const fallback = "Autorisation de devis mise à jour"
+  if (!details?.trim()) return fallback
+  try {
+    const parsed = JSON.parse(details) as { allowDevisEdition?: unknown; numero?: unknown }
+    const numero = typeof parsed.numero === "string" ? parsed.numero.trim() : ""
+    const target = numero ? `le devis ${numero}` : "un devis"
+    if (parsed.allowDevisEdition === true) return `Modification autorisée pour ${target}`
+    if (parsed.allowDevisEdition === false) return `Autorisation retirée pour ${target}`
+  } catch {
+    return fallback
+  }
+  return fallback
 }
 
 export function collectDocumentDevisEditionDecisions(
