@@ -179,7 +179,9 @@ test.describe("Espace client — supprimer un devis", () => {
 
     await page.getByRole("button", { name: "Supprimer le devis DO-2026-009" }).click()
     await page.getByRole("button", { name: "Confirmer la suppression du devis DO-2026-009" }).click()
-    await expect(page.getByRole("alert")).toContainText("paiement en cours ou déjà encaissé")
+    await expect(
+      page.getByText("Ce devis a un paiement en cours ou déjà encaissé. Il ne peut plus être supprimé.")
+    ).toBeVisible()
     await expect(page.getByRole("link", { name: /DO-2026-009/ })).toBeVisible()
 
     await page.getByRole("button", { name: "Supprimer le devis enregistré SCA Brouillon" }).click()
@@ -292,7 +294,9 @@ test.describe("Espace client — supprimer un devis", () => {
     await page.goto("/espace-client/documents/doc_devis_1")
     await page.getByRole("button", { name: "Supprimer le devis", exact: true }).click()
     await page.getByRole("button", { name: "Confirmer la suppression du devis", exact: true }).click()
-    await expect(page.getByRole("alert")).toContainText("signature est en cours")
+    await expect(
+      page.getByText("Une signature est en cours pour ce devis. Il ne peut plus être supprimé.")
+    ).toBeVisible()
     await expect(page).toHaveURL(/\/espace-client\/documents\/doc_devis_1/)
   })
 })
