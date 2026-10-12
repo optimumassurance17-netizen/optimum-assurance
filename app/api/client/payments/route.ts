@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { contractLifecyclePresentation, describeClientPayment } from "@/lib/client-echeances"
+import { collapseSettledCardLinkPayments, contractLifecyclePresentation, describeClientPayment } from "@/lib/client-echeances"
 import { prisma } from "@/lib/prisma"
 
 export async function GET() {
@@ -47,7 +47,7 @@ export async function GET() {
     ])
 
     const merged = [
-      ...payments.map((payment) => {
+      ...collapseSettledCardLinkPayments(payments).map((payment) => {
         const described = describeClientPayment({
           metadata: payment.metadata,
           molliePaymentId: payment.molliePaymentId,

@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto"
 import { PaymentMethod, type MollieClient } from "@mollie/api-client"
+import { Prisma } from "@/lib/prisma-client"
 import {
   cardLinkDescription,
   cardLinkExpiresAt,
@@ -247,21 +248,51 @@ export async function findStoredCardLinkForPayment(
   }
 }
 
-export async function markStoredCardLinkPaid(molliePaymentId: string): Promise<void> {
-  const row = await prisma.payment.findUnique({
-    where: { molliePaymentId },
-    select: { id: true, metadata: true, status: true },
+/**
+ * Le paiement carte `tr_` remplace le lien `pl_`.
+ * Si les deux lignes existent déjà, le lien est retiré : l'échéance ne reste qu'une fois.
+ */
+export async function settleStoredCardLink(params: {
+  cardLinkId: string
+  paymentId: string
+  amount: number
+  metadata: Record<string, string>
+}): Promise<"moved" | "removed" | "missing"> {
+  if (!isPaymentLinkId(params.cardLinkId) || params.cardLinkId === params.paymentId) return "missing"
+  const metadata = JSON.stringify({
+    ...params.metadata,
+    paymentLinkId: params.cardLinkId,
+    effectsApplied: "true",
   })
-  if (!row || row.status === "paid") return
-  const metadata = stringRecordFromMetadata(row.metadata)
-  await prisma.payment.update({
-    where: { id: row.id },
-    data: {
-      status: "paid",
-      paidAt: new Date(),
-      metadata: JSON.stringify({ ...metadata, effectsApplied: "true" }),
-    },
+  const existingPayment = await prisma.payment.findUnique({
+    where: { molliePaymentId: params.paymentId },
+    select: { id: true },
   })
+  if (existingPayment) {
+    await prisma.payment.deleteMany({ where: { molliePaymentId: params.cardLinkId } })
+    return "removed"
+  }
+
+  try {
+    const moved = await prisma.payment.updateMany({
+      where: { molliePaymentId: params.cardLinkId },
+      data: {
+        molliePaymentId: params.paymentId,
+        amount: params.amount,
+        status: "paid",
+        paidAt: new Date(),
+        metadata,
+      },
+    })
+    if (moved.count === 1) return "moved"
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      await prisma.payment.deleteMany({ where: { molliePaymentId: params.cardLinkId } })
+      return "removed"
+    }
+    throw error
+  }
+  return "missing"
 }
 
 /** Décide si le cron SEPA doit attendre, encaisser ou relâcher un paiement déjà lancé. */

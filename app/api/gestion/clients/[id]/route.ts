@@ -19,7 +19,7 @@ import { loadClientEcheances } from "@/lib/client-echeance-service"
 import { clientDeleteErrorMessage, deleteClientAccount } from "@/lib/client-account"
 import { purgeClientExternalResidue } from "@/lib/purge-client-residue"
 import { describeSepaReadiness } from "@/lib/sepa-readiness"
-import { attachSepaNotices, paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel, virementReferenceFromMetadata } from "@/lib/client-echeances"
+import { attachSepaNotices, collapseSettledCardLinkPayments, paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel, virementReferenceFromMetadata } from "@/lib/client-echeances"
 import { describeClientActivity } from "@/lib/admin-activity-label"
 import { DDA_AUDIT_ACTIONS } from "@/lib/dda-labels"
 import { DOCUMENT_REQUEST_ACTION, readStoredDocumentRequest } from "@/lib/document-request"
@@ -296,7 +296,7 @@ export async function GET(
         if (document.type !== "contrat" || !isDecennaleContractData(document.data)) return false
         return extractStructuredActivities(parseJsonObject(document.data)).length > 0
       })
-    const paymentsForClient = payments.map((payment) => ({
+    const paymentsForClient = collapseSettledCardLinkPayments(payments).map((payment) => ({
       id: payment.id,
       amount: payment.amount,
       status: payment.status,

@@ -24,6 +24,7 @@ import {
   sepaDebitIsInFlight,
   attachSepaNotices,
   clientEcheanceStatusLabel,
+  collapseSettledCardLinkPayments,
 } from "../lib/client-echeances"
 import { adminActivityClientHref, adminActivityLabel } from "../lib/admin-activity-label"
 
@@ -453,5 +454,53 @@ assert(
   "le journal ouvre la fiche client"
 )
 assert(adminActivityClientHref({ targetType: "document", targetId: "doc1234567890" }) === null, "une cible document sans compte ne devient pas un lien")
+
+const cardMeta = (echeanceId: string, extra: Record<string, string> = {}) =>
+  JSON.stringify({ type: "echeance_carte", echeanceId, label: "Échéance 2", ...extra })
+const duplicateCardPayments = collapseSettledCardLinkPayments([
+  {
+    id: "link",
+    molliePaymentId: "pl_link",
+    status: "paid",
+    metadata: cardMeta("decennale:2", { paymentLinkId: "pl_link" }),
+  },
+  {
+    id: "paid",
+    molliePaymentId: "tr_paid",
+    status: "paid",
+    metadata: cardMeta("decennale:2", { paymentLinkId: "pl_link" }),
+  },
+  {
+    id: "other",
+    molliePaymentId: "pl_other",
+    status: "pending",
+    metadata: cardMeta("decennale:3"),
+  },
+  {
+    id: "failed",
+    molliePaymentId: "pl_failed",
+    status: "failed",
+    metadata: cardMeta("decennale:2"),
+  },
+])
+assert(
+  duplicateCardPayments.map((row) => row.id).join(",") === "paid,other,failed",
+  "un lien carte déjà encaissé ne double pas l'échéance dans la gestion"
+)
+assert(
+  collapseSettledCardLinkPayments([
+    {
+      id: "only-link",
+      molliePaymentId: "pl_only",
+      status: "pending",
+      metadata: cardMeta("decennale:4"),
+    },
+  ]).length === 1,
+  "un lien carte encore ouvert reste visible"
+)
+const clientRoute = readFileSync(new URL("../app/api/gestion/clients/[id]/route.ts", import.meta.url), "utf8")
+assert(dashboard.includes("collapseSettledCardLinkPayments"), "le tableau de bord retire le doublon de paiement carte")
+assert(clientRoute.includes("collapseSettledCardLinkPayments"), "la fiche client retire le doublon de paiement carte")
+assert(clientPayments.includes("collapseSettledCardLinkPayments"), "l'historique client retire le doublon de paiement carte")
 
 console.log("Échéances fiche client : OK")

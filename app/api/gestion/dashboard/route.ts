@@ -8,6 +8,7 @@ import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statut
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { stripSignatureBinariesFromJsonString } from "@/lib/esign/local-signature-fallback"
 import { loadEcheancesASuivre } from "@/lib/client-echeance-service"
+import { collapseSettledCardLinkPayments } from "@/lib/client-echeances"
 import { adminActivityClientHref, adminActivityLabel } from "@/lib/admin-activity-label"
 import { DDA_AUDIT_ACTIONS } from "@/lib/dda-labels"
 import { latestSignatureReminderByRequest } from "@/lib/signature-reminder"
@@ -1130,7 +1131,7 @@ export async function GET() {
         ...doc,
         data: stripSignatureBinariesFromJsonString(doc.data),
       })),
-      payments,
+      payments: collapseSettledCardLinkPayments(payments),
       avenantFees,
       devisDoLeads: sortRequestsByArrival(
         devisDoLeads.map((lead) => ({

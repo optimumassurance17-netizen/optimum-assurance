@@ -19,7 +19,7 @@ import { isPaymentLinkId, stringMapFromUnknown } from "@/lib/card-link-lifetime"
 import { stringRecordFromMetadata } from "@/lib/client-echeances"
 import { applyEcheancePaidEffects } from "@/lib/client-echeance-service"
 import { sendEcheancePaidReceipt } from "@/lib/echeance-receipt"
-import { findStoredCardLinkForPayment, markStoredCardLinkPaid } from "@/lib/gestion-card-link"
+import { findStoredCardLinkForPayment, settleStoredCardLink } from "@/lib/gestion-card-link"
 import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
 
 function generateVerificationToken(): string {
@@ -421,21 +421,35 @@ export async function POST(request: NextRequest) {
 
       if (user) {
         const amount = payment.amount?.value ? parseFloat(payment.amount.value) : 0
-        await prisma.payment.upsert({
-          where: { molliePaymentId: paymentId },
-          create: {
-            userId: user.id,
-            molliePaymentId: paymentId,
-            amount,
-            status: "paid",
-            paidAt: new Date(),
-            metadata: JSON.stringify(metadata),
-          },
-          update: {
-            status: "paid",
-            paidAt: new Date(),
-          },
-        })
+        const settled =
+          cardLinkId && cardLinkId !== paymentId
+            ? await settleStoredCardLink({
+                cardLinkId,
+                paymentId,
+                amount,
+                metadata,
+              })
+            : "missing"
+        if (settled !== "moved") {
+          await prisma.payment.upsert({
+            where: { molliePaymentId: paymentId },
+            create: {
+              userId: user.id,
+              molliePaymentId: paymentId,
+              amount,
+              status: "paid",
+              paidAt: new Date(),
+              metadata: JSON.stringify({
+                ...metadata,
+                ...(cardLinkId && cardLinkId !== paymentId ? { paymentLinkId: cardLinkId } : {}),
+              }),
+            },
+            update: {
+              status: "paid",
+              paidAt: new Date(),
+            },
+          })
+        }
 
         if (
           !alreadyProcessed &&
@@ -447,10 +461,6 @@ export async function POST(request: NextRequest) {
             metadata,
             amount,
           })
-        }
-
-        if (cardLinkId && cardLinkId !== paymentId) {
-          await markStoredCardLinkPaid(cardLinkId)
         }
 
         if (metadata.type === "devis_do") {

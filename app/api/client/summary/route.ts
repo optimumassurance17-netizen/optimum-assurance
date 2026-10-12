@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { isDecennaleAttestationType } from "@/lib/decennale-impaye"
+import { collapseSettledCardLinkPayments } from "@/lib/client-echeances"
 
 export async function GET() {
   try {
@@ -26,7 +27,7 @@ export async function GET() {
       }),
       prisma.payment.findMany({
         where: { userId: session.user.id },
-        select: { amount: true, status: true, paidAt: true },
+        select: { amount: true, status: true, paidAt: true, metadata: true, molliePaymentId: true },
         orderBy: { createdAt: "desc" },
       }),
       prisma.contractLifecyclePayment.findMany({
@@ -71,8 +72,9 @@ export async function GET() {
     const suspendedCount = documents.filter(
       (d) => isDecennaleAttestationType(d.type) && d.status === "suspendu"
     ).length
+    const visiblePayments = collapseSettledCardLinkPayments(payments)
     const allPayments = [
-      ...payments.map((payment) => ({
+      ...visiblePayments.map((payment) => ({
         amount: payment.amount,
         status: payment.status,
         paidAt: payment.paidAt,
@@ -104,7 +106,7 @@ export async function GET() {
       documentsCount: documents.length + generatedDocumentsCount + virtualGeneratedDocsCount,
       attestationsCount: attestations.length + activeContractsWithCertificate,
       suspendedCount,
-      paymentsCount: payments.length + contractPayments.length,
+      paymentsCount: visiblePayments.length + contractPayments.length,
       paidTotal,
       lastPayment,
     })

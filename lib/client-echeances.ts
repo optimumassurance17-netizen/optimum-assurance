@@ -1,3 +1,4 @@
+import { isPaymentLinkId } from "@/lib/card-link-lifetime"
 import { primeTrimestrielle } from "@/lib/premium"
 
 export type ClientEcheanceKind = "decennale" | "avenant" | "attestation"
@@ -396,6 +397,50 @@ export function paymentMethodLabel(metadata: string | null | undefined, molliePa
   if (type === "sepa_trimestre") return "Prélèvement SEPA"
   if (type === "echeance_carte" || type === "regularisation" || type === "decennale_premier_trimestre") return "Carte"
   return null
+}
+
+function cardSettlementKey(metadata: string | null | undefined): string | null {
+  const parsed = parseMetadataRecord(metadata)
+  if (!parsed) return null
+  const type = typeof parsed.type === "string" ? parsed.type : ""
+  if (type === "decennale_premier_trimestre") {
+    const contract = typeof parsed.contractNumero === "string" ? parsed.contractNumero.trim() : ""
+    return contract ? `premier:${contract}` : "premier"
+  }
+  if (type !== "echeance_carte" && type !== "regularisation") return null
+  const echeanceId = typeof parsed.echeanceId === "string" ? parsed.echeanceId.trim() : ""
+  if (echeanceId) return `${type}:${echeanceId}`
+  const attestationId = typeof parsed.attestationId === "string" ? parsed.attestationId.trim() : ""
+  if (type === "regularisation" && attestationId) return `regularisation:attestation:${attestationId}`
+  return null
+}
+
+/**
+ * Le webhook reçoit le paiement `tr_` alors que le lien `pl_` est déjà en base.
+ * Les deux lignes portent la même échéance carte : la gestion n'affiche que le paiement réel.
+ * Un lien encore ouvert, ou un lien sans paiement encaissé, reste visible.
+ */
+export function collapseSettledCardLinkPayments<
+  T extends { molliePaymentId: string; status: string; metadata: string | null },
+>(rows: T[]): T[] {
+  const settledLinkIds = new Set<string>()
+  const settledKeys = new Set<string>()
+  for (const row of rows) {
+    if (row.status !== "paid" || isPaymentLinkId(row.molliePaymentId)) continue
+    const parsed = parseMetadataRecord(row.metadata)
+    const linkId = typeof parsed?.paymentLinkId === "string" ? parsed.paymentLinkId.trim() : ""
+    if (isPaymentLinkId(linkId)) settledLinkIds.add(linkId)
+    const key = cardSettlementKey(row.metadata)
+    if (key) settledKeys.add(key)
+  }
+
+  return rows.filter((row) => {
+    if (!isPaymentLinkId(row.molliePaymentId)) return true
+    if (row.status !== "paid" && row.status !== "pending") return true
+    if (settledLinkIds.has(row.molliePaymentId)) return false
+    const key = cardSettlementKey(row.metadata)
+    return !(key && settledKeys.has(key))
+  })
 }
 
 export function paymentEcheanceLabel(metadata: string | null | undefined): string | null {
