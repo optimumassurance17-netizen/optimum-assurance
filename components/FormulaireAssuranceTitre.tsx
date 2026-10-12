@@ -17,6 +17,7 @@ import {
   type AssuranceTitreTypeBien,
   type AssuranceTitreTypeOperation,
 } from "@/lib/assurance-titre-types"
+import { DevoirConseil } from "@/components/DevoirConseil"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { readResponseJson } from "@/lib/read-response-json"
 import {
@@ -59,6 +60,7 @@ export function FormulaireAssuranceTitre() {
   const [email, setEmail] = useState("")
   const [data, setData] = useState<Partial<AssuranceTitreData>>(initialData)
   const [accepte, setAccepte] = useState(false)
+  const [devoirConseilAccepte, setDevoirConseilAccepte] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -79,11 +81,13 @@ export function FormulaireAssuranceTitre() {
           email?: string
           data?: Partial<AssuranceTitreData>
           accepte?: boolean
+          devoirConseilAccepte?: boolean
           tracking?: ConversionTrackingContext
         }
         if (parsed.email) setEmail(parsed.email)
         if (parsed.data) setData((current) => ({ ...current, ...parsed.data }))
         if (parsed.accepte === true) setAccepte(true)
+        if (parsed.devoirConseilAccepte === true) setDevoirConseilAccepte(true)
         if (parsed.tracking && typeof parsed.tracking === "object") {
           setTrackingContext(parsed.tracking)
         }
@@ -109,13 +113,14 @@ export function FormulaireAssuranceTitre() {
           email,
           data,
           accepte,
+          devoirConseilAccepte,
           ...(hasConversionTrackingContext(trackingContext) ? { tracking: trackingContext } : {}),
         })
       )
     } catch {
       /* ignore */
     }
-  }, [email, data, accepte, trackingContext, storageReady, submitted])
+  }, [email, data, accepte, devoirConseilAccepte, trackingContext, storageReady, submitted])
 
   const update = <K extends keyof AssuranceTitreData>(key: K, value: AssuranceTitreData[K] | undefined) => {
     setData((current) => ({ ...current, [key]: value }))
@@ -151,6 +156,7 @@ export function FormulaireAssuranceTitre() {
       return "Décrivez l'anomalie identifiée en quelques mots."
     }
     if (!accepte) return "Veuillez accepter l'utilisation de vos données pour traiter votre demande."
+    if (!devoirConseilAccepte) return "Confirmez avoir pris connaissance du devoir de conseil."
     return null
   }
 
@@ -168,6 +174,31 @@ export function FormulaireAssuranceTitre() {
 
     setLoading(true)
     try {
+      const logResponse = await fetch("/api/devoir-conseil/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          page: "assurance_titre",
+          produit: "assurance-titre",
+          email: email.trim(),
+          sourcePage: "assurance_titre",
+          sourcePath: "/assurance-titre",
+          needsSummary: `Assurance titre | ${data.adresseBien?.trim() || ""}, ${data.villeBien?.trim() || ""} | ${Number(data.montantOperation) || 0} €`,
+          recommendedProduct: "assurance-titre",
+          suitabilityScore: 0.9,
+          context: {
+            adresseBien: data.adresseBien?.trim() || null,
+            villeBien: data.villeBien?.trim() || null,
+            montantOperation: Number(data.montantOperation) || null,
+            typeBien: data.typeBien || null,
+            typeOperation: data.typeOperation || null,
+          },
+        }),
+      })
+      if (!logResponse.ok) {
+        throw new Error("La confirmation du devoir de conseil n'a pas pu être enregistrée.")
+      }
+
       const payload: AssuranceTitreData = {
         nomComplet: data.nomComplet!.trim(),
         telephone: data.telephone!.trim(),
@@ -717,6 +748,14 @@ export function FormulaireAssuranceTitre() {
           />
         </div>
       </section>
+
+      <DevoirConseil
+        produit="assurance-titre"
+        checkboxId="devoir-conseil-assurance-titre"
+        checked={devoirConseilAccepte}
+        onCheckedChange={setDevoirConseilAccepte}
+        labelCheckbox="Je confirme avoir pris connaissance du devoir de conseil pour l'assurance titre."
+      />
 
       <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700">
         <input

@@ -98,6 +98,16 @@ test.describe("RC Pro et RC fabriquant", () => {
       autoSubmit: true,
     })
 
+    const devoirConseilPayload: { body: { page?: string; produit?: string } | null } = { body: null }
+    await page.route("**/api/devoir-conseil/log", async (route) => {
+      devoirConseilPayload.body = route.request().postDataJSON() as { page?: string; produit?: string }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, clientEmailSent: false }),
+      })
+    })
+
     await page.goto("/devis/rcpro?resume=1")
     await dismissCookieBanner(page)
 
@@ -105,6 +115,13 @@ test.describe("RC Pro et RC fabriquant", () => {
     await expect(page.getByRole("heading", { name: "Devis RC Pro — Résultat" })).toBeVisible()
     await expect(page.getByText(/assurance RC Pro/i)).toBeVisible()
     await expect(page.getByText(/niveau de risque et options/i)).toBeVisible()
+    await expect(
+      page.getByRole("region", { name: "Devoir de conseil" }).getByRole("link", { name: "CGV" })
+    ).toBeVisible()
+    await page.locator("#devoir-conseil-rcpro").check()
+    await expect(page.getByText("Confirmation enregistrée.")).toBeVisible()
+    expect(devoirConseilPayload.body?.page).toBe("rc_pro_result")
+    expect(devoirConseilPayload.body?.produit).toBe("rc-pro")
   })
 
   test("RC fabriquant : parcours complet jusqu'à la confirmation", async ({ page }) => {

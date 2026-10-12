@@ -344,8 +344,8 @@ model DevoirConseilLog {
   id         String   @id @default(cuid())
   email      String?
   userId     String?
-  page       String   // souscription | signature | formulaire_do | paiement_do
-  produit    String   // decennale | dommage-ouvrage
+  page       String   // souscription | signature | formulaire_do | paiement_do | rc_pro_result | assurance_titre | rc_fabriquant_result
+  produit    String   // decennale | dommage-ouvrage | rc-pro | rc-fabriquant | assurance-titre
   acceptedAt DateTime @default(now())
 }
 

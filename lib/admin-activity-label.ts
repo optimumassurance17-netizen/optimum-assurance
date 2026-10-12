@@ -56,6 +56,34 @@ export function adminActivityLabel(action: string): string {
   return ACTION_LABELS[action] ?? action
 }
 
+function readActivityDetails(details: string | null | undefined): Record<string, unknown> | null {
+  if (!details?.trim()) return null
+  try {
+    const parsed = JSON.parse(details) as unknown
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null
+    return parsed as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
+/** Le journal nomme le chantier et le coût déjà enregistrés avec la correction. */
+export function pendingDoQuoteActivityLabel(details: string | null | undefined): string {
+  const fallback = "Devis DO en attente corrigé"
+  const parsed = readActivityDetails(details)
+  if (!parsed) return fallback
+  const chantier = typeof parsed.chantier === "string" ? parsed.chantier.trim() : ""
+  const constructionCost =
+    typeof parsed.constructionCost === "number" && Number.isFinite(parsed.constructionCost)
+      ? parsed.constructionCost
+      : null
+  const costLabel = constructionCost != null ? `${constructionCost.toLocaleString("fr-FR")} €` : ""
+  if (chantier && costLabel) return `${fallback} : ${chantier}, ${costLabel}`
+  if (chantier) return `${fallback} : ${chantier}`
+  if (costLabel) return `${fallback} : ${costLabel}`
+  return fallback
+}
+
 export type ClientActivityItem = {
   id: string
   action: string
@@ -86,7 +114,9 @@ export function describeClientActivity(
           ? documentRequestActivityLabel(log.details)
           : log.action === "document_devis_edition_updated"
             ? documentDevisEditionActivityLabel(log.details)
-            : adminActivityLabel(log.action),
+            : log.action === "devis_do_pending_updated"
+              ? pendingDoQuoteActivityLabel(log.details)
+              : adminActivityLabel(log.action),
       adminEmail: log.adminEmail,
       createdAt: date.toISOString(),
     })

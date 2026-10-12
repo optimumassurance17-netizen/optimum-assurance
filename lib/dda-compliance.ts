@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 
 export const DDA_LEGAL_VERSION = "DDA-FR-2026.04"
 
-export type DdaProduct = "decennale" | "dommage-ouvrage" | "rc-fabriquant"
+export type DdaProduct = "decennale" | "dommage-ouvrage" | "rc-fabriquant" | "rc-pro" | "assurance-titre"
 export type DdaSourcePage =
   | "souscription"
   | "souscription_do"
@@ -10,6 +10,8 @@ export type DdaSourcePage =
   | "formulaire_do"
   | "paiement_do"
   | "rc_fabriquant_result"
+  | "rc_pro_result"
+  | "assurance_titre"
 
 type DdaAuditLog = { id: string; acceptedAt: Date; page: string; produit: string }
 
@@ -52,6 +54,8 @@ function asStringArray(value: unknown): string[] {
 function productVariants(product: DdaProduct): string[] {
   if (product === "decennale") return ["decennale"]
   if (product === "dommage-ouvrage") return ["dommage-ouvrage", "dommage_ouvrage", "do"]
+  if (product === "rc-pro") return ["rc-pro", "rc_pro", "rcpro"]
+  if (product === "assurance-titre") return ["assurance-titre", "assurance_titre"]
   return ["rc-fabriquant", "rc_fabriquant"]
 }
 
@@ -64,6 +68,10 @@ function normalizePageUnsafe(value: unknown): DdaSourcePage | null {
   if (raw === "formulaire_do") return "formulaire_do"
   if (raw === "paiement_do") return "paiement_do"
   if (raw === "rc_fabriquant_result") return "rc_fabriquant_result"
+  if (raw === "rc_pro_result" || raw === "rc-pro-result") return "rc_pro_result"
+  if (raw === "assurance_titre" || raw === "assurance-titre" || raw === "formulaire_assurance_titre") {
+    return "assurance_titre"
+  }
   return null
 }
 
@@ -105,6 +113,8 @@ export function normalizeDdaProduct(value: unknown): DdaProduct | null {
   if (raw === "decennale") return "decennale"
   if (raw === "dommage-ouvrage" || raw === "dommage_ouvrage" || raw === "do") return "dommage-ouvrage"
   if (raw === "rc-fabriquant" || raw === "rc_fabriquant") return "rc-fabriquant"
+  if (raw === "rc-pro" || raw === "rc_pro" || raw === "rcpro") return "rc-pro"
+  if (raw === "assurance-titre" || raw === "assurance_titre") return "assurance-titre"
   return null
 }
 
@@ -173,6 +183,8 @@ export async function assertRecentDdaConsent(
           "formulaire_do",
           "paiement_do",
           "rc_fabriquant_result",
+          "rc_pro_result",
+          "assurance_titre",
         ] satisfies DdaSourcePage[])
 
   const log = await findRecentConsent({
@@ -358,6 +370,30 @@ export function computeDdaAdequacySnapshot(
       hasProjectName: Boolean(asTrimmedString(safeContext.projectName)),
       hasProjectAddress: Boolean(asTrimmedString(safeContext.projectAddress)),
       hasProjectBudget: asPositiveNumber(safeContext.coutTotal) != null || asPositiveNumber(safeContext.premium) != null,
+    }
+    const missingNeeds = Object.entries(checks)
+      .filter(([, ok]) => !ok)
+      .map(([key]) => key)
+    return { ok: missingNeeds.length === 0, missingNeeds, checks }
+  }
+  if (product === "rc-pro") {
+    const checks = {
+      hasActivity: Boolean(asTrimmedString(safeContext.activity) || asTrimmedString(safeContext.activite)),
+      hasTurnover:
+        asPositiveNumber(safeContext.chiffreAffaires) != null || asPositiveNumber(safeContext.revenue) != null,
+    }
+    const missingNeeds = Object.entries(checks)
+      .filter(([, ok]) => !ok)
+      .map(([key]) => key)
+    return { ok: missingNeeds.length === 0, missingNeeds, checks }
+  }
+  if (product === "assurance-titre") {
+    const checks = {
+      hasAssetAddress: Boolean(
+        asTrimmedString(safeContext.adresseBien) || asTrimmedString(safeContext.projectAddress)
+      ),
+      hasOperationAmount:
+        asPositiveNumber(safeContext.montantOperation) != null || asPositiveNumber(safeContext.budget) != null,
     }
     const missingNeeds = Object.entries(checks)
       .filter(([, ok]) => !ok)

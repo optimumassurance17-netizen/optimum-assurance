@@ -9,6 +9,7 @@ import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { stripSignatureBinariesFromJsonString } from "@/lib/esign/local-signature-fallback"
 import { loadEcheancesASuivre } from "@/lib/client-echeance-service"
 import { adminActivityClientHref, adminActivityLabel } from "@/lib/admin-activity-label"
+import { DDA_AUDIT_ACTIONS } from "@/lib/dda-labels"
 import { latestSignatureReminderByRequest } from "@/lib/signature-reminder"
 import { readDoLeadCompanyName, selectDoDevisDashboardActions, sortRequestsByArrival } from "@/lib/devis-do-lead"
 
@@ -531,19 +532,7 @@ export async function GET() {
           prisma.adminActivityLog.findMany({
             where: {
               createdAt: { gte: ddaEventWindowStart },
-              action: {
-                in: [
-                  "dda_advice_acknowledged",
-                  "dda_contract_suitability_checked",
-                  "dda_do_payment_suitability_checked",
-                  "dda_rc_fabriquant_initial_request_logged",
-                  "dda_rc_fabriquant_proposition_suitability_checked",
-                  "dda_rc_fabriquant_signature_suitability_checked",
-                  "dda_rc_fabriquant_contract_created_after_signature",
-                  "dda_avenant_suitability_checked",
-                  "dda_document_update_suitability_checked",
-                ],
-              },
+              action: { in: [...DDA_AUDIT_ACTIONS] },
             },
             select: {
               id: true,

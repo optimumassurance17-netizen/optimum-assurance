@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { DemandesDocumentClient } from "@/components/espace-client/DemandesDocumentClient"
-import { adminActivityLabel } from "@/lib/admin-activity-label"
+import { adminActivityLabel, describeClientActivity } from "@/lib/admin-activity-label"
+import { DDA_AUDIT_ACTIONS, ddaPageLabel, ddaProductEmailLabel, ddaProductLabel } from "@/lib/dda-labels"
 import { applyPendingDoQuoteCorrection, describePendingDoQuote } from "@/lib/do-quote-pending"
 import { readStoredDocumentRequest, withDocumentRequestDeposit } from "@/lib/document-request"
 
@@ -87,6 +88,65 @@ assert.equal(adminActivityLabel("dda_advice_acknowledged"), "Devoir de conseil c
 assert.equal(adminActivityLabel("dda_contract_suitability_checked"), "Adéquation du contrat contrôlée")
 assert.equal(adminActivityLabel("dda_do_payment_suitability_checked"), "Adéquation contrôlée avant le paiement")
 assert.match(fiche, /adminActivityLabel\(event\.action\)/)
+assert.equal(ddaProductLabel("rc-pro"), "RC Pro")
+assert.equal(ddaProductLabel("rc_pro"), "RC Pro")
+assert.equal(ddaProductLabel("assurance_titre"), "Assurance titre")
+assert.equal(ddaProductEmailLabel("rc-pro"), "RC Pro")
+assert.equal(ddaProductEmailLabel("assurance-titre"), "assurance titre")
+assert.equal(ddaProductEmailLabel("decennale"), "assurance décennale")
+assert.equal(ddaProductEmailLabel("dommage-ouvrage"), "dommage ouvrage")
+assert.equal(ddaPageLabel("rc_pro_result"), "Résultat RC Pro")
+assert.equal(ddaPageLabel("assurance_titre"), "Demande assurance titre")
+assert.equal(
+  DDA_AUDIT_ACTIONS.includes("dda_rc_fabriquant_needs_captured") &&
+    DDA_AUDIT_ACTIONS.includes("dda_rc_fabriquant_proposition_checked") &&
+    DDA_AUDIT_ACTIONS.includes("dda_rc_fabriquant_signature_suitability_checked") &&
+    DDA_AUDIT_ACTIONS.includes("dda_rc_fabriquant_contract_suitability_checked") &&
+    DDA_AUDIT_ACTIONS.includes("dda_avenant_suitability_checked"),
+  true
+)
+
+const journal = describeClientActivity([
+  {
+    id: "log-do",
+    action: "devis_do_pending_updated",
+    adminEmail: "info@optimum-assurance.eu",
+    createdAt: "2026-10-12T08:00:00.000Z",
+    details: JSON.stringify({ chantier: "8 quai Neuf", constructionCost: 240000 }),
+  },
+])
+assert.match((journal[0]?.actionLabel ?? "").replace(/\s/g, " "), /8 quai Neuf, 240 000 €/)
+
+const compliance = readFileSync("lib/dda-compliance.ts", "utf8")
+assert.match(compliance, /raw === "rc-pro" \|\| raw === "rc_pro" \|\| raw === "rcpro"/)
+assert.match(compliance, /raw === "assurance-titre" \|\| raw === "assurance_titre"/)
+assert.match(compliance, /return "rc_pro_result"/)
+assert.match(compliance, /return "assurance_titre"/)
+
+const conseilLog = readFileSync("app/api/devoir-conseil/log/route.ts", "utf8")
+assert.match(conseilLog, /ddaProductEmailLabel\(produit\)/)
+assert.doesNotMatch(conseilLog, /\? "RC fabricant"/)
+
+const ficheApi = readFileSync("app/api/gestion/clients/[id]/route.ts", "utf8")
+assert.match(ficheApi, /DDA_AUDIT_ACTIONS/)
+assert.match(ficheApi, /DevisRcFabriquantLead/)
+
+const dashboardApi = readFileSync("app/api/gestion/dashboard/route.ts", "utf8")
+assert.match(dashboardApi, /DDA_AUDIT_ACTIONS/)
+assert.doesNotMatch(dashboardApi, /dda_rc_fabriquant_initial_request_logged/)
+
+const rcProResult = readFileSync("app/devis/rcpro/result/page.tsx", "utf8")
+assert.match(rcProResult, /DevoirConseil/)
+assert.match(rcProResult, /\/api\/devoir-conseil\/log/)
+assert.match(rcProResult, /rc_pro_result/)
+assert.match(rcProResult, /produit: "rc-pro"/)
+assert.doesNotMatch(rcProResult, /getDevoirConseilLinksLine/)
+
+const titreForm = readFileSync("components/FormulaireAssuranceTitre.tsx", "utf8")
+assert.match(titreForm, /DevoirConseil/)
+assert.match(titreForm, /produit: "assurance-titre"/)
+assert.match(titreForm, /page: "assurance_titre"/)
+assert.match(titreForm, /\/api\/devoir-conseil\/log/)
 
 assert.match(fiche, /Devis DO à préparer/)
 assert.match(fiche, /Prime indicative/)

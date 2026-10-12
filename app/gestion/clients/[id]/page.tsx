@@ -10,6 +10,7 @@ import {
   type DocumentRequestResult,
 } from "@/components/gestion/DocumentRequestButton"
 import { adminActivityLabel } from "@/lib/admin-activity-label"
+import { ddaPageLabel, ddaProductLabel } from "@/lib/dda-labels"
 import { documentRequestActivityLabel } from "@/lib/document-request"
 import { DO_DEVIS_LEADS_SECTION_ID, doDevisLeadRowId } from "@/lib/devis-do-lead"
 import { describePendingDoQuote } from "@/lib/do-quote-pending"
@@ -268,30 +269,6 @@ interface ClientData {
 
 function asMaybeString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null
-}
-
-function ddaProductLabel(value: string | null | undefined): string {
-  const normalized = (value ?? "").trim().toLowerCase()
-  if (["decennale"].includes(normalized)) return "Décennale"
-  if (["dommage-ouvrage", "dommage_ouvrage", "do"].includes(normalized)) return "Dommage ouvrage"
-  if (["rc-fabriquant", "rc_fabriquant"].includes(normalized)) return "RC fabricant"
-  return value?.trim() || "—"
-}
-
-function ddaPageLabel(value: string | null | undefined): string {
-  const normalized = (value ?? "").trim().toLowerCase()
-  if (normalized === "souscription") return "Souscription"
-  if (normalized === "souscription_do") return "Souscription DO"
-  if (normalized === "signature") return "Signature"
-  if (normalized === "formulaire_do") return "Formulaire DO"
-  if (normalized === "paiement_do") return "Paiement DO"
-  if (normalized === "devis_rc_fabriquant") return "Devis RC fabricant"
-  if (normalized === "proposition_rc_fabriquant") return "Proposition RC fabricant"
-  if (normalized === "signature_rc_fabriquant") return "Signature RC fabricant"
-  if (normalized === "avenant_create") return "Création avenant"
-  if (normalized === "avenant_update") return "Mise à jour avenant"
-  if (normalized === "rc_fabriquant_result") return "Résultat RC fabricant"
-  return value?.trim() || "—"
 }
 
 const typeLabels: Record<string, string> = {

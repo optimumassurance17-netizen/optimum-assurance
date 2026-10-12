@@ -1,12 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { getDevoirConseilContent } from "@/lib/devoir-conseil"
-
-type Produit = "decennale" | "dommage-ouvrage"
+import { getDevoirConseilContent, type DevoirConseilProduit } from "@/lib/devoir-conseil"
 
 interface DevoirConseilProps {
-  produit: Produit
+  produit: DevoirConseilProduit
   checkboxId: string
   checked: boolean
   onCheckedChange: (checked: boolean) => void

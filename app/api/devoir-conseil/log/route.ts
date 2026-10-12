@@ -11,6 +11,7 @@ import {
 import { logAdminActivity } from "@/lib/admin-activity"
 import { EMAIL_TEMPLATES, sendEmail } from "@/lib/email"
 import { getDevoirConseilContent } from "@/lib/devoir-conseil"
+import { ddaProductEmailLabel } from "@/lib/dda-labels"
 import { SITE_URL } from "@/lib/site-url"
 import { checkRateLimitMemory, rateLimitResponse } from "@/lib/rate-limit"
 
@@ -96,12 +97,7 @@ export async function POST(request: NextRequest) {
       const tpl = EMAIL_TEMPLATES.devoirConseilConfirme(
         session?.user?.name || recipientEmail,
         {
-          produitLabel:
-            produit === "decennale"
-              ? "assurance décennale"
-              : produit === "dommage-ouvrage"
-                ? "dommage ouvrage"
-                : "RC fabricant",
+          produitLabel: ddaProductEmailLabel(produit),
           acceptedAt: log.acceptedAt.toLocaleString("fr-FR"),
           contenu: conseil.contenu,
           liens: [

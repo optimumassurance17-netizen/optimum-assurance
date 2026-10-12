@@ -21,6 +21,7 @@ import { purgeClientExternalResidue } from "@/lib/purge-client-residue"
 import { describeSepaReadiness } from "@/lib/sepa-readiness"
 import { attachSepaNotices, paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel, virementReferenceFromMetadata } from "@/lib/client-echeances"
 import { describeClientActivity } from "@/lib/admin-activity-label"
+import { DDA_AUDIT_ACTIONS } from "@/lib/dda-labels"
 import { DOCUMENT_REQUEST_ACTION, readStoredDocumentRequest } from "@/lib/document-request"
 import { sortRequestsByArrival } from "@/lib/devis-do-lead"
 import { describeClientSignature } from "@/lib/signature-reminder"
@@ -136,7 +137,7 @@ export async function GET(
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
     }
 
-    const [documents, payments, avenantFees, notes, sinistres, userDocuments, insuranceContracts, devoirConseilLogs, devisAutonomy] =
+    const [documents, payments, avenantFees, notes, sinistres, userDocuments, insuranceContracts, devoirConseilLogs, devisAutonomy, rcFabriquantLeads] =
       await Promise.all([
       prisma.document.findMany({
         where: { userId: id },
@@ -196,6 +197,14 @@ export async function GET(
         updatedAt: null,
         updatedBy: null,
       }),
+      withSchemaDriftFallback(async () => {
+        const email = user.email.trim()
+        if (!email) return []
+        return prisma.devisRcFabriquantLead.findMany({
+          where: { email: { equals: email, mode: "insensitive" } },
+          select: { id: true },
+        })
+      }, []),
     ])
 
     const contractById = new Map(insuranceContracts.map((c) => [c.id, c] as const))
@@ -214,6 +223,10 @@ export async function GET(
     if (documentIds.length > 0) {
       ddaScopes.push({ targetType: "document", targetId: { in: documentIds } })
     }
+    const rcFabriquantLeadIds = rcFabriquantLeads.map((row) => row.id)
+    if (rcFabriquantLeadIds.length > 0) {
+      ddaScopes.push({ targetType: "DevisRcFabriquantLead", targetId: { in: rcFabriquantLeadIds } })
+    }
 
     const ddaAuditLogs =
       ddaScopes.length > 0
@@ -221,19 +234,7 @@ export async function GET(
             () =>
               prisma.adminActivityLog.findMany({
                 where: {
-                  action: {
-                    in: [
-                      "dda_advice_acknowledged",
-                      "dda_contract_suitability_checked",
-                      "dda_do_payment_suitability_checked",
-                      "dda_rc_fabriquant_lead_collected",
-                      "dda_rc_fabriquant_proposition_sent",
-                      "dda_rc_fabriquant_signature_invited",
-                      "dda_rc_fabriquant_contract_created",
-                      "dda_avenant_created",
-                      "dda_avenant_updated",
-                    ],
-                  },
+                  action: { in: [...DDA_AUDIT_ACTIONS] },
                   OR: ddaScopes,
                 },
                 select: {
@@ -463,6 +464,8 @@ export async function GET(
             targetLabel = document ? `${document.numero} (${document.type})` : row.targetId
           } else if (row.targetType === "devoir_conseil_log" && row.targetId) {
             targetLabel = `Log #${row.targetId.slice(-8)}`
+          } else if (row.targetType === "DevisRcFabriquantLead" && row.targetId) {
+            targetLabel = "Demande RC fabricant"
           }
           return {
             id: row.id,

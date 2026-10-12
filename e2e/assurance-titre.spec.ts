@@ -11,6 +11,21 @@ async function dismissCookieBanner(page: import("@playwright/test").Page) {
 
 test.describe("Assurance titre", () => {
   test("page disponible et formulaire envoyable", async ({ page }) => {
+    const devoirConseilPayload: { body: { page?: string; produit?: string; email?: string } | null } = {
+      body: null,
+    }
+    await page.route("**/api/devoir-conseil/log", async (route) => {
+      devoirConseilPayload.body = route.request().postDataJSON() as {
+        page?: string
+        produit?: string
+        email?: string
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, clientEmailSent: false }),
+      })
+    })
     await page.route("**/api/devis-assurance-titre", async (route) => {
       await route.fulfill({
         status: 200,
@@ -35,6 +50,7 @@ test.describe("Assurance titre", () => {
     await page.getByLabel(/Code postal/i).fill("75008")
     await page.getByLabel(/^Ville/i).fill("Paris")
     await page.getByLabel(/Montant de l'opération/i).fill("850000")
+    await page.locator("#devoir-conseil-assurance-titre").check()
     await page.getByLabel(/J'accepte que mes données soient utilisées/i).check()
 
     const submitButton = page.getByRole("button", { name: "Envoyer ma demande" })
@@ -63,6 +79,9 @@ test.describe("Assurance titre", () => {
     ])
 
     expect(response.ok()).toBeTruthy()
+    expect(devoirConseilPayload.body?.page).toBe("assurance_titre")
+    expect(devoirConseilPayload.body?.produit).toBe("assurance-titre")
+    expect(devoirConseilPayload.body?.email).toBe("marie.dupont@example.com")
 
     await expect(page.getByText("Demande envoyée")).toBeVisible()
     await expect(page.getByText(/Nous avons bien reçu votre demande d'étude/i)).toBeVisible()
