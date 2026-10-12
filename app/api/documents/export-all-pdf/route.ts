@@ -50,7 +50,6 @@ export async function GET(request: NextRequest) {
 
     const documents = await prisma.document.findMany({
       where: { userId: session.user.id },
-      include: { user: { select: { raisonSociale: true, email: true } } },
       orderBy: { createdAt: "desc" },
     })
 
@@ -72,10 +71,6 @@ export async function GET(request: NextRequest) {
     const docsWithData = await Promise.all(
       filteredDocuments.map(async (doc) => {
         const data = stripSignatureBinaries(JSON.parse(doc.data) as Record<string, unknown>)
-        if (doc.type === "devis_do" && doc.user) {
-          data.raisonSociale = doc.user.raisonSociale ?? data.raisonSociale
-          data.email = doc.user.email ?? data.email
-        }
         if (
           (doc.type === "attestation" ||
             doc.type === "attestation_nominative" ||

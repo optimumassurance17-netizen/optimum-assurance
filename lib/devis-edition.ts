@@ -184,3 +184,30 @@ export function isClientQuoteEditionLocked(type: string, allowDevisEdition: bool
   if (allowDevisEdition) return false
   return CLIENT_QUOTE_TYPES.has(type)
 }
+
+/** Le devis conserve l'identité imprimée. Elle ne remplace pas la fiche ni l'email de connexion. */
+export function quoteKeepsOwnIdentity(type: string): boolean {
+  return CLIENT_QUOTE_TYPES.has(type)
+}
+
+/** Seuls le contrat et l'avenant recopient l'identité sur le compte. */
+export function documentSyncsAccountIdentity(type: string): boolean {
+  return type === "contrat" || type === "avenant"
+}
+
+/**
+ * La fiche reste la source affichée d'un contrat ou d'une attestation.
+ * Un devis affiche les coordonnées enregistrées sur le document.
+ */
+export function overlayAccountIdentityOnDocument<T extends Record<string, unknown>>(
+  type: string,
+  data: T,
+  account: { raisonSociale?: string | null; email?: string | null } | null | undefined
+): T {
+  if (!account || quoteKeepsOwnIdentity(type)) return data
+  return {
+    ...data,
+    raisonSociale: account.raisonSociale ?? data.raisonSociale,
+    email: account.email ?? data.email,
+  }
+}

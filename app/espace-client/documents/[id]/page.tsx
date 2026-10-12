@@ -429,6 +429,12 @@ export default function DocumentPage() {
               ) : null}
             </div>
 
+            {(document.type === "devis" || document.type === "devis_do") && (
+              <p className="mb-3 text-sm text-[#525252]">
+                Ces informations restent sur ce devis. Elles ne modifient pas l&apos;email de connexion.
+              </p>
+            )}
+
             {editionLocked && (
               <p className="mb-3 text-sm text-amber-700">
                 {quoteLocked

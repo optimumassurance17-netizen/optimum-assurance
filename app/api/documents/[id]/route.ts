@@ -8,7 +8,11 @@ import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 import { getClientDevisAutonomyConfig } from "@/lib/client-devis-autonomy"
 import { getDocumentDevisEdition } from "@/lib/document-devis-edition"
-import { isClientQuoteEditionLocked, isContractCoverageLocked } from "@/lib/devis-edition"
+import {
+  documentSyncsAccountIdentity,
+  isClientQuoteEditionLocked,
+  isContractCoverageLocked,
+} from "@/lib/devis-edition"
 import { stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
@@ -33,9 +37,6 @@ export async function GET(
 
     const document = await prisma.document.findFirst({
       where: { id, userId: session.user.id },
-      include: {
-        user: { select: { raisonSociale: true, email: true } },
-      },
     })
 
     if (!document) {
@@ -52,18 +53,11 @@ export async function GET(
     data.codePostal = identity.codePostal ?? data.codePostal
     data.ville = identity.ville ?? data.ville
 
-    // Pour devis_do : enrichir avec les infos du user
-    if (document.type === "devis_do" && document.user) {
-      data.raisonSociale = document.user.raisonSociale ?? data.raisonSociale
-      data.email = document.user.email ?? data.email
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- user exclu de la réponse
-    const { user, ...doc } = document
     const allowDevisEdition = await getDocumentDevisEdition({
       documentId: document.id,
       userId: session.user.id,
     })
-    return NextResponse.json({ ...doc, data, allowDevisEdition })
+    return NextResponse.json({ ...document, data, allowDevisEdition })
   } catch (error) {
     console.error("Erreur récupération document:", error)
     return NextResponse.json(
@@ -265,7 +259,7 @@ export async function PATCH(
         identitySubset[key] = mergedData[key]
       }
     }
-    if (Object.keys(identitySubset).length > 0) {
+    if (documentSyncsAccountIdentity(document.type) && Object.keys(identitySubset).length > 0) {
       const sync = await syncUserFromDocumentMergedData(document.userId, identitySubset)
       if (!sync.ok) {
         await prisma.document.update({

@@ -11,8 +11,10 @@ import { getDocumentDevisEdition } from "@/lib/document-devis-edition"
 import {
   alignDoDevisStoredData,
   filterGestionDocumentPatch,
+  documentSyncsAccountIdentity,
   isGestionEditableDocumentType,
   isPerDocumentDevisEditionType,
+  overlayAccountIdentityOnDocument,
 } from "@/lib/devis-edition"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
@@ -47,11 +49,11 @@ export async function GET(
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
-    const data = stripSignatureBinaries(parseDocumentData(document.data))
-    if (document.user) {
-      data.raisonSociale = document.user.raisonSociale ?? data.raisonSociale
-      data.email = document.user.email ?? data.email
-    }
+    const data = overlayAccountIdentityOnDocument(
+      document.type,
+      stripSignatureBinaries(parseDocumentData(document.data)),
+      document.user
+    )
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { user, ...doc } = document
     const allowDevisEdition =
@@ -122,7 +124,9 @@ export async function PATCH(
       data: { data: JSON.stringify(mergedData) },
     })
 
-    const identityTouched = IDENTITY_DOC_KEYS.filter((k) => k in filteredModifications)
+    const identityTouched = documentSyncsAccountIdentity(document.type)
+      ? IDENTITY_DOC_KEYS.filter((k) => k in filteredModifications)
+      : []
     if (identityTouched.length > 0) {
       const subset: Record<string, unknown> = {}
       for (const k of identityTouched) {

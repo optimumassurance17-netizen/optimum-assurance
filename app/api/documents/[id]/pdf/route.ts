@@ -28,7 +28,6 @@ export async function GET(
 
     const document = await prisma.document.findFirst({
       where: { id, userId: session.user.id },
-      include: { user: { select: { raisonSociale: true, email: true } } },
     })
     if (!document) {
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
@@ -59,11 +58,6 @@ export async function GET(
     }
 
     data = stripSignatureBinaries(data)
-
-    if (document.type === "devis_do" && document.user) {
-      data.raisonSociale = document.user.raisonSociale ?? data.raisonSociale
-      data.email = document.user.email ?? data.email
-    }
 
     if (QR_ENABLED_TYPES.has(document.type) && document.verificationToken) {
       const verificationUrl = `${SITE_URL.replace(/\/+$/, "")}/v/${document.verificationToken}`

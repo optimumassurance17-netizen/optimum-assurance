@@ -478,7 +478,7 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
 
     const captured: {
       edition: { allowDevisEdition?: boolean } | null
-      devis: { data?: { primeAnnuelle?: string; adresseOperation?: string } } | null
+      devis: { data?: { primeAnnuelle?: string; adresseOperation?: string; email?: string } } | null
     } = { edition: null, devis: null }
     await page.route("**/api/gestion/clients/client_1", async (route) => {
       await route.fulfill({
@@ -535,12 +535,14 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
 
     await page.getByRole("button", { name: "Modifier le devis" }).click()
     await expect(page.getByRole("heading", { name: "Modifier le devis DO-2026-001" })).toBeVisible()
+    await expect(page.getByText("ne changent pas le compte de connexion.")).toBeVisible()
     await expect(page.getByPlaceholder("Adresse de construction")).toHaveValue("10 rue du Chantier, 75002 Paris")
     await page.getByPlaceholder("Prime annuelle").fill("3500")
     await page.getByRole("button", { name: "Enregistrer le devis" }).click()
 
     expect(captured.devis?.data?.primeAnnuelle).toBe("3500")
     expect(captured.devis?.data?.adresseOperation).toBe("10 rue du Chantier, 75002 Paris")
+    expect(captured.devis?.data?.email).toBe("client@example.com")
     await expect(page.getByText("Devis DO-2026-001 mis à jour.")).toBeVisible()
   })
 

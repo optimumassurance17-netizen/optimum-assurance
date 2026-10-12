@@ -62,6 +62,7 @@ test.describe("Espace client — modification du devis", () => {
 
     await page.goto("/espace-client/documents/doc_devis_1")
     await expect(page.getByRole("heading", { name: "Modifier le devis / contrat" })).toBeVisible()
+    await expect(page.getByText("Elles ne modifient pas l'email de connexion.")).toBeVisible()
     await expect(
       page.getByText("Modification verrouillée. La gestion peut autoriser ce devis depuis la fiche client.")
     ).toBeVisible()

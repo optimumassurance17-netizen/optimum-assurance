@@ -170,6 +170,7 @@ export function ModifierDevisButton({
               <h3 className="text-lg font-semibold text-white">Modifier le devis {numero}</h3>
               <p className="mt-1 text-xs text-gray-300">
                 La modification met à jour le devis déjà présent sur cette fiche.
+                L&apos;email et l&apos;adresse restent sur ce devis et ne changent pas le compte de connexion.
               </p>
             </div>
             {loading ? <p className="text-sm text-gray-300">Chargement du devis…</p> : null}

@@ -2,12 +2,15 @@ import { readFileSync } from "node:fs"
 import {
   alignDoDevisStoredData,
   collectDocumentDevisEditionDecisions,
+  documentSyncsAccountIdentity,
   filterGestionDocumentPatch,
   isClientQuoteEditionLocked,
   isContractCoverageLocked,
   isGestionEditableDocumentType,
   isPerDocumentDevisEditionType,
+  overlayAccountIdentityOnDocument,
   parseDocumentDevisEditionDecision,
+  quoteKeepsOwnIdentity,
   resolveDocumentDevisEdition,
 } from "../lib/devis-edition"
 
@@ -116,6 +119,25 @@ const decisions = collectDocumentDevisEditionDecisions([
 assert(decisions.get("doc_1") === false, "le dernier journal de ce devis l'emporte")
 assert(decisions.get("doc_2") === true, "un autre devis garde sa propre autorisation")
 
+assert(quoteKeepsOwnIdentity("devis") && quoteKeepsOwnIdentity("devis_do"), "un devis garde son identité")
+assert(!quoteKeepsOwnIdentity("contrat") && !quoteKeepsOwnIdentity("avenant"), "un contrat peut suivre la fiche")
+assert(documentSyncsAccountIdentity("contrat") && documentSyncsAccountIdentity("avenant"), "le contrat aligne le compte")
+assert(!documentSyncsAccountIdentity("devis") && !documentSyncsAccountIdentity("devis_do"), "le devis n'aligne pas le compte")
+const quoteIdentity = overlayAccountIdentityOnDocument(
+  "devis_do",
+  { email: "chantier@example.com", raisonSociale: "Chantier SAS" },
+  { email: "compte@example.com", raisonSociale: "Compte SAS" }
+)
+assert(quoteIdentity.email === "chantier@example.com", "le devis DO garde son email")
+assert(quoteIdentity.raisonSociale === "Chantier SAS", "le devis DO garde sa raison sociale")
+const contractIdentity = overlayAccountIdentityOnDocument(
+  "contrat",
+  { email: "ancien@example.com", raisonSociale: "Ancienne SAS" },
+  { email: "compte@example.com", raisonSociale: "Compte SAS" }
+)
+assert(contractIdentity.email === "compte@example.com", "le contrat affiche l'email du compte")
+assert(contractIdentity.raisonSociale === "Compte SAS", "le contrat affiche la raison sociale du compte")
+
 const gestionRoute = read("../app/api/gestion/documents/[id]/route.ts")
 const editionRoute = read("../app/api/gestion/documents/[id]/edition/route.ts")
 const clientRoute = read("../app/api/documents/[id]/route.ts")
@@ -123,8 +145,15 @@ const ficheRoute = read("../app/api/gestion/clients/[id]/route.ts")
 const fiche = read("../app/gestion/clients/[id]/page.tsx")
 const clientPage = read("../app/espace-client/documents/[id]/page.tsx")
 const button = read("../components/gestion/ModifierDevisButton.tsx")
+const pdfRoute = read("../app/api/documents/[id]/pdf/route.ts")
+const exportRoute = read("../app/api/documents/export-all-pdf/route.ts")
 const authorizeButton = read("../components/gestion/AutoriserDevisButton.tsx")
 
+assert(gestionRoute.includes("documentSyncsAccountIdentity"), "la gestion n'aligne le compte que pour un contrat")
+assert(gestionRoute.includes("overlayAccountIdentityOnDocument"), "la gestion laisse l'identité du devis")
+assert(clientRoute.includes("documentSyncsAccountIdentity"), "l'espace client n'aligne le compte que pour un contrat")
+assert(!pdfRoute.includes("document.user.email"), "le PDF du devis garde l'email du document")
+assert(!exportRoute.includes("doc.user.email"), "l'export PDF garde l'email du devis")
 assert(gestionRoute.includes("isGestionEditableDocumentType"), "la gestion accepte le devis")
 assert(gestionRoute.includes("alignDoDevisStoredData"), "le devis DO aligne l'adresse et le montant")
 assert(!gestionRoute.includes("payments.create"), "modifier un devis ne crée pas de paiement")
@@ -146,6 +175,8 @@ assert(fiche.includes('d.type === "devis" || d.type === "devis_do"'), "le bouton
 assert(clientPage.includes("isClientQuoteEditionLocked"), "l'écran client ferme le devis non autorisé")
 assert(clientPage.includes("isContractCoverageLocked"), "l'écran client débloque le contrat autorisé")
 assert(fiche.includes("Sans cette autorisation, le client ne peut pas modifier le devis."), "la fiche explique le verrou du devis")
+assert(button.includes("ne changent pas le compte de connexion"), "le devis prévient que le compte reste inchangé")
+assert(clientPage.includes("ne modifient pas l&apos;email de connexion"), "l'écran client prévient que le compte reste inchangé")
 assert(button.includes("Modifier le devis"), "le bouton annonce la modification du devis")
 assert(button.includes("Enregistrer le devis"), "l'enregistrement met à jour le devis ouvert")
 assert(!button.includes("payments.create"), "le bouton ne crée pas de paiement")
