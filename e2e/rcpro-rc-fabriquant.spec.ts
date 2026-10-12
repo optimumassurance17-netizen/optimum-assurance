@@ -60,6 +60,7 @@ test.describe("RC Pro et RC fabriquant", () => {
     await expect(
       page.getByText("Connectez-vous pour enregistrer ce devis RC Pro et le retrouver dans votre espace client.")
     ).toBeVisible()
+    await expect(page.getByText("Votre saisie sera conservée.")).toBeVisible()
 
     await page.getByRole("button", { name: "Se connecter pour enregistrer le devis" }).click()
 

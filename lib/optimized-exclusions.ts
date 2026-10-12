@@ -62,30 +62,30 @@ type ExclusionDataCandidate = {
 const GLOBAL_RULES: ExclusionRule[] = [
   {
     id: "global-activities-declarees",
-    title: "Travaux hors activites declarees",
+    title: "Travaux hors activités déclarées",
     level: "global",
     riskLevel: "low",
     isOptimized: true,
     marketReferences: [
-      "Version restrictive: exclusion generale de tout chantier annexe",
-      "Version ouverte: limitation aux seules activites non declarees",
+      "Version restrictive : exclusion générale de tout chantier annexe",
+      "Version ouverte : limitation aux seules activités non déclarées",
     ],
     optimizedDescription:
-      "Les travaux realises en dehors des activites declarees ne sont pas couverts.",
+      "Les travaux réalisés en dehors des activités déclarées ne sont pas couverts.",
     applies: () => true,
   },
   {
     id: "global-techniques-non-courantes",
-    title: "Techniques non courantes non validees",
+    title: "Techniques non courantes non validées",
     level: "global",
     riskLevel: "medium",
     isOptimized: true,
     marketReferences: [
-      "Version restrictive: exclusion de toute technique non traditionnelle",
-      "Version ouverte: exclusion limitee aux techniques sans avis technique valide",
+      "Version restrictive : exclusion de toute technique non traditionnelle",
+      "Version ouverte : exclusion limitée aux techniques sans avis technique valide",
     ],
     optimizedDescription:
-      "Les techniques non courantes restent couvertes lorsqu'elles sont validees par un avis technique ou equivalent ; a defaut, elles sont exclues.",
+      "Les techniques non courantes restent couvertes lorsqu'elles sont validées par un avis technique ou équivalent ; à défaut, elles sont exclues.",
     applies: () => true,
   },
   {
@@ -95,11 +95,11 @@ const GLOBAL_RULES: ExclusionRule[] = [
     riskLevel: "low",
     isOptimized: true,
     marketReferences: [
-      "Version restrictive: exclusion de lots entiers",
-      "Version ouverte: limitation aux interventions necessitant une qualification absente",
+      "Version restrictive : exclusion de lots entiers",
+      "Version ouverte : limitation aux interventions nécessitant une qualification absente",
     ],
     optimizedDescription:
-      "Les travaux necessitant une qualification reglementaire non detenue par l'assure restent exclus jusqu'a regularisation.",
+      "Les travaux nécessitant une qualification réglementaire non détenue par l'assuré restent exclus jusqu'à régularisation.",
     applies: () => true,
   },
 ]
@@ -107,17 +107,17 @@ const GLOBAL_RULES: ExclusionRule[] = [
 const ACTIVITY_RULES: ExclusionRule[] = [
   {
     id: "masonry-special-foundations",
-    title: "Fondations speciales non declarees",
+    title: "Fondations spéciales non déclarées",
     level: "activity",
     riskLevel: "medium",
     relatedActivityCode: "2.1",
     isOptimized: true,
     marketReferences: [
-      "Version restrictive: exclusion complete des fondations profondes",
-      "Version ouverte: declaration complementaire des fondations speciales",
+      "Version restrictive : exclusion complète des fondations profondes",
+      "Version ouverte : déclaration complémentaire des fondations spéciales",
     ],
     optimizedDescription:
-      "Les fondations speciales non declarees (pieux, micropieux, reprises lourdes) necessitent une declaration prealable pour etre couvertes.",
+      "Les fondations spéciales non déclarées (pieux, micropieux, reprises lourdes) nécessitent une déclaration préalable pour être couvertes.",
     applies: (ctx) =>
       hasCodePrefix(ctx, "2.1") ||
       hasCodePrefix(ctx, "2.2") ||
@@ -125,51 +125,51 @@ const ACTIVITY_RULES: ExclusionRule[] = [
   },
   {
     id: "roofing-waterproofing-implementation",
-    title: "Etancheite en couverture",
+    title: "Étanchéité en couverture",
     level: "activity",
     riskLevel: "medium",
     relatedActivityCode: "3.1",
     isOptimized: true,
     marketReferences: [
-      "Version restrictive: exclusion de tout desordre d'etancheite",
-      "Version ouverte: exclusion limitee aux defauts manifestes de mise en oeuvre",
+      "Version restrictive : exclusion de tout désordre d'étanchéité",
+      "Version ouverte : exclusion limitée aux défauts manifestes de mise en œuvre",
     ],
     optimizedDescription:
-      "Les desordres d'etancheite directement lies a une mise en oeuvre manifestement non conforme aux regles de l'art ne sont pas couverts.",
+      "Les désordres d'étanchéité directement liés à une mise en œuvre manifestement non conforme aux règles de l'art ne sont pas couverts.",
     applies: (ctx) =>
       hasCodePrefix(ctx, "3.1") ||
       hasAnyTerm(ctx, ["couverture", "toiture", "ardoise", "tuile", "zinguerie"]),
   },
   {
     id: "electricity-standard-compliance",
-    title: "Conformite normative electricite",
+    title: "Conformité normative électricité",
     level: "activity",
     riskLevel: "medium",
     relatedActivityCode: "5.5",
     isOptimized: true,
     marketReferences: [
-      "Version restrictive: exclusion globale des incidents electriques",
-      "Version ouverte: exclusion reservee aux non-conformites normatives",
+      "Version restrictive : exclusion globale des incidents électriques",
+      "Version ouverte : exclusion réservée aux non-conformités normatives",
     ],
     optimizedDescription:
-      "Les installations electriques ou de telecommunication non conformes aux normes en vigueur ne sont pas couvertes.",
+      "Les installations électriques ou de télécommunication non conformes aux normes en vigueur ne sont pas couvertes.",
     applies: (ctx) =>
       hasCodePrefix(ctx, "5.5") ||
       hasAnyTerm(ctx, ["electricite", "telecommunication", "courant fort", "courant faible"]),
   },
   {
     id: "photovoltaic-qualification",
-    title: "Photovoltaique sous condition de qualification",
+    title: "Photovoltaïque sous condition de qualification",
     level: "subActivity",
     riskLevel: "low",
     relatedActivityCode: "5.5",
     isOptimized: true,
     marketReferences: [
-      "Version restrictive: exclusion complete du photovoltaique",
-      "Version ouverte: couverture maintenue sous condition de qualification et de conformite",
+      "Version restrictive : exclusion complète du photovoltaïque",
+      "Version ouverte : couverture maintenue sous condition de qualification et de conformité",
     ],
     optimizedDescription:
-      "Les installations photovoltaiques sont couvertes sous reserve de qualification adaptee et de conformite aux normes applicables.",
+      "Les installations photovoltaïques sont couvertes sous réserve de qualification adaptée et de conformité aux normes applicables.",
     applies: (ctx) =>
       hasAnyTerm(ctx, ["photovoltaique", "pv", "panneau solaire", "solaire"]),
   },

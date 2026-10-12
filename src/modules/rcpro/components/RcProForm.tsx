@@ -74,7 +74,7 @@ export function RcProForm() {
           } satisfies RcProResumeDraft)
         )
       }
-      setResumeMessage("Connexion requise pour enregistrer le devis RC Pro. Votre saisie a ete conservee.")
+      setResumeMessage("Connexion requise pour enregistrer le devis RC Pro. Votre saisie a été conservée.")
       router.push(`/connexion?callbackUrl=${encodeURIComponent("/devis/rcpro?resume=1")}`)
     },
     [router]
@@ -246,7 +246,7 @@ export function RcProForm() {
         {step === 3 && sessionStatus === "unauthenticated" && (
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             Connectez-vous pour enregistrer ce devis RC Pro et le retrouver dans votre espace client. Votre saisie
-            sera conservee.
+            sera conservée.
           </div>
         )}
         {resumeMessage && (

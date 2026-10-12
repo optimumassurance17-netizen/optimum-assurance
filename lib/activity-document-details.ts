@@ -309,7 +309,7 @@ function resolveActivityDetail(rawLine: string): ActivityDocumentDetail | null {
     activityLabel,
     code,
     definition:
-      "Activite declaree par l'assure. Definition detaillee non disponible dans la nomenclature mappee.",
+      "Activité déclarée par l'assuré. Définition détaillée non disponible dans la nomenclature mappée.",
     exclusions: [ACTIVITY_DETAILS_FALLBACK_EXCLUSION],
   }
 }

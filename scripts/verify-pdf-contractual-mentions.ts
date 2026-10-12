@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 // @ts-expect-error - pdf-parse n'expose pas de types fiables dans cet environnement
 import pdfParse from "pdf-parse"
+import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 import { generateDecennaleQuote } from "@/lib/pdf/decennale/generateQuote"
 import { generateDecennaleQuotePolicyBundle } from "@/lib/pdf/decennale/generateQuotePolicyBundle"
 import { generateDOQuotePolicyBundle } from "@/lib/pdf/do/generateQuotePolicyBundle"
@@ -215,6 +216,12 @@ function sampleAssuranceTitreContract(): InsuranceContract {
 }
 
 async function main(): Promise<void> {
+  const exclusionLines = generateOptimizedExclusions(["Maçonnerie", "Électricité", "Couverture", "Photovoltaïque"]).lines.join("\n")
+  assert.doesNotMatch(exclusionLines, /activites declarees|etancheite|desordres|a ete /i)
+  assert.match(exclusionLines, /activités déclarées/)
+  assert.match(exclusionLines, /installations électriques/)
+  assert.match(exclusionLines, /désordres d'étanchéité/)
+  assert.match(exclusionLines, /photovoltaïques/)
   const decQuotePdf = await generateDecennaleQuote(sampleDecennaleData())
   const decQuotePolicyPdf = await generateDecennaleQuotePolicyBundle(sampleDecennaleData(), "proposition")
   const doQuotePolicyPdf = await generateDOQuotePolicyBundle(sampleDoData(), "proposition")

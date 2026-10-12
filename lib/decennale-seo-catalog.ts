@@ -419,7 +419,7 @@ const HEADTERM_SEEDS: HeadtermSeed[] = [
     ],
     riskFocus: "infiltrations, enveloppe, couverture, zinguerie et continuité d'étanchéité de la toiture",
     preparationHint:
-      "indiquez précisément si vous faites de la couverture, de la zinguerie, de l'etancheite ou un mix de ces travaux",
+      "indiquez précisément si vous faites de la couverture, de la zinguerie, de l'étanchéité ou un mix de ces travaux",
     relatedActivitySlugs: [
       "couverture-tuiles",
       "couverture-ardoises",
