@@ -1,7 +1,7 @@
 /**
  * Finalisation contrat après signature (POST /api/sign — Supabase Sign).
  */
-import type { PendingSignature } from "@/lib/prisma-client"
+import { Prisma, type PendingSignature } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { getNextNumero } from "@/lib/documents"
@@ -23,18 +23,99 @@ import {
   serializeAssuranceTitreContractConfig,
 } from "@/lib/assurance-titre-contract-config"
 import { normalizeInsurancePlatformProductType } from "@/lib/insurance-product"
-import { FALLBACK_PDF_KEY } from "@/lib/esign/local-signature-fallback"
+import { FALLBACK_PDF_KEY, LOCAL_SIGNED_PDF_KEY } from "@/lib/esign/local-signature-fallback"
 
 export type PendingFinalizeOptions = {
   /** Objet fichier dans le bucket « signed » (PDF signé) — flux devis PDF personnalisé */
   signedQuoteStorageKey?: string
 }
 
-function dateMoins3Mois(dateIso: string): string {
+function dateMoins3Mois(dateIso: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateIso)) return null
   const [y, m, d] = dateIso.split("-").map(Number)
-  const date = new Date(y, m - 1, d)
-  date.setMonth(date.getMonth() - 3)
+  const date = new Date(Date.UTC(y, m - 1, d))
+  if (Number.isNaN(date.getTime())) return null
+  date.setUTCMonth(date.getUTCMonth() - 3)
   return date.toISOString().split("T")[0]
+}
+
+function isUniqueConstraint(error: unknown): boolean {
+  return (
+    (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") ||
+    (typeof error === "object" && error !== null && "code" in error && error.code === "P2002")
+  )
+}
+
+export type PendingFinalizeResult = {
+  documentId: string | null
+}
+
+/**
+ * Crée le contrat décennale. Si le numéro est déjà pris, reprend le contrat de cette signature
+ * ou en attribue un libre. Une pièce trop lourde est réessayée sans le PDF signé embarqué.
+ */
+function isContractFromThisSignature(
+  existing: { userId: string; type: string; createdAt: Date } | null,
+  userId: string,
+  pendingCreatedAt: Date
+): boolean {
+  if (!existing || existing.userId !== userId || existing.type !== "contrat") return false
+  return existing.createdAt.getTime() >= pendingCreatedAt.getTime() - 5_000
+}
+
+async function createDecennaleContractDocument(
+  userId: string,
+  preferredNumero: string,
+  contractData: Record<string, unknown>,
+  pendingCreatedAt: Date,
+  signatureRequestId: string
+): Promise<{ id: string }> {
+  const already = await prisma.document.findUnique({ where: { numero: preferredNumero } })
+  if (already && isContractFromThisSignature(already, userId, pendingCreatedAt)) {
+    return { id: already.id }
+  }
+
+  let numero = already ? await getNextNumero("contrat") : preferredNumero
+  let data: Record<string, unknown> = contractData
+  let strippedPdf = false
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (numero !== preferredNumero) {
+      await prisma.pendingSignature.update({
+        where: { signatureRequestId },
+        data: { contractNumero: numero },
+      })
+    }
+    try {
+      const created = await prisma.document.create({
+        data: {
+          userId,
+          type: "contrat",
+          numero,
+          data: JSON.stringify(data),
+          status: "valide",
+        },
+      })
+      return { id: created.id }
+    } catch (error) {
+      if (isUniqueConstraint(error)) {
+        const existing = await prisma.document.findUnique({ where: { numero } })
+        if (existing && isContractFromThisSignature(existing, userId, pendingCreatedAt)) {
+          return { id: existing.id }
+        }
+        numero = await getNextNumero("contrat")
+        continue
+      }
+      if (!strippedPdf && LOCAL_SIGNED_PDF_KEY in data) {
+        const copy = { ...data }
+        delete copy[LOCAL_SIGNED_PDF_KEY]
+        data = copy
+        strippedPdf = true
+        continue
+      }
+      throw error
+    }
+  }
+  throw new Error("Création du contrat impossible.")
 }
 
 /**
@@ -44,7 +125,7 @@ function dateMoins3Mois(dateIso: string): string {
 export async function applyPendingFinalize(
   pending: PendingSignature,
   options?: PendingFinalizeOptions
-): Promise<void> {
+): Promise<PendingFinalizeResult> {
   const raw = JSON.parse(pending.contractData) as Record<string, unknown>
 
   if (raw.customUploadedDevisFlow === true) {
@@ -227,22 +308,20 @@ export async function applyPendingFinalize(
     await prisma.pendingSignature.delete({
       where: { signatureRequestId: pending.signatureRequestId },
     })
-    return
+    return { documentId: null }
   }
 
   const contractData = { ...raw }
   delete contractData.signatureProvider
   delete contractData[FALLBACK_PDF_KEY]
 
-  await prisma.document.create({
-    data: {
-      userId: pending.userId,
-      type: "contrat",
-      numero: pending.contractNumero,
-      data: JSON.stringify(contractData),
-      status: "valide",
-    },
-  })
+  const created = await createDecennaleContractDocument(
+    pending.userId,
+    pending.contractNumero,
+    contractData,
+    pending.createdAt,
+    pending.signatureRequestId
+  )
 
   const identitySubset: Record<string, unknown> = {}
   for (const key of IDENTITY_DOC_KEYS) {
@@ -251,56 +330,58 @@ export async function applyPendingFinalize(
     }
   }
   if (Object.keys(identitySubset).length > 0) {
-    const sync = await syncUserFromDocumentMergedData(pending.userId, identitySubset)
-    if (!sync.ok) {
-      console.warn("[pending-signature-finalize] sync user identity skipped:", sync.error)
+    try {
+      const sync = await syncUserFromDocumentMergedData(pending.userId, identitySubset)
+      if (!sync.ok) {
+        console.warn("[pending-signature-finalize] sync user identity skipped:", sync.error)
+      }
+    } catch (error) {
+      console.warn("[pending-signature-finalize] sync user identity skipped:", error)
     }
   }
 
-  const jamaisAssure = Boolean(contractData.jamaisAssure)
-  const reprisePasse = Boolean(contractData.reprisePasse)
-  const dateEffetIso = contractData.dateEffetIso as string | undefined
-  const dateCreationSociete = contractData.dateCreationSociete as string | undefined
+  try {
+    const jamaisAssure = Boolean(contractData.jamaisAssure)
+    const reprisePasse = Boolean(contractData.reprisePasse)
+    const dateEffetIso = typeof contractData.dateEffetIso === "string" ? contractData.dateEffetIso : ""
+    const dateCreationSociete =
+      typeof contractData.dateCreationSociete === "string" ? contractData.dateCreationSociete : ""
 
-  const doitCreerAttestation =
-    dateEffetIso && ((jamaisAssure && dateCreationSociete) || reprisePasse)
+    const doitCreerAttestation =
+      Boolean(dateEffetIso) && ((jamaisAssure && Boolean(dateCreationSociete)) || reprisePasse)
 
-  if (doitCreerAttestation) {
-    let dateDebut: string
-    let motif: "jamais_assure" | "reprise_passe"
-
-    if (jamaisAssure && dateCreationSociete) {
-      dateDebut = dateCreationSociete
-      motif = "jamais_assure"
-    } else {
-      dateDebut = dateMoins3Mois(dateEffetIso)
-      motif = "reprise_passe"
+    if (doitCreerAttestation) {
+      const dateDebut = jamaisAssure && dateCreationSociete ? dateCreationSociete : dateMoins3Mois(dateEffetIso)
+      if (dateDebut) {
+        const motif = jamaisAssure && dateCreationSociete ? "jamais_assure" : "reprise_passe"
+        const attestationData = {
+          raisonSociale: contractData.raisonSociale,
+          siret: contractData.siret || "",
+          adresse: contractData.adresse,
+          codePostal: contractData.codePostal,
+          ville: contractData.ville,
+          dateDebut,
+          dateFin: dateEffetIso,
+          motif,
+        }
+        const numeroAns = await getNextNumero("attestation_non_sinistralite")
+        await prisma.document.create({
+          data: {
+            userId: pending.userId,
+            type: "attestation_non_sinistralite",
+            numero: numeroAns,
+            data: JSON.stringify(attestationData),
+            status: "valide",
+          },
+        })
+      }
     }
-
-    const attestationData = {
-      raisonSociale: contractData.raisonSociale,
-      siret: contractData.siret || "",
-      adresse: contractData.adresse,
-      codePostal: contractData.codePostal,
-      ville: contractData.ville,
-      dateDebut,
-      dateFin: dateEffetIso,
-      motif,
-    }
-
-    const numeroAns = await getNextNumero("attestation_non_sinistralite")
-    await prisma.document.create({
-      data: {
-        userId: pending.userId,
-        type: "attestation_non_sinistralite",
-        numero: numeroAns,
-        data: JSON.stringify(attestationData),
-        status: "valide",
-      },
-    })
+  } catch (error) {
+    console.warn("[pending-signature-finalize] attestation non sinistralité non créée:", error)
   }
 
   await prisma.pendingSignature.delete({
     where: { signatureRequestId: pending.signatureRequestId },
   })
+  return { documentId: created.id }
 }

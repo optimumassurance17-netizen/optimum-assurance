@@ -1,6 +1,7 @@
 import { PDFDocument } from "pdf-lib"
 import { applySignatureToPdf } from "../lib/esign/apply-signature-to-pdf"
 import { readFileSync } from "node:fs"
+import { nextSerialNumero } from "../lib/document-numero"
 import {
   FALLBACK_PDF_KEY,
   LOCAL_SIGNATURE_PROVIDER,
@@ -74,6 +75,19 @@ async function main() {
   assert(preview.includes("4_500"), "l'attente Supabase reste courte")
   assert(signRoute.includes("completeRebuiltDecennaleSignature"), "la signature finalise le contrat reconstruit")
   assert(supabaseClient.includes("ipv4first"), "les appels Supabase préfèrent IPv4")
+  assert(
+    nextSerialNumero("CTR-2026-", ["CTR-2026-0002", "CTR-2026-0010"]) === "CTR-2026-0011",
+    "le prochain contrat dépasse le plus grand numéro, pas le plus récent"
+  )
+  assert(nextSerialNumero("CTR-2026-", []) === "CTR-2026-0001", "le premier contrat commence à 0001")
+  const finalize = readFileSync("lib/pending-signature-finalize.ts", "utf8")
+  const localComplete = readFileSync("lib/esign/complete-local-signature.ts", "utf8")
+  assert(finalize.includes("isContractFromThisSignature"), "une signature déjà créée se termine au lieu d'échouer")
+  assert(finalize.includes("documentId: created.id"), "la finalisation renvoie le contrat créé")
+  assert(
+    localComplete.includes("finalized.documentId"),
+    "le lien de signature pointe vers le contrat réellement créé"
+  )
   assert(gestion.includes("Réparer"), "la réparation reste disponible depuis la gestion")
   assert(!gestion.includes("s.repairEligible ?"), "la réparation n'attend plus 24 heures")
 

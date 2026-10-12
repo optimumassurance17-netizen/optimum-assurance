@@ -1,4 +1,7 @@
+import { nextSerialNumero } from "./document-numero"
 import { prisma } from "./prisma"
+
+export { nextSerialNumero } from "./document-numero"
 
 const PREFIXES = {
   devis: "DEV",
@@ -18,14 +21,14 @@ export async function getNextNumero(type: keyof typeof PREFIXES | string): Promi
   const year = new Date().getFullYear()
   const prefixKey = type in PREFIXES ? (type as keyof typeof PREFIXES) : null
   const prefix = prefixKey ? `${PREFIXES[prefixKey]}-${year}-` : `${String(type).toUpperCase().slice(0, 3)}-${year}-`
-  const last = await prisma.document.findFirst({
-    where: { type, numero: { startsWith: prefix } },
-    orderBy: { createdAt: "desc" },
+  const rows = await prisma.document.findMany({
+    where: { numero: { startsWith: prefix } },
+    select: { numero: true },
   })
-  const num = last
-    ? parseInt(last.numero.replace(prefix, ""), 10) + 1
-    : 1
-  return `${prefix}${String(num).padStart(4, "0")}`
+  return nextSerialNumero(
+    prefix,
+    rows.map((row) => row.numero)
+  )
 }
 
 export interface DocumentData {

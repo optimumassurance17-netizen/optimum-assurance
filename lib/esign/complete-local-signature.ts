@@ -1,5 +1,4 @@
 import type { PendingSignature } from "@/lib/prisma-client"
-import { prisma } from "@/lib/prisma"
 import { applyPendingFinalize } from "@/lib/pending-signature-finalize"
 import { applySignatureToPdf } from "@/lib/esign/apply-signature-to-pdf"
 import { sha256Hex } from "@/lib/esign/hash-pdf"
@@ -100,23 +99,15 @@ export async function completeDecennaleSignatureFromPdf(input: {
     userAgent: input.userAgent ? input.userAgent.slice(0, 300) : null,
   }
 
-  await applyPendingFinalize({
+  const finalized = await applyPendingFinalize({
     ...input.pending,
     contractData: JSON.stringify(nextData),
   })
 
-  const document = await prisma.document.findFirst({
-    where: {
-      userId: input.pending.userId,
-      numero: input.pending.contractNumero,
-      type: "contrat",
-    },
-    select: { id: true },
-    orderBy: { createdAt: "desc" },
-  })
-
   return {
     documentHash,
-    signedDocumentUrl: document ? `/api/documents/${document.id}/pdf` : "/espace-client",
+    signedDocumentUrl: finalized.documentId
+      ? `/api/documents/${finalized.documentId}/pdf`
+      : "/espace-client",
   }
 }
