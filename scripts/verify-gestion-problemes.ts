@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { DemandesDocumentClient } from "@/components/espace-client/DemandesDocumentClient"
+import { adminActivityLabel } from "@/lib/admin-activity-label"
 import { applyPendingDoQuoteCorrection, describePendingDoQuote } from "@/lib/do-quote-pending"
 import { readStoredDocumentRequest, withDocumentRequestDeposit } from "@/lib/document-request"
 
@@ -82,6 +83,11 @@ assert.equal(stored?.depositedFilename, "permis.pdf")
 assert.match(stored?.message ?? "", /permis de construire/)
 
 const fiche = readFileSync("app/gestion/clients/[id]/page.tsx", "utf8")
+assert.equal(adminActivityLabel("dda_advice_acknowledged"), "Devoir de conseil confirmé")
+assert.equal(adminActivityLabel("dda_contract_suitability_checked"), "Adéquation du contrat contrôlée")
+assert.equal(adminActivityLabel("dda_do_payment_suitability_checked"), "Adéquation contrôlée avant le paiement")
+assert.match(fiche, /adminActivityLabel\(event\.action\)/)
+
 assert.match(fiche, /Devis DO à préparer/)
 assert.match(fiche, /Prime indicative/)
 assert.match(fiche, /Pièce déposée/)

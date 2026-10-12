@@ -9,6 +9,7 @@ import {
   DocumentRequestButton,
   type DocumentRequestResult,
 } from "@/components/gestion/DocumentRequestButton"
+import { adminActivityLabel } from "@/lib/admin-activity-label"
 import { documentRequestActivityLabel } from "@/lib/document-request"
 import { DO_DEVIS_LEADS_SECTION_ID, doDevisLeadRowId } from "@/lib/devis-do-lead"
 import { describePendingDoQuote } from "@/lib/do-quote-pending"
@@ -1577,7 +1578,7 @@ export default function ClientDetailPage() {
                     <div key={event.id} className="rounded-lg border border-gray-700 bg-[#1a1a1a] p-3">
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         <span className="rounded bg-emerald-900/40 px-2 py-1 text-emerald-200">
-                          {event.action}
+                          {adminActivityLabel(event.action)}
                         </span>
                         <span className="text-gray-300">{new Date(event.createdAt).toLocaleString("fr-FR")}</span>
                         <span className="text-gray-400">

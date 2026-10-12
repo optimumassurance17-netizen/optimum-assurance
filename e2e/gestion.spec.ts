@@ -705,6 +705,42 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
     await expect(page.getByText(/250\s000 €/)).toBeVisible()
   })
 
+  test("Fiche client : le contrôle DDA s'affiche en français", async ({ page }) => {
+    await mockGestionAuth(page)
+
+    const client = buildGestionClientData()
+    await page.route("**/api/gestion/clients/client_1", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...client,
+          dda: {
+            consents: [],
+            events: [
+              {
+                id: "log_dda_1",
+                adminEmail: "dda@system",
+                action: "dda_advice_acknowledged",
+                targetType: "devoir_conseil_log",
+                targetId: "logdda01",
+                targetLabel: "Log #logdda01",
+                details: { produit: "decennale", needsSummary: "Décennale | 2 activités" },
+                createdAt: "2026-10-12T08:00:00.000Z",
+              },
+            ],
+          },
+        }),
+      })
+    })
+
+    await page.goto("/gestion/clients/client_1")
+    await expect(page.getByRole("heading", { name: "Conformité DDA" })).toBeVisible()
+    await expect(page.getByText("Devoir de conseil confirmé")).toBeVisible()
+    await expect(page.getByText("Décennale | 2 activités")).toBeVisible()
+    await expect(page.getByText("dda_advice_acknowledged")).toHaveCount(0)
+  })
+
   test("Fiche client : envoi email appelle l'endpoint gestion", async ({ page }) => {
     await mockGestionAuth(page)
 
