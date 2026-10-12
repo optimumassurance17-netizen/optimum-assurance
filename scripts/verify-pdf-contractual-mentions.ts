@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 // @ts-expect-error - pdf-parse n'expose pas de types fiables dans cet environnement
 import pdfParse from "pdf-parse"
+import { generateDecennaleQuote } from "@/lib/pdf/decennale/generateQuote"
 import { generateDecennaleQuotePolicyBundle } from "@/lib/pdf/decennale/generateQuotePolicyBundle"
 import { generateDOQuotePolicyBundle } from "@/lib/pdf/do/generateQuotePolicyBundle"
 import { renderContractPdf } from "@/lib/insurance-contract-pdf"
@@ -214,6 +215,7 @@ function sampleAssuranceTitreContract(): InsuranceContract {
 }
 
 async function main(): Promise<void> {
+  const decQuotePdf = await generateDecennaleQuote(sampleDecennaleData())
   const decQuotePolicyPdf = await generateDecennaleQuotePolicyBundle(sampleDecennaleData(), "proposition")
   const doQuotePolicyPdf = await generateDOQuotePolicyBundle(sampleDoData(), "proposition")
   const rcFabPolicyPdf = await renderContractPdf(sampleRcFabContract(), "policy")
@@ -224,6 +226,7 @@ async function main(): Promise<void> {
     "certificate"
   )
 
+  const decQuoteText = await extractPdfText(decQuotePdf)
   const decText = await extractPdfText(decQuotePolicyPdf)
   const doText = await extractPdfText(doQuotePolicyPdf)
   const rcFabText = await extractPdfText(rcFabPolicyPdf)
@@ -231,6 +234,9 @@ async function main(): Promise<void> {
   const assuranceTitrePolicyText = await extractPdfText(assuranceTitrePolicyPdf)
   const assuranceTitreCertificateText = await extractPdfText(assuranceTitreCertificatePdf)
 
+  assert.doesNotMatch(decQuoteText, /\[object Object\]/, "le devis décennale imprime le texte du devoir de conseil")
+  assert.match(decQuoteText, /a été établi/, "le devis décennale reprend la phrase du devoir de conseil")
+  assertMentions(decQuoteText, "devis décennale", DEVOIR_CONSEIL_ONLY)
   assertMentions(decText, "devis+conditions particulières décennale", DECENNALE_MENTIONS)
   assertMentions(doText, "devis+conditions particulières dommage-ouvrage", DO_QUOTE_MENTIONS)
   assertMentions(rcFabText, "conditions RC Fabriquant", RC_FAB_MENTIONS)

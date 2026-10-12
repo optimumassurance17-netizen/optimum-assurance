@@ -26,7 +26,7 @@ const DEVOIR_CONSEIL_TITLE_LOCAL = "Devoir de conseil"
 const TEXTE_DECENNALE: DevoirConseilTexte = {
   titre: DEVOIR_CONSEIL_TITLE_LOCAL,
   contenu:
-    "En souscrivant, vous confirmez avoir pris connaissance des garanties, exclusions et franchises de votre contrat. Le devis a ete etabli selon les informations que vous avez fournies. Si votre situation change ou si vous avez des questions, contactez-nous avant de signer.",
+    "En souscrivant, vous confirmez avoir pris connaissance des garanties, exclusions et franchises de votre contrat. Le devis a été établi selon les informations que vous avez fournies. Si votre situation change ou si vous avez des questions, contactez-nous avant de signer.",
   lienCgv: "/cgv",
   lienAttestations: "/conditions-attestations",
   lienFaq: "/faq",
@@ -36,7 +36,7 @@ const TEXTE_DECENNALE: DevoirConseilTexte = {
 const TEXTE_DO: DevoirConseilTexte = {
   titre: DEVOIR_CONSEIL_TITLE_LOCAL,
   contenu:
-    "En validant cette demande, vous confirmez avoir pris connaissance des garanties, exclusions et conditions de l'assurance dommage ouvrage. Le devis sera etabli selon les informations fournies. Consultez nos guides et la FAQ si vous avez des questions avant de vous engager.",
+    "En validant cette demande, vous confirmez avoir pris connaissance des garanties, exclusions et conditions de l'assurance dommage ouvrage. Le devis sera établi selon les informations fournies. Consultez nos guides et la FAQ si vous avez des questions avant de vous engager.",
   lienCgv: "/cgv",
   lienAttestations: "/conditions-attestations",
   lienFaq: "/faq",
@@ -46,7 +46,7 @@ const TEXTE_DO: DevoirConseilTexte = {
 const TEXTE_RC_FABRIQUANT: DevoirConseilTexte = {
   titre: DEVOIR_CONSEIL_TITLE_LOCAL,
   contenu:
-    "En souscrivant, vous confirmez avoir pris connaissance des garanties, exclusions, franchises et limites de l'assurance RC Fabriquant. Le devis est etabli sur la base de vos declarations (activite, produits, zone de distribution, chiffre d'affaires). En cas de changement de situation, informez-nous avant signature.",
+    "En souscrivant, vous confirmez avoir pris connaissance des garanties, exclusions, franchises et limites de l'assurance RC Fabriquant. Le devis est établi sur la base de vos déclarations (activité, produits, zone de distribution, chiffre d'affaires). En cas de changement de situation, informez-nous avant signature.",
   lienCgv: "/cgv",
   lienAttestations: "/conditions-attestations",
   lienFaq: "/faq",
@@ -56,7 +56,7 @@ const TEXTE_RC_FABRIQUANT: DevoirConseilTexte = {
 const TEXTE_RC_PRO: DevoirConseilTexte = {
   titre: DEVOIR_CONSEIL_TITLE_LOCAL,
   contenu:
-    "En souscrivant, vous confirmez avoir pris connaissance des garanties, exclusions, franchises et limites de l'assurance RC Pro. Le devis indicatif est etabli sur la base de vos declarations (activite, chiffre d'affaires, effectif, niveau de risque et options). En cas de changement de situation, contactez-nous avant validation definitive.",
+    "En souscrivant, vous confirmez avoir pris connaissance des garanties, exclusions, franchises et limites de l'assurance RC Pro. Le devis indicatif est établi sur la base de vos déclarations (activité, chiffre d'affaires, effectif, niveau de risque et options). En cas de changement de situation, contactez-nous avant validation définitive.",
   lienCgv: "/cgv",
   lienAttestations: "/conditions-attestations",
   lienFaq: "/faq",
@@ -118,7 +118,7 @@ export function getDevoirConseilText(produit: DevoirConseilProduit): string {
 
 export function getDevoirConseilLinksLine(produit: DevoirConseilProduit = "decennale"): string {
   const t = getDevoirConseilContent(produit)
-  return `References utiles : ${SITE_URL}${t.lienCgv} — ${SITE_URL}${t.lienAttestations} — ${SITE_URL}${t.lienFaq} — ${SITE_URL}${t.lienGuide}`
+  return `Références utiles : ${SITE_URL}${t.lienCgv} — ${SITE_URL}${t.lienAttestations} — ${SITE_URL}${t.lienFaq} — ${SITE_URL}${t.lienGuide}`
 }
 
 export const DEVOIR_CONSEIL_LINKS_LINE = getDevoirConseilLinksLine("do")
@@ -131,5 +131,5 @@ export function getDevoirConseilTexte(produit: DevoirConseilProduit): DevoirCons
 
 export function getDevoirConseilPdfLine(produit: DevoirConseilProduit, siteUrl: string): string {
   const t = getDevoirConseilContent(produit)
-  return `${t.titre} : ${t.contenu} References : ${siteUrl}${t.lienCgv} — ${siteUrl}${t.lienAttestations} — ${siteUrl}${t.lienFaq} — ${siteUrl}${t.lienGuide}`
+  return `${t.titre} : ${t.contenu} Références : ${siteUrl}${t.lienCgv} — ${siteUrl}${t.lienAttestations} — ${siteUrl}${t.lienFaq} — ${siteUrl}${t.lienGuide}`
 }

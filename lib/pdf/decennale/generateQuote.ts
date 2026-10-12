@@ -8,7 +8,7 @@ import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
-import { DEVOIR_CONSEIL_TEXT, DEVOIR_CONSEIL_USEFUL_LINKS_LINE } from "@/lib/devoir-conseil"
+import { DEVOIR_CONSEIL_USEFUL_LINKS_LINE, getDevoirConseilText } from "@/lib/devoir-conseil"
 import { DECENNALE_CLAUSE_BLOCS } from "@/lib/decennale-legal-clauses"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { appendDecennaleActivityDetailsAnnex } from "@/lib/pdf/decennale/activityDetailsAnnex"
@@ -218,7 +218,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
   y2 -= 2
   y2 = drawWrappedText(
     page2,
-    `Devoir de conseil : ${DEVOIR_CONSEIL_TEXT.decennale}`,
+    `Devoir de conseil : ${getDevoirConseilText("decennale")}`,
     PDF_PAGE.marginX,
     y2,
     PDF_PAGE.contentWidth,

@@ -38,11 +38,11 @@ function RcProResultContent() {
             </>
           ) : (
             <>
-              <p className="text-sm text-[#475569]">Tarif estime TTC</p>
+              <p className="text-sm text-[#475569]">Tarif estimé TTC</p>
               <p className="mt-2 text-3xl font-bold text-[#0f172a]">{price.toLocaleString("fr-FR")} EUR</p>
-              {quoteId && <p className="mt-2 text-xs text-[#64748b]">Reference devis : {quoteId}</p>}
+              {quoteId && <p className="mt-2 text-xs text-[#64748b]">Référence devis : {quoteId}</p>}
               <p className="mt-4 text-xs text-[#64748b]">
-                Ce resultat est indicatif et soumis a validation finale du dossier.
+                Ce résultat est indicatif et soumis à validation finale du dossier.
               </p>
               <Link href="/devis/rcpro" className="mt-6 inline-block text-sm font-medium text-[#2563eb]">
                 Recalculer un autre devis
@@ -68,7 +68,7 @@ export default function RcProResultPage() {
         <main className="min-h-screen bg-[var(--background)]">
           <Header />
           <div className="mx-auto max-w-3xl px-4 py-12">
-            <p className="text-sm text-[#475569]">Chargement du resultat...</p>
+            <p className="text-sm text-[#475569]">Chargement du résultat...</p>
           </div>
         </main>
       }
