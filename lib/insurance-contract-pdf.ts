@@ -208,6 +208,25 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
 export type DocPdfType = "quote" | "fic" | "policy" | "certificate" | "invoice" | "schedule"
 
 async function loadSignedQuotePdfBytes(storageKey: string): Promise<Uint8Array> {
+  const { LOCAL_DOCUMENT_KEY_PREFIX, LOCAL_SIGNED_DOCUMENT_TYPE, LOCAL_SIGNED_PDF_KEY, MAX_LOCAL_SIGNED_PDF_BYTES, decodeStoredPdfBase64, readContractObject } =
+    await import("@/lib/esign/local-signature-fallback")
+  if (storageKey.startsWith(LOCAL_DOCUMENT_KEY_PREFIX)) {
+    const id = storageKey.slice(LOCAL_DOCUMENT_KEY_PREFIX.length).trim()
+    const { prisma } = await import("@/lib/prisma")
+    const doc = id
+      ? await prisma.document.findUnique({
+          where: { id },
+          select: { type: true, data: true },
+        })
+      : null
+    const stored = doc?.type === LOCAL_SIGNED_DOCUMENT_TYPE ? readContractObject(doc.data) : null
+    const bytes = decodeStoredPdfBase64(stored?.[LOCAL_SIGNED_PDF_KEY], MAX_LOCAL_SIGNED_PDF_BYTES)
+    if (!bytes) {
+      throw new Error("Fichier PDF signé introuvable.")
+    }
+    return bytes
+  }
+
   const supabase = createSupabaseServiceClient()
   if (!supabase) {
     throw new Error("Supabase non configuré — impossible de charger le devis signé.")

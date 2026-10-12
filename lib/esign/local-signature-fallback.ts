@@ -1,15 +1,20 @@
 /**
- * Signature décennale de secours quand Supabase est injoignable.
+ * Signature locale, sans Supabase.
  * Le PDF non signé reste dans PendingSignature.contractData (TEXT), sans migration.
- * Le PDF signé est recopié dans le contrat, puis retiré de toute réponse JSON.
+ * Le PDF signé est recopié dans le contrat ou dans une pièce d'archive, puis retiré de toute réponse JSON.
  */
 
 export const LOCAL_SIGNATURE_PROVIDER = "local" as const
 export const FALLBACK_PDF_KEY = "fallbackPdfBase64" as const
 export const LOCAL_SIGNED_PDF_KEY = "localSignedPdfBase64" as const
+/** Pièce d'archive du PDF signé personnalisé. Elle ne s'affiche pas dans les listes client. */
+export const LOCAL_SIGNED_DOCUMENT_TYPE = "signature_locale" as const
+export const LOCAL_DOCUMENT_KEY_PREFIX = "local-document:" as const
 
 /** PDF brut maximal. Reste sous la limite de réponse serveur (environ 4,5 Mo). */
 export const MAX_LOCAL_SIGNATURE_PDF_BYTES = 3 * 1024 * 1024
+/** Le PDF signé peut grossir un peu après l'apposition de l'image. */
+export const MAX_LOCAL_SIGNED_PDF_BYTES = 4 * 1024 * 1024
 
 const CONNECTIVITY_RE =
   /injoignable|ne répond pas|ne repond pas|fetch failed|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|getaddrinfo|UND_ERR_CONNECT|UND_ERR_SOCKET|UND_ERR_HEADERS_TIMEOUT|UND_ERR_BODY_TIMEOUT|UND_ERR_CONNECT_TIMEOUT|AbortError|aborted|timeout/i
@@ -52,12 +57,25 @@ export function readContractObject(raw: string | null | undefined): Record<strin
   }
 }
 
-export function isLocalFallbackContract(data: Record<string, unknown> | null): boolean {
-  if (!data) return false
-  if (data.customUploadedDevisFlow === true) return false
-  if (data.signatureProvider !== LOCAL_SIGNATURE_PROVIDER) return false
+function hasStoredFallbackPdf(data: Record<string, unknown> | null): boolean {
+  if (!data || data.signatureProvider !== LOCAL_SIGNATURE_PROVIDER) return false
   const pdf = data[FALLBACK_PDF_KEY]
   return typeof pdf === "string" && pdf.length > 80
+}
+
+export function isLocalFallbackContract(data: Record<string, unknown> | null): boolean {
+  if (!data || data.customUploadedDevisFlow === true) return false
+  return hasStoredFallbackPdf(data)
+}
+
+/** Devis PDF personnalisé signé localement : le fichier est dans le dossier, pas dans Supabase. */
+export function isLocalCustomPdfContract(data: Record<string, unknown> | null): boolean {
+  if (!data || data.customUploadedDevisFlow !== true) return false
+  return hasStoredFallbackPdf(data)
+}
+
+export function isLocalSignableContract(data: Record<string, unknown> | null): boolean {
+  return isLocalFallbackContract(data) || isLocalCustomPdfContract(data)
 }
 
 function declaredActivityCount(data: Record<string, unknown>): number {
@@ -89,12 +107,15 @@ export function isRebuildableDecennaleContract(data: Record<string, unknown> | n
   )
 }
 
-export function decodeStoredPdfBase64(value: unknown): Uint8Array | null {
+export function decodeStoredPdfBase64(
+  value: unknown,
+  maxBytes = MAX_LOCAL_SIGNATURE_PDF_BYTES
+): Uint8Array | null {
   if (typeof value !== "string") return null
   const compact = value.replace(/\s/g, "")
-  if (compact.length < 80 || compact.length > Math.ceil(MAX_LOCAL_SIGNATURE_PDF_BYTES * 1.4)) return null
+  if (compact.length < 80 || compact.length > Math.ceil(maxBytes * 1.4)) return null
   const bytes = Buffer.from(compact, "base64")
-  if (bytes.length < 5 || bytes.length > MAX_LOCAL_SIGNATURE_PDF_BYTES) return null
+  if (bytes.length < 5 || bytes.length > maxBytes) return null
   if (bytes.subarray(0, 5).toString("latin1") !== "%PDF-") return null
   return new Uint8Array(bytes)
 }

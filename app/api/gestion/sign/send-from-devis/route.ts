@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import React from "react"
@@ -14,7 +13,6 @@ import {
 } from "@/lib/gestion-contract-from-devis"
 import { createSignRequestWithFallback } from "@/lib/esign/create-sign-request-with-fallback"
 import { safeLogMessage } from "@/lib/esign/local-signature-fallback"
-import { createSupabaseServiceClient } from "@/lib/supabase"
 import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { validateSignatureQualityGate } from "@/lib/signature-quality-gates"
@@ -25,7 +23,7 @@ export const runtime = "nodejs"
 
 /**
  * Admin : à partir d’un document **devis** décennale, génère le contrat PDF, crée une demande
- * `sign_requests` (Supabase Sign) pour le client et envoie le lien `/sign/[id]` par email.
+ * de signature locale et envoie le lien `/sign/[id]` par email.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -47,13 +45,6 @@ export async function POST(request: NextRequest) {
     const documentId = typeof payload.documentId === "string" ? payload.documentId.trim() : ""
     if (!documentId) {
       return NextResponse.json({ error: "documentId requis" }, { status: 400 })
-    }
-
-    if (!createSupabaseServiceClient()) {
-      return NextResponse.json(
-        { error: "Signature électronique non configurée (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)." },
-        { status: 503 }
-      )
     }
 
     const doc = await prisma.document.findUnique({
@@ -184,9 +175,7 @@ export async function POST(request: NextRequest) {
     const pdfBuffer = Buffer.from(await renderToBuffer(pdfElement as any))
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-    const folder = randomUUID()
-    const storagePath = `gestion/devis/${folder}/contrat-${contractNumero}.pdf`
-    const created = await createSignRequestWithFallback(pdfBuffer, storagePath)
+    const created = await createSignRequestWithFallback(pdfBuffer)
     const signRequestId = created.id
     const contractData = {
       ...baseContract,

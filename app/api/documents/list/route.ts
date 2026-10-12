@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { LOCAL_SIGNED_DOCUMENT_TYPE } from "@/lib/esign/local-signature-fallback"
 
 export async function GET() {
   try {
@@ -12,7 +13,7 @@ export async function GET() {
 
     const [documents, contracts] = await Promise.all([
       prisma.document.findMany({
-        where: { userId: session.user.id },
+        where: { userId: session.user.id, type: { not: LOCAL_SIGNED_DOCUMENT_TYPE } },
         select: { id: true, type: true, numero: true, status: true, createdAt: true },
         orderBy: { createdAt: "desc" },
       }),

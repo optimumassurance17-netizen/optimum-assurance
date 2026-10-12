@@ -1,7 +1,7 @@
 import "server-only"
 import { ESIGN_BUCKET_ORIGINALS } from "@/lib/esign/buckets"
 import {
-  isLocalFallbackContract,
+  isLocalSignableContract,
   isRebuildableDecennaleContract,
   readContractObject,
   safeLogMessage,
@@ -85,7 +85,7 @@ export async function resolveSignPreview(id: string): Promise<SignPreview> {
   const remotePromise = lookupSupabase(id, controller.signal).finally(() => clearTimeout(timer))
   const pendingData = await loadPendingContract(id)
 
-  if (isLocalFallbackContract(pendingData)) {
+  if (isLocalSignableContract(pendingData)) {
     controller.abort()
     return { kind: "local", documentId: id }
   }

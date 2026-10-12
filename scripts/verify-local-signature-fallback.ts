@@ -2,12 +2,15 @@ import { PDFDocument } from "pdf-lib"
 import { applySignatureToPdf } from "../lib/esign/apply-signature-to-pdf"
 import { readFileSync } from "node:fs"
 import { nextSerialNumero } from "../lib/document-numero"
+import { createSignRequestWithFallback } from "../lib/esign/create-sign-request-with-fallback"
 import {
   FALLBACK_PDF_KEY,
   LOCAL_SIGNATURE_PROVIDER,
   LOCAL_SIGNED_PDF_KEY,
   decodeStoredPdfBase64,
+  isLocalCustomPdfContract,
   isLocalFallbackContract,
+  isLocalSignableContract,
   isRebuildableDecennaleContract,
   isSupabaseConnectivityError,
   readContractObject,
@@ -69,6 +72,7 @@ async function main() {
 
   const preview = readFileSync("lib/esign/resolve-sign-preview.ts", "utf8")
   const signRoute = readFileSync("app/api/sign/route.ts", "utf8")
+  assert(signRoute.includes("completeLocalSignature"), "la signature locale finalise décennale et devis personnalisé")
   const supabaseClient = readFileSync("lib/supabase.ts", "utf8")
   const gestion = readFileSync("app/gestion/page.tsx", "utf8")
   assert(preview.includes("isRebuildableDecennaleContract"), "l'aperçu ouvre un contrat décennale sans Supabase")
@@ -102,10 +106,19 @@ async function main() {
   }
   assert(isLocalFallbackContract(stored), "un dossier décennale local doit être reconnu")
   assert(!isRebuildableDecennaleContract(stored), "le secours local déjà stocké n'est pas une reconstruction")
-  assert(
-    !isLocalFallbackContract({ ...stored, customUploadedDevisFlow: true }),
-    "un devis PDF personnalisé ne doit pas utiliser le secours"
-  )
+  const customLocal = { ...stored, customUploadedDevisFlow: true }
+  assert(!isLocalFallbackContract(customLocal), "un devis PDF personnalisé n'est pas un contrat décennale")
+  assert(isLocalCustomPdfContract(customLocal), "un devis PDF personnalisé se signe sans Supabase")
+  assert(isLocalSignableContract(stored) && isLocalSignableContract(customLocal), "les deux parcours locaux sont signables")
+  const localRequest = await createSignRequestWithFallback(Buffer.from(await source.save()))
+  assert(localRequest.signatureProvider === LOCAL_SIGNATURE_PROVIDER, "la demande de signature ne passe pas par Supabase")
+  assert(localRequest.fallbackPdfBase64.length > 80, "le PDF reste dans la demande locale")
+  const creator = readFileSync("lib/esign/create-sign-request-with-fallback.ts", "utf8")
+  const customSend = readFileSync("app/api/gestion/sign/send-custom-devis-pdf/route.ts", "utf8")
+  const contractPdf = readFileSync("lib/insurance-contract-pdf.ts", "utf8")
+  assert(!creator.includes("uploadPdfAndInsertSignRequest"), "la création de signature n'envoie plus le PDF à Supabase")
+  assert(!customSend.includes("createSupabaseServiceClient"), "l'invitation PDF personnalisé n'exige plus Supabase")
+  assert(contractPdf.includes("LOCAL_DOCUMENT_KEY_PREFIX"), "le devis signé local se relit sans Supabase")
 
   const decoded = decodeStoredPdfBase64(stored[FALLBACK_PDF_KEY])
   assert(decoded, "le PDF stocké doit être relu")

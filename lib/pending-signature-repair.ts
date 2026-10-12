@@ -2,7 +2,7 @@ import type { PendingSignature } from "@/lib/prisma-client"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { ESIGN_BUCKET_ORIGINALS, ESIGN_BUCKET_SIGNED } from "@/lib/esign/buckets"
 import { applyPendingFinalize } from "@/lib/pending-signature-finalize"
-import { isLocalFallbackContract, readContractObject } from "@/lib/esign/local-signature-fallback"
+import { isLocalSignableContract, readContractObject } from "@/lib/esign/local-signature-fallback"
 import { createSupabaseServiceClient } from "@/lib/supabase"
 
 function normalizeStoragePath(path: string): string {
@@ -71,7 +71,7 @@ export async function repairPendingSignature(
   actorEmail: string,
   opts?: { action?: string }
 ): Promise<PendingSignatureRepairResult> {
-  if (isLocalFallbackContract(readContractObject(pending.contractData))) {
+  if (isLocalSignableContract(readContractObject(pending.contractData))) {
     return {
       repaired: false,
       reason:

@@ -4,14 +4,14 @@ import { NextResponse } from "next/server"
 import { applySignatureToPdf } from "@/lib/esign/apply-signature-to-pdf"
 import { ESIGN_BUCKET_ORIGINALS, ESIGN_BUCKET_SIGNED } from "@/lib/esign/buckets"
 import {
-  completeLocalDecennaleSignature,
+  completeLocalSignature,
   completeRebuiltDecennaleSignature,
   LocalSignatureError,
 } from "@/lib/esign/complete-local-signature"
 import { getClientIp, getUserAgent } from "@/lib/esign/get-request-meta"
 import { sha256Hex } from "@/lib/esign/hash-pdf"
 import {
-  isLocalFallbackContract,
+  isLocalSignableContract,
   isRebuildableDecennaleContract,
   readContractObject,
   safeLogMessage,
@@ -118,9 +118,9 @@ export async function POST(request: NextRequest) {
   const pending = await prisma.pendingSignature.findUnique({
     where: { signatureRequestId: id },
   })
-  if (pending && isLocalFallbackContract(readContractObject(pending.contractData))) {
+  if (pending && isLocalSignableContract(readContractObject(pending.contractData))) {
     try {
-      const local = await completeLocalDecennaleSignature({
+      const local = await completeLocalSignature({
         pending,
         signaturePngDataUrl: signature,
         email: emailNorm,

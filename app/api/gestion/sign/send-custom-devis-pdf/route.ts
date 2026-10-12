@@ -1,11 +1,10 @@
-import { randomUUID } from "node:crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
-import { createSupabaseServiceClient } from "@/lib/supabase"
+import { createSignRequestWithFallback } from "@/lib/esign/create-sign-request-with-fallback"
+import { FALLBACK_PDF_KEY } from "@/lib/esign/local-signature-fallback"
 import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import {
@@ -87,13 +86,6 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id || !isAdmin(session)) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
-    }
-
-    if (!createSupabaseServiceClient()) {
-      return NextResponse.json(
-        { error: "Signature électronique non configurée (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)." },
-        { status: 503 }
-      )
     }
 
     let form: FormData
@@ -232,9 +224,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Le fichier n’est pas un PDF valide (en-tête manquant)" }, { status: 400 })
     }
 
-    const folder = randomUUID()
-    const storagePath = `gestion/devis-pdf/${folder}/devis.pdf`
-    const { id: signRequestId } = await uploadPdfAndInsertSignRequest(buf, storagePath)
+    const created = await createSignRequestWithFallback(buf)
+    const signRequestId = created.id
 
     const provisionalNumero = `${productType === "assurance_titre" ? "TITRE" : "PDF"}-PENDING-${Date.now()}`
     const coverageDurationYears =
@@ -329,6 +320,8 @@ export async function POST(request: NextRequest) {
         afterSignNextPath,
       }
     }
+    contractData.signatureProvider = created.signatureProvider
+    contractData[FALLBACK_PDF_KEY] = created.fallbackPdfBase64
     const qualityPayload: SignatureQualityGatePayload = {
       flow: "custom_pdf",
       clientLabel: user.raisonSociale || titleSnapshot.contactName || user.email,

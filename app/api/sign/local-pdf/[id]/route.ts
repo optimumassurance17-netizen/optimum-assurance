@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import {
   FALLBACK_PDF_KEY,
   decodeStoredPdfBase64,
-  isLocalFallbackContract,
+  isLocalSignableContract,
   isRebuildableDecennaleContract,
   readContractObject,
 } from "@/lib/esign/local-signature-fallback"
@@ -34,7 +34,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 
   let bytes: Uint8Array | null = null
-  if (isLocalFallbackContract(raw)) {
+  if (isLocalSignableContract(raw)) {
     bytes = decodeStoredPdfBase64(raw[FALLBACK_PDF_KEY])
   } else if (isRebuildableDecennaleContract(raw)) {
     try {

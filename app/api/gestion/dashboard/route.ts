@@ -6,7 +6,7 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { normalizeRcFabriquantLeadStatut } from "@/lib/rc-fabriquant-lead-statuts"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
-import { stripSignatureBinariesFromJsonString } from "@/lib/esign/local-signature-fallback"
+import { LOCAL_SIGNED_DOCUMENT_TYPE, stripSignatureBinariesFromJsonString } from "@/lib/esign/local-signature-fallback"
 import { loadEcheancesASuivre } from "@/lib/client-echeance-service"
 import { collapseSettledCardLinkPayments } from "@/lib/client-echeances"
 import { adminActivityClientHref, adminActivityLabel } from "@/lib/admin-activity-label"
@@ -344,6 +344,7 @@ export async function GET() {
         take: DASH_LIST_LIMIT,
       }),
       prisma.document.findMany({
+        where: { type: { not: LOCAL_SIGNED_DOCUMENT_TYPE } },
         include: { user: { select: { email: true, raisonSociale: true } } },
         orderBy: { createdAt: "desc" },
         take: DASH_LIST_LIMIT,

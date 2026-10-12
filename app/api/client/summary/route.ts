@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { isDecennaleAttestationType } from "@/lib/decennale-impaye"
 import { collapseSettledCardLinkPayments } from "@/lib/client-echeances"
+import { LOCAL_SIGNED_DOCUMENT_TYPE } from "@/lib/esign/local-signature-fallback"
 
 export async function GET() {
   try {
@@ -21,7 +22,7 @@ export async function GET() {
       doContractsForVirtualDocs,
     ] = await Promise.all([
       prisma.document.findMany({
-        where: { userId: session.user.id },
+        where: { userId: session.user.id, type: { not: LOCAL_SIGNED_DOCUMENT_TYPE } },
         select: { type: true, status: true },
         orderBy: { createdAt: "desc" },
       }),

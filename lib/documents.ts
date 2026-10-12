@@ -15,6 +15,8 @@ const PREFIXES = {
   facture_do: "FAC-DO",
   /** Facture acquittée — 1er trimestre décennale (parcours CB), distinct de facture_do */
   facture_decennale: "FAC-DEC",
+  /** Archive du PDF signé sans Supabase — absente des listes client */
+  signature_locale: "SIG-LOC",
 } as const
 
 export async function getNextNumero(type: keyof typeof PREFIXES | string): Promise<string> {

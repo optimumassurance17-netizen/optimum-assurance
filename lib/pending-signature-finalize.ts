@@ -23,11 +23,20 @@ import {
   serializeAssuranceTitreContractConfig,
 } from "@/lib/assurance-titre-contract-config"
 import { normalizeInsurancePlatformProductType } from "@/lib/insurance-product"
-import { FALLBACK_PDF_KEY, LOCAL_SIGNED_PDF_KEY } from "@/lib/esign/local-signature-fallback"
+import {
+  FALLBACK_PDF_KEY,
+  LOCAL_DOCUMENT_KEY_PREFIX,
+  LOCAL_SIGNED_DOCUMENT_TYPE,
+  LOCAL_SIGNED_PDF_KEY,
+  MAX_LOCAL_SIGNED_PDF_BYTES,
+  decodeStoredPdfBase64,
+} from "@/lib/esign/local-signature-fallback"
 
 export type PendingFinalizeOptions = {
-  /** Objet fichier dans le bucket « signed » (PDF signé) — flux devis PDF personnalisé */
+  /** Objet fichier dans le bucket « signed » (PDF signé) — ancien flux Supabase */
   signedQuoteStorageKey?: string
+  /** PDF signé conservé en base, sans Supabase */
+  localSignedPdfBase64?: string
 }
 
 function dateMoins3Mois(dateIso: string): string | null {
@@ -133,7 +142,28 @@ export async function applyPendingFinalize(
     if (!user) {
       throw new Error("Utilisateur introuvable pour finaliser le devis PDF.")
     }
-    const signedKey = options?.signedQuoteStorageKey?.trim()
+    let signedKey = options?.signedQuoteStorageKey?.trim() || ""
+    let localArchiveId: string | null = null
+    if (!signedKey && options?.localSignedPdfBase64) {
+      const signedBytes = decodeStoredPdfBase64(options.localSignedPdfBase64, MAX_LOCAL_SIGNED_PDF_BYTES)
+      if (!signedBytes) {
+        throw new Error("PDF signé illisible — finalisation impossible.")
+      }
+      const archive = await prisma.document.create({
+        data: {
+          userId: user.id,
+          type: LOCAL_SIGNED_DOCUMENT_TYPE,
+          numero: await getNextNumero(LOCAL_SIGNED_DOCUMENT_TYPE),
+          data: JSON.stringify({
+            [LOCAL_SIGNED_PDF_KEY]: options.localSignedPdfBase64,
+            signatureRequestId: pending.signatureRequestId,
+          }),
+          status: "valide",
+        },
+      })
+      localArchiveId = archive.id
+      signedKey = `${LOCAL_DOCUMENT_KEY_PREFIX}${archive.id}`
+    }
     if (!signedKey) {
       throw new Error("Clé du PDF signé manquante — finalisation impossible.")
     }
@@ -244,21 +274,29 @@ export async function applyPendingFinalize(
       }
     }
 
-    const c = await prisma.insuranceContract.create({
-      data: {
-        contractNumber,
-        userId: user.id,
-        productType,
-        clientName: (user.raisonSociale || user.email).trim(),
-        siret: user.siret ?? undefined,
-        address,
-        premium,
-        status: CONTRACT_STATUS.approved,
-        insurerValidatedAt: new Date(),
-        signedQuoteStorageKey: signedKey,
-        exclusionsJson,
-      },
-    })
+    let c: Awaited<ReturnType<typeof prisma.insuranceContract.create>>
+    try {
+      c = await prisma.insuranceContract.create({
+        data: {
+          contractNumber,
+          userId: user.id,
+          productType,
+          clientName: (user.raisonSociale || user.email).trim(),
+          siret: user.siret ?? undefined,
+          address,
+          premium,
+          status: CONTRACT_STATUS.approved,
+          insurerValidatedAt: new Date(),
+          signedQuoteStorageKey: signedKey,
+          exclusionsJson,
+        },
+      })
+    } catch (error) {
+      if (localArchiveId) {
+        await prisma.document.delete({ where: { id: localArchiveId } }).catch(() => undefined)
+      }
+      throw error
+    }
 
     const baseUrl = `${SITE_URL}/api/contracts/${c.id}/pdf`
     await prisma.contractStoredDocument.createMany({

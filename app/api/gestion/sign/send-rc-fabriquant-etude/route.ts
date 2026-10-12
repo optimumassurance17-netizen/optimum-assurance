@@ -1,11 +1,10 @@
-import { randomUUID } from "node:crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { uploadPdfAndInsertSignRequest } from "@/lib/esign/upload-pdf-and-insert-sign-request"
-import { createSupabaseServiceClient } from "@/lib/supabase"
+import { createSignRequestWithFallback } from "@/lib/esign/create-sign-request-with-fallback"
+import { FALLBACK_PDF_KEY } from "@/lib/esign/local-signature-fallback"
 import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { buildDdaNeedSummary } from "@/lib/dda-compliance"
@@ -48,16 +47,6 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id || !isAdmin(session)) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
-    }
-
-    if (!createSupabaseServiceClient()) {
-      return NextResponse.json(
-        {
-          error:
-            "Signature électronique non configurée (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY).",
-        },
-        { status: 503 }
-      )
     }
 
     let body: unknown
@@ -192,13 +181,12 @@ export async function POST(request: NextRequest) {
     })
     const quoteBuffer = Buffer.from(quoteBytes)
 
-    const safeRef = dossierConfig.referenceContrat.replace(/[^a-zA-Z0-9_-]+/g, "_").slice(0, 80) || "rcfab"
-    const folder = randomUUID()
-    const storagePath = `gestion/rc-fabriquant-etude/${folder}/devis-${safeRef}.pdf`
-    const { id: signRequestId } = await uploadPdfAndInsertSignRequest(quoteBuffer, storagePath)
+    const created = await createSignRequestWithFallback(quoteBuffer)
+    const signRequestId = created.id
 
     const contractData = {
-      signatureProvider: "supabase" as const,
+      signatureProvider: created.signatureProvider,
+      [FALLBACK_PDF_KEY]: created.fallbackPdfBase64,
       customUploadedDevisFlow: true,
       modeEtude: true,
       activite: dossierConfig.activite,

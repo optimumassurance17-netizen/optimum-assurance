@@ -6,7 +6,9 @@ import {
   FALLBACK_PDF_KEY,
   LOCAL_SIGNATURE_PROVIDER,
   LOCAL_SIGNED_PDF_KEY,
+  MAX_LOCAL_SIGNED_PDF_BYTES,
   decodeStoredPdfBase64,
+  isLocalCustomPdfContract,
   isLocalFallbackContract,
   isRebuildableDecennaleContract,
   readContractObject,
@@ -23,17 +25,57 @@ export class LocalSignatureError extends Error {
   }
 }
 
-/**
- * Appose la signature sur le PDF stocké dans le dossier, puis crée le contrat décennale
- * sans clé de stockage Supabase.
- */
-export async function completeLocalDecennaleSignature(input: {
+type LocalSignatureInput = {
   pending: PendingSignature
   signaturePngDataUrl: string
   email: string
   ip: string | null
   userAgent: string | null
-}): Promise<{ documentHash: string; signedDocumentUrl: string }> {
+}
+
+/** Signe le PDF stocké dans le dossier, puis crée le contrat sans Supabase. */
+export async function completeLocalSignature(input: LocalSignatureInput) {
+  const raw = readContractObject(input.pending.contractData)
+  if (raw && isLocalCustomPdfContract(raw)) {
+    return completeLocalCustomPdfSignature(input)
+  }
+  return completeLocalDecennaleSignature(input)
+}
+
+async function completeLocalCustomPdfSignature(
+  input: LocalSignatureInput
+): Promise<{ documentHash: string; signedDocumentUrl: string }> {
+  const raw = readContractObject(input.pending.contractData)
+  if (!raw || !isLocalCustomPdfContract(raw)) {
+    throw new LocalSignatureError("Demande de signature introuvable.", 404)
+  }
+  const original = decodeStoredPdfBase64(raw[FALLBACK_PDF_KEY])
+  if (!original) {
+    throw new LocalSignatureError("Le PDF du contrat est illisible.", 422)
+  }
+  const signedAtIso = new Date().toISOString()
+  let signedBytes: Uint8Array
+  try {
+    signedBytes = await applySignatureToPdf(original, input.signaturePngDataUrl, input.email, signedAtIso)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Traitement PDF impossible."
+    throw new LocalSignatureError(message, 422)
+  }
+  if (signedBytes.byteLength > MAX_LOCAL_SIGNED_PDF_BYTES) {
+    throw new LocalSignatureError("Le PDF signé est trop volumineux.", 422)
+  }
+  const documentHash = sha256Hex(signedBytes)
+  await applyPendingFinalize(input.pending, {
+    localSignedPdfBase64: Buffer.from(signedBytes).toString("base64"),
+  })
+  return { documentHash, signedDocumentUrl: "/espace-client" }
+}
+
+/**
+ * Appose la signature sur le PDF stocké dans le dossier, puis crée le contrat décennale
+ * sans clé de stockage Supabase.
+ */
+export async function completeLocalDecennaleSignature(input: LocalSignatureInput): Promise<{ documentHash: string; signedDocumentUrl: string }> {
   const raw = readContractObject(input.pending.contractData)
   if (!raw || !isLocalFallbackContract(raw)) {
     throw new LocalSignatureError("Demande de signature de secours introuvable.", 404)

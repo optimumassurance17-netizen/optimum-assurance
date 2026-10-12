@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
@@ -219,9 +218,7 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pdfBuffer = Buffer.from(await renderToBuffer(pdfElement as any))
 
-    const folder = randomUUID()
-    const storagePath = `souscription/decennale/${folder}/contrat-${baseContract.numero}.pdf`
-    const created = await createSignRequestWithFallback(pdfBuffer, storagePath)
+    const created = await createSignRequestWithFallback(pdfBuffer)
     const contractData = {
       ...baseContract,
       signatureProvider: created.signatureProvider,
