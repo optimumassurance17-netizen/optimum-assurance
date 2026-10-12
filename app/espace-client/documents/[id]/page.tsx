@@ -11,6 +11,8 @@ import { Toast } from "@/components/Toast"
 import { DevoirConseil } from "@/components/DevoirConseil"
 import { readResponseJson } from "@/lib/read-response-json"
 import { isClientQuoteEditionLocked, isContractCoverageLocked } from "@/lib/devis-edition"
+import { isStoredClientQuoteType } from "@/lib/client-quote-delete"
+import { SupprimerDevisButton } from "@/components/espace-client/SupprimerDevisButton"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
 const DevisDoTemplate = dynamic(() => import("@/components/documents/DevisDoTemplate").then((m) => m.DevisDoTemplate), { ssr: false })
@@ -78,6 +80,8 @@ export default function DocumentPage() {
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
   const [editSuccess, setEditSuccess] = useState<string | null>(null)
+  const [quoteDeleteBusy, setQuoteDeleteBusy] = useState(false)
+  const [quoteDeleteError, setQuoteDeleteError] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<EditableDocumentForm>({
     raisonSociale: "",
     siret: "",
@@ -324,6 +328,23 @@ export default function DocumentPage() {
     )
   }
 
+  const handleDeleteQuote = async () => {
+    if (!document || !isStoredClientQuoteType(document.type) || quoteDeleteBusy) return
+    setQuoteDeleteBusy(true)
+    setQuoteDeleteError(null)
+    try {
+      const res = await fetch(`/api/documents/${document.id}`, { method: "DELETE" })
+      const json = await readResponseJson<{ error?: string; ok?: boolean }>(res)
+      if (!res.ok) {
+        throw new Error(json.error || "Impossible de supprimer ce devis.")
+      }
+      router.push("/espace-client")
+    } catch (error) {
+      setQuoteDeleteError(error instanceof Error ? error.message : "Impossible de supprimer ce devis.")
+      setQuoteDeleteBusy(false)
+    }
+  }
+
   if (!document) {
     return (
       <main className="min-h-screen bg-slate-50">
@@ -373,7 +394,7 @@ export default function DocumentPage() {
           <Link href="/espace-client" className="text-[#2563eb] hover:underline">
             ← Retour
           </Link>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {document.type === "devis_do" && (
               <button
                 onClick={handlePayDevisDo}
@@ -395,6 +416,20 @@ export default function DocumentPage() {
             {resiliationRequested && (
               <span className="text-sm font-medium text-blue-700">Demande de résiliation envoyée</span>
             )}
+            {isStoredClientQuoteType(document.type) ? (
+              <SupprimerDevisButton
+                idleLabel="Supprimer le devis"
+                ariaLabel="Supprimer le devis"
+                confirmAriaLabel="Confirmer la suppression du devis"
+                cancelAriaLabel="Annuler la suppression du devis"
+                busy={quoteDeleteBusy}
+                error={quoteDeleteError}
+                onCancel={() => setQuoteDeleteError(null)}
+                onConfirm={() => {
+                  void handleDeleteQuote()
+                }}
+              />
+            ) : null}
             {document.type === "attestation_nominative" ? (
               <a
                 href={`/api/documents/${document.id}/pdf`}

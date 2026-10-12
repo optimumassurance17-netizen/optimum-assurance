@@ -51,6 +51,8 @@ const ACTION_LABELS: Record<string, string> = {
   client_login_pending: "Connexion à l'espace client",
   client_login_alert: "Connexion à l'espace client",
   client_login_alert_failed: "Connexion à l'espace client, alerte non envoyée",
+  client_quote_deleted: "Devis supprimé par le client",
+  client_quote_draft_deleted: "Brouillon de devis supprimé",
 }
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
@@ -121,6 +123,13 @@ export function documentChangeActivityLabel(action: string, details: string | nu
   if (action === "document_create") {
     return identity ? `Création : ${identity}` : "Document créé"
   }
+  if (action === "client_quote_deleted") {
+    return identity ? `Devis supprimé : ${identity}` : "Devis supprimé par le client"
+  }
+  if (action === "client_quote_draft_deleted") {
+    const company = textDetail(parsed, "raisonSociale")
+    return company ? `Brouillon de devis supprimé : ${company}` : "Brouillon de devis supprimé"
+  }
   return adminActivityLabel(action)
 }
 
@@ -158,7 +167,9 @@ export function describeClientActivity(
               ? pendingDoQuoteActivityLabel(log.details)
               : log.action === "client_document_update" ||
                   log.action === "document_update" ||
-                  log.action === "document_create"
+                  log.action === "document_create" ||
+                  log.action === "client_quote_deleted" ||
+                  log.action === "client_quote_draft_deleted"
                 ? documentChangeActivityLabel(log.action, log.details)
                 : adminActivityLabel(log.action),
       adminEmail: log.adminEmail,

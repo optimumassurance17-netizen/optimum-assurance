@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Header } from "@/components/Header"
 import { Breadcrumb } from "@/components/Breadcrumb"
@@ -22,6 +22,8 @@ import {
 import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
 import { DeclarerSinistreCard } from "@/components/espace-client/DeclarerSinistreCard"
 import { DemandesDocumentClient } from "@/components/espace-client/DemandesDocumentClient"
+import { SupprimerDevisButton } from "@/components/espace-client/SupprimerDevisButton"
+import { isClientDeletableQuoteDocument } from "@/lib/client-quote-delete"
 
 interface DocumentItem {
   id: string
@@ -277,6 +279,9 @@ export default function EspaceClientPage() {
   const [activeTab, setActiveTab] = useState<"documents" | "paiements" | "profil">("documents")
   const [exportingPdf, setExportingPdf] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [quoteDelete, setQuoteDelete] = useState<{ key: string; busy: boolean; error: string | null } | null>(null)
+  const [quoteNotice, setQuoteNotice] = useState<{ kind: "document" | "draft"; message: string } | null>(null)
+  const quoteDeleteLock = useRef(false)
   const [insuranceContracts, setInsuranceContracts] = useState<InsuranceContractListItem[]>([])
   const [doEtudeBanner, setDoEtudeBanner] = useState<{
     show: boolean
@@ -399,6 +404,47 @@ export default function EspaceClientPage() {
 
     fetchData()
   }, [status])
+
+  const deleteClientQuote = async (
+    target: { key: string; url: string; kind: "document" | "draft"; id: string }
+  ) => {
+    if (quoteDeleteLock.current) return
+    quoteDeleteLock.current = true
+    setQuoteDelete({ key: target.key, busy: true, error: null })
+    setQuoteNotice(null)
+    try {
+      const res = await fetch(target.url, { method: "DELETE" })
+      let message = "Impossible de supprimer ce devis."
+      try {
+        const json = (await res.json()) as { error?: string }
+        if (typeof json.error === "string" && json.error.trim()) message = json.error.trim()
+      } catch {
+        /* réponse vide */
+      }
+      if (!res.ok) {
+        setQuoteDelete({ key: target.key, busy: false, error: message })
+        return
+      }
+      if (target.kind === "document") {
+        setDocuments((current) => current.filter((item) => item.id !== target.id))
+      } else {
+        setSavedDevisDrafts((current) => current.filter((item) => item.id !== target.id))
+      }
+      setQuoteDelete(null)
+      setQuoteNotice({
+        kind: target.kind,
+        message: target.kind === "draft" ? "Devis enregistré supprimé." : "Devis supprimé.",
+      })
+    } catch {
+      setQuoteDelete({
+        key: target.key,
+        busy: false,
+        error: "Impossible de supprimer ce devis.",
+      })
+    } finally {
+      quoteDeleteLock.current = false
+    }
+  }
 
   if (status === "loading") {
     return (
@@ -1237,6 +1283,11 @@ export default function EspaceClientPage() {
         {activeTab === "documents" && !loading && (
           <div id="devis-enregistres" className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-10 shadow-sm scroll-mt-24">
             <h2 className="font-bold text-[#0a0a0a] text-lg mb-3">Reprise de devis enregistrés</h2>
+            {quoteNotice?.kind === "draft" ? (
+              <p role="status" className="mb-3 text-sm font-medium text-emerald-700">
+                {quoteNotice.message}
+              </p>
+            ) : null}
             {savedDevisDrafts.length === 0 ? (
               <p className="text-sm text-[#171717]">
                 Aucun devis sauvegardé en attente de reprise.
@@ -1266,12 +1317,33 @@ export default function EspaceClientPage() {
                         </p>
                       )}
                     </div>
-                    <Link
-                      href={`/devis/resume/${draft.token}`}
-                      className="inline-flex items-center justify-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
-                    >
-                      Reprendre
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        href={`/devis/resume/${draft.token}`}
+                        className="inline-flex items-center justify-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+                      >
+                        Reprendre
+                      </Link>
+                      <SupprimerDevisButton
+                        ariaLabel={`Supprimer le devis enregistré ${draft.raisonSociale?.trim() || "sans raison sociale"}`}
+                        confirmAriaLabel={`Confirmer la suppression du devis enregistré ${draft.raisonSociale?.trim() || "sans raison sociale"}`}
+                        cancelAriaLabel={`Annuler la suppression du devis enregistré ${draft.raisonSociale?.trim() || "sans raison sociale"}`}
+                        busy={quoteDelete?.key === `draft:${draft.id}` && quoteDelete.busy}
+                        locked={quoteDelete?.busy === true}
+                        error={quoteDelete?.key === `draft:${draft.id}` ? quoteDelete.error : null}
+                        onCancel={() => {
+                          if (quoteDelete?.key === `draft:${draft.id}`) setQuoteDelete(null)
+                        }}
+                        onConfirm={() => {
+                          void deleteClientQuote({
+                            key: `draft:${draft.id}`,
+                            url: `/api/client/devis-drafts/${draft.id}`,
+                            kind: "draft",
+                            id: draft.id,
+                          })
+                        }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1426,6 +1498,11 @@ export default function EspaceClientPage() {
             )}
           </div>
           {exportError ? <p className="mb-4 text-sm text-red-700">{exportError}</p> : null}
+          {quoteNotice?.kind === "document" ? (
+            <p role="status" className="mb-4 text-sm font-medium text-emerald-700">
+              {quoteNotice.message}
+            </p>
+          ) : null}
           {loading ? (
             <div className="space-y-3">
               <SkeletonDocumentRow />
@@ -1442,33 +1519,59 @@ export default function EspaceClientPage() {
                 const href = doc.href || `/espace-client/documents/${doc.id}`
                 const externalPdf = Boolean(doc.href)
                 const badge = getDocumentStatusBadge(doc)
+                const canDeleteQuote = isClientDeletableQuoteDocument(doc)
                 return (
-                <Link
+                <div
                   key={doc.id}
-                  href={href}
-                  target={externalPdf ? "_blank" : undefined}
-                  rel={externalPdf ? "noreferrer" : undefined}
-                  className="flex items-center justify-between p-4 bg-[#e4e4e4] rounded-xl hover:bg-[#eff6ff] border border-[#d4d4d4] hover:border-[#2563eb]/30 transition-all"
+                  className="flex flex-col gap-3 rounded-xl border border-[#d4d4d4] bg-[#e4e4e4] p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{typeIcons[doc.type] || "📄"}</span>
-                    <div>
-                      <p className="font-medium text-black">{typeLabels[doc.type] || doc.type}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-2">
-                        <p className="text-sm text-[#171717]">{doc.numero}</p>
-                        {badge ? (
-                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${badge.className}`}>
-                            {badge.label}
-                          </span>
+                  <Link
+                    href={href}
+                    target={externalPdf ? "_blank" : undefined}
+                    rel={externalPdf ? "noreferrer" : undefined}
+                    className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl transition-all hover:text-[#2563eb]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{typeIcons[doc.type] || "📄"}</span>
+                      <div>
+                        <p className="font-medium text-black">{typeLabels[doc.type] || doc.type}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <p className="text-sm text-[#171717]">{doc.numero}</p>
+                          {badge ? (
+                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${badge.className}`}>
+                              {badge.label}
+                            </span>
+                          ) : null}
+                        </div>
+                        {doc.generated ? (
+                          <p className="text-xs text-[#2563eb]">Document généré automatiquement</p>
                         ) : null}
                       </div>
-                      {doc.generated ? (
-                        <p className="text-xs text-[#2563eb]">Document généré automatiquement</p>
-                      ) : null}
                     </div>
-                  </div>
-                  <span className="text-[#2563eb] font-medium">{externalPdf ? "PDF →" : "Voir →"}</span>
-                </Link>
+                    <span className="text-[#2563eb] font-medium">{externalPdf ? "PDF →" : "Voir →"}</span>
+                  </Link>
+                  {canDeleteQuote ? (
+                    <SupprimerDevisButton
+                      ariaLabel={`Supprimer le devis ${doc.numero}`}
+                      confirmAriaLabel={`Confirmer la suppression du devis ${doc.numero}`}
+                      cancelAriaLabel={`Annuler la suppression du devis ${doc.numero}`}
+                      busy={quoteDelete?.key === `document:${doc.id}` && quoteDelete.busy}
+                      locked={quoteDelete?.busy === true}
+                      error={quoteDelete?.key === `document:${doc.id}` ? quoteDelete.error : null}
+                      onCancel={() => {
+                        if (quoteDelete?.key === `document:${doc.id}`) setQuoteDelete(null)
+                      }}
+                      onConfirm={() => {
+                        void deleteClientQuote({
+                          key: `document:${doc.id}`,
+                          url: `/api/documents/${doc.id}`,
+                          kind: "document",
+                          id: doc.id,
+                        })
+                      }}
+                    />
+                  ) : null}
+                </div>
                 )
               })}
             </div>

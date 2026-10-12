@@ -14,6 +14,15 @@ import {
   isContractCoverageLocked,
 } from "@/lib/devis-edition"
 import { stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
+import { logAdminActivity } from "@/lib/admin-activity"
+import {
+  BLOCKING_QUOTE_PAYMENT_STATUSES,
+  CLIENT_QUOTE_DELETE_ERRORS,
+  clientQuoteDeleteRefusal,
+  isStoredClientQuoteType,
+  jsonFieldEqualsNeedles,
+  paymentMetadataBlocksQuote,
+} from "@/lib/client-quote-delete"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
   try {
@@ -287,6 +296,114 @@ export async function PATCH(
     console.error("Erreur modification document client:", error)
     return NextResponse.json(
       { error: "Erreur lors de la modification" },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * DELETE - Supprime un devis du client connecté.
+ * Refusé si un paiement, une signature, un contrat ou une facture y est déjà lié.
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+    }
+
+    const { id } = await params
+    const document = await prisma.document.findFirst({
+      where: { id, userId: session.user.id },
+      select: { id: true, type: true, numero: true },
+    })
+    if (!document) {
+      return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
+    }
+    if (!isStoredClientQuoteType(document.type)) {
+      return NextResponse.json({ error: CLIENT_QUOTE_DELETE_ERRORS.notQuote }, { status: 409 })
+    }
+
+    const sourceDevisNeedles = jsonFieldEqualsNeedles("sourceDevisId", document.id)
+    const sourceNumeroNeedles = jsonFieldEqualsNeedles("sourceDevisNumero", document.numero)
+    const invoiceNeedles = jsonFieldEqualsNeedles("numeroDevis", document.numero)
+
+    const [payments, pendingSignature, linkedContract, linkedInvoice, avenantFee] = await Promise.all([
+      prisma.payment.findMany({
+        where: {
+          userId: session.user.id,
+          status: { in: [...BLOCKING_QUOTE_PAYMENT_STATUSES] },
+        },
+        select: { status: true, metadata: true },
+      }),
+      prisma.pendingSignature.findFirst({
+        where: {
+          userId: session.user.id,
+          OR: [
+            { contractNumero: document.numero },
+            ...sourceDevisNeedles.map((needle) => ({ contractData: { contains: needle } })),
+            ...sourceNumeroNeedles.map((needle) => ({ contractData: { contains: needle } })),
+          ],
+        },
+        select: { id: true },
+      }),
+      prisma.document.findFirst({
+        where: {
+          userId: session.user.id,
+          type: "contrat",
+          OR: sourceDevisNeedles.map((needle) => ({ data: { contains: needle } })),
+        },
+        select: { id: true },
+      }),
+      prisma.document.findFirst({
+        where: {
+          userId: session.user.id,
+          type: "facture_do",
+          OR: invoiceNeedles.map((needle) => ({ data: { contains: needle } })),
+        },
+        select: { id: true },
+      }),
+      prisma.avenantFee.findFirst({
+        where: { userId: session.user.id, documentId: document.id },
+        select: { id: true },
+      }),
+    ])
+
+    const refusal = clientQuoteDeleteRefusal({
+      blockingPayment: payments.some((payment) =>
+        paymentMetadataBlocksQuote(payment.metadata, payment.status, document.id, document.numero)
+      ),
+      pendingSignature: Boolean(pendingSignature),
+      linkedContract: Boolean(linkedContract),
+      linkedInvoice: Boolean(linkedInvoice),
+      avenantFee: Boolean(avenantFee),
+    })
+    if (refusal) {
+      return NextResponse.json({ error: refusal }, { status: 409 })
+    }
+
+    await prisma.document.delete({ where: { id: document.id } })
+
+    await logAdminActivity({
+      adminEmail: session.user.email?.trim() || `client:${session.user.id}`,
+      action: "client_quote_deleted",
+      targetType: "user",
+      targetId: session.user.id,
+      details: {
+        documentId: document.id,
+        documentNumero: document.numero,
+        documentType: document.type,
+      },
+    })
+
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error("Erreur suppression devis client:", error)
+    return NextResponse.json(
+      { error: "Erreur lors de la suppression" },
       { status: 500 }
     )
   }
