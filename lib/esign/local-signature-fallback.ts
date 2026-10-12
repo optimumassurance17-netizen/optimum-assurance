@@ -12,7 +12,7 @@ export const LOCAL_SIGNED_PDF_KEY = "localSignedPdfBase64" as const
 export const MAX_LOCAL_SIGNATURE_PDF_BYTES = 3 * 1024 * 1024
 
 const CONNECTIVITY_RE =
-  /injoignable|ne répond pas|ne repond pas|fetch failed|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|getaddrinfo|UND_ERR_CONNECT|UND_ERR_SOCKET/i
+  /injoignable|ne répond pas|ne repond pas|fetch failed|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|getaddrinfo|UND_ERR_CONNECT|UND_ERR_SOCKET|UND_ERR_HEADERS_TIMEOUT|UND_ERR_BODY_TIMEOUT|UND_ERR_CONNECT_TIMEOUT|AbortError|aborted|timeout/i
 
 const SECRET_RE = /bearer\s+\S+|eyJ[\w.-]+|sb_secret_\S+|service_role/gi
 
@@ -58,6 +58,35 @@ export function isLocalFallbackContract(data: Record<string, unknown> | null): b
   if (data.signatureProvider !== LOCAL_SIGNATURE_PROVIDER) return false
   const pdf = data[FALLBACK_PDF_KEY]
   return typeof pdf === "string" && pdf.length > 80
+}
+
+function declaredActivityCount(data: Record<string, unknown>): number {
+  if (Array.isArray(data.activites)) {
+    return data.activites.filter((item) => typeof item === "string" && item.trim().length > 0).length
+  }
+  if (typeof data.activites === "string") {
+    return data.activites
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean).length
+  }
+  return 0
+}
+
+/**
+ * Contrat décennale dont le PDF peut être régénéré si Supabase ne renvoie pas l'original.
+ * Le devis PDF personnalisé n'est pas concerné : son fichier n'existe que dans le stockage.
+ */
+export function isRebuildableDecennaleContract(data: Record<string, unknown> | null): boolean {
+  if (!data || isLocalFallbackContract(data)) return false
+  if (data.customUploadedDevisFlow === true) return false
+  const raisonSociale = typeof data.raisonSociale === "string" ? data.raisonSociale.trim() : ""
+  const dateEffet = typeof data.dateEffet === "string" ? data.dateEffet.trim() : ""
+  const dateEcheance = typeof data.dateEcheance === "string" ? data.dateEcheance.trim() : ""
+  const prime = Number(data.primeAnnuelle)
+  return Boolean(
+    raisonSociale && dateEffet && dateEcheance && declaredActivityCount(data) > 0 && Number.isFinite(prime) && prime > 0
+  )
 }
 
 export function decodeStoredPdfBase64(value: unknown): Uint8Array | null {

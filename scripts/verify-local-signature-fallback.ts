@@ -1,17 +1,20 @@
 import { PDFDocument } from "pdf-lib"
 import { applySignatureToPdf } from "../lib/esign/apply-signature-to-pdf"
+import { readFileSync } from "node:fs"
 import {
   FALLBACK_PDF_KEY,
   LOCAL_SIGNATURE_PROVIDER,
   LOCAL_SIGNED_PDF_KEY,
   decodeStoredPdfBase64,
   isLocalFallbackContract,
+  isRebuildableDecennaleContract,
   isSupabaseConnectivityError,
   readContractObject,
   safeLogMessage,
   stripSignatureBinaries,
   stripSignatureBinariesFromJsonString,
 } from "../lib/esign/local-signature-fallback"
+import { renderPendingDecennalePdf } from "../lib/esign/render-pending-decennale-pdf"
 
 const PNG_DATA_URL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
@@ -41,6 +44,38 @@ async function main() {
     "une configuration absente ne doit pas être traitée comme une panne réseau"
   )
   assert(!safeLogMessage(new Error("Authorization bearer eyJhbGciOi.secret")).includes("eyJ"), "le journal masque les jetons")
+  assert(
+    isSupabaseConnectivityError(new Error("The operation was aborted due to timeout")),
+    "un délai dépassé doit basculer en secours"
+  )
+  const rebuildable = {
+    raisonSociale: "Atelier test",
+    activites: ["Maçonnerie"],
+    primeAnnuelle: 1200,
+    dateEffet: "01/01/2026",
+    dateEcheance: "31/12/2026",
+    franchise: 1000,
+    plafond: 100000,
+    chiffreAffaires: 80000,
+  }
+  assert(isRebuildableDecennaleContract(rebuildable), "un dossier décennale complet se reconstruit sans Supabase")
+  assert(
+    !isRebuildableDecennaleContract({ ...rebuildable, customUploadedDevisFlow: true }),
+    "un PDF personnalisé ne se reconstruit pas"
+  )
+  const rebuilt = await renderPendingDecennalePdf(rebuildable, "C-REBUILD")
+  assert(Buffer.from(rebuilt.subarray(0, 5)).toString("latin1") === "%PDF-", "le contrat reconstruit est un PDF")
+
+  const preview = readFileSync("lib/esign/resolve-sign-preview.ts", "utf8")
+  const signRoute = readFileSync("app/api/sign/route.ts", "utf8")
+  const supabaseClient = readFileSync("lib/supabase.ts", "utf8")
+  const gestion = readFileSync("app/gestion/page.tsx", "utf8")
+  assert(preview.includes("isRebuildableDecennaleContract"), "l'aperçu ouvre un contrat décennale sans Supabase")
+  assert(preview.includes("4_500"), "l'attente Supabase reste courte")
+  assert(signRoute.includes("completeRebuiltDecennaleSignature"), "la signature finalise le contrat reconstruit")
+  assert(supabaseClient.includes("ipv4first"), "les appels Supabase préfèrent IPv4")
+  assert(gestion.includes("Réparer"), "la réparation reste disponible depuis la gestion")
+  assert(!gestion.includes("s.repairEligible ?"), "la réparation n'attend plus 24 heures")
 
   const source = await PDFDocument.create()
   source.addPage([400, 600])
@@ -52,6 +87,7 @@ async function main() {
     [FALLBACK_PDF_KEY]: pdfBase64,
   }
   assert(isLocalFallbackContract(stored), "un dossier décennale local doit être reconnu")
+  assert(!isRebuildableDecennaleContract(stored), "le secours local déjà stocké n'est pas une reconstruction")
   assert(
     !isLocalFallbackContract({ ...stored, customUploadedDevisFlow: true }),
     "un devis PDF personnalisé ne doit pas utiliser le secours"

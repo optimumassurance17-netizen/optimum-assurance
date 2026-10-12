@@ -1,19 +1,23 @@
 import { setDefaultResultOrder } from "node:dns"
+import { setDefaultAutoSelectFamilyAttemptTimeout } from "node:net"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/utils/supabase/env"
 
 let ipv4Preferred = false
 
-/** Undici/Vercel tente parfois l’IPv6 en premier et renvoie « fetch failed ». */
+/** Undici/Vercel tente parfois l’IPv6 en premier et laisse la signature en attente plusieurs secondes. */
 function preferIpv4Lookup() {
   if (ipv4Preferred) return
   ipv4Preferred = true
   try {
     setDefaultResultOrder("ipv4first")
+    setDefaultAutoSelectFamilyAttemptTimeout(250)
   } catch {
-    /* runtime sans setDefaultResultOrder */
+    /* runtime sans ces réglages DNS */
   }
 }
+
+preferIpv4Lookup()
 
 /** Origine du projet, sans chemin (`/rest/v1` casserait l’URL Storage). */
 export function supabaseProjectOrigin(raw: string | undefined | null): string | null {

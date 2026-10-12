@@ -48,7 +48,10 @@ export async function uploadPdfAndInsertSignRequest(
   const origin = supabaseProjectOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL)
   if (origin) {
     try {
-      await fetch(`${origin}/auth/v1/health`, { method: "GET" })
+      await fetch(`${origin}/auth/v1/health`, {
+        method: "GET",
+        signal: AbortSignal.timeout(4_000),
+      })
     } catch (error) {
       console.error("[esign] projet Supabase injoignable", networkDetail(error))
       throw new Error(
@@ -58,13 +61,37 @@ export async function uploadPdfAndInsertSignRequest(
   }
 
   const bytes = Uint8Array.from(pdfBuffer)
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      uploadAndInsert(supabase, bytes, storagePath),
+      new Promise<{ id: string }>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(
+            new Error(
+              "Le service de signature électronique est injoignable. L’adresse du projet Supabase ne répond pas."
+            )
+          )
+        }, 12_000)
+      }),
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+async function uploadAndInsert(
+  supabase: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
+  bytes: Uint8Array,
+  storagePath: string
+): Promise<{ id: string }> {
   let { error: upError } = await supabase.storage
     .from(ESIGN_BUCKET_ORIGINALS)
     .upload(storagePath, bytes, { contentType: "application/pdf", upsert: false })
 
-  if (upError && /fetch failed/i.test(upError.message || "")) {
+  if (upError && /fetch failed|timeout|aborted/i.test(upError.message || "")) {
     const firstError = upError
-    const blob = new Blob([bytes], { type: "application/pdf" })
+    const blob = new Blob([Buffer.from(bytes)], { type: "application/pdf" })
     const retry = await supabase.storage
       .from(ESIGN_BUCKET_ORIGINALS)
       .upload(storagePath, blob, { contentType: "application/pdf", upsert: false })
@@ -79,10 +106,17 @@ export async function uploadPdfAndInsertSignRequest(
     .from("sign_requests")
     .insert({ document_storage_path: storagePath })
     .select("id")
+    .abortSignal(AbortSignal.timeout(8_000))
     .single()
 
   if (insError || !row?.id) {
-    throw new Error(insError?.message || "Impossible de créer la demande de signature.")
+    const message = insError?.message || ""
+    if (/fetch failed|timeout|aborted|network/i.test(message)) {
+      throw new Error(
+        "Le service de signature électronique est injoignable. L’adresse du projet Supabase ne répond pas."
+      )
+    }
+    throw new Error(message || "Impossible de créer la demande de signature.")
   }
 
   return { id: row.id as string }

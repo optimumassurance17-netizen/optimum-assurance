@@ -3,10 +3,20 @@ import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { applySignatureToPdf } from "@/lib/esign/apply-signature-to-pdf"
 import { ESIGN_BUCKET_ORIGINALS, ESIGN_BUCKET_SIGNED } from "@/lib/esign/buckets"
-import { completeLocalDecennaleSignature, LocalSignatureError } from "@/lib/esign/complete-local-signature"
+import {
+  completeLocalDecennaleSignature,
+  completeRebuiltDecennaleSignature,
+  LocalSignatureError,
+} from "@/lib/esign/complete-local-signature"
 import { getClientIp, getUserAgent } from "@/lib/esign/get-request-meta"
 import { sha256Hex } from "@/lib/esign/hash-pdf"
-import { isLocalFallbackContract, readContractObject, safeLogMessage } from "@/lib/esign/local-signature-fallback"
+import {
+  isLocalFallbackContract,
+  isRebuildableDecennaleContract,
+  readContractObject,
+  safeLogMessage,
+} from "@/lib/esign/local-signature-fallback"
+import type { PendingSignature } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
 import { applyPendingFinalize } from "@/lib/pending-signature-finalize"
@@ -17,9 +27,46 @@ export const runtime = "nodejs"
 const SIGNED_DOWNLOAD_TTL_SEC = 60 * 60 * 24 * 7
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const MAX_SIGNATURE_IMAGE_BYTES = 2 * 1024 * 1024
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+
+async function rebuiltDecennaleResponse(
+  pending: PendingSignature | null,
+  signature: string,
+  emailNorm: string,
+  request: NextRequest
+) {
+  if (!pending || !isRebuildableDecennaleContract(readContractObject(pending.contractData))) return null
+  try {
+    const local = await completeRebuiltDecennaleSignature({
+      pending,
+      signaturePngDataUrl: signature,
+      email: emailNorm,
+      ip: getClientIp(request),
+      userAgent: getUserAgent(request),
+    })
+    return NextResponse.json({
+      ok: true,
+      signatureMode: "local",
+      signatureId: pending.signatureRequestId,
+      documentHash: local.documentHash,
+      signedDocumentUrl: local.signedDocumentUrl,
+    })
+  } catch (error) {
+    if (error instanceof LocalSignatureError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    console.error("[api/sign] signature reconstruite", safeLogMessage(error))
+    return NextResponse.json(
+      {
+        error:
+          "La finalisation du contrat a échoué. Vous pouvez réessayer, ou contacter le support avec votre e-mail.",
+      },
+      { status: 500 }
+    )
+  }
+}
 
 function isValidPngDataUrl(s: string): boolean {
   if (!s.startsWith("data:image/png;base64,")) return false
@@ -103,27 +150,49 @@ export async function POST(request: NextRequest) {
 
   const supabase = createSupabaseServiceClient()
   if (!supabase) {
+    const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
+    if (offline) return offline
     return NextResponse.json({ error: "Configuration Supabase incomplète (clé service)." }, { status: 500 })
   }
 
-  const { data: signRequest, error: reqError } = await supabase
-    .from("sign_requests")
-    .select("id, document_storage_path")
-    .eq("id", id)
-    .maybeSingle()
-
-  if (reqError) {
+  let signRequest: { document_storage_path: string } | null = null
+  try {
+    const loaded = await supabase
+      .from("sign_requests")
+      .select("id, document_storage_path")
+      .eq("id", id)
+      .abortSignal(AbortSignal.timeout(4_500))
+      .maybeSingle()
+    if (!loaded.error && loaded.data?.document_storage_path) {
+      signRequest = { document_storage_path: loaded.data.document_storage_path }
+    } else if (loaded.error) {
+      const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
+      if (offline) return offline
+      return NextResponse.json({ error: "Impossible de charger la demande de signature." }, { status: 500 })
+    }
+  } catch (error) {
+    console.error("[api/sign] lecture demande", safeLogMessage(error))
+    const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
+    if (offline) return offline
     return NextResponse.json({ error: "Impossible de charger la demande de signature." }, { status: 500 })
   }
   if (!signRequest?.document_storage_path) {
+    const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
+    if (offline) return offline
     return NextResponse.json({ error: "Demande de signature introuvable." }, { status: 404 })
   }
 
-  const { data: downloaded, error: dlError } = await supabase.storage
-    .from(ESIGN_BUCKET_ORIGINALS)
-    .download(signRequest.document_storage_path)
+  let downloaded: Blob | null = null
+  try {
+    const result = await supabase.storage.from(ESIGN_BUCKET_ORIGINALS).download(signRequest.document_storage_path)
+    if (!result.error && result.data) downloaded = result.data
+  } catch (error) {
+    console.error("[api/sign] téléchargement original", safeLogMessage(error))
+  }
 
-  if (dlError || !downloaded) {
+  if (!downloaded) {
+    const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
+    if (offline) return offline
     return NextResponse.json(
       { error: "Téléchargement du PDF original impossible (bucket ou chemin)." },
       { status: 502 }
@@ -150,6 +219,8 @@ export async function POST(request: NextRequest) {
   })
 
   if (upError) {
+    const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
+    if (offline) return offline
     return NextResponse.json({ error: "Échec de l’envoi du PDF signé vers le stockage." }, { status: 502 })
   }
 
@@ -183,6 +254,8 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (insError || !row) {
+    const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
+    if (offline) return offline
     return NextResponse.json({ error: "Enregistrement de la piste d’audit impossible." }, { status: 500 })
   }
 

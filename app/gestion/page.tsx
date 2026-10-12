@@ -3877,8 +3877,7 @@ export default function GestionPage() {
                               >
                                 {cancellingSignatureId === s.signatureRequestId ? "…" : "Annuler"}
                               </button>
-                              {s.repairEligible ? (
-                                <button
+                              <button
                                   type="button"
                                   disabled={repairingSignatureId === s.signatureRequestId}
                                   onClick={async () => {
@@ -3914,7 +3913,6 @@ export default function GestionPage() {
                                 >
                                   {repairingSignatureId === s.signatureRequestId ? "…" : "Réparer"}
                                 </button>
-                              ) : null}
                             </div>
                           </td>
                         </tr>

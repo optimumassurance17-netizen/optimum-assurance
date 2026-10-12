@@ -2,13 +2,14 @@ import "server-only"
 import { ESIGN_BUCKET_ORIGINALS } from "@/lib/esign/buckets"
 import {
   isLocalFallbackContract,
+  isRebuildableDecennaleContract,
   readContractObject,
   safeLogMessage,
 } from "@/lib/esign/local-signature-fallback"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
 
-const SUPABASE_LOOKUP_MS = 8_000
+const SUPABASE_LOOKUP_MS = 4_500
 
 export type SignPreview =
   | { kind: "supabase"; documentId: string; url: string }
@@ -23,7 +24,14 @@ type RemoteLookup =
   | { kind: "unavailable" }
   | { kind: "missing" }
 
-async function lookupSupabase(id: string): Promise<RemoteLookup> {
+function whenAborted(signal: AbortSignal): Promise<RemoteLookup> {
+  if (signal.aborted) return Promise.resolve({ kind: "unavailable" })
+  return new Promise((resolve) => {
+    signal.addEventListener("abort", () => resolve({ kind: "unavailable" }), { once: true })
+  })
+}
+
+async function lookupSupabase(id: string, signal: AbortSignal): Promise<RemoteLookup> {
   const supabase = createSupabaseServiceClient()
   if (!supabase) return { kind: "unconfigured" }
 
@@ -32,51 +40,61 @@ async function lookupSupabase(id: string): Promise<RemoteLookup> {
       .from("sign_requests")
       .select("id, document_storage_path")
       .eq("id", id)
+      .abortSignal(signal)
       .maybeSingle()
 
-    if (error) return { kind: "unavailable" }
+    if (signal.aborted || error) return { kind: "unavailable" }
     if (!row?.document_storage_path || typeof row.id !== "string") return { kind: "missing" }
 
-    const { data: signed, error: signErr } = await supabase.storage
+    const signed = await supabase.storage
       .from(ESIGN_BUCKET_ORIGINALS)
       .createSignedUrl(row.document_storage_path, 3600)
 
-    if (signErr || !signed?.signedUrl) return { kind: "unavailable" }
-    return { kind: "ok", documentId: row.id, url: signed.signedUrl }
+    if (signal.aborted || signed.error || !signed.data?.signedUrl) return { kind: "unavailable" }
+    return { kind: "ok", documentId: row.id, url: signed.data.signedUrl }
   }
 
-  let timer: ReturnType<typeof setTimeout> | undefined
   try {
-    const result = await Promise.race([
+    return await Promise.race([
       query(),
-      new Promise<RemoteLookup>((resolve) => {
-        timer = setTimeout(() => resolve({ kind: "unavailable" }), SUPABASE_LOOKUP_MS)
-      }),
+      whenAborted(signal),
     ])
-    return result
   } catch (error) {
     console.error("[esign] lecture signature", safeLogMessage(error))
     return { kind: "unavailable" }
-  } finally {
-    if (timer) clearTimeout(timer)
   }
 }
 
-async function hasLocalFallback(id: string): Promise<boolean> {
-  const pending = await prisma.pendingSignature.findUnique({
-    where: { signatureRequestId: id },
-    select: { contractData: true },
-  })
-  if (!pending) return false
-  return isLocalFallbackContract(readContractObject(pending.contractData))
+async function loadPendingContract(id: string): Promise<Record<string, unknown> | null> {
+  try {
+    const pending = await prisma.pendingSignature.findUnique({
+      where: { signatureRequestId: id },
+      select: { contractData: true },
+    })
+    if (!pending) return null
+    return readContractObject(pending.contractData)
+  } catch (error) {
+    console.error("[esign] dossier signature", safeLogMessage(error))
+    return null
+  }
 }
 
 export async function resolveSignPreview(id: string): Promise<SignPreview> {
-  const remote = await lookupSupabase(id)
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), SUPABASE_LOOKUP_MS)
+  const remotePromise = lookupSupabase(id, controller.signal).finally(() => clearTimeout(timer))
+  const pendingData = await loadPendingContract(id)
+
+  if (isLocalFallbackContract(pendingData)) {
+    controller.abort()
+    return { kind: "local", documentId: id }
+  }
+
+  const remote = await remotePromise
   if (remote.kind === "ok") {
     return { kind: "supabase", documentId: remote.documentId, url: remote.url }
   }
-  if (await hasLocalFallback(id)) {
+  if (isRebuildableDecennaleContract(pendingData)) {
     return { kind: "local", documentId: id }
   }
   if (remote.kind === "unconfigured") return { kind: "unconfigured" }

@@ -9,8 +9,10 @@ import {
   LOCAL_SIGNED_PDF_KEY,
   decodeStoredPdfBase64,
   isLocalFallbackContract,
+  isRebuildableDecennaleContract,
   readContractObject,
 } from "@/lib/esign/local-signature-fallback"
+import { renderPendingDecennalePdf } from "@/lib/esign/render-pending-decennale-pdf"
 
 export class LocalSignatureError extends Error {
   status: number
@@ -43,10 +45,42 @@ export async function completeLocalDecennaleSignature(input: {
     throw new LocalSignatureError("Le PDF du contrat est illisible.", 422)
   }
 
+  return completeDecennaleSignatureFromPdf({ ...input, originalPdf: original })
+}
+
+/** Signe un contrat décennale reconstruit quand Supabase ne renvoie pas le PDF original. */
+export async function completeRebuiltDecennaleSignature(input: {
+  pending: PendingSignature
+  signaturePngDataUrl: string
+  email: string
+  ip: string | null
+  userAgent: string | null
+}): Promise<{ documentHash: string; signedDocumentUrl: string }> {
+  const raw = readContractObject(input.pending.contractData)
+  if (!raw || !isRebuildableDecennaleContract(raw)) {
+    throw new LocalSignatureError("Ce dossier ne peut pas être signé sans le stockage.", 409)
+  }
+  const original = await renderPendingDecennalePdf(raw, input.pending.contractNumero)
+  return completeDecennaleSignatureFromPdf({ ...input, originalPdf: original })
+}
+
+export async function completeDecennaleSignatureFromPdf(input: {
+  pending: PendingSignature
+  originalPdf: Uint8Array
+  signaturePngDataUrl: string
+  email: string
+  ip: string | null
+  userAgent: string | null
+}): Promise<{ documentHash: string; signedDocumentUrl: string }> {
+  const raw = readContractObject(input.pending.contractData)
+  if (!raw) {
+    throw new LocalSignatureError("Dossier de signature illisible.", 422)
+  }
+
   const signedAtIso = new Date().toISOString()
   let signedBytes: Uint8Array
   try {
-    signedBytes = await applySignatureToPdf(original, input.signaturePngDataUrl, input.email, signedAtIso)
+    signedBytes = await applySignatureToPdf(input.originalPdf, input.signaturePngDataUrl, input.email, signedAtIso)
   } catch (error) {
     const message = error instanceof Error ? error.message : "Traitement PDF impossible."
     throw new LocalSignatureError(message, 422)

@@ -598,10 +598,9 @@ export default function GestionRectificationPage() {
                       >
                         {cancellingSignatureId === s.signatureRequestId ? "Annulation..." : "Annuler"}
                       </button>
-                      {s.repairEligible ? (
-                        <button
-                          type="button"
-                          disabled={repairingSignatureId === s.signatureRequestId}
+                      <button
+                        type="button"
+                        disabled={repairingSignatureId === s.signatureRequestId}
                           onClick={async () => {
                             setRepairingSignatureId(s.signatureRequestId)
                             try {
@@ -628,7 +627,6 @@ export default function GestionRectificationPage() {
                         >
                           {repairingSignatureId === s.signatureRequestId ? "Réparation..." : "Réparer"}
                         </button>
-                      ) : null}
                     </div>
                   </div>
                 </div>
