@@ -1987,10 +1987,11 @@ export default function GestionPage() {
   return (
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
       <header className="border-b border-gray-700 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-semibold text-white">Gestion CRM</h1>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-2" role="toolbar" aria-label="Exports du tableau de bord">
             <button
+              type="button"
               onClick={() => {
                 if (!data) return
                 const csv = [
@@ -2007,7 +2008,7 @@ export default function GestionPage() {
                 a.click()
                 URL.revokeObjectURL(url)
               }}
-              className="text-sm text-gray-200 hover:text-white"
+              className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:border-gray-400 hover:text-white"
             >
               Export paiements
             </button>
@@ -2034,12 +2035,13 @@ export default function GestionPage() {
                 a.click()
                 URL.revokeObjectURL(url)
               }}
-              className="text-sm text-gray-200 hover:text-white"
+              className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:border-gray-400 hover:text-white"
             >
               Export clients
             </button>
             {data.devisDoLeads && data.devisDoLeads.length > 0 && (
               <button
+                type="button"
                 onClick={() => {
                   if (!data?.devisDoLeads) return
                   const csv = [
@@ -2061,7 +2063,7 @@ export default function GestionPage() {
                   a.click()
                   URL.revokeObjectURL(url)
                 }}
-                className="text-sm text-gray-200 hover:text-white"
+                className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:border-gray-400 hover:text-white"
               >
                 Export devis DO
               </button>
@@ -2129,7 +2131,7 @@ export default function GestionPage() {
                   a.click()
                   URL.revokeObjectURL(url)
                 }}
-                className="text-sm text-gray-200 hover:text-white"
+                className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:border-gray-400 hover:text-white"
               >
                 Export RC Fabriquant
               </button>
@@ -2159,7 +2161,7 @@ export default function GestionPage() {
                   a.click()
                   URL.revokeObjectURL(url)
                 }}
-                className="text-sm text-gray-200 hover:text-white"
+                className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:border-gray-400 hover:text-white"
               >
                 Export leads décennale
               </button>
@@ -4149,12 +4151,13 @@ export default function GestionPage() {
                       </td>
                       <td className="p-3 sm:p-4 hidden sm:table-cell">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-3 sm:p-4">
-                        <Link href={`/gestion/documents/${d.id}`} className="text-[#2563eb] hover:text-[#1d4ed8] text-sm mr-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                        <Link href={`/gestion/documents/${d.id}`} className="text-[#2563eb] hover:text-[#1d4ed8] text-sm">
                           Voir
                         </Link>
                         <Link
                           href={`/gestion/clients/${d.userId}`}
-                          className="text-gray-200 hover:text-white text-sm mr-2"
+                          className="text-gray-200 hover:text-white text-sm"
                         >
                           Client
                         </Link>
@@ -4165,14 +4168,16 @@ export default function GestionPage() {
                         {(d.type === "attestation" || d.type === "attestation_nominative") && d.status === "valide" && (
                           <>
                             <button
+                              type="button"
                               onClick={() => handleStatusChange(d.id, "suspendu")}
-                              className="text-red-400 hover:text-red-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
+                              className="text-red-400 hover:text-red-300 text-sm min-h-[44px] inline-flex items-center px-2"
                             >
                               Suspendre
                             </button>
                             <button
+                              type="button"
                               onClick={() => setResiliationModal({ docId: d.id, motif: "" })}
-                              className="text-gray-200 hover:text-white text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
+                              className="text-gray-200 hover:text-white text-sm min-h-[44px] inline-flex items-center px-2"
                             >
                               Résilier
                             </button>
@@ -4184,7 +4189,7 @@ export default function GestionPage() {
                               type="button"
                               disabled={sendingAttestationCarteId === d.id}
                               onClick={() => handleRelanceCarteAttestation(d.id)}
-                              className="text-emerald-400 hover:text-emerald-300 text-sm min-h-[44px] inline-flex items-center -m-1 px-2 disabled:opacity-50"
+                              className="text-emerald-400 hover:text-emerald-300 text-sm min-h-[44px] inline-flex items-center px-2 disabled:opacity-50"
                               title={
                                 data.payments.some((payment) => pendingCardEcheanceId(payment) === `attestation:${d.id}`)
                                   ? "Renvoyer le lien carte déjà ouvert"
@@ -4200,25 +4205,28 @@ export default function GestionPage() {
                             <button
                               type="button"
                               onClick={() => handleResendImpayeEmail(d.id)}
-                              className="text-sky-400 hover:text-sky-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
+                              className="text-sky-400 hover:text-sky-300 text-sm min-h-[44px] inline-flex items-center px-2"
                               title="Renvoyer l’email de régularisation (décennale)"
                             >
                               Relancer email
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleStatusChange(d.id, "valide")}
-                              className="text-green-400 hover:text-green-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
+                              className="text-green-400 hover:text-green-300 text-sm min-h-[44px] inline-flex items-center px-2"
                             >
                               Restaurer
                             </button>
                             <button
+                              type="button"
                               onClick={() => setResiliationModal({ docId: d.id, motif: "" })}
-                              className="text-gray-200 hover:text-white text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
+                              className="text-gray-200 hover:text-white text-sm min-h-[44px] inline-flex items-center px-2"
                             >
                               Résilier
                             </button>
                           </>
                         )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -4261,9 +4269,10 @@ export default function GestionPage() {
                       </td>
                       <td className="p-3 sm:p-4 hidden sm:table-cell">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-3 sm:p-4">
+                        <div className="flex flex-wrap items-center gap-2">
                         <Link
                           href={`/gestion/clients/${d.userId}`}
-                          className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium mr-3"
+                          className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium"
                         >
                           CRM →
                         </Link>
@@ -4274,19 +4283,22 @@ export default function GestionPage() {
                         {d.status === "valide" && (
                           <>
                             <button
+                              type="button"
                               onClick={() => openEditModal(d)}
-                              className="text-sky-400 hover:text-sky-300 text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2"
+                              className="text-sky-400 hover:text-sky-300 text-sm min-h-[44px] inline-flex items-center px-2"
                             >
                               Modifier
                             </button>
                             <button
+                              type="button"
                               onClick={() => setResiliationModal({ docId: d.id, motif: "" })}
-                              className="text-gray-200 hover:text-white text-sm min-h-[44px] min-w-[44px] inline-flex items-center -m-1 px-2 ml-2"
+                              className="text-gray-200 hover:text-white text-sm min-h-[44px] inline-flex items-center px-2"
                             >
                               Autoriser annulation
                             </button>
                           </>
                         )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -5702,7 +5714,7 @@ export default function GestionPage() {
       {/* Modal modification contrat / avenant — données alignées sur le JSON contrat / PDF */}
       {editModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 overflow-y-auto py-6 px-2"
+          className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60 overflow-y-auto py-6 px-2"
           onClick={() => {
             setEditModal(null)
             setEditModalSireneError(null)
@@ -6018,9 +6030,14 @@ export default function GestionPage() {
 
       {/* Modal autorisation annulation / résiliation */}
       {resiliationModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setResiliationModal(null)}>
-          <div className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-white mb-4">Autoriser l&apos;annulation</h3>
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60" onClick={() => setResiliationModal(null)}>
+          <div
+            className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="resiliation-modal-title"
+          >
+            <h3 id="resiliation-modal-title" className="text-lg font-semibold text-white mb-4">Autoriser l&apos;annulation</h3>
             <p className="text-sm text-gray-200 mb-4">
               Le document sera marqué comme résilié. Un email de confirmation sera envoyé au client.
             </p>
@@ -6036,12 +6053,14 @@ export default function GestionPage() {
             </div>
             <div className="flex gap-3 justify-end">
               <button
+                type="button"
                 onClick={() => setResiliationModal(null)}
                 className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
               >
                 Annuler
               </button>
               <button
+                type="button"
                 onClick={() => handleStatusChange(resiliationModal.docId, "resilie", resiliationModal.motif)}
                 className="px-4 py-2 rounded-lg bg-[#2563eb] text-white hover:bg-[#1d4ed8]"
               >
@@ -6055,7 +6074,7 @@ export default function GestionPage() {
       {/* Modal proposition RC Fabriquant (e-mail au prospect) */}
       {rcFabEtudeModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60 p-4"
           onClick={() => {
             if (!rcFabEtudeSubmitting) setRcFabEtudeModal(null)
           }}
@@ -6238,7 +6257,7 @@ export default function GestionPage() {
 
       {rcFabPropositionModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60 p-4"
           onClick={() => {
             if (!rcFabPropositionSubmitting) {
               setRcFabPropositionModal(null)
@@ -6358,7 +6377,7 @@ export default function GestionPage() {
 
       {/* Modal remise personnalisée étude */}
       {etudeMiseModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setEtudeMiseModal(null)}>
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60" onClick={() => setEtudeMiseModal(null)}>
           <div className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-white mb-4">Faire une remise au client</h3>
             <p className="text-sm text-gray-200 mb-4">

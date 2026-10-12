@@ -770,9 +770,9 @@ export default function ClientDetailPage() {
 
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
         <section className="bg-[#252525] rounded-xl p-6 border border-gray-700">
-          <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
+          <div className="mb-4 space-y-3">
             <h1 className="text-xl font-semibold text-white">Fiche client</h1>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2 [&_button]:max-w-full [&_button]:whitespace-normal [&_button]:text-left" role="toolbar" aria-label="Actions de la fiche client">
               <button
                 type="button"
                 onClick={async () => {
@@ -811,7 +811,7 @@ export default function ClientDetailPage() {
                   }
                 }}
                 disabled={clientAccessLoading}
-                className="text-sm text-emerald-300 hover:text-emerald-200 font-medium disabled:opacity-50"
+                className="rounded-lg border border-emerald-700/70 bg-emerald-950/40 px-3 py-2 text-sm font-medium text-emerald-200 hover:bg-emerald-900/50 disabled:opacity-50"
               >
                 {clientAccessLoading ? "Création accès..." : "Créer / renvoyer accès client"}
               </button>
@@ -822,7 +822,7 @@ export default function ClientDetailPage() {
                   setSinistreForm({ dateSinistre: "", montantIndemnisation: "", description: "", userDocumentId: "" })
                   setSinistreModal(true)
                 }}
-                className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium"
+                className="rounded-lg border border-[#2563eb]/70 bg-[#1e3a8a]/30 px-3 py-2 text-sm font-medium text-[#93c5fd] hover:bg-[#1e3a8a]/50"
               >
                 Sinistre
               </button>
@@ -890,7 +890,7 @@ export default function ClientDetailPage() {
                     setAttestationGenerating(false)
                   }
                 }}
-                className="text-sm text-cyan-300 hover:text-cyan-200 font-medium disabled:opacity-50"
+                className="rounded-lg border border-cyan-700/70 bg-cyan-950/40 px-3 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-900/50 disabled:opacity-50"
               >
                 {attestationGenerating
                   ? "Génération attestation..."
@@ -903,7 +903,7 @@ export default function ClientDetailPage() {
                 onClick={() => {
                   document.getElementById("demande-document")?.scrollIntoView({ behavior: "smooth", block: "start" })
                 }}
-                className="text-sm text-amber-300 hover:text-amber-200 font-medium"
+                className="rounded-lg border border-amber-700/70 bg-amber-950/40 px-3 py-2 text-sm font-medium text-amber-200 hover:bg-amber-900/50"
               >
                 Demander un document
               </button>
@@ -925,7 +925,7 @@ export default function ClientDetailPage() {
                   setEmailPresetLabel("Demande relevé de sinistralité")
                   setEmailModal(true)
                 }}
-                className="text-sm text-amber-300 hover:text-amber-200 font-medium"
+                className="rounded-lg border border-amber-700/70 bg-amber-950/40 px-3 py-2 text-sm font-medium text-amber-200 hover:bg-amber-900/50"
               >
                 Demander relevé sinistralité
               </button>
@@ -935,7 +935,7 @@ export default function ClientDetailPage() {
                   setEmailPresetLabel(null)
                   setEmailModal(true)
                 }}
-                className="text-sm text-[#2563eb] hover:text-[#1d4ed8] font-medium"
+                className="rounded-lg border border-[#2563eb]/70 bg-[#1e3a8a]/30 px-3 py-2 text-sm font-medium text-[#93c5fd] hover:bg-[#1e3a8a]/50"
               >
                 Envoyer un email
               </button>
@@ -1081,15 +1081,15 @@ export default function ClientDetailPage() {
                 if (!res.ok) throw new Error(json.error || "Erreur")
                 if (json.user) {
                   setData((d) => (d ? { ...d, user: json.user! } : d))
-                  const n = json.syncedDocuments ?? 0
-                  setToast({
-                    message:
-                      n > 0
-                        ? `Fiche enregistrée — identité recopiée sur ${n} contrat(s) / avenant(s)`
-                        : "Fiche enregistrée",
-                    type: "success",
-                  })
                 }
+                const n = json.syncedDocuments ?? 0
+                setToast({
+                  message:
+                    n > 0
+                      ? `Fiche enregistrée — identité recopiée sur ${n} contrat(s) / avenant(s)`
+                      : "Fiche enregistrée",
+                  type: "success",
+                })
               } catch (err) {
                 setToast({ message: err instanceof Error ? err.message : "Erreur", type: "error" })
               } finally {
@@ -2471,9 +2471,14 @@ export default function ClientDetailPage() {
       </div>
 
       {sinistreModal && data && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setSinistreModal(false)}>
-          <div className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-white mb-4">Lier un sinistre à un relevé de sinistralité</h3>
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60" onClick={() => setSinistreModal(false)}>
+          <div
+            className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="sinistre-modal-title"
+          >
+            <h3 id="sinistre-modal-title" className="text-lg font-semibold text-white mb-4">Lier un sinistre à un relevé de sinistralité</h3>
             <form
               onSubmit={async (e) => {
                 e.preventDefault()
@@ -2593,7 +2598,7 @@ export default function ClientDetailPage() {
 
       {deleteModal && data && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60"
           onClick={() => !deleteLoading && setDeleteModal(false)}
         >
           <div
@@ -2668,7 +2673,7 @@ export default function ClientDetailPage() {
       )}
 
       {emailModal && data && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setEmailModal(false)}>
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60" onClick={() => setEmailModal(false)}>
           <div className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-white mb-4">Envoyer un email à {data.user.email}</h3>
             {emailPresetLabel ? (
@@ -2699,14 +2704,18 @@ export default function ClientDetailPage() {
               </div>
             </div>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => {
-                setEmailPresetLabel(null)
-                setEmailModal(false)
-              }} className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailPresetLabel(null)
+                  setEmailModal(false)
+                }}
+                className="px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-700"
               >
                 Annuler
               </button>
               <button
+                type="button"
                 onClick={async () => {
                   if (!emailSubject.trim() || !emailBody.trim()) return
                   setEmailLoading(true)
@@ -2766,7 +2775,7 @@ export default function ClientDetailPage() {
       )}
 
       {virementModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setVirementModal(null)}>
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60" onClick={() => setVirementModal(null)}>
           <div className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-white mb-2">Virement reçu</h3>
             <p className="text-sm text-gray-300 mb-4">

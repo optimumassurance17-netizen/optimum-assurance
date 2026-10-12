@@ -27,7 +27,7 @@ export function Toast({ message, type = "success", onClose, duration = 4000 }: T
 
   return (
     <div
-      className={`fixed bottom-6 right-6 z-50 px-6 py-4 rounded-xl shadow-lg border ${tone}`}
+      className={`fixed top-6 right-6 z-[140] max-w-sm px-6 py-4 rounded-xl shadow-lg border ${tone}`}
       role={type === "error" ? "alert" : "status"}
     >
       <p className="font-medium">{message}</p>
