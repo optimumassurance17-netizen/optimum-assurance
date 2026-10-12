@@ -145,19 +145,38 @@ function normalizeInternalPath(path: string): string {
 }
 
 function buildClientLoginPath(productType: string): string {
+  const normalized = productType.trim().toLowerCase()
   const destination =
-    productType === "decennale"
+    normalized === "decennale"
       ? "/signature"
-      : productType === "rc_fabriquant"
+      : normalized === "rc_fabriquant" || normalized === "rc-fabriquant"
         ? "/espace-client/rcpro"
-        : "/espace-client"
+        : normalized === "assurance_titre" || normalized === "assurance-titre"
+          ? "/espace-client/assurance-titre"
+          : "/espace-client"
   return `/connexion?callbackUrl=${encodeURIComponent(destination)}`
 }
 
+const DDA_TRACKED_CONTRACT_PRODUCTS = new Set([
+  "decennale",
+  "do",
+  "dommage-ouvrage",
+  "dommage_ouvrage",
+  "rc_fabriquant",
+  "rc-fabriquant",
+  "assurance_titre",
+  "assurance-titre",
+])
+
 function formatDdaProductLabel(productType: string): string {
-  if (productType === "do") return "Dommage-ouvrage"
-  if (productType === "rc_fabriquant") return "RC Fabriquant"
-  return "Décennale"
+  const normalized = productType.trim().toLowerCase()
+  if (normalized === "do" || normalized === "dommage-ouvrage" || normalized === "dommage_ouvrage") {
+    return "Dommage-ouvrage"
+  }
+  if (normalized === "rc_fabriquant" || normalized === "rc-fabriquant") return "RC Fabriquant"
+  if (normalized === "assurance_titre" || normalized === "assurance-titre") return "Assurance titre"
+  if (normalized === "decennale") return "Décennale"
+  return "Assurance"
 }
 
 function parseJsonObject(raw: string | null | undefined): Record<string, unknown> {
@@ -189,15 +208,18 @@ async function withSchemaDriftFallback<T>(fn: () => Promise<T>, fallbackValue: T
   }
 }
 
-function inferProductTypeFromDocumentData(rawData: string | null | undefined): "decennale" | "do" | "rc_fabriquant" {
+function inferProductTypeFromDocumentData(
+  rawData: string | null | undefined
+): "decennale" | "do" | "rc_fabriquant" | "assurance_titre" {
   const data = parseJsonObject(rawData)
   const normalized = typeof data.insuranceProduct === "string"
     ? data.insuranceProduct.trim().toLowerCase()
     : typeof data.productType === "string"
       ? data.productType.trim().toLowerCase()
       : ""
-  if (normalized === "do" || normalized === "dommage-ouvrage") return "do"
+  if (normalized === "do" || normalized === "dommage-ouvrage" || normalized === "dommage_ouvrage") return "do"
   if (normalized === "rc_fabriquant" || normalized === "rc-fabriquant") return "rc_fabriquant"
+  if (normalized === "assurance_titre" || normalized === "assurance-titre") return "assurance_titre"
   return "decennale"
 }
 
@@ -943,7 +965,7 @@ export async function GET() {
     }
 
     for (const c of insuranceContractsList) {
-      if (!["decennale", "do", "rc_fabriquant"].includes(c.productType)) continue
+      if (!DDA_TRACKED_CONTRACT_PRODUCTS.has(c.productType)) continue
       if (c.status !== CONTRACT_STATUS.approved && c.status !== CONTRACT_STATUS.active) continue
       const ageMs = now.getTime() - c.createdAt.getTime()
       if (ageMs < reminder24hMs) continue
@@ -981,7 +1003,7 @@ export async function GET() {
         kind: "dda_proof_missing",
         priority: ageMs >= overdue72hMs ? "high" : "medium",
         title: "DDA incomplète (contrat)",
-        description: `${c.contractNumber} (${c.productType}) — manque: ${missing || "preuve"} — ${ageHours}h`,
+        description: `${c.contractNumber} (${produitLabel}) — manque: ${missing || "preuve"} — ${ageHours}h`,
         href: userId ? `/gestion/clients/${userId}` : "#contrats-plateforme",
         ageHours,
         remediation,

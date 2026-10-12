@@ -10,7 +10,7 @@ import {
   type DocumentRequestResult,
 } from "@/components/gestion/DocumentRequestButton"
 import { adminActivityLabel } from "@/lib/admin-activity-label"
-import { ddaPageLabel, ddaProductLabel } from "@/lib/dda-labels"
+import { ddaPageLabel, ddaProductLabel, ddaTargetTypeLabel } from "@/lib/dda-labels"
 import { documentRequestActivityLabel } from "@/lib/document-request"
 import { DO_DEVIS_LEADS_SECTION_ID, doDevisLeadRowId } from "@/lib/devis-do-lead"
 import { describePendingDoQuote } from "@/lib/do-quote-pending"
@@ -1558,10 +1558,9 @@ export default function ClientDetailPage() {
                           {adminActivityLabel(event.action)}
                         </span>
                         <span className="text-gray-300">{new Date(event.createdAt).toLocaleString("fr-FR")}</span>
-                        <span className="text-gray-400">
-                          {event.targetType || "—"}
-                          {event.targetId ? ` #${event.targetId.slice(-8)}` : ""}
-                        </span>
+                        {!event.targetLabel && ddaTargetTypeLabel(event.targetType) ? (
+                          <span className="text-gray-400">{ddaTargetTypeLabel(event.targetType)}</span>
+                        ) : null}
                       </div>
                       {event.targetLabel ? (
                         <p className="mt-1 text-xs text-gray-400">

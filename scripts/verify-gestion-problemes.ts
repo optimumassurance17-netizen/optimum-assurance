@@ -4,7 +4,7 @@ import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { DemandesDocumentClient } from "@/components/espace-client/DemandesDocumentClient"
 import { adminActivityLabel, describeClientActivity } from "@/lib/admin-activity-label"
-import { DDA_AUDIT_ACTIONS, ddaPageLabel, ddaProductEmailLabel, ddaProductLabel } from "@/lib/dda-labels"
+import { DDA_AUDIT_ACTIONS, ddaPageLabel, ddaProductEmailLabel, ddaProductLabel, ddaTargetTypeLabel } from "@/lib/dda-labels"
 import { applyPendingDoQuoteCorrection, describePendingDoQuote } from "@/lib/do-quote-pending"
 import { readStoredDocumentRequest, withDocumentRequestDeposit } from "@/lib/document-request"
 
@@ -117,6 +117,54 @@ const journal = describeClientActivity([
 ])
 assert.match((journal[0]?.actionLabel ?? "").replace(/\s/g, " "), /8 quai Neuf, 240 000 €/)
 
+const loginJournal = describeClientActivity([
+  {
+    id: "log-login",
+    action: "client_login_alert",
+    adminEmail: "client-login@system",
+    createdAt: "2026-10-12T09:00:00.000Z",
+    details: JSON.stringify({ email: "client@example.com", sent: true }),
+  },
+  {
+    id: "log-login-failed",
+    action: "client_login_alert_failed",
+    adminEmail: "client-login@system",
+    createdAt: "2026-10-12T09:01:00.000Z",
+  },
+  {
+    id: "log-client-doc",
+    action: "client_document_update",
+    adminEmail: "client@example.com",
+    createdAt: "2026-10-12T09:02:00.000Z",
+    details: JSON.stringify({ documentNumero: "DEV-1", documentType: "devis" }),
+  },
+  {
+    id: "log-doc",
+    action: "document_update",
+    adminEmail: "info@optimum-assurance.eu",
+    createdAt: "2026-10-12T09:03:00.000Z",
+    details: JSON.stringify({ numero: "AV-2", modifiedKeys: ["prime"] }),
+  },
+  {
+    id: "log-create",
+    action: "document_create",
+    adminEmail: "info@optimum-assurance.eu",
+    createdAt: "2026-10-12T09:04:00.000Z",
+    details: JSON.stringify({ type: "attestation", numero: "ATT-3" }),
+  },
+])
+assert.equal(loginJournal[0]?.actionLabel, "Connexion à l'espace client")
+assert.equal(loginJournal[1]?.actionLabel, "Connexion à l'espace client, alerte non envoyée")
+assert.equal(loginJournal[2]?.actionLabel, "Modification client : Devis DEV-1")
+assert.equal(loginJournal[3]?.actionLabel, "Mise à jour : AV-2")
+assert.equal(loginJournal[4]?.actionLabel, "Création : Attestation ATT-3")
+assert.equal(ddaTargetTypeLabel("devoir_conseil_log"), "Devoir de conseil")
+assert.equal(ddaTargetTypeLabel("insurance_contract"), "Contrat")
+assert.equal(ddaTargetTypeLabel("DevisRcFabriquantLead"), "Demande RC fabricant")
+assert.doesNotMatch(fiche, /\{event\.targetType/)
+assert.doesNotMatch(fiche, /targetId\.slice/)
+assert.match(fiche, /ddaTargetTypeLabel\(event\.targetType\)/)
+
 const compliance = readFileSync("lib/dda-compliance.ts", "utf8")
 assert.match(compliance, /raw === "rc-pro" \|\| raw === "rc_pro" \|\| raw === "rcpro"/)
 assert.match(compliance, /raw === "assurance-titre" \|\| raw === "assurance_titre"/)
@@ -134,6 +182,10 @@ assert.match(ficheApi, /DevisRcFabriquantLead/)
 const dashboardApi = readFileSync("app/api/gestion/dashboard/route.ts", "utf8")
 assert.match(dashboardApi, /DDA_AUDIT_ACTIONS/)
 assert.doesNotMatch(dashboardApi, /dda_rc_fabriquant_initial_request_logged/)
+assert.match(dashboardApi, /assurance_titre/)
+assert.match(dashboardApi, /Assurance titre/)
+assert.match(dashboardApi, /espace-client\/assurance-titre/)
+assert.match(dashboardApi, /DDA_TRACKED_CONTRACT_PRODUCTS/)
 
 const rcProResult = readFileSync("app/devis/rcpro/result/page.tsx", "utf8")
 assert.match(rcProResult, /DevoirConseil/)

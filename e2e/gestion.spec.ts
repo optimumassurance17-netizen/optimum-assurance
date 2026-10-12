@@ -755,6 +755,16 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
                 details: { produit: "rc-fabriquant", needsSummary: "Besoins fabrication" },
                 createdAt: "2026-10-12T07:00:00.000Z",
               },
+              {
+                id: "log_dda_contract",
+                adminEmail: "dda@system",
+                action: "dda_contract_suitability_checked",
+                targetType: "insurance_contract",
+                targetId: "ctr00001",
+                targetLabel: null,
+                details: { produit: "assurance-titre" },
+                createdAt: "2026-10-12T06:00:00.000Z",
+              },
             ],
           },
         }),
@@ -771,8 +781,15 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
     await expect(ddaTable.getByText("Résultat RC Pro")).toBeVisible()
     await expect(ddaTable.getByText("Assurance titre", { exact: true })).toBeVisible()
     await expect(ddaTable.getByText("Demande assurance titre")).toBeVisible()
+    const ddaSection = page.locator("section", { has: page.getByRole("heading", { name: "Conformité DDA" }) })
+    await expect(ddaSection.getByText("Cible : Log #logdda01")).toBeVisible()
+    await expect(ddaSection.getByText("Cible : Demande RC fabricant")).toBeVisible()
+    await expect(ddaSection.getByText("Contrat", { exact: true })).toBeVisible()
     await expect(page.getByText("dda_advice_acknowledged")).toHaveCount(0)
     await expect(page.getByText("dda_rc_fabriquant_needs_captured")).toHaveCount(0)
+    await expect(page.getByText("devoir_conseil_log")).toHaveCount(0)
+    await expect(page.getByText("DevisRcFabriquantLead")).toHaveCount(0)
+    await expect(page.getByText("insurance_contract")).toHaveCount(0)
   })
 
   test("Fiche client : envoi email appelle l'endpoint gestion", async ({ page }) => {

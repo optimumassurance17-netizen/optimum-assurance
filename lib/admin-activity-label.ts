@@ -48,6 +48,22 @@ const ACTION_LABELS: Record<string, string> = {
   dda_avenant_updated: "Avenant mis à jour après contrôle d'adéquation",
   dda_avenant_suitability_checked: "Adéquation de l'avenant contrôlée",
   dda_document_update_suitability_checked: "Adéquation contrôlée après mise à jour du document",
+  client_login_pending: "Connexion à l'espace client",
+  client_login_alert: "Connexion à l'espace client",
+  client_login_alert_failed: "Connexion à l'espace client, alerte non envoyée",
+}
+
+const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+  devis: "Devis",
+  devis_do: "Devis DO",
+  contrat: "Contrat",
+  attestation: "Attestation",
+  attestation_nominative: "Attestation nominative",
+  attestation_do: "Attestation DO",
+  attestation_non_sinistralite: "Attestation non sinistralité",
+  avenant: "Avenant",
+  facture_do: "Facture acquittée DO",
+  facture_decennale: "Facture acquittée décennale",
 }
 
 const SAFE_USER_ID = /^[A-Za-z0-9_-]{8,80}$/
@@ -84,6 +100,30 @@ export function pendingDoQuoteActivityLabel(details: string | null | undefined):
   return fallback
 }
 
+function textDetail(parsed: Record<string, unknown> | null, key: string): string {
+  const value = parsed?.[key]
+  return typeof value === "string" ? value.trim() : ""
+}
+
+/** Le journal cite le type et le numéro déjà enregistrés avec la modification. */
+export function documentChangeActivityLabel(action: string, details: string | null | undefined): string {
+  const parsed = readActivityDetails(details)
+  const typeRaw = textDetail(parsed, "documentType") || textDetail(parsed, "type")
+  const numero = textDetail(parsed, "documentNumero") || textDetail(parsed, "numero")
+  const typeLabel = DOCUMENT_TYPE_LABELS[typeRaw] || ""
+  const identity = [typeLabel, numero].filter(Boolean).join(" ")
+  if (action === "client_document_update") {
+    return identity ? `Modification client : ${identity}` : "Document modifié par le client"
+  }
+  if (action === "document_update") {
+    return identity ? `Mise à jour : ${identity}` : "Document mis à jour"
+  }
+  if (action === "document_create") {
+    return identity ? `Création : ${identity}` : "Document créé"
+  }
+  return adminActivityLabel(action)
+}
+
 export type ClientActivityItem = {
   id: string
   action: string
@@ -116,7 +156,11 @@ export function describeClientActivity(
             ? documentDevisEditionActivityLabel(log.details)
             : log.action === "devis_do_pending_updated"
               ? pendingDoQuoteActivityLabel(log.details)
-              : adminActivityLabel(log.action),
+              : log.action === "client_document_update" ||
+                  log.action === "document_update" ||
+                  log.action === "document_create"
+                ? documentChangeActivityLabel(log.action, log.details)
+                : adminActivityLabel(log.action),
       adminEmail: log.adminEmail,
       createdAt: date.toISOString(),
     })

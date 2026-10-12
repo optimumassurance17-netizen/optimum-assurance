@@ -45,6 +45,16 @@ export function ddaProductEmailLabel(value: string): string {
   return ddaProductLabel(value).toLowerCase()
 }
 
+export function ddaTargetTypeLabel(value: string | null | undefined): string {
+  const normalized = (value ?? "").trim().toLowerCase()
+  if (normalized === "devoir_conseil_log") return "Devoir de conseil"
+  if (normalized === "insurance_contract") return "Contrat"
+  if (normalized === "document") return "Document"
+  if (normalized === "devisrcfabriquantlead") return "Demande RC fabricant"
+  if (normalized === "user") return "Fiche client"
+  return ""
+}
+
 export function ddaPageLabel(value: string | null | undefined): string {
   const normalized = (value ?? "").trim().toLowerCase()
   if (normalized === "souscription") return "Souscription"
