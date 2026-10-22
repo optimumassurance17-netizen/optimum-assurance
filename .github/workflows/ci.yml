@@ -65,6 +65,9 @@ jobs:
       - name: Vérification GED
         run: npm run test:ged-database
 
+      - name: Vérification relance activation contrat
+        run: npm run test:relance-activation
+
       - name: Prisma generate + Next build
         run: npm run build
 

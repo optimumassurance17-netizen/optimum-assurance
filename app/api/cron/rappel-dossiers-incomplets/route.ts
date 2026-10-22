@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { assertCronAuthorized } from "@/lib/cron-auth"
-import { requireManualReminderDispatch } from "@/lib/cron-reminder-mode"
+import { isExplicitReminderSend } from "@/lib/cron-reminder-mode"
 import { EMAIL_TEMPLATES, sendEmail } from "@/lib/email"
 import { SITE_URL } from "@/lib/site-url"
 import { sendOperationsAlert } from "@/lib/operations-alert"
@@ -24,17 +24,16 @@ function dayKeyUtc(d: Date): string {
 }
 
 /**
- * Cron "lot 3" : relance des dossiers incomplets.
- * - Signature en attente >24h => relance client (idempotence journalière)
- * - Contrat approuvé non payé >24h => relance client (idempotence journalière)
- * - Blocage >72h => alerte opérations (idempotence journalière)
+ * Cron "lot 3".
+ * - Contrat signé approuvé, non payé depuis plus de 24 h : relance client automatique.
+ *   Au-delà de 72 h : alerte opérations. Une fois par jour.
+ * - Signature en attente : reste manuelle, uniquement avec ?send=1.
  */
 export async function GET(request: NextRequest) {
   try {
     const denied = assertCronAuthorized(request)
     if (denied) return denied
-    const manualOnly = requireManualReminderDispatch(request, "rappel-dossiers-incomplets")
-    if (manualOnly) return manualOnly
+    const sendSignatureReminders = isExplicitReminderSend(request)
 
     const now = new Date()
     const todayStart = startOfUtcDay(now)
@@ -42,11 +41,13 @@ export async function GET(request: NextRequest) {
     const reminderThreshold = new Date(now.getTime() - CLIENT_REMINDER_AFTER_HOURS * 60 * 60 * 1000)
 
     const [pendingSignatures, approvedContracts] = await Promise.all([
-      prisma.pendingSignature.findMany({
-        where: { createdAt: { lte: reminderThreshold } },
-        orderBy: { createdAt: "asc" },
-        take: MAX_PENDING_SIGNATURES,
-      }),
+      sendSignatureReminders
+        ? prisma.pendingSignature.findMany({
+            where: { createdAt: { lte: reminderThreshold } },
+            orderBy: { createdAt: "asc" },
+            take: MAX_PENDING_SIGNATURES,
+          })
+        : Promise.resolve([]),
       prisma.insuranceContract.findMany({
         where: {
           status: CONTRACT_STATUS.approved,
@@ -137,7 +138,7 @@ export async function GET(request: NextRequest) {
     let skippedAlreadyDoneToday = 0
     let skippedUnsubscribed = 0
 
-    for (const pending of pendingSignatures) {
+    for (const pending of sendSignatureReminders ? pendingSignatures : []) {
       const user = signatureUserById.get(pending.userId)
       const email = user?.email?.trim().toLowerCase() || ""
       if (!email) {
@@ -295,6 +296,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
+      contractDispatch: "automatic",
+      signatureDispatch: sendSignatureReminders ? "manual-confirmed" : "held",
       signaturePendingTotal: pendingSignatures.length,
       contractApprovedUnpaidTotal: approvedContracts.length,
       signatureClientReminded,
