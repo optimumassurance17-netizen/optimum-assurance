@@ -239,6 +239,26 @@ export const EMAIL_TEMPLATES = {
         reminderUnsubscribeHtmlFooter("paiement", recipientEmail),
     }
   },
+  relanceEcheanceDixJours: (
+    raisonSociale: string,
+    label: string,
+    montant: number,
+    echeanceLe: string,
+    numeroFacture: string,
+    recipientEmail: string,
+    daysUntil: number
+  ) => {
+    const when = daysUntil === 10 ? `dans 10 jours, le ${echeanceLe}` : `le ${echeanceLe}`
+    return {
+      subject: `Échéance du ${echeanceLe} — facture ${numeroFacture} - Optimum Assurance`,
+      text:
+        `Bonjour ${raisonSociale},\n\nVotre ${label} de ${montant.toLocaleString("fr-FR")} € arrive à échéance ${when}.\n\nLa facture ${numeroFacture} est jointe à cet email. Le prélèvement automatique interviendra à cette date si votre mandat SEPA est actif.\n\nEspace client : ${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance` +
+        reminderUnsubscribeTextFooter("paiement", recipientEmail),
+      html:
+        `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre <strong>${escapeHtmlForEmail(label)}</strong> de <strong>${montant.toLocaleString("fr-FR")} €</strong> arrive à échéance ${escapeHtmlForEmail(when)}.</p><p>La facture <strong>${escapeHtmlForEmail(numeroFacture)}</strong> est jointe à cet email. Le prélèvement automatique interviendra à cette date si votre mandat SEPA est actif.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
+        reminderUnsubscribeHtmlFooter("paiement", recipientEmail),
+    }
+  },
   relanceEcheanceCarte: (
     raisonSociale: string,
     montant: number,

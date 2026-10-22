@@ -29,6 +29,7 @@ const CRON_ROUTES = [
   "/api/cron/rappel-paiements-contrats",
   "/api/cron/repair-signatures-bloquees",
   "/api/cron/sepa-trimestriel",
+  "/api/cron/relance-echeance-10-jours",
 ] as const
 
 /** Variables nécessaires à Supabase Sign (upload PDF, /api/sign) — pas d’appel réseau. */

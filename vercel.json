@@ -32,6 +32,10 @@
       "schedule": "0 7 * * *"
     },
     {
+      "path": "/api/cron/relance-echeance-10-jours",
+      "schedule": "0 8 * * *"
+    },
+    {
       "path": "/api/cron/geo-competitors",
       "schedule": "0 3 * * *"
     },
