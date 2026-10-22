@@ -4,6 +4,7 @@ import { Header } from "@/components/Header"
 import { InternalLinkSection } from "@/components/seo-programmatic/InternalLinkSection"
 import { SeoTextBlock } from "@/components/seo-programmatic/SeoTextBlock"
 import { buildActivityExpertContent } from "@/lib/decennale-activity-expert-content"
+import { ACTIVITE_CATALOGUE, activiteAnchorId } from "@/lib/decennale-activites-catalogue"
 import { METIERS_SEO } from "@/lib/metiers-seo"
 import {
   seoBreadcrumbListNode,
@@ -75,7 +76,21 @@ export default async function MetierPage({
     q: "En quoi Optimum se distingue des grandes plateformes d’assurance en ligne ?",
     r: "Optimum est centré sur l’assurance construction : décennale et dommage ouvrage, avec des parcours pensés pour les chantiers et les métiers du bâtiment. Les plateformes généralistes proposent souvent un catalogue plus large (RC pro, mutuelle, multirisque…) et une acquisition à très grande échelle ; nous privilégions la lisibilité du devis, le suivi du dossier et une spécialisation sur votre risque.",
   }
-  const otherMetiers = METIERS_SEO.filter((m) => m.slug !== data.slug).slice(0, 4)
+  const fiche = data.kind === "activity" ? ACTIVITE_CATALOGUE[data.activite] : undefined
+  const parentHeadterm = METIERS_SEO.find(
+    (entry) =>
+      entry.kind === "headterm" &&
+      entry.slug !== data.slug &&
+      entry.relatedActivitySlugs.includes(data.slug)
+  )
+  const sameCategory = METIERS_SEO.filter(
+    (entry) => entry.kind === "activity" && entry.categorie === data.categorie && entry.slug !== data.slug
+  )
+  const otherHeadterms = METIERS_SEO.filter((entry) => entry.kind === "headterm" && entry.slug !== data.slug)
+  const otherMetiers = [parentHeadterm, ...sameCategory, ...otherHeadterms]
+    .filter((entry): entry is NonNullable<typeof entry> => entry != null)
+    .filter((entry, index, list) => list.findIndex((item) => item.slug === entry.slug) === index)
+    .slice(0, 4)
   const relatedActivities = data.relatedActivitySlugs
     .map((slug) => METIERS_SEO.find((entry) => entry.slug === slug))
     .filter(
@@ -138,6 +153,57 @@ export default async function MetierPage({
           {data.description}
         </p>
 
+        {fiche ? (
+          <>
+            <SeoTextBlock title={`Activités assurables : ${data.nom}`}>
+              <p>{fiche.description}</p>
+              <p>
+                Le devis et l’attestation reprennent les activités déclarées. Un lot qui n’est pas dans ce périmètre
+                doit être déclaré à part. Le détail figure dans la{" "}
+                <Link
+                  href={`/assurance-decennale/activites#${activiteAnchorId(data.activite)}`}
+                  className="text-blue-600 font-medium hover:underline"
+                >
+                  fiche {data.nom}
+                </Link>
+                .
+              </p>
+            </SeoTextBlock>
+            <SeoTextBlock title="Limites et exclusions de cette activité">
+              <ul className="list-disc pl-5 space-y-2">
+                {fiche.exclusions.map((exclusion) => (
+                  <li key={exclusion}>{exclusion}</li>
+                ))}
+              </ul>
+              <p>
+                Ces limites reprennent la nomenclature utilisée dans le devis. Les exclusions générales du contrat
+                s’y ajoutent. Elles ne sont pas une condition particulière négociée sur cette page.
+              </p>
+            </SeoTextBlock>
+          </>
+        ) : null}
+
+        <SeoTextBlock title="Ce qui fait varier le tarif">
+          <ul className="list-disc pl-5 space-y-2">
+            <li>le chiffre d’affaires annuel déclaré</li>
+            <li>les activités réellement exercées, y compris les lots complémentaires</li>
+            <li>la sinistralité et les antécédents d’assurance</li>
+            <li>
+              le niveau d’entrée constaté pour {data.kind === "headterm" ? "ce métier" : "cette activité"} :{" "}
+              {data.prixMinAnnuel.toLocaleString("fr-FR")} €/an, soit environ {data.prixMin} €/mois
+            </li>
+          </ul>
+          <p>
+            Ce niveau d’entrée n’est pas un devis. Le montant est calculé dans le parcours de tarification. Le contrat
+            est national : la ville du chantier ne crée pas un tarif local.
+          </p>
+          <p>
+            <Link href="/prix-assurance-decennale" className="text-blue-600 font-medium hover:underline">
+              Comprendre le prix de la décennale
+            </Link>
+          </p>
+        </SeoTextBlock>
+
         {isHeadtermPage && relatedActivities.length > 0 && (
           <div className="bg-white rounded-2xl border border-[#e5e5e5] p-6 mb-10 shadow-sm">
             <h2 className="text-xl font-bold text-[#0a0a0a] mb-4">Choisir la bonne activité à déclarer</h2>
@@ -154,7 +220,9 @@ export default async function MetierPage({
                   className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-4 hover:border-blue-600/30 hover:bg-blue-50 transition-all"
                 >
                   <p className="font-semibold text-[#0a0a0a]">{activity.nom}</p>
-                  <p className="mt-1 text-sm text-[#171717]">{activity.description}</p>
+                  <p className="mt-1 text-sm text-[#171717]">
+                    {ACTIVITE_CATALOGUE[activity.activite]?.description ?? activity.description}
+                  </p>
                 </Link>
               ))}
             </div>
@@ -308,7 +376,7 @@ export default async function MetierPage({
           </div>
         </div>
 
-        <InternalLinkSection title={`Villes prioritaires pour ${data.nom}`} links={expert.cityLinks} />
+        <InternalLinkSection title="Devis, prix et documents" links={expert.referenceLinks} />
 
         <div className="text-center space-y-4">
           <Link

@@ -33,6 +33,7 @@
     "typecheck": "tsc --noEmit",
     "test:pdf-contractual": "tsx scripts/verify-pdf-contractual-mentions.ts",
     "test:do-attestation": "tsx scripts/verify-do-attestation.ts",
+    "test:seo-indexation": "tsx scripts/verify-seo-indexation.ts",
     "test:activity-fallback": "tsx scripts/verify-activity-hierarchy-fallback.ts",
     "test:local-signature": "tsx scripts/verify-local-signature-fallback.ts",
     "test:ged-database": "tsx scripts/verify-ged-database-file.ts",

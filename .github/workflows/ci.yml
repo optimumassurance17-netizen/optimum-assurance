@@ -59,6 +59,9 @@ jobs:
       - name: Vérification attestation dommage ouvrage
         run: npm run test:do-attestation
 
+      - name: Vérification indexation SEO
+        run: npm run test:seo-indexation
+
       - name: Prisma generate + Next build
         run: npm run build
 

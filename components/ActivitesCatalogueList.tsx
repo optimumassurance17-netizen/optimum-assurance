@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo, useState } from "react"
 
 function activiteAnchorId(activite: string): string {
@@ -69,6 +70,14 @@ export function ActivitesCatalogueList({ groups }: { groups: ActiviteGroup[] }) 
                 >
                   <h3 className="text-lg font-bold text-[#0a0a0a]">{item.activite}</h3>
                   <p className="mt-2 text-[#171717] leading-relaxed">{item.description}</p>
+                  <p className="mt-3">
+                    <Link
+                      href={`/assurance-decennale/${activiteAnchorId(item.activite)}`}
+                      className="text-sm font-medium text-blue-600 hover:underline"
+                    >
+                      Page métier et devis {item.activite}
+                    </Link>
+                  </p>
                   <p className="mt-4 text-sm font-semibold text-[#0a0a0a]">Exclusions de cette activité</p>
                   <ul className="mt-2 list-disc pl-5 space-y-1 text-sm text-[#171717]">
                     {item.exclusions.map((exclusion) => (

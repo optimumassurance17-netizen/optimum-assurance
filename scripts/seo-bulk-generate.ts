@@ -214,7 +214,8 @@ async function main() {
     metier_id: x.metier_id,
     ville_id: x.ville_id,
     body_extra: x.page.body_main,
-    indexable: true,
+    // Le texte généré reste une variante de ville. Il n'est pas une page indexable.
+    indexable: false,
     content_hash: x.page.content_hash,
   }))
 
@@ -222,7 +223,7 @@ async function main() {
     type_projet_id: x.type_projet_id,
     ville_id: x.ville_id,
     body_extra: x.page.body_main,
-    indexable: true,
+    indexable: false,
     content_hash: x.page.content_hash,
   }))
 

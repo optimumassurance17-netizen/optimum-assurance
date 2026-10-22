@@ -18,12 +18,8 @@ export function buildFaqDecennaleLocal(
 ): FaqEntry[] {
   const local: FaqEntry[] = [
     {
-      q: `L’assurance décennale ${metierNom} est-elle obligatoire à ${villeNom} ?`,
-      r: `Oui. L’obligation est nationale (loi Spinetta) : elle s’applique à ${villeNom} comme partout en France pour les travaux relevant de votre activité couverte par la décennale.`,
-    },
-    {
-      q: `Où souscrire une assurance décennale ${metierNom} près de ${villeNom} ?`,
-      r: `Vous pouvez obtenir un devis en ligne en quelques minutes sur Optimum Assurance, avec attestation adaptée aux exigences du maître d’ouvrage, quel que soit le secteur autour de ${villeNom}.`,
+      q: `L’assurance décennale ${metierNom} change-t-elle selon la ville, par exemple à ${villeNom} ?`,
+      r: `Non. L’obligation et le contrat sont nationaux. La ville du chantier sert à décrire les travaux, pas à créer une garantie locale. Le devis dépend de l’activité déclarée, du chiffre d’affaires et de la sinistralité.`,
     },
   ]
   return [...local, ...baseFaq]
@@ -32,12 +28,8 @@ export function buildFaqDecennaleLocal(
 export function buildFaqDoLocal(nomType: string, villeNom: string, baseFaq: readonly FaqEntry[]): FaqEntry[] {
   const local: FaqEntry[] = [
     {
-      q: `L’assurance dommage ouvrage est-elle obligatoire pour un projet à ${villeNom} ?`,
-      r: `Oui pour les maîtres d’ouvrage concernés : l’obligation est nationale. Le contexte local (coût de construction, typologie de chantier) influence surtout le montant de la prime, pas le principe de souscription.`,
-    },
-    {
-      q: `Quand souscrire une DO pour un chantier à ${villeNom} ?`,
-      r: `Avant le début des travaux. Pour un profil « ${nomType} », nous vous recommandons de demander un devis dès que le permis de construire et les éléments techniques principaux sont connus.`,
+      q: `La dommage ouvrage pour un projet « ${nomType} » dépend-elle de la ville, par exemple ${villeNom} ?`,
+      r: `Non. L’obligation est nationale et le contrat suit le projet, pas la commune. Le coût de construction, la nature de l’ouvrage et les pièces techniques font varier l’étude. La ville sert à situer le chantier dans le dossier.`,
     },
   ]
   return [...local, ...baseFaq]

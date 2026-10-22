@@ -41,14 +41,21 @@ const checks = [
     path: "/sitemap-static.xml",
     contentType: /application\/xml|text\/xml/i,
     minLocCount: 100,
-    mustContain: ["/a-propos", "/comparatifs/decennale-vs-rc-pro"],
+    mustContain: [
+      "/a-propos",
+      "/comparatifs/decennale-vs-rc-pro",
+      "/assurance-decennale/plombier",
+      "/dommage-ouvrage/auto-construction",
+      "/etude",
+    ],
+    mustNotContain: ["/assurance-decennale/plombier/paris", "/dommage-ouvrage/auto-construction/paris"],
   },
   {
     name: "programmatic-sitemap",
     path: "/sitemap-programmatic.xml",
     contentType: /application\/xml|text\/xml/i,
-    minLocCount: 1000,
-    mustContain: ["/assurance-decennale/plombier/paris", "/dommage-ouvrage/auto-construction/paris"],
+    mustContain: ["<urlset"],
+    mustNotContain: ["/assurance-decennale/", "/dommage-ouvrage/"],
   },
   {
     name: "home",
@@ -101,6 +108,11 @@ async function runCheck(check) {
   if (check.mustContain) {
     for (const needle of check.mustContain) {
       if (!body.includes(needle)) throw new Error(`${url} -> contenu manquant: ${needle}`)
+    }
+  }
+  if (check.mustNotContain) {
+    for (const needle of check.mustNotContain) {
+      if (body.includes(needle)) throw new Error(`${url} -> contenu interdit: ${needle}`)
     }
   }
   if (check.minLocCount != null) {

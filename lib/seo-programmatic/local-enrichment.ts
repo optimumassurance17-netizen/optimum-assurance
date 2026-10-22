@@ -151,6 +151,7 @@ function nearbySentence(profile: LocalProfile): string {
 
 export function buildDecennaleLocalEnrichment(input: {
   metierNom: string
+  metierSlug: string
   villeNom: string
   villeSlug: string
   riskFocus?: string
@@ -171,11 +172,14 @@ export function buildDecennaleLocalEnrichment(input: {
       input.preparationHint || "Exclusions, sous-traitance et antécédents à signaler avant émission de l’attestation",
     ],
     links: [
-      { href: `/devis?from=seo-local-${input.villeSlug}`, label: `Devis décennale ${input.metierNom}` },
-      { href: `/dommage-ouvrage/particulier/${input.villeSlug}`, label: `Dommage ouvrage à ${input.villeNom}` },
+      {
+        href: `/devis?metier=${encodeURIComponent(input.metierSlug)}`,
+        label: `Devis décennale ${input.metierNom}`,
+      },
+      { href: `/assurance-decennale/${input.metierSlug}`, label: `Page métier ${input.metierNom}` },
+      { href: "/dommage-ouvrage", label: "Dommage ouvrage" },
       { href: "/guides/obligation-decennale", label: "Guide obligation décennale" },
       { href: "/guides/que-couvre-assurance-decennale", label: "Que couvre la décennale" },
-      { href: "/guides/fin-assurance-decennale-qbe-2027", label: "Reprise décennale après QBE" },
     ],
   }
 }
@@ -199,9 +203,9 @@ export function buildDoLocalEnrichment(input: {
       "Choix entre DO complète et garantie clos/couvert lorsque le dossier s’y prête",
     ],
     links: [
-      { href: `/devis-dommage-ouvrage?from=seo-local-${input.villeSlug}`, label: `Devis DO à ${input.villeNom}` },
+      { href: "/devis-dommage-ouvrage", label: "Devis dommage ouvrage" },
       { href: "/dommage-ouvrage", label: "Tous les profils dommage ouvrage" },
-      { href: `/assurance-decennale/macon/${input.villeSlug}`, label: `Décennale maçon à ${input.villeNom}` },
+      { href: "/assurance-decennale/macon", label: "Décennale maçon" },
       { href: "/guides/obligation-dommage-ouvrage", label: "Guide obligation DO" },
       { href: "/guides/quand-souscrire-dommage-ouvrage", label: "Quand souscrire la dommage ouvrage" },
     ],

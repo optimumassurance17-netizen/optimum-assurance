@@ -1,5 +1,6 @@
 import { DO_SEO } from "@/lib/dommage-ouvrage-seo"
 import { METIERS_SEO } from "@/lib/metiers-seo"
+import { listIndexableProgrammaticSitemapPaths } from "@/lib/seo-programmatic/indexability"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { FALLBACK_BODY_MACON_PARIS, FALLBACK_DO_PARTICULIER_PARIS } from "./content"
 import type { DecennaleLocalPayload, DoLocalPayload, InternalLink } from "./types"
@@ -509,82 +510,12 @@ export async function fetchDoSiblingVilles(
   return mergeInternalLinks(fromDb, fallback, limit)
 }
 
-/** Limite les URLs programmatiques dans le sitemap (évite timeout serverless / réponse trop lourde). */
-const PROGRAMMATIC_SITEMAP_MAX = 5000
-/** Si Supabase est lent, on préfère un sitemap partiel (pages statiques inchangées) qu’un 504. */
-const PROGRAMMATIC_SITEMAP_FETCH_MS = 12_000
-
-function fallbackProgrammaticSitemapUrls(): {
-  path: string
-  changeFrequency: "weekly" | "monthly"
-  priority: number
-}[] {
-  const out: { path: string; changeFrequency: "weekly" | "monthly"; priority: number }[] = []
-  const villeSlugs = Object.keys(FALLBACK_VILLE_BY_SLUG)
-
-  for (const metier of METIERS_SEO) {
-    for (const ville of villeSlugs) {
-      if (out.length >= PROGRAMMATIC_SITEMAP_MAX) return out
-      out.push({
-        path: `/assurance-decennale/${metier.slug}/${ville}`,
-        changeFrequency: "monthly",
-        priority: metier.kind === "headterm" ? 0.74 : 0.7,
-      })
-    }
-  }
-
-  for (const doPage of DO_SEO) {
-    for (const ville of villeSlugs) {
-      if (out.length >= PROGRAMMATIC_SITEMAP_MAX) return out
-      out.push({
-        path: `/dommage-ouvrage/${doPage.slug}/${ville}`,
-        changeFrequency: "monthly",
-        priority: 0.72,
-      })
-    }
-  }
-
-  return out
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  let id: ReturnType<typeof setTimeout> | undefined
-  const timeout = new Promise<never>((_, reject) => {
-    id = setTimeout(() => reject(new Error(`timeout ${ms}ms`)), ms)
-  })
-  return Promise.race([promise, timeout]).finally(() => {
-    if (id !== undefined) clearTimeout(id)
-  }) as Promise<T>
-}
-
+/**
+ * Sitemap programmatique : uniquement les pages ville explicitement indexables.
+ * Les combinaisons métier × ville restent servies, mais leur canonique est la page métier.
+ */
 export async function fetchProgrammaticSitemapUrls(): Promise<
   { path: string; changeFrequency: "weekly" | "monthly"; priority: number }[]
 > {
-  try {
-    const [dec, ddo] = await withTimeout(
-      Promise.all([fetchDecennaleStaticParams(), fetchDoStaticParams()]),
-      PROGRAMMATIC_SITEMAP_FETCH_MS
-    )
-    const out: { path: string; changeFrequency: "weekly" | "monthly"; priority: number }[] = []
-    for (const p of dec) {
-      if (out.length >= PROGRAMMATIC_SITEMAP_MAX) break
-      out.push({
-        path: `/assurance-decennale/${p.metier}/${p.ville}`,
-        changeFrequency: "monthly",
-        priority: 0.72,
-      })
-    }
-    for (const p of ddo) {
-      if (out.length >= PROGRAMMATIC_SITEMAP_MAX) break
-      out.push({
-        path: `/dommage-ouvrage/${p.slug}/${p.ville}`,
-        changeFrequency: "monthly",
-        priority: 0.72,
-      })
-    }
-    return out.length ? out : fallbackProgrammaticSitemapUrls()
-  } catch (e) {
-    console.error("[seo-programmatic] fetchProgrammaticSitemapUrls:", e)
-    return fallbackProgrammaticSitemapUrls()
-  }
+  return listIndexableProgrammaticSitemapPaths()
 }

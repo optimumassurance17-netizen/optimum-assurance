@@ -8,7 +8,8 @@ const baseUrl = SITE_URL
 
 /**
  * Construit la liste statique des URLs SEO.
- * Le programmatique géolocalisé est servi dans /sitemap-programmatic.xml pour éviter un sitemap unique lourd.
+ * Les pages ville ne sont pas listées ici : leur canonique est la page métier ou le profil DO.
+ * /sitemap-programmatic.xml ne reçoit une URL que si elle est explicitement indexable.
  */
 export function buildStaticSitemapEntries(): SitemapEntry[] {
   const metiers: SitemapEntry[] = METIERS_SEO.map((m) => ({

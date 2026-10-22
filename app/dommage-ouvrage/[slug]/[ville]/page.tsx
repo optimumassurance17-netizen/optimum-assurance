@@ -9,6 +9,11 @@ import { SeoTextBlock } from "@/components/seo-programmatic/SeoTextBlock"
 import { DO_SEO } from "@/lib/dommage-ouvrage-seo"
 import { buildFaqDoLocal } from "@/lib/seo-programmatic/content"
 import {
+  nationalDoResourceLinks,
+  relatedNationalDoLinks,
+  resolveDoCityIndex,
+} from "@/lib/seo-programmatic/indexability"
+import {
   fetchDoSiblingVilles,
   fetchDoStaticParams,
   getDoLocalPage,
@@ -46,10 +51,11 @@ export async function generateMetadata({
   const data = await getDoLocalPage(slug, ville)
   if (!data) return {}
 
-  const path = `/dommage-ouvrage/${data.slug}/${data.villeSlug}`
+  const decision = resolveDoCityIndex(data.slug, data.villeSlug)
+  const canonical = `${baseUrl}${decision.canonicalPath}`
   const title = absoluteBrandTitle(`Assurance dommage ouvrage ${data.nom} à ${data.villeNom}`).absolute
   const description = buildProgrammaticMetaDescription(
-    `Assurance dommage ouvrage ${data.nom} à ${data.villeNom} : obligation, garanties et devis sous 24 h.`,
+    `Assurance dommage ouvrage ${data.nom} : obligation, pièces du dossier et devis. Le contrat suit le projet, y compris à ${data.villeNom}.`,
     data.description,
     158
   )
@@ -57,13 +63,13 @@ export async function generateMetadata({
   return {
     title: { absolute: title },
     description,
-    alternates: { canonical: `${baseUrl}${path}` },
-    robots: data.indexable ? { index: true, follow: true } : { index: false, follow: true },
+    alternates: { canonical },
+    robots: { index: decision.index, follow: decision.follow },
     openGraph: {
       type: "website",
       locale: "fr_FR",
       siteName: "Optimum Assurance",
-      url: `${baseUrl}${path}`,
+      url: canonical,
       title,
       description,
       images: [defaultOgImage],
@@ -96,9 +102,9 @@ export default async function DoVillePage({
   })
 
   const path = `/dommage-ouvrage/${data.slug}/${data.villeSlug}`
+  const decision = resolveDoCityIndex(data.slug, data.villeSlug)
   const parentPath = `/dommage-ouvrage/${data.slug}`
-
-  const siblingVilles = await fetchDoSiblingVilles(data.slug, data.villeSlug)
+  const siblingVilles = decision.index ? await fetchDoSiblingVilles(data.slug, data.villeSlug) : []
 
   const jsonLd = seoJsonLdGraph([
     seoBreadcrumbListNode([
@@ -107,12 +113,16 @@ export default async function DoVillePage({
       { name: data.nom, path: parentPath },
       { name: data.villeNom, path },
     ]),
-    seoWebPageNode({
-      path,
-      name: `Assurance dommage ouvrage ${data.nom} à ${data.villeNom}`,
-      description: data.description,
-    }),
-    seoFaqPageNode(faq),
+    ...(decision.index
+      ? [
+          seoWebPageNode({
+            path,
+            name: `Assurance dommage ouvrage ${data.nom} à ${data.villeNom}`,
+            description: data.description,
+          }),
+          seoFaqPageNode(faq),
+        ]
+      : []),
   ])
 
   return (
@@ -144,19 +154,17 @@ export default async function DoVillePage({
           Obligation légale — devis personnalisé sous 24 h
         </p>
 
-        <SeoTextBlock title="Description">
+        <SeoTextBlock title="Page de référence">
           <p>{data.description}</p>
           <p>
-            Cette page cible les projets à <strong>{data.villeNom}</strong>
+            La dommage ouvrage pour le profil <strong>{data.nom}</strong> est nationale. Un chantier à{" "}
+            <strong>{data.villeNom}</strong>
             {data.population != null ? (
-              <>
-                {" "}
-                (agglomération d’environ {data.population.toLocaleString("fr-FR")} habitants)
-              </>
-            ) : null}
-            . Pour le rappel général sur votre profil, voir aussi{" "}
+              <> (agglomération d’environ {data.population.toLocaleString("fr-FR")} habitants)</>
+            ) : null}{" "}
+            se décrit dans le dossier, sans créer un contrat local. Le cadre du profil, les pièces et le devis sont sur{" "}
             <Link href={parentPath} className="text-blue-600 font-medium hover:underline">
-              {data.nom}
+              dommage ouvrage {data.nom}
             </Link>
             .
           </p>
@@ -203,7 +211,9 @@ export default async function DoVillePage({
           />
         </div>
 
-        <InternalLinkSection title="Autres villes pour ce profil" links={siblingVilles} />
+        {decision.index ? <InternalLinkSection title="Autres villes pour ce profil" links={siblingVilles} /> : null}
+        <InternalLinkSection title="Autres profils" links={relatedNationalDoLinks(data.slug)} />
+        <InternalLinkSection title="Devis et guides" links={nationalDoResourceLinks()} />
         <InternalLinkSection title="Ressources utiles pour ce projet" links={localEnrichment.links} />
 
         <FaqSEO items={faq} />

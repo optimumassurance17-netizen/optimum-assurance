@@ -4,17 +4,8 @@ type ExpertContent = {
   riskLines: string[]
   documentLines: string[]
   declarationTips: string[]
-  cityLinks: { href: string; label: string }[]
+  referenceLinks: { href: string; label: string }[]
 }
-
-const PRIORITY_CITIES = [
-  { slug: "paris", name: "Paris" },
-  { slug: "lyon", name: "Lyon" },
-  { slug: "marseille", name: "Marseille" },
-  { slug: "toulouse", name: "Toulouse" },
-  { slug: "bordeaux", name: "Bordeaux" },
-  { slug: "lille", name: "Lille" },
-] as const
 
 function categorySpecificDocuments(category: string): string[] {
   switch (category) {
@@ -101,9 +92,13 @@ export function buildActivityExpertContent(activity: MetierSeoEntry): ExpertCont
       ...categorySpecificDocuments(activity.categorie),
     ],
     declarationTips: categorySpecificTips(activity.categorie),
-    cityLinks: PRIORITY_CITIES.map((city) => ({
-      href: `/assurance-decennale/${activity.slug}/${city.slug}`,
-      label: `${activity.nom} à ${city.name}`,
-    })),
+    referenceLinks: [
+      { href: "/devis-assurance-decennale-en-ligne", label: "Devis décennale en ligne" },
+      { href: "/prix-assurance-decennale", label: "Prix de l'assurance décennale" },
+      { href: "/documents-assurance-decennale", label: "Documents pour le dossier" },
+      { href: "/assurance-decennale/activites", label: "Activités assurables et exclusions" },
+      { href: "/guides/obligation-decennale", label: "Obligation décennale" },
+      { href: "/guides/que-couvre-assurance-decennale", label: "Ce que couvre la décennale" },
+    ],
   }
 }

@@ -10,6 +10,11 @@ import { SeoTextBlock } from "@/components/seo-programmatic/SeoTextBlock"
 import { METIERS_SEO } from "@/lib/metiers-seo"
 import { buildFaqDecennaleLocal } from "@/lib/seo-programmatic/content"
 import {
+  nationalDecennaleResourceLinks,
+  relatedNationalDecennaleLinks,
+  resolveDecennaleCityIndex,
+} from "@/lib/seo-programmatic/indexability"
+import {
   fetchDecennaleSiblingMetiers,
   fetchDecennaleSiblingVilles,
   fetchDecennaleStaticParams,
@@ -48,10 +53,11 @@ export async function generateMetadata({
   const data = await getDecennaleLocalPage(metier, ville)
   if (!data) return {}
 
-  const path = `/assurance-decennale/${data.metierSlug}/${data.villeSlug}`
+  const decision = resolveDecennaleCityIndex(data.metierSlug, data.villeSlug)
+  const canonical = `${baseUrl}${decision.canonicalPath}`
   const title = absoluteBrandTitle(`Assurance décennale ${data.metierNom} à ${data.villeNom}`).absolute
   const description = buildProgrammaticMetaDescription(
-    `Assurance décennale pour ${data.metierNom} à ${data.villeNom} : obligations, prix indicatif et devis sous 3 minutes.`,
+    `Assurance décennale ${data.metierNom} : activités assurables, exclusions et devis. Le contrat est national, y compris pour un chantier à ${data.villeNom}.`,
     data.description,
     158
   )
@@ -59,13 +65,13 @@ export async function generateMetadata({
   return {
     title: { absolute: title },
     description,
-    alternates: { canonical: `${baseUrl}${path}` },
-    robots: data.indexable ? { index: true, follow: true } : { index: false, follow: true },
+    alternates: { canonical },
+    robots: { index: decision.index, follow: decision.follow },
     openGraph: {
       type: "website",
       locale: "fr_FR",
       siteName: "Optimum Assurance",
-      url: `${baseUrl}${path}`,
+      url: canonical,
       title,
       description,
       images: [defaultOgImage],
@@ -93,6 +99,7 @@ export default async function MetierVillePage({
   const faq = buildFaqDecennaleLocal(data.metierNom, data.villeNom, baseFaq)
   const localEnrichment = buildDecennaleLocalEnrichment({
     metierNom: data.metierNom,
+    metierSlug: data.metierSlug,
     villeNom: data.villeNom,
     villeSlug: data.villeSlug,
     riskFocus: staticMetier?.riskFocus,
@@ -100,12 +107,15 @@ export default async function MetierVillePage({
   })
 
   const path = `/assurance-decennale/${data.metierSlug}/${data.villeSlug}`
+  const decision = resolveDecennaleCityIndex(data.metierSlug, data.villeSlug)
   const parentPath = `/assurance-decennale/${data.metierSlug}`
 
-  const [siblingVilles, siblingMetiers] = await Promise.all([
-    fetchDecennaleSiblingVilles(data.metierSlug, data.villeSlug),
-    fetchDecennaleSiblingMetiers(data.villeSlug, data.metierSlug),
-  ])
+  const [siblingVilles, siblingMetiers] = decision.index
+    ? await Promise.all([
+        fetchDecennaleSiblingVilles(data.metierSlug, data.villeSlug),
+        fetchDecennaleSiblingMetiers(data.villeSlug, data.metierSlug),
+      ])
+    : [[], []]
 
   const jsonLd = seoJsonLdGraph([
     seoBreadcrumbListNode([
@@ -114,12 +124,16 @@ export default async function MetierVillePage({
       { name: `Décennale ${data.metierNom}`, path: parentPath },
       { name: `${data.villeNom}`, path },
     ]),
-    seoWebPageNode({
-      path,
-      name: `Assurance décennale ${data.metierNom} à ${data.villeNom}`,
-      description: data.description,
-    }),
-    seoFaqPageNode(faq),
+    ...(decision.index
+      ? [
+          seoWebPageNode({
+            path,
+            name: `Assurance décennale ${data.metierNom} à ${data.villeNom}`,
+            description: data.description,
+          }),
+          seoFaqPageNode(faq),
+        ]
+      : []),
   ])
 
   return (
@@ -151,19 +165,19 @@ export default async function MetierVillePage({
           Spécialiste construction — devis en ligne, attestation conforme
         </p>
 
-        <SeoTextBlock title="Pourquoi cette page ?">
+        <SeoTextBlock title="Page de référence">
           <p>
-            Cette page est dédiée aux professionnels recherchant une{" "}
-            <strong>assurance décennale {data.metierNom.toLowerCase()}</strong> pour des chantiers autour de{" "}
+            L’assurance décennale <strong>{data.metierNom.toLowerCase()}</strong> est un contrat national. Un chantier à{" "}
             <strong>{data.villeNom}</strong>
             {data.population != null ? (
-              <>
-                {" "}
-                (agglomération d’environ {data.population.toLocaleString("fr-FR")} habitants)
-              </>
-            ) : null}
-            . L’obligation légale est nationale ; le contexte local influence surtout l’organisation et la
-            réalité du chantier.
+              <> (agglomération d’environ {data.population.toLocaleString("fr-FR")} habitants)</>
+            ) : null}{" "}
+            ne crée ni une garantie locale, ni un tarif communal. Les activités assurables, les exclusions et le devis
+            sont sur la page{" "}
+            <Link href={parentPath} className="text-blue-600 font-medium hover:underline">
+              assurance décennale {data.metierNom}
+            </Link>
+            .
           </p>
           <p>{data.description}</p>
         </SeoTextBlock>
@@ -223,8 +237,21 @@ export default async function MetierVillePage({
           />
         </div>
 
-        <InternalLinkSection title="Autres villes pour ce métier" links={siblingVilles} />
-        <InternalLinkSection title="Autres métiers dans cette ville" links={siblingMetiers} />
+        {decision.index ? (
+          <>
+            <InternalLinkSection title="Autres villes pour ce métier" links={siblingVilles} />
+            <InternalLinkSection title="Autres métiers dans cette ville" links={siblingMetiers} />
+          </>
+        ) : (
+          <InternalLinkSection
+            title="Pages métier liées"
+            links={relatedNationalDecennaleLinks(data.metierSlug)}
+          />
+        )}
+        <InternalLinkSection
+          title="Devis, prix et documents"
+          links={nationalDecennaleResourceLinks(staticMetier?.activite)}
+        />
         <InternalLinkSection title="Ressources utiles pour ce secteur" links={localEnrichment.links} />
 
         <FaqSEO items={faq} />
