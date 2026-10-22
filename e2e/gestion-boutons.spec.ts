@@ -210,6 +210,20 @@ test.describe("Gestion — boutons d'action", () => {
         body: JSON.stringify({ ok: true, sentTo: "client-do@example.com", emailSent: true, amount: 2400 }),
       })
     })
+    await page.route("**/api/gestion/insurance-contracts/contract_do_1/validate-do-payment", async (route) => {
+      calls.push("validate-do-payment")
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          contractNumber: "DO-2026-001",
+          amount: 2400,
+          alreadyPaid: false,
+          emailSent: true,
+        }),
+      })
+    })
     await page.route("**/api/gestion/documents/att_1/status", async (route) => {
       calls.push(`status:${route.request().postData()}`)
       await route.fulfill({
@@ -258,6 +272,14 @@ test.describe("Gestion — boutons d'action", () => {
     await expect(page.getByText("Demande documents DO envoyée à client-do@example.com.")).toBeVisible()
     await contracts.getByRole("button", { name: "Demander paiement Mollie" }).click()
     await expect(page.getByText(/Demande de paiement envoyée à client-do@example.com/)).toBeVisible()
+    page.once("dialog", (dialog) => {
+      expect(dialog.message()).toContain("DO-2026-001")
+      expect(dialog.message()).toMatch(/2[\s\u00a0\u202f]?400/)
+      expect(dialog.message()).toContain("attestation")
+      return dialog.accept()
+    })
+    await contracts.getByRole("button", { name: "Valider le paiement" }).click()
+    await expect(page.getByText("Paiement dommage ouvrage validé. L'attestation est disponible.")).toBeVisible()
 
     await page.locator("#attestations").getByRole("button", { name: "Suspendre" }).click()
     await expect(page.getByText("Statut mis à jour")).toBeVisible()
@@ -276,7 +298,7 @@ test.describe("Gestion — boutons d'action", () => {
     await expect(cancelDialog).toHaveCount(0)
 
     expect(calls).toEqual(
-      expect.arrayContaining(["access:client_do_1", "quote", "documents", "payment"])
+      expect.arrayContaining(["access:client_do_1", "quote", "documents", "payment", "validate-do-payment"])
     )
   })
 

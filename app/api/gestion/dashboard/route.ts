@@ -527,6 +527,11 @@ export async function GET() {
                   createdAt: true,
                 },
               },
+              storedDocuments: {
+                where: { type: "certificate" },
+                take: 1,
+                select: { id: true },
+              },
             },
           }),
         []
@@ -1162,7 +1167,10 @@ export async function GET() {
       sepaSubscriptions: sepaSubscriptionsRows,
       echeancesASuivre,
       insuranceContractsCount,
-      insuranceContracts: insuranceContractsList,
+      insuranceContracts: insuranceContractsList.map(({ storedDocuments, ...contract }) => ({
+        ...contract,
+        hasCertificate: storedDocuments.length > 0,
+      })),
       dashboardActions: dashboardActionsLimited,
       dashboardActionsSummary,
       conversionFunnel,

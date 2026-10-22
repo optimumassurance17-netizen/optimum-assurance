@@ -436,6 +436,92 @@ export async function processInsuranceContractPaymentSuccess(
   return { ok: true, contract: fresh, idempotent: false }
 }
 
+/** Référence stable d'un encaissement DO saisi en gestion, distincte d'un paiement Mollie. */
+export function manualDoPaymentReference(contractId: string): string {
+  return `manual-do-${contractId}`
+}
+
+export type ManualDoPaymentResult =
+  | {
+      ok: true
+      contract: InsuranceContract
+      idempotent: boolean
+      amount: number
+      certificateReady?: boolean
+    }
+  | { ok: false; error: "NOT_FOUND" | "NOT_DO" | "NOT_APPROVED" | "PDF_GENERATION_FAILED" }
+
+/**
+ * Enregistre le règlement d'un contrat dommage ouvrage approuvé sans attendre Mollie.
+ * Active le contrat pour 10 ans et délivre l'attestation et la facture.
+ */
+export async function validateDoPaymentManually(
+  contractId: string,
+  actorEmail: string
+): Promise<ManualDoPaymentResult> {
+  const current = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
+  if (!current) return { ok: false, error: "NOT_FOUND" }
+  if (current.productType !== "do") return { ok: false, error: "NOT_DO" }
+
+  const amount = mollieExpectedAmountForInsuranceContract(current.productType, current.premium)
+  if (current.status === CONTRACT_STATUS.active && current.paidAt) {
+    await ensurePostPaymentPdfsIfMissing(current.id)
+    const certificate = await prisma.contractStoredDocument.findFirst({
+      where: { contractId: current.id, type: "certificate" },
+    })
+    return {
+      ok: true,
+      contract: current,
+      idempotent: true,
+      amount,
+      certificateReady: Boolean(certificate),
+    }
+  }
+  if (current.status !== CONTRACT_STATUS.approved) return { ok: false, error: "NOT_APPROVED" }
+
+  const result = await processInsuranceContractPaymentSuccess(
+    contractId,
+    manualDoPaymentReference(contractId),
+    amount
+  )
+  if (!result.ok) {
+    if (result.error === "PDF_GENERATION_FAILED") {
+      await ensurePostPaymentPdfsIfMissing(contractId)
+      const certificate = await prisma.contractStoredDocument.findFirst({
+        where: { contractId, type: "certificate" },
+      })
+      const paid = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
+      if (certificate && paid) {
+        await logContractAction(
+          contractId,
+          "payment_validated_manually",
+          { amount, reference: manualDoPaymentReference(contractId) },
+          actorEmail
+        )
+        return { ok: true, contract: paid, idempotent: false, amount }
+      }
+      await logContractAction(
+        contractId,
+        "payment_validated_manually",
+        { amount, pdf: "failed" },
+        actorEmail
+      )
+      return { ok: false, error: "PDF_GENERATION_FAILED" }
+    }
+    return { ok: false, error: result.error === "NOT_FOUND" ? "NOT_FOUND" : "NOT_APPROVED" }
+  }
+
+  if (!result.idempotent) {
+    await logContractAction(
+      contractId,
+      "payment_validated_manually",
+      { amount, reference: manualDoPaymentReference(contractId) },
+      actorEmail
+    )
+  }
+  return { ok: true, contract: result.contract, idempotent: result.idempotent, amount }
+}
+
 /**
  * Contrôle que les PDF se génèrent (modèles OK). Ne met pas à jour `ContractStoredDocument`
  * ni les fichiers distants — pour un vrai rafraîchissement stocké, compléter avec la même

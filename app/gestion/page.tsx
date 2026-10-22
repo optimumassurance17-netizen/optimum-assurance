@@ -412,6 +412,7 @@ interface DashboardData {
       paidAt: string | null
       createdAt: string
     }[]
+    hasCertificate?: boolean
   }[]
   dashboardActions?: {
     id: string
@@ -4628,8 +4629,9 @@ export default function GestionPage() {
             Crée un <strong className="text-white">contrat plateforme DO</strong> rattaché au client. Le formulaire
             reste bloqué tant qu&apos;une fiche client n&apos;est pas choisie. Le client retrouve le PDF{" "}
             <strong className="text-white">Devis et conditions</strong> dans son espace client, puis paie par{" "}
-            <strong className="text-white">virement bancaire via Mollie</strong>. L’attestation/facture deviennent
-            disponibles après paiement et activation.
+            <strong className="text-white">virement bancaire via Mollie</strong>. Si le virement est reçu hors
+            Mollie, utilisez <strong className="text-white">Valider le paiement</strong> dans le tableau des contrats.
+            L’attestation et la facture deviennent disponibles après cet encaissement.
           </p>
           <form onSubmit={handleCreateDevisDo} className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 max-w-xl mb-10">
             {data.devisDoLeads && data.devisDoLeads.length > 0 && (
