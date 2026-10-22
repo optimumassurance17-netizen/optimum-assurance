@@ -15,6 +15,12 @@ import { documentRequestActivityLabel } from "@/lib/document-request"
 import { DO_DEVIS_LEADS_SECTION_ID, doDevisLeadRowId } from "@/lib/devis-do-lead"
 import { describePendingDoQuote } from "@/lib/do-quote-pending"
 import { getInsuranceProductLabel } from "@/lib/insurance-product"
+import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import {
+  canValidateDoPaymentManually,
+  doPaymentStatusLabel,
+  ValidateDoPaymentButton,
+} from "@/components/gestion/ValidateDoPaymentButton"
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { Toast } from "@/components/Toast"
@@ -190,7 +196,16 @@ interface ClientData {
     depositedFilename?: string | null
     depositedAt?: string | null
   }[]
-  insuranceContracts?: { id: string; contractNumber: string; productType: string; createdAt: string }[]
+  insuranceContracts?: {
+    id: string
+    contractNumber: string
+    productType: string
+    createdAt: string
+    status?: string
+    premium?: number
+    paidAt?: string | null
+    hasCertificate?: boolean
+  }[]
   canGenerateDecennaleAttestation?: boolean
   payments: {
     id: string
@@ -1790,18 +1805,79 @@ export default function ClientDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {insuranceContracts.map((contract) => (
+                  {insuranceContracts.map((contract) => {
+                    const payable = canValidateDoPaymentManually({
+                      productType: contract.productType,
+                      status: contract.status ?? "",
+                      paidAt: contract.paidAt ?? null,
+                      hasCertificate: contract.hasCertificate,
+                    })
+                    return (
                     <tr key={contract.id} className="border-b border-gray-700/50">
-                      <td className="p-4">{getInsuranceProductLabel(contract.productType)}</td>
+                      <td className="p-4">
+                        <p>{getInsuranceProductLabel(contract.productType)}</p>
+                        {contract.status ? (
+                          <p className="mt-1 text-xs text-gray-400">
+                            {doPaymentStatusLabel({
+                              productType: contract.productType,
+                              status: contract.status,
+                              paidAt: contract.paidAt ?? null,
+                              hasCertificate: contract.hasCertificate,
+                            })}
+                            {typeof contract.premium === "number"
+                              ? ` · ${contract.premium.toLocaleString("fr-FR")} €`
+                              : ""}
+                          </p>
+                        ) : null}
+                      </td>
                       <td className="p-4 font-mono">{contract.contractNumber}</td>
                       <td className="p-4">
-                        <DocumentRequestButton
-                          insuranceContractId={contract.id}
-                          onResult={rememberDocumentRequest}
-                        />
+                        <div className="flex flex-col items-start gap-2">
+                          <DocumentRequestButton
+                            insuranceContractId={contract.id}
+                            onResult={rememberDocumentRequest}
+                          />
+                          {contract.productType === "do" && contract.status === CONTRACT_STATUS.pending_validation ? (
+                            <button
+                              type="button"
+                              className="text-xs font-medium text-green-300 hover:text-green-200"
+                              onClick={async () => {
+                                const res = await fetch("/api/contracts/validate", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ contractId: contract.id, approve: true }),
+                                })
+                                const body = await readResponseJson<{ error?: string }>(res)
+                                if (!res.ok) {
+                                  setToast({ message: body.error || "Impossible d'approuver le contrat.", type: "error" })
+                                  return
+                                }
+                                const reload = await fetch(`/api/gestion/clients/${clientId}`, { cache: "no-store" })
+                                if (reload.ok) setData(await readResponseJson<ClientData>(reload))
+                                setToast({ message: "Contrat approuvé. Vous pouvez valider le paiement.", type: "success" })
+                              }}
+                            >
+                              Approuver
+                            </button>
+                          ) : null}
+                          {payable ? (
+                            <ValidateDoPaymentButton
+                              contractId={contract.id}
+                              contractNumber={contract.contractNumber}
+                              premium={contract.premium ?? 0}
+                              awaitingPayment={contract.status === CONTRACT_STATUS.approved && !contract.paidAt}
+                              onResult={async (result) => {
+                                setToast(result)
+                                const reload = await fetch(`/api/gestion/clients/${clientId}`, { cache: "no-store" })
+                                if (reload.ok) setData(await readResponseJson<ClientData>(reload))
+                              }}
+                            />
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

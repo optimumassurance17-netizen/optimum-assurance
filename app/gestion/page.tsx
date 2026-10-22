@@ -2209,7 +2209,7 @@ export default function GestionPage() {
               <ClientQuickSearch
                 label="Recherche fiche client"
                 placeholder="Nom, email ou SIRET"
-                helperText="Ouvre une fiche client, ou la demande de devis dommage ouvrage."
+                helperText="Ouvre une fiche, une demande de devis, ou le contrat dommage ouvrage pour valider le paiement."
               />
             </div>
             <nav

@@ -173,7 +173,20 @@ export async function GET(
         () =>
           prisma.insuranceContract.findMany({
             where: { userId: id },
-            select: { id: true, contractNumber: true, productType: true, createdAt: true },
+            select: {
+              id: true,
+              contractNumber: true,
+              productType: true,
+              createdAt: true,
+              status: true,
+              premium: true,
+              paidAt: true,
+              storedDocuments: {
+                where: { type: "certificate" },
+                take: 1,
+                select: { id: true },
+              },
+            },
             orderBy: { createdAt: "desc" },
           }),
         []
@@ -437,7 +450,11 @@ export async function GET(
       signature,
       activity,
       documentRequests,
-      insuranceContracts,
+      insuranceContracts: insuranceContracts.map(({ storedDocuments, paidAt, ...contract }) => ({
+        ...contract,
+        paidAt: paidAt ? paidAt.toISOString() : null,
+        hasCertificate: storedDocuments.length > 0,
+      })),
       payments: paymentsForClient,
       avenantFees,
       echeances,

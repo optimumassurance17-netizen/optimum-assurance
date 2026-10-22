@@ -14,6 +14,10 @@ import {
 } from "@/lib/insurance-product"
 import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
 import { DocumentRequestButton } from "@/components/gestion/DocumentRequestButton"
+import {
+  canValidateDoPaymentManually,
+  ValidateDoPaymentButton,
+} from "@/components/gestion/ValidateDoPaymentButton"
 
 export type InsuranceContractGestionRow = {
   id: string
@@ -110,7 +114,8 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
         <p className="text-amber-100/90">
           <strong>Décennale :</strong> le champ <strong>Prime TTC</strong> = prime <strong>annuelle</strong> (comme au souscription) — le virement Mollie
           côté client est automatiquement <strong>1/4 (trimestre)</strong>. <strong>DO :</strong> paiement unique. Après réception du
-          virement, <strong>Valider le paiement</strong> active le contrat et délivre l’attestation sans attendre Mollie.{" "}
+          virement, <strong>Valider le paiement</strong> active le contrat et délivre l’attestation sans attendre Mollie.
+          La même action est dans <strong>Recherche fiche client</strong> et sur la fiche de la société.{" "}
           <strong>Assurance titre :</strong> paiement unique Mollie. <strong>RC Fabriquant :</strong> la prime = montant de la{" "}
           <strong>prochaine échéance</strong> Mollie (souvent annuelle ÷ 4). Entre deux échéances, ajustez via « Modifier prime ». Pas d’automatisation
           SEPA dédiée RC sur ce flux.
@@ -425,48 +430,17 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                             Demander paiement Mollie
                           </button>
                         ) : null}
-                        {c.productType === "do" &&
-                        ((c.status === CONTRACT_STATUS.approved && !c.paidAt) ||
-                          (c.status === CONTRACT_STATUS.active && Boolean(c.paidAt) && c.hasCertificate === false)) ? (
-                          <button
-                            type="button"
-                            disabled={busyId === c.id}
-                            onClick={() =>
-                              run(c.id, async () => {
-                                const amountLabel = c.premium.toLocaleString("fr-FR")
-                                const awaitingPayment = c.status === CONTRACT_STATUS.approved && !c.paidAt
-                                const confirmed = window.confirm(
-                                  awaitingPayment
-                                    ? `Confirmer l'encaissement de ${amountLabel} € pour le contrat ${c.contractNumber} ? L'attestation dommage ouvrage sera délivrée.`
-                                    : `Relancer la délivrance de l'attestation du contrat ${c.contractNumber} ?`
-                                )
-                                if (!confirmed) return
-                                const res = await fetch(
-                                  `/api/gestion/insurance-contracts/${c.id}/validate-do-payment`,
-                                  { method: "POST" }
-                                )
-                                const j = await readResponseJson<{
-                                  error?: string
-                                  warning?: string
-                                  alreadyPaid?: boolean
-                                }>(res)
-                                if (!res.ok) throw new Error(j.error || "Erreur validation paiement")
-                                if (j.warning) {
-                                  setToast({ message: j.warning, type: "warning" })
-                                  return
-                                }
-                                setToast({
-                                  message: j.alreadyPaid
-                                    ? "Ce paiement dommage ouvrage était déjà enregistré."
-                                    : "Paiement dommage ouvrage validé. L'attestation est disponible.",
-                                  type: "success",
-                                })
-                              })
-                            }
-                            className="text-emerald-300 hover:text-emerald-200 text-xs font-medium disabled:opacity-50"
-                          >
-                            Valider le paiement
-                          </button>
+                        {canValidateDoPaymentManually(c) ? (
+                          <ValidateDoPaymentButton
+                            contractId={c.id}
+                            contractNumber={c.contractNumber}
+                            premium={c.premium}
+                            awaitingPayment={c.status === CONTRACT_STATUS.approved && !c.paidAt}
+                            onResult={(result) => {
+                              setToast(result)
+                              void onRefresh()
+                            }}
+                          />
                         ) : null}
                         {(c.status === CONTRACT_STATUS.approved || c.status === CONTRACT_STATUS.active) && (
                           <button

@@ -4,6 +4,14 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useId, useMemo, useState, type FormEvent } from "react"
 import { readResponseJson } from "@/lib/read-response-json"
+import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import { getInsuranceProductLabel } from "@/lib/insurance-product"
+import {
+  canValidateDoPaymentManually,
+  doPaymentStatusLabel,
+  ValidateDoPaymentButton,
+  type DoPaymentContract,
+} from "@/components/gestion/ValidateDoPaymentButton"
 
 type ClientQuickSearchResult = {
   id: string
@@ -19,9 +27,18 @@ type DoDevisSearchResult = {
   href: string
 }
 
+type ContractSearchResult = DoPaymentContract & {
+  id: string
+  contractNumber: string
+  clientName: string
+  premium: number
+  userId: string | null
+}
+
 type ClientQuickSearchResponse = {
   results?: ClientQuickSearchResult[]
   devisDoLeads?: DoDevisSearchResult[]
+  contracts?: ContractSearchResult[]
   error?: string
 }
 
@@ -45,6 +62,8 @@ export function ClientQuickSearch({
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<ClientQuickSearchResult[]>([])
   const [devisDoLeads, setDevisDoLeads] = useState<DoDevisSearchResult[]>([])
+  const [contracts, setContracts] = useState<ContractSearchResult[]>([])
+  const [notice, setNotice] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -55,6 +74,8 @@ export function ClientQuickSearch({
     if (!canSearch) {
       setResults([])
       setDevisDoLeads([])
+      setContracts([])
+      setNotice(null)
       setLoading(false)
       setError(null)
       return
@@ -73,11 +94,14 @@ export function ClientQuickSearch({
         if (!cancelled) {
           setResults(Array.isArray(json.results) ? json.results : [])
           setDevisDoLeads(Array.isArray(json.devisDoLeads) ? json.devisDoLeads : [])
+          setContracts(Array.isArray(json.contracts) ? json.contracts : [])
+          setNotice(null)
         }
       } catch (err) {
         if (!cancelled) {
           setResults([])
           setDevisDoLeads([])
+          setContracts([])
           setError(err instanceof Error ? err.message : "Erreur recherche fiche client")
         }
       } finally {
@@ -97,6 +121,10 @@ export function ClientQuickSearch({
     event.preventDefault()
     if (results[0]) {
       router.push(`/gestion/clients/${results[0].id}`)
+      return
+    }
+    if (contracts[0]?.userId) {
+      router.push(`/gestion/clients/${contracts[0].userId}`)
       return
     }
     if (devisDoLeads[0]?.href.startsWith("/gestion#")) {
@@ -126,7 +154,7 @@ export function ClientQuickSearch({
             <p className="px-4 py-3 text-sm text-gray-300">Recherche en cours…</p>
           ) : error ? (
             <p className="px-4 py-3 text-sm text-red-300">{error}</p>
-          ) : results.length === 0 && devisDoLeads.length === 0 ? (
+          ) : results.length === 0 && devisDoLeads.length === 0 && contracts.length === 0 ? (
             <p className="px-4 py-3 text-sm text-gray-300">Aucune fiche client trouvée.</p>
           ) : (
             <div>
@@ -152,6 +180,68 @@ export function ClientQuickSearch({
               ) : (
                 <p className="px-4 py-3 text-sm text-gray-300">Aucune fiche client trouvée.</p>
               )}
+              {contracts.length > 0 ? (
+                <ul className="divide-y divide-gray-700 border-t border-gray-700">
+                  {contracts.map((contract) => (
+                    <li key={contract.id} className="flex flex-col gap-2 px-4 py-3">
+                      <div>
+                        <span className="text-[11px] uppercase tracking-wide text-emerald-300">Contrat</span>
+                        <p className="text-sm font-medium text-white">{contract.clientName}</p>
+                        <p className="text-xs text-gray-300">
+                          {getInsuranceProductLabel(contract.productType)} · {contract.contractNumber} ·{" "}
+                          {doPaymentStatusLabel(contract)} · {contract.premium.toLocaleString("fr-FR")} €
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        {contract.userId ? (
+                          <Link
+                            href={`/gestion/clients/${contract.userId}`}
+                            className="text-xs font-medium text-[#93c5fd] hover:text-white"
+                          >
+                            Ouvrir la fiche
+                          </Link>
+                        ) : null}
+                        {contract.productType === "do" && contract.status === CONTRACT_STATUS.pending_validation ? (
+                          <button
+                            type="button"
+                            className="text-xs font-medium text-green-300 hover:text-green-200"
+                            onClick={async () => {
+                              const res = await fetch("/api/contracts/validate", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ contractId: contract.id, approve: true }),
+                              })
+                              const body = await readResponseJson<{ error?: string }>(res)
+                              if (!res.ok) {
+                                setNotice(body.error || "Impossible d'approuver le contrat.")
+                                return
+                              }
+                              setContracts((current) =>
+                                current.map((row) =>
+                                  row.id === contract.id ? { ...row, status: CONTRACT_STATUS.approved } : row
+                                )
+                              )
+                              setNotice(`Contrat ${contract.contractNumber} approuvé. Vous pouvez valider le paiement.`)
+                            }}
+                          >
+                            Approuver
+                          </button>
+                        ) : null}
+                        {canValidateDoPaymentManually(contract) ? (
+                          <ValidateDoPaymentButton
+                            contractId={contract.id}
+                            contractNumber={contract.contractNumber}
+                            premium={contract.premium}
+                            awaitingPayment={contract.status === CONTRACT_STATUS.approved && !contract.paidAt}
+                            onResult={(result) => setNotice(result.message)}
+                          />
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {notice ? <p className="border-t border-gray-700 px-4 py-2 text-sm text-amber-100">{notice}</p> : null}
               {devisDoLeads.length > 0 ? (
                 <ul className="divide-y divide-gray-700 border-t border-gray-700">
                   {devisDoLeads.map((lead) => (
@@ -172,7 +262,7 @@ export function ClientQuickSearch({
               ) : null}
             </div>
           )}
-          {results.length > 0 || devisDoLeads.length > 0 ? (
+          {results.length > 0 || devisDoLeads.length > 0 || contracts.length > 0 ? (
             <p className="border-t border-gray-700 px-4 py-2 text-[11px] text-gray-500">
               Astuce : appuyez sur Entrée pour ouvrir le premier résultat.
             </p>

@@ -11,6 +11,7 @@ import {
   readDoLeadCompanyName,
   sortRequestsByArrival,
 } from "@/lib/devis-do-lead"
+import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 
 const CLIENT_SEARCH_LIMIT = 8
 
@@ -113,11 +114,72 @@ export async function GET(request: NextRequest) {
       }))
 
     const devisDoLeads = await findDoDevisLeadMatches(rawQuery)
+    const contracts = await findInsuranceContractMatches(rawQuery)
 
-    return NextResponse.json({ results, devisDoLeads })
+    return NextResponse.json({ results, devisDoLeads, contracts })
   } catch (error) {
     console.error("Client search error:", error)
     return NextResponse.json({ error: "Erreur recherche fiche client" }, { status: 500 })
+  }
+}
+
+async function findInsuranceContractMatches(rawQuery: string) {
+  try {
+    const contracts = await prisma.insuranceContract.findMany({
+      where: {
+        OR: [
+          { clientName: { contains: rawQuery, mode: "insensitive" } },
+          { contractNumber: { contains: rawQuery, mode: "insensitive" } },
+          { projectName: { contains: rawQuery, mode: "insensitive" } },
+          { projectAddress: { contains: rawQuery, mode: "insensitive" } },
+          { user: { raisonSociale: { contains: rawQuery, mode: "insensitive" } } },
+          { user: { email: { contains: rawQuery, mode: "insensitive" } } },
+        ],
+      },
+      select: {
+        id: true,
+        contractNumber: true,
+        productType: true,
+        clientName: true,
+        status: true,
+        premium: true,
+        paidAt: true,
+        userId: true,
+        storedDocuments: {
+          where: { type: "certificate" },
+          take: 1,
+          select: { id: true },
+        },
+      },
+      orderBy: [
+        { productType: "asc" },
+        { createdAt: "desc" },
+      ],
+      take: 12,
+    })
+    return contracts
+      .sort((a, b) => {
+        const aDo = a.productType === "do" ? 0 : 1
+        const bDo = b.productType === "do" ? 0 : 1
+        if (aDo !== bDo) return aDo - bDo
+        const aPayable = a.status === CONTRACT_STATUS.approved && !a.paidAt ? 0 : 1
+        const bPayable = b.status === CONTRACT_STATUS.approved && !b.paidAt ? 0 : 1
+        return aPayable - bPayable
+      })
+      .slice(0, 8)
+      .map(({ storedDocuments, paidAt, ...contract }) => ({
+        ...contract,
+        paidAt: paidAt ? paidAt.toISOString() : null,
+        hasCertificate: storedDocuments.length > 0,
+      }))
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === "P2021" || error.code === "P2022")
+    ) {
+      return []
+    }
+    throw error
   }
 }
 

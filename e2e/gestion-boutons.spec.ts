@@ -409,4 +409,48 @@ test.describe("Gestion — boutons d'action", () => {
     expect(calls.some((call) => call.includes("Relance dossier"))).toBe(true)
     expect(calls.some((call) => call.startsWith("patch:"))).toBe(true)
   })
+
+  test("La recherche retrouve la SCI et propose de valider le paiement", async ({ page }) => {
+    await mockAdmin(page)
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildDashboard()),
+      })
+    })
+    await page.route("**/api/gestion/clients/search?**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          results: [],
+          devisDoLeads: [],
+          contracts: [
+            {
+              id: "contract_gokse",
+              contractNumber: "DO-2026-077",
+              productType: "do",
+              clientName: "SCI Gokse",
+              status: "approved",
+              premium: 3200,
+              paidAt: null,
+              hasCertificate: false,
+              userId: "client_gokse",
+            },
+          ],
+        }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await page.getByLabel("Recherche fiche client").fill("gokse")
+    const result = page.getByRole("listitem").filter({ hasText: "SCI Gokse" })
+    await expect(result).toBeVisible()
+    await expect(result.getByRole("link", { name: "Ouvrir la fiche" })).toHaveAttribute(
+      "href",
+      "/gestion/clients/client_gokse"
+    )
+    await expect(result.getByRole("button", { name: "Valider le paiement" })).toBeVisible()
+  })
 })
