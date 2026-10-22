@@ -30,6 +30,7 @@ export type StoredDocumentRequest = {
   createdAt: string
   depositedFilename: string | null
   depositedAt: string | null
+  userDocumentId: string | null
 }
 
 export function parseDocumentRequestMessage(
@@ -153,6 +154,8 @@ export function readStoredDocumentRequest(log: {
   const depositedAtDate = depositedAtRaw ? new Date(depositedAtRaw) : null
   const depositedAt =
     depositedAtDate && !Number.isNaN(depositedAtDate.getTime()) ? depositedAtDate.toISOString() : null
+  const userDocumentId =
+    typeof row.userDocumentId === "string" && row.userDocumentId.trim() ? row.userDocumentId.trim() : null
   return {
     id: log.id,
     message,
@@ -162,6 +165,7 @@ export function readStoredDocumentRequest(log: {
     createdAt: date.toISOString(),
     depositedFilename,
     depositedAt,
+    userDocumentId,
   }
 }
 

@@ -248,4 +248,24 @@ assert.match(html, /permis de construire/)
 assert.match(html, /Déposer la pièce/)
 assert.match(html, /ne confirme pas que le dossier est garanti/)
 
+const depositedHtml = renderToStaticMarkup(
+  createElement(DemandesDocumentClient, {
+    initialRequests: [
+      {
+        id: "log-9",
+        message: "Merci d'envoyer le permis de construire.",
+        assuranceLabel: "Dommages-ouvrage OPT-DO-1",
+        createdAt: "2026-10-11T18:00:00.000Z",
+        depositedFilename: "permis.pdf",
+        depositedAt: "2026-10-11T19:00:00.000Z",
+        userDocumentId: "doc_123",
+      },
+    ],
+  })
+)
+assert.match(depositedHtml, /Voir la pièce/)
+assert.match(depositedHtml, /\/api\/documents\/uploaded\/doc_123/)
+assert.match(fiche, /Ouvrir la pièce/)
+assert.match(fiche, /labelGedDocument/)
+
 console.log("verify-gestion-problemes: ok")

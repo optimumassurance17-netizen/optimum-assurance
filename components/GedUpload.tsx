@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { sendGedUpload } from "@/lib/ged-client-upload"
 import {
   DOC_TYPES_DECENNALE,
   DOC_TYPES_DO,
@@ -71,23 +72,10 @@ export function GedUpload() {
     setError(null)
     setUploading(type)
     try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("type", type)
-
-      const res = await fetch("/api/documents/uploaded/upload", {
-        method: "POST",
-        body: formData,
-      })
-
-      const data = await readResponseJson<{ error?: string }>(res)
-      if (!res.ok) {
-        setError(data.error || "Erreur lors de l'upload")
-        return
-      }
+      await sendGedUpload("/api/documents/uploaded/upload", file, { type })
       await fetchList()
-    } catch {
-      setError("Erreur lors de l'upload")
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Erreur lors de l'upload")
     } finally {
       setUploading(null)
     }

@@ -12,6 +12,7 @@ import {
 import { adminActivityLabel } from "@/lib/admin-activity-label"
 import { ddaPageLabel, ddaProductLabel, ddaTargetTypeLabel } from "@/lib/dda-labels"
 import { documentRequestActivityLabel } from "@/lib/document-request"
+import { labelGedDocument } from "@/lib/user-document-types"
 import { DO_DEVIS_LEADS_SECTION_ID, doDevisLeadRowId } from "@/lib/devis-do-lead"
 import { describePendingDoQuote } from "@/lib/do-quote-pending"
 import { getInsuranceProductLabel } from "@/lib/insurance-product"
@@ -195,6 +196,7 @@ interface ClientData {
     createdAt: string
     depositedFilename?: string | null
     depositedAt?: string | null
+    userDocumentId?: string | null
   }[]
   insuranceContracts?: {
     id: string
@@ -297,21 +299,6 @@ const typeLabels: Record<string, string> = {
   avenant: "Avenant",
   facture_do: "Facture acquittée DO",
   facture_decennale: "Facture acquittée décennale",
-}
-
-const gedTypeLabels: Record<string, string> = {
-  kbis: "KBIS",
-  piece_identite: "Pièce d'identité",
-  justificatif_activite: "Justificatif d'activité",
-  qualification: "Qualification",
-  rib: "RIB",
-  releve_sinistralite: "Relevé de sinistralité",
-  permis_construire: "Permis de construire",
-  doc_droc: "DOC / DROC",
-  plans_construction: "Plans construction",
-  convention_maitrise_oeuvre: "Convention maîtrise d'œuvre",
-  convention_controle_technique: "Convention contrôle technique",
-  rapport_etude_sol: "Rapport étude de sol",
 }
 
 function toDevisAutonomyForm(
@@ -1786,6 +1773,16 @@ export default function ClientDetailPage() {
                       ? ` · Pièce déposée : ${request.depositedFilename}`
                       : " · En attente de la pièce"}
                   </p>
+                  {request.userDocumentId ? (
+                    <a
+                      href={`/api/gestion/clients/${clientId}/documents/${request.userDocumentId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-block text-sm font-medium text-[#2563eb] hover:text-[#1d4ed8]"
+                    >
+                      Ouvrir la pièce
+                    </a>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -2063,11 +2060,11 @@ export default function ClientDetailPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-white mb-4">Documents GED déposés par le client</h2>
-          <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
+          <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700">
             {userDocuments.length === 0 ? (
               <p className="p-4 text-gray-200">Aucun document GED déposé</p>
             ) : (
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[720px] text-sm">
                 <thead>
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-4 font-medium">Type GED</th>
@@ -2080,7 +2077,7 @@ export default function ClientDetailPage() {
                   {userDocuments.map((doc) => (
                     <tr key={doc.id} className="border-b border-gray-700/50">
                       <td className="p-4">
-                        {doc.type.startsWith("demande_") ? "Pièce demandée" : gedTypeLabels[doc.type] || doc.type}
+                        {labelGedDocument(doc.type, documentRequests)}
                       </td>
                       <td className="p-4">{doc.filename}</td>
                       <td className="p-4">
@@ -2155,7 +2152,11 @@ export default function ClientDetailPage() {
                               type="button"
                               disabled={!!reviewLoadingByDocumentId[doc.id]}
                               onClick={async () => {
-                                const reason = (reviewReasonByDocumentId[doc.id] ?? "").trim()
+                                const reason = (
+                                  reviewReasonByDocumentId[doc.id] ??
+                                  userDocumentReviews[doc.id]?.reason ??
+                                  ""
+                                ).trim()
                                 if (!reason) {
                                   setToast({
                                     message: "Le motif est obligatoire pour marquer un document invalide.",

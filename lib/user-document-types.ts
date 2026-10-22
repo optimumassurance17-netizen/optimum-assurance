@@ -50,3 +50,22 @@ export const UPLOAD_DOC_LABELS: Record<(typeof UPLOAD_DOC_TYPES)[number], string
   piece_identite_titre: "Pièce d'identité des parties (Assurance titre)",
   note_notaire: "Note du notaire / observations juridiques",
 }
+
+export function labelGedDocument(
+  type: string,
+  requests?: { id: string; message: string }[]
+): string {
+  if (type.startsWith("demande_")) {
+    const id = type.slice("demande_".length)
+    const message = requests?.find((row) => row.id === id)?.message.replace(/\s+/g, " ").trim()
+    if (message) {
+      const excerpt = message.length > 80 ? `${message.slice(0, 77)}…` : message
+      return `Pièce demandée — ${excerpt}`
+    }
+    return "Pièce demandée"
+  }
+  if (type in UPLOAD_DOC_LABELS) {
+    return UPLOAD_DOC_LABELS[type as keyof typeof UPLOAD_DOC_LABELS]
+  }
+  return type
+}

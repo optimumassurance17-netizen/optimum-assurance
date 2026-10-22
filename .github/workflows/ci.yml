@@ -62,6 +62,9 @@ jobs:
       - name: Vérification indexation SEO
         run: npm run test:seo-indexation
 
+      - name: Vérification GED
+        run: npm run test:ged-database
+
       - name: Prisma generate + Next build
         run: npm run build
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { sendGedUpload } from "@/lib/ged-client-upload"
 import { readResponseJson } from "@/lib/read-response-json"
 
 export type ClientDocumentRequest = {
@@ -10,6 +11,7 @@ export type ClientDocumentRequest = {
   createdAt: string
   depositedFilename: string | null
   depositedAt: string | null
+  userDocumentId?: string | null
 }
 
 export function DemandesDocumentClient({
@@ -58,6 +60,19 @@ export function DemandesDocumentClient({
               <p className="mt-2 text-sm text-[#166534]">
                 Pièce déposée : {request.depositedFilename}
                 {request.depositedAt ? ` le ${new Date(request.depositedAt).toLocaleString("fr-FR")}` : ""}
+                {request.userDocumentId ? (
+                  <>
+                    {" · "}
+                    <a
+                      href={`/api/documents/uploaded/${request.userDocumentId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-[#2563eb] hover:underline"
+                    >
+                      Voir la pièce
+                    </a>
+                  </>
+                ) : null}
               </p>
             ) : (
               <p className="mt-2 text-sm text-[#92400e]">En attente de votre pièce.</p>
@@ -76,14 +91,13 @@ export function DemandesDocumentClient({
                 setSendingId(request.id)
                 setError(null)
                 try {
-                  const body = new FormData()
-                  body.set("requestId", request.id)
-                  body.set("file", file)
-                  const res = await fetch("/api/client/demandes-document", { method: "POST", body })
-                  const json = await readResponseJson<{ error?: string; request?: ClientDocumentRequest }>(res)
-                  if (!res.ok || !json.request) throw new Error(json.error || "Dépôt impossible.")
+                  const json = await sendGedUpload("/api/client/demandes-document", file, {
+                    requestId: request.id,
+                  })
+                  const deposited = json.request as ClientDocumentRequest | undefined
+                  if (!deposited) throw new Error(json.error || "Dépôt impossible.")
                   setRequests((current) =>
-                    (current ?? []).map((row) => (row.id === json.request!.id ? json.request! : row))
+                    (current ?? []).map((row) => (row.id === deposited.id ? deposited : row))
                   )
                   form.reset()
                 } catch (cause) {

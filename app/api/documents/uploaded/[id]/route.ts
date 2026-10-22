@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-import { readFile } from "fs/promises"
 import { existsSync } from "fs"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createSupabaseServiceClient } from "@/lib/supabase"
-import { getLocalGedPathCandidates, resolveGedFileReadTarget, resolveGedFileStorageTarget } from "@/lib/user-documents"
+import { openGedDocument } from "@/lib/ged-open"
+import { isClientReadableGedType } from "@/lib/ged-policy"
+import { resolveGedFileStorageTarget } from "@/lib/user-documents"
 import { UPLOAD_DOC_TYPES } from "@/lib/user-document-types"
 
 function isSchemaDriftError(error: unknown): boolean {
@@ -30,67 +31,20 @@ export async function GET(
     const { id } = await params
 
     const doc = await prisma.userDocument.findFirst({
-      where: { id, userId: session.user.id, type: { in: [...UPLOAD_DOC_TYPES] } },
+      where: { id, userId: session.user.id },
     })
 
-    if (!doc) {
+    if (!doc || !isClientReadableGedType(doc.type)) {
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
-    const readTarget = resolveGedFileReadTarget(doc.filepath)
-    let buffer: Buffer
-    if (readTarget.kind === "database") {
-      if (readTarget.bytes.length === 0) {
-        return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
-      }
-      buffer = readTarget.bytes
-    } else if (readTarget.kind === "supabase") {
-      const supabase = createSupabaseServiceClient()
-      let downloaded: Blob | null = null
-      if (supabase) {
-        for (const candidate of readTarget.candidates) {
-          const { data, error } = await supabase.storage.from(candidate.bucket).download(candidate.path)
-          if (!error && data) {
-            downloaded = data
-            break
-          }
-        }
-      }
-      if (downloaded) {
-        buffer = Buffer.from(await downloaded.arrayBuffer())
-      } else {
-        // Un chemin relatif est classé Supabase, y compris le fichier local
-        // `userId_type_timestamp.ext` déposé sans bucket. On le lit sur disque
-        // avant de conclure que le stockage est indisponible.
-        const localCandidates = getLocalGedPathCandidates(doc.filepath)
-        const existingLocalPath = localCandidates.find((candidate) => existsSync(candidate))
-        if (!existingLocalPath) {
-          if (!supabase) {
-            return NextResponse.json({ error: "Stockage GED indisponible" }, { status: 503 })
-          }
-          return NextResponse.json(
-            {
-              error:
-                "Fichier introuvable. Ce document GED semble provenir d'un ancien stockage local et n'est plus disponible sur le serveur actuel.",
-            },
-            { status: 404 }
-          )
-        }
-        buffer = await readFile(existingLocalPath)
-      }
-    } else {
-      if (!existsSync(readTarget.path)) {
-        return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
-      }
-      buffer = await readFile(readTarget.path)
-    }
-
-    const fileBytes = new Uint8Array(buffer)
-    return new NextResponse(fileBytes, {
-      headers: {
-        "Content-Type": doc.mimeType,
-        "Content-Disposition": `inline; filename="${encodeURIComponent(doc.filename)}"`,
-      },
+    return openGedDocument({
+      id: doc.id,
+      userId: doc.userId,
+      type: doc.type,
+      filename: doc.filename,
+      filepath: doc.filepath,
+      mimeType: doc.mimeType,
     })
   } catch (error) {
     if (isSchemaDriftError(error)) {

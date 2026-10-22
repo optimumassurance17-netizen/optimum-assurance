@@ -1,6 +1,7 @@
 import { existsSync } from "fs"
 import { basename, isAbsolute, join } from "path"
 import { mkdir } from "fs/promises"
+import { GED_MAX_FILE_BYTES } from "./ged-policy"
 import { UPLOAD_DOC_TYPES, UPLOAD_DOC_LABELS } from "./user-document-types"
 
 export const UPLOAD_DIR = join(process.env.TMPDIR || "/tmp", "optimum-assurance-uploads")
@@ -32,7 +33,7 @@ const MIME_TO_EXT: Record<string, string> = {
   "image/webp": "webp",
 }
 
-export const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 Mo
+export const MAX_FILE_SIZE = GED_MAX_FILE_BYTES
 
 /** Contenu conservé dans UserDocument.filepath quand Supabase est injoignable. Pas de nouvelle colonne. */
 export const GED_DATABASE_FILE_PREFIX = "dbged:v1:"
@@ -70,7 +71,7 @@ export function sanitizeFilenameBase(filename: string): string {
   return cleaned || "document"
 }
 
-export function detectUploadMimeAndExt(file: File): { mimeType: string; extension: string } | null {
+export function detectUploadMimeAndExt(file: { type?: string; name: string }): { mimeType: string; extension: string } | null {
   const normalizedMime = (file.type || "").trim().toLowerCase()
   if (normalizedMime && ALLOWED_MIMES.includes(normalizedMime)) {
     const ext = MIME_TO_EXT[normalizedMime]

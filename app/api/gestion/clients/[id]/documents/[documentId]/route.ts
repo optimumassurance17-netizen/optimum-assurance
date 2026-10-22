@@ -1,31 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-import { readFile } from "fs/promises"
-import { existsSync } from "fs"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { createSupabaseServiceClient } from "@/lib/supabase"
-import { getLocalGedPathCandidates, resolveGedFileReadTarget } from "@/lib/user-documents"
+import { openGedDocument } from "@/lib/ged-open"
 
-function buildReadableGedFilename(raw: string): string {
-  const safe = raw.replace(/"/g, "")
-  return encodeURIComponent(safe).replace(/%20/g, " ")
-}
-
-async function downloadFromSupabaseWithFallback(candidates: { bucket: string; path: string }[]): Promise<Uint8Array | null> {
-  const supabase = createSupabaseServiceClient()
-  if (!supabase) return null
-
-  for (const candidate of candidates) {
-    const { data, error } = await supabase.storage.from(candidate.bucket).download(candidate.path)
-    if (!error && data) return new Uint8Array(await data.arrayBuffer())
-  }
-  return null
-}
+export const runtime = "nodejs"
 
 /**
- * Télécharge/ouvre un document GED client depuis la fiche gestion (admin uniquement).
+ * Ouvre un document GED client depuis la fiche gestion (admin uniquement).
+ * Les fichiers stockés à distance partent par un lien signé, pour dépasser
+ * la limite de réponse de l'hébergement.
  */
 export async function GET(
   _request: NextRequest,
@@ -44,53 +29,21 @@ export async function GET(
 
     const doc = await prisma.userDocument.findFirst({
       where: { id: documentId, userId },
-      select: { id: true, filename: true, filepath: true, mimeType: true },
+      select: { id: true, userId: true, type: true, filename: true, filepath: true, mimeType: true },
     })
 
     if (!doc) {
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
-    const resolved = resolveGedFileReadTarget(doc.filepath)
-
-    let fileBytes: Uint8Array
-    if (resolved.kind === "database") {
-      if (resolved.bytes.length === 0) {
-        return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
-      }
-      fileBytes = new Uint8Array(resolved.bytes)
-    } else if (resolved.kind === "supabase") {
-      const fromSupabase = await downloadFromSupabaseWithFallback(resolved.candidates)
-      if (fromSupabase) {
-        fileBytes = fromSupabase
-      } else {
-        // Fallback legacy: certains enregistrements gardent un chemin type Supabase
-        // alors que le binaire est resté local (uploads antérieurs / migration partielle).
-        const localFallback = getLocalGedPathCandidates(doc.filepath).find((candidate) =>
-          existsSync(candidate)
-        )
-        if (!localFallback) {
-          return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
-        }
-        const buffer = await readFile(localFallback)
-        fileBytes = new Uint8Array(buffer)
-      }
-    } else {
-      if (!existsSync(resolved.path)) {
-        return NextResponse.json({ error: "Fichier introuvable" }, { status: 404 })
-      }
-      const buffer = await readFile(resolved.path)
-      fileBytes = new Uint8Array(buffer)
-    }
-
-    return new NextResponse(Buffer.from(fileBytes), {
-      headers: {
-        "Content-Type": doc.mimeType || "application/octet-stream",
-        "Content-Disposition": `inline; filename="${buildReadableGedFilename(doc.filename)}"; filename*=UTF-8''${encodeURIComponent(doc.filename)}`,
-      },
-    })
+    return openGedDocument(doc)
   } catch (error) {
-    console.error("[gestion/clients/:id/documents/:documentId] GET", error)
+    const message = error instanceof Error ? error.message : ""
+    if (message.includes("dbged:v1:") || message.length > 500) {
+      console.error("[gestion/clients/:id/documents/:documentId] GET (détail omis)")
+    } else {
+      console.error("[gestion/clients/:id/documents/:documentId] GET", error)
+    }
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
   }
 }
