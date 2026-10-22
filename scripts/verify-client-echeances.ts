@@ -145,6 +145,16 @@ assert(echeanceReceiptLabel({ label: "Échéance 2" }) === "Échéance 2", "le r
 assert(echeanceReceiptLabel({ type: "sepa_trimestre", sepaInstallmentNumber: "3" }) === "Prélèvement SEPA n°3", "le reçu SEPA indique le numéro")
 assert(echeanceReceiptLabel({ type: "echeance_carte", echeanceId: "avenant:fee1" }) === "Frais d'avenant", "le reçu d'avenant a un libellé")
 assert(paymentStatusLabel("paid") === "Payé" && paymentStatusLabel("pending") === "Lien envoyé" && paymentStatusLabel("failed") === "Échoué", "les statuts de paiement sont en français")
+assert(clientPaymentStatusLabel("pending", "Virement") === "En attente", "un virement en attente n'est pas un lien carte")
+assert(clientPaymentStatusLabel("pending", "Prélèvement SEPA") === "En attente", "un prélèvement en attente n'est pas un lien carte")
+assert(
+  describeClientPayment({
+    status: "pending",
+    molliePaymentId: "virement_suivi",
+    metadata: JSON.stringify({ type: "virement_externe", label: "Dommage ouvrage", virementReference: "DO-1" }),
+  }).statusLabel === "En attente",
+  "le suivi nomme un virement en attente"
+)
 assert(
   paymentEcheanceLabel(JSON.stringify({ type: "echeance_carte", label: "Échéance 2" })) === "Échéance 2",
   "le tableau des paiements reprend le nom de l'échéance"
@@ -501,6 +511,10 @@ assert(
 const clientRoute = readFileSync(new URL("../app/api/gestion/clients/[id]/route.ts", import.meta.url), "utf8")
 assert(dashboard.includes("collapseSettledCardLinkPayments"), "le tableau de bord retire le doublon de paiement carte")
 assert(clientRoute.includes("collapseSettledCardLinkPayments"), "la fiche client retire le doublon de paiement carte")
+assert(clientRoute.includes("clientPaymentStatusLabel"), "la fiche distingue un virement d'un lien carte")
+const gestionPage = readFileSync(new URL("../app/gestion/page.tsx", import.meta.url), "utf8")
+assert(gestionPage.includes("describeClientPayment"), "le suivi gestion distingue un virement d'un lien carte")
+assert(gestionPage.includes("Signé, activation en attente"), "le recouvrement nomme un contrat signé non activé")
 assert(clientPayments.includes("collapseSettledCardLinkPayments"), "l'historique client retire le doublon de paiement carte")
 
 console.log("Échéances fiche client : OK")

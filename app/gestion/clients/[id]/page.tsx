@@ -2505,13 +2505,15 @@ export default function ClientDetailPage() {
                       <td className="p-4">{p.amount.toLocaleString("fr-FR")} €</td>
                       <td className="p-4">
                         <span className={`px-2 py-1 rounded text-xs ${
-                          p.status === "paid"
+                          (p.statusLabel || p.status) === "Payé" || p.status === "paid"
                             ? "bg-green-900/50 text-green-300"
-                            : p.status === "failed"
+                            : (p.statusLabel || p.status) === "Échoué" || p.status === "failed"
                               ? "bg-red-900/50 text-red-200"
-                              : "bg-blue-900/50 text-sky-200"
+                              : p.statusLabel === "Lien expiré"
+                                ? "bg-amber-900/40 text-amber-200"
+                                : "bg-blue-900/50 text-sky-200"
                         }`}>
-                          {p.statusLabel || (p.status === "paid" ? "Payé" : p.status === "pending" ? "Lien envoyé" : p.status === "failed" ? "Échoué" : p.status)}
+                          {p.statusLabel || (p.status === "paid" ? "Payé" : p.status === "failed" ? "Échoué" : p.status === "pending" ? "En attente" : p.status)}
                         </span>
                       </td>
                     </tr>

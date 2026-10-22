@@ -20,7 +20,7 @@ import { loadClientEcheances } from "@/lib/client-echeance-service"
 import { clientDeleteErrorMessage, deleteClientAccount } from "@/lib/client-account"
 import { purgeClientExternalResidue } from "@/lib/purge-client-residue"
 import { describeSepaReadiness } from "@/lib/sepa-readiness"
-import { attachSepaNotices, collapseSettledCardLinkPayments, paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel, virementReferenceFromMetadata } from "@/lib/client-echeances"
+import { attachSepaNotices, clientPaymentStatusLabel, collapseSettledCardLinkPayments, paymentEcheanceLabel, paymentMethodLabel, virementReferenceFromMetadata } from "@/lib/client-echeances"
 import { describeClientActivity } from "@/lib/admin-activity-label"
 import { DDA_AUDIT_ACTIONS } from "@/lib/dda-labels"
 import { DOCUMENT_REQUEST_ACTION, readStoredDocumentRequest } from "@/lib/document-request"
@@ -310,17 +310,20 @@ export async function GET(
         if (document.type !== "contrat" || !isDecennaleContractData(document.data)) return false
         return extractStructuredActivities(parseJsonObject(document.data)).length > 0
       })
-    const paymentsForClient = collapseSettledCardLinkPayments(payments).map((payment) => ({
-      id: payment.id,
-      amount: payment.amount,
-      status: payment.status,
-      statusLabel: paymentStatusLabel(payment.status, payment.metadata),
-      methodLabel: paymentMethodLabel(payment.metadata, payment.molliePaymentId),
-      echeanceLabel: paymentEcheanceLabel(payment.metadata),
-      virementReference: virementReferenceFromMetadata(payment.metadata),
-      paidAt: payment.paidAt,
-      createdAt: payment.createdAt,
-    }))
+    const paymentsForClient = collapseSettledCardLinkPayments(payments).map((payment) => {
+      const methodLabel = paymentMethodLabel(payment.metadata, payment.molliePaymentId)
+      return {
+        id: payment.id,
+        amount: payment.amount,
+        status: payment.status,
+        statusLabel: clientPaymentStatusLabel(payment.status, methodLabel, payment.metadata),
+        methodLabel,
+        echeanceLabel: paymentEcheanceLabel(payment.metadata),
+        virementReference: virementReferenceFromMetadata(payment.metadata),
+        paidAt: payment.paidAt,
+        createdAt: payment.createdAt,
+      }
+    })
     const editionLogs =
       documentIds.length === 0
         ? []

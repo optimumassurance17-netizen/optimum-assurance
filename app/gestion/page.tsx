@@ -63,7 +63,7 @@ import {
   ASSURANCE_TITRE_BIEN_LABELS,
   ASSURANCE_TITRE_OPERATION_LABELS,
 } from "@/lib/assurance-titre-types"
-import { paymentEcheanceLabel, paymentMethodLabel, paymentStatusLabel, pendingCardEcheanceId, virementReferenceFromMetadata } from "@/lib/client-echeances"
+import { describeClientPayment, pendingCardEcheanceId } from "@/lib/client-echeances"
 
 function getRcFabLeadDraft(
   d: { id: string; statut?: string; notesInternes?: string | null },
@@ -3025,7 +3025,15 @@ export default function GestionPage() {
                               {row.contractNumber} · {row.clientLabel}
                             </p>
                             <p className="text-[11px] text-gray-300 mt-0.5">
-                              {row.amount.toLocaleString("fr-FR")} € · {row.ageDays}j · {row.status}
+                              {row.amount.toLocaleString("fr-FR")} € · {row.ageDays}j · {row.status === "approved_unpaid"
+                                ? "Signé, activation en attente"
+                                : row.status === "failed" || row.status === "expired" || row.status === "canceled" || row.status === "cancelled"
+                                  ? "Échoué"
+                                  : row.status === "pending" || row.status === "open" || row.status === "authorized"
+                                    ? "En attente"
+                                    : row.status === "paid"
+                                      ? "Payé"
+                                      : row.status}
                             </p>
                             <div className="mt-2 flex flex-wrap gap-1.5">
                               <button
@@ -4060,21 +4068,35 @@ export default function GestionPage() {
                 {filteredPayments.length === 0 ? (
                   <tr><td colSpan={8} className="p-4 text-gray-200">Aucun paiement</td></tr>
                 ) : (
-                  filteredPayments.map((p) => (
+                  filteredPayments.map((p) => {
+                    const described = describeClientPayment({
+                      metadata: p.metadata,
+                      molliePaymentId: p.molliePaymentId,
+                      status: p.status,
+                    })
+                    const statusClass =
+                      described.statusLabel === "Payé"
+                        ? "bg-green-900/50 text-green-300"
+                        : described.statusLabel === "Échoué"
+                          ? "bg-red-900/50 text-red-200"
+                          : described.statusLabel === "Lien expiré"
+                            ? "bg-amber-900/40 text-amber-200"
+                            : "bg-blue-900/50 text-sky-300"
+                    return (
                     <tr key={p.id} className="border-b border-gray-700/50">
                       <td className="p-3 sm:p-4">{new Date(p.paidAt || p.createdAt).toLocaleDateString("fr-FR")}</td>
                       <td className="p-3 sm:p-4">{p.user.raisonSociale || p.user.email}</td>
-                      <td className="p-3 sm:p-4">{paymentEcheanceLabel(p.metadata) || "—"}</td>
+                      <td className="p-3 sm:p-4">{described.echeanceLabel || "—"}</td>
                       <td className="p-3 sm:p-4">
-                        <div>{paymentMethodLabel(p.metadata, p.molliePaymentId) || "—"}</div>
-                        {virementReferenceFromMetadata(p.metadata) ? (
-                          <div className="mt-1 text-xs text-gray-300">Réf. {virementReferenceFromMetadata(p.metadata)}</div>
+                        <div>{described.methodLabel || "—"}</div>
+                        {described.virementReference ? (
+                          <div className="mt-1 text-xs text-gray-300">Réf. {described.virementReference}</div>
                         ) : null}
                       </td>
                       <td className="p-3 sm:p-4">{p.amount.toLocaleString("fr-FR")} €</td>
                       <td className="p-3 sm:p-4">
-                        <span className={`px-2 py-1 rounded text-xs ${p.status === "paid" ? "bg-green-900/50 text-green-300" : p.status === "failed" ? "bg-red-900/50 text-red-200" : "bg-blue-900/50 text-sky-300"}`}>
-                          {paymentStatusLabel(p.status, p.metadata)}
+                        <span className={`px-2 py-1 rounded text-xs ${statusClass}`}>
+                          {described.statusLabel}
                         </span>
                       </td>
                       <td className="p-3 sm:p-4">
@@ -4088,7 +4110,8 @@ export default function GestionPage() {
                       </td>
                       <td className="p-3 sm:p-4 font-mono text-xs text-gray-200 hidden md:table-cell">{p.molliePaymentId}</td>
                     </tr>
-                  ))
+                    )
+                  })
                 )}
               </tbody>
             </table>
