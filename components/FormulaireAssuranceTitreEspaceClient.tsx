@@ -18,8 +18,17 @@ import {
   type AssuranceTitreEtudeQuestionnaireV1,
   type OuiNon,
 } from "@/lib/assurance-titre-etude-questionnaire-types"
+import { DevoirConseil } from "@/components/DevoirConseil"
 import { inputFieldBg, inputTextDark } from "@/lib/form-input-styles"
 import { readResponseJson } from "@/lib/read-response-json"
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function optionalContactEmail(value: string): string | undefined {
+  const email = value.trim()
+  if (!email || email.length > 254 || !EMAIL_PATTERN.test(email)) return undefined
+  return email
+}
 
 const inputClass = `w-full rounded-xl px-4 py-3 font-medium ${inputFieldBg} ${inputTextDark}`
 const labelClass = "mb-1.5 block text-sm font-semibold text-[#0a0a0a]"
@@ -64,6 +73,8 @@ export function FormulaireAssuranceTitreEspaceClient() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null)
+  const [devoirConseilAccepte, setDevoirConseilAccepte] = useState(false)
+  const [devoirConseilJournalise, setDevoirConseilJournalise] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -151,9 +162,52 @@ export function FormulaireAssuranceTitreEspaceClient() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    setSaving(true)
     setSaveMsg(null)
+    if (!devoirConseilAccepte) {
+      setSaveMsg({
+        type: "err",
+        text: "Confirmez avoir pris connaissance du devoir de conseil.",
+      })
+      return
+    }
+
+    setSaving(true)
     try {
+      if (!devoirConseilJournalise) {
+        const montant = Number(String(form.operation.montantOperation).replace(",", "."))
+        const montantOperation = Number.isFinite(montant) && montant > 0 ? montant : null
+        const adresse = form.bien.adresseBien.trim()
+        const ville = form.bien.villeBien.trim()
+        const email = optionalContactEmail(form.contact.email)
+        const logResponse = await fetch("/api/devoir-conseil/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            page: "assurance_titre",
+            produit: "assurance-titre",
+            ...(email ? { email } : {}),
+            sourcePage: "assurance_titre",
+            sourcePath: "/espace-client/assurance-titre",
+            needsSummary: `Assurance titre | ${adresse}, ${ville} | ${montantOperation ?? 0} €`,
+            recommendedProduct: "assurance-titre",
+            suitabilityScore: 0.9,
+            context: {
+              adresseBien: adresse || null,
+              villeBien: ville || null,
+              montantOperation,
+              typeBien: form.operation.typeBien || null,
+              typeOperation: form.operation.typeOperation || null,
+              espaceClient: true,
+            },
+          }),
+        })
+        const logJson = await readResponseJson<{ error?: string }>(logResponse)
+        if (!logResponse.ok) {
+          throw new Error(logJson.error || "La confirmation du devoir de conseil n'a pas pu être enregistrée.")
+        }
+        setDevoirConseilJournalise(true)
+      }
+
       const payload = { ...form, version: ASSURANCE_TITRE_ETUDE_VERSION }
       const res = await fetch("/api/client/title-questionnaire", {
         method: "PUT",
@@ -518,6 +572,14 @@ export function FormulaireAssuranceTitreEspaceClient() {
         </div>
       </section>
 
+      <DevoirConseil
+        produit="assurance-titre"
+        checkboxId="devoir-conseil-assurance-titre-espace-client"
+        checked={devoirConseilAccepte}
+        onCheckedChange={setDevoirConseilAccepte}
+        labelCheckbox="Je confirme avoir pris connaissance du devoir de conseil pour l'assurance titre."
+      />
+
       {saveMsg ? (
         <div
           className={`rounded-xl border p-4 text-sm ${
@@ -533,7 +595,7 @@ export function FormulaireAssuranceTitreEspaceClient() {
       <div className="flex flex-wrap items-center gap-3 pt-2">
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || !devoirConseilAccepte}
           className="rounded-xl bg-[#2563eb] px-6 py-3 font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
         >
           {saving ? "Enregistrement..." : "Enregistrer le questionnaire"}
