@@ -4,6 +4,7 @@ import { randomBytes } from "crypto"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { collapseDecennaleContractDuplicates } from "@/lib/decennale-contract-replacement"
 import { getNextNumero } from "@/lib/documents"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
@@ -102,6 +103,10 @@ export async function POST(request: NextRequest) {
         }),
       },
     })
+
+    if (type === "contrat") {
+      await collapseDecennaleContractDuplicates({ userId, keepDocumentId: document.id })
+    }
 
     await logAdminActivity({
       adminEmail: session.user.email || "admin",

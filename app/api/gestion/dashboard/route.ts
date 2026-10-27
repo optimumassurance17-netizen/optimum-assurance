@@ -12,6 +12,7 @@ import { collapseSettledCardLinkPayments } from "@/lib/client-echeances"
 import { adminActivityClientHref, adminActivityLabel } from "@/lib/admin-activity-label"
 import { DDA_AUDIT_ACTIONS } from "@/lib/dda-labels"
 import { latestSignatureReminderByRequest } from "@/lib/signature-reminder"
+import { collapseDecennaleContractDuplicates } from "@/lib/decennale-contract-replacement"
 import { readDoLeadCompanyName, selectDoDevisDashboardActions, sortRequestsByArrival } from "@/lib/devis-do-lead"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
@@ -303,6 +304,7 @@ export async function GET() {
     if (!session?.user?.id || !isAdmin(session)) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
+    await collapseDecennaleContractDuplicates()
     const now = new Date()
     const ddaConsentWindowStart = new Date(now.getTime() - 72 * 60 * 60 * 1000)
     const ddaEventWindowStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)

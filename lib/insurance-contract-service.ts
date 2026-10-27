@@ -13,6 +13,7 @@ import {
 } from "@/lib/insurance-product"
 import { readAssuranceTitreCoverageDurationYears } from "@/lib/assurance-titre-contract-config"
 import { readRcFabDossierConfig, rcFabAttestationWindow } from "@/lib/rc-fabriquant-dossier-config"
+import { collapseDecennaleContractDuplicates } from "@/lib/decennale-contract-replacement"
 
 export type CreateContractInput = {
   productType: "decennale" | "do"
@@ -110,6 +111,13 @@ export async function createInsuranceContract(input: CreateContractInput) {
     manualValidationRequired: risk.reject || requiresManualReview(risk.score),
     riskReasons: risk.reasons,
   })
+
+  if (input.productType === "decennale" && input.userId) {
+    await collapseDecennaleContractDuplicates({
+      userId: input.userId,
+      keepInsuranceContractId: c.id,
+    })
+  }
 
   const baseUrl = `${SITE_URL}/api/contracts/${c.id}/pdf`
   const initialTypes = ["quote", "policy"] as const

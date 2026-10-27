@@ -7,6 +7,7 @@ import { logAdminActivity } from "@/lib/admin-activity"
 import { getNextNumero } from "@/lib/documents"
 import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
 import { SITE_URL } from "@/lib/site-url"
+import { collapseDecennaleContractDuplicates } from "@/lib/decennale-contract-replacement"
 import { logContractAction } from "@/lib/insurance-contract-service"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { IDENTITY_DOC_KEYS, syncUserFromDocumentMergedData } from "@/lib/sync-user-document-identity"
@@ -79,9 +80,14 @@ async function createDecennaleContractDocument(
   pendingCreatedAt: Date,
   signatureRequestId: string
 ): Promise<{ id: string }> {
+  const keptContract = async (id: string) => {
+    await collapseDecennaleContractDuplicates({ userId, keepDocumentId: id })
+    return { id }
+  }
+
   const already = await prisma.document.findUnique({ where: { numero: preferredNumero } })
   if (already && isContractFromThisSignature(already, userId, pendingCreatedAt)) {
-    return { id: already.id }
+    return keptContract(already.id)
   }
 
   let numero = already ? await getNextNumero("contrat") : preferredNumero
@@ -104,12 +110,12 @@ async function createDecennaleContractDocument(
           status: "valide",
         },
       })
-      return { id: created.id }
+      return keptContract(created.id)
     } catch (error) {
       if (isUniqueConstraint(error)) {
         const existing = await prisma.document.findUnique({ where: { numero } })
         if (existing && isContractFromThisSignature(existing, userId, pendingCreatedAt)) {
-          return { id: existing.id }
+          return keptContract(existing.id)
         }
         numero = await getNextNumero("contrat")
         continue

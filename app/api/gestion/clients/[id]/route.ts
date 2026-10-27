@@ -8,6 +8,7 @@ import { logAdminActivity } from "@/lib/admin-activity"
 import { syncContratAvenantDocumentsFromUser } from "@/lib/sync-user-document-identity"
 import { asJsonObject } from "@/lib/json-object"
 import { fetchUserDocumentReviews } from "@/lib/user-document-review"
+import { collapseDecennaleContractDuplicates } from "@/lib/decennale-contract-replacement"
 import { isDecennaleContractData, parseJsonObject } from "@/lib/decennale-contract-data"
 import { LOCAL_SIGNED_DOCUMENT_TYPE } from "@/lib/esign/local-signature-fallback"
 import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
@@ -137,6 +138,8 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
     }
+
+    await collapseDecennaleContractDuplicates({ userId: id })
 
     const [documents, payments, avenantFees, notes, sinistres, userDocuments, insuranceContracts, devoirConseilLogs, devisAutonomy, rcFabriquantLeads] =
       await Promise.all([

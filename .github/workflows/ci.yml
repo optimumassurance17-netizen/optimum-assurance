@@ -68,6 +68,9 @@ jobs:
       - name: Vérification relance activation contrat
         run: npm run test:relance-activation
 
+      - name: Vérification remplacement contrat décennale
+        run: npm run test:decennale-remplacement
+
       - name: Prisma generate + Next build
         run: npm run build
 
