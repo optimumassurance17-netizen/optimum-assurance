@@ -87,7 +87,7 @@ export default function GestionRectificationPage() {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<DashboardData | null>(null)
   const [query, setQuery] = useState("")
-  const [toast, setToast] = useState<{ message: string; type?: "success" | "error" } | null>(null)
+  const [toast, setToast] = useState<{ message: string; type?: "success" | "warning" | "error" } | null>(null)
   const [savingContractId, setSavingContractId] = useState<string | null>(null)
   const [savingPaymentId, setSavingPaymentId] = useState<string | null>(null)
   const [cancellingSignatureId, setCancellingSignatureId] = useState<string | null>(null)
