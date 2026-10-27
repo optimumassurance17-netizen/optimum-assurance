@@ -33,6 +33,7 @@ import { Toast } from "@/components/Toast"
 import { ClientQuickSearch } from "@/components/gestion/ClientQuickSearch"
 import { InsuranceContractsGestionBlock } from "@/components/gestion/InsuranceContractsGestionBlock"
 import { DocumentRequestButton } from "@/components/gestion/DocumentRequestButton"
+import { DeleteErroneousContractButton } from "@/components/gestion/DeleteErroneousContractButton"
 import { DuplicateAccountsPanel } from "@/components/gestion/DuplicateAccountsPanel"
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
@@ -4320,6 +4321,17 @@ export default function GestionPage() {
                             </button>
                           </>
                         )}
+                        <DeleteErroneousContractButton
+                          contractNumber={d.numero}
+                          endpoint={`/api/gestion/documents/${d.id}`}
+                          className="text-red-400 hover:text-red-300 text-sm min-h-[44px] inline-flex items-center px-2"
+                          onDeleted={async () => {
+                            const dashRes = await fetch("/api/gestion/dashboard")
+                            if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
+                            setToast({ message: `Contrat ${d.numero} supprimé.`, type: "success" })
+                          }}
+                          onError={(message) => setToast({ message, type: "error" })}
+                        />
                         </div>
                       </td>
                     </tr>

@@ -14,6 +14,7 @@ import {
 } from "@/lib/insurance-product"
 import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
 import { DocumentRequestButton } from "@/components/gestion/DocumentRequestButton"
+import { DeleteErroneousContractButton } from "@/components/gestion/DeleteErroneousContractButton"
 import {
   canValidateDoPaymentManually,
   ValidateDoPaymentButton,
@@ -532,6 +533,16 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                         >
                           Régénérer PDF
                         </button>
+                        <DeleteErroneousContractButton
+                          contractNumber={c.contractNumber}
+                          endpoint={`/api/gestion/insurance-contracts/${c.id}`}
+                          paid={Boolean(c.paidAt) || c.lifecyclePayments.some((payment) => payment.status === "paid" || Boolean(payment.paidAt))}
+                          onDeleted={async () => {
+                            setToast({ message: `Contrat ${c.contractNumber} supprimé.`, type: "success" })
+                            await onRefresh()
+                          }}
+                          onError={(message) => setToast({ message, type: "error" })}
+                        />
                       </div>
                     </td>
                   </tr>

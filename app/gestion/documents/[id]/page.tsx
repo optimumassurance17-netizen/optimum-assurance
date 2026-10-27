@@ -9,6 +9,7 @@ import { readResponseJson } from "@/lib/read-response-json"
 import { Toast } from "@/components/Toast"
 import { AutoriserDevisButton } from "@/components/gestion/AutoriserDevisButton"
 import { ModifierDevisButton } from "@/components/gestion/ModifierDevisButton"
+import { DeleteErroneousContractButton } from "@/components/gestion/DeleteErroneousContractButton"
 import { isPerDocumentDevisEditionType } from "@/lib/devis-edition"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
@@ -179,6 +180,15 @@ export default function GestionDocumentPage() {
               >
                 Modifier les données
               </Link>
+            )}
+            {document.type === "contrat" && (
+              <DeleteErroneousContractButton
+                contractNumber={document.numero}
+                endpoint={`/api/gestion/documents/${document.id}`}
+                className="text-sm font-medium text-red-400 hover:text-red-300"
+                onDeleted={() => router.push("/gestion")}
+                onError={(message) => setToast({ message, type: "error" })}
+              />
             )}
             <button
               type="button"

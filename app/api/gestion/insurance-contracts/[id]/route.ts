@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
+import { logAdminActivity } from "@/lib/admin-activity"
+import { ERRONEOUS_CONTRACT_DELETE_ACTION } from "@/lib/erroneous-contract-delete"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@/lib/prisma-client"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { logContractAction } from "@/lib/insurance-contract-service"
 
@@ -125,6 +128,61 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ ok: true, contract: updated })
   } catch (e) {
     console.error("[gestion/insurance-contracts PATCH]", e)
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+  }
+}
+
+/** Suppression d'un contrat plateforme créé par erreur. Les encaissements Mollie restent. */
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.email || !isAdmin(session)) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
+  }
+
+  try {
+    const { id } = await params
+    const existing = await prisma.insuranceContract.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        contractNumber: true,
+        productType: true,
+        status: true,
+        paidAt: true,
+        userId: true,
+        clientName: true,
+        premium: true,
+      },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: "Contrat introuvable" }, { status: 404 })
+    }
+
+    await prisma.insuranceContract.delete({ where: { id } })
+
+    await logAdminActivity({
+      adminEmail: session.user.email,
+      action: ERRONEOUS_CONTRACT_DELETE_ACTION,
+      targetType: "insurance_contract",
+      targetId: id,
+      details: {
+        contractNumber: existing.contractNumber,
+        productType: existing.productType,
+        status: existing.status,
+        paidAt: existing.paidAt?.toISOString() ?? null,
+        userId: existing.userId,
+        clientName: existing.clientName,
+        premium: existing.premium,
+        reason: "erreur",
+      },
+    })
+
+    return NextResponse.json({ ok: true })
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      return NextResponse.json({ error: "Contrat introuvable" }, { status: 404 })
+    }
+    console.error("[gestion/insurance-contracts DELETE]", e)
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
   }
 }

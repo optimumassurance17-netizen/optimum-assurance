@@ -27,6 +27,7 @@ import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-s
 import { Toast } from "@/components/Toast"
 import { AutoriserDevisButton } from "@/components/gestion/AutoriserDevisButton"
 import { ModifierDevisButton } from "@/components/gestion/ModifierDevisButton"
+import { DeleteErroneousContractButton } from "@/components/gestion/DeleteErroneousContractButton"
 import { isPerDocumentDevisEditionType } from "@/lib/devis-edition"
 
 function prettyQuestionnaireJson(raw: string | null | undefined): string {
@@ -1870,6 +1871,17 @@ export default function ClientDetailPage() {
                               }}
                             />
                           ) : null}
+                          <DeleteErroneousContractButton
+                            contractNumber={contract.contractNumber}
+                            endpoint={`/api/gestion/insurance-contracts/${contract.id}`}
+                            paid={Boolean(contract.paidAt)}
+                            onDeleted={async () => {
+                              const reload = await fetch(`/api/gestion/clients/${clientId}`, { cache: "no-store" })
+                              if (reload.ok) setData(await readResponseJson<ClientData>(reload))
+                              setToast({ message: `Contrat ${contract.contractNumber} supprimé.`, type: "success" })
+                            }}
+                            onError={(message) => setToast({ message, type: "error" })}
+                          />
                         </div>
                       </td>
                     </tr>
@@ -2025,6 +2037,19 @@ export default function ClientDetailPage() {
                           >
                             Voir
                           </Link>
+                          {d.type === "contrat" ? (
+                            <DeleteErroneousContractButton
+                              contractNumber={d.numero}
+                              endpoint={`/api/gestion/documents/${d.id}`}
+                              className="text-red-400 hover:text-red-300 text-sm"
+                              onDeleted={async () => {
+                                const reload = await fetch(`/api/gestion/clients/${clientId}`, { cache: "no-store" })
+                                if (reload.ok) setData(await readResponseJson<ClientData>(reload))
+                                setToast({ message: `Contrat ${d.numero} supprimé.`, type: "success" })
+                              }}
+                              onError={(message) => setToast({ message, type: "error" })}
+                            />
+                          ) : null}
                           {(d.type === "attestation" || d.type === "attestation_nominative") && d.status === "valide" ? (
                             <button
                               type="button"

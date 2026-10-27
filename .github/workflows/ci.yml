@@ -68,6 +68,9 @@ jobs:
       - name: Vérification relance activation contrat
         run: npm run test:relance-activation
 
+      - name: Vérification suppression contrat créé par erreur
+        run: npm run test:suppression-contrat-erreur
+
       - name: Prisma generate + Next build
         run: npm run build
 

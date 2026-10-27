@@ -16,6 +16,11 @@ import {
   isPerDocumentDevisEditionType,
   overlayAccountIdentityOnDocument,
 } from "@/lib/devis-edition"
+import {
+  ERRONEOUS_CONTRACT_DELETE_ACTION,
+  isErroneousContractDocumentType,
+} from "@/lib/erroneous-contract-delete"
+import { Prisma } from "@/lib/prisma-client"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
   try {
@@ -222,5 +227,57 @@ export async function PATCH(
       { error: "Erreur lors de la modification" },
       { status: 500 }
     )
+  }
+}
+
+/** Suppression d'un contrat signé créé par erreur. Devis, attestations et factures restent. */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id || !isAdmin(session)) {
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
+    }
+
+    const { id } = await params
+    const document = await prisma.document.findFirst({
+      where: { id },
+      select: { id: true, type: true, numero: true, status: true, userId: true },
+    })
+    if (!document) {
+      return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
+    }
+    if (!isErroneousContractDocumentType(document.type)) {
+      return NextResponse.json(
+        { error: "Seul un contrat peut être supprimé ici. Les devis, attestations et factures restent." },
+        { status: 409 }
+      )
+    }
+
+    await prisma.document.delete({ where: { id } })
+
+    await logAdminActivity({
+      adminEmail: session.user.email || "admin",
+      action: ERRONEOUS_CONTRACT_DELETE_ACTION,
+      targetType: "document",
+      targetId: id,
+      details: {
+        numero: document.numero,
+        documentType: document.type,
+        status: document.status,
+        userId: document.userId,
+        reason: "erreur",
+      },
+    })
+
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
+    }
+    console.error("Erreur suppression contrat:", error)
+    return NextResponse.json({ error: "Erreur lors de la suppression" }, { status: 500 })
   }
 }
