@@ -3,6 +3,7 @@ import {
   FALLBACK_PDF_KEY,
   LOCAL_SIGNATURE_PROVIDER,
   MAX_LOCAL_SIGNATURE_PDF_BYTES,
+  signaturePdfTooLargeMessage,
 } from "@/lib/esign/local-signature-fallback"
 
 export type SignRequestCreation = {
@@ -20,7 +21,7 @@ export async function createSignRequestWithFallback(pdfBuffer: Buffer): Promise<
     throw new Error("Le contrat PDF est illisible.")
   }
   if (pdfBuffer.length > MAX_LOCAL_SIGNATURE_PDF_BYTES) {
-    throw new Error("Le contrat est trop volumineux pour la signature.")
+    throw new Error(signaturePdfTooLargeMessage())
   }
   return {
     id: randomUUID(),

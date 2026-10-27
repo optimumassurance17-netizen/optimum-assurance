@@ -7,6 +7,8 @@ import {
   FALLBACK_PDF_KEY,
   LOCAL_SIGNATURE_PROVIDER,
   LOCAL_SIGNED_PDF_KEY,
+  MAX_LOCAL_SIGNATURE_PDF_BYTES,
+  signaturePdfTooLargeMessage,
   decodeStoredPdfBase64,
   isLocalCustomPdfContract,
   isLocalFallbackContract,
@@ -128,6 +130,21 @@ async function main() {
   const contractPdf = readFileSync("lib/insurance-contract-pdf.ts", "utf8")
   assert(!creator.includes("uploadPdfAndInsertSignRequest"), "la création de signature n'envoie plus le PDF à Supabase")
   assert(!customSend.includes("createSupabaseServiceClient"), "l'invitation PDF personnalisé n'exige plus Supabase")
+  assert(customSend.includes("MAX_LOCAL_SIGNATURE_PDF_BYTES"), "l'invitation utilise la limite de la signature")
+  assert(!customSend.includes("15 Mo"), "l'invitation n'annonce plus 15 Mo")
+  assert(customSend.includes("signaturePdfTooLargeMessage()"), "le refus de taille part avant l'envoi")
+  const gestionPage = readFileSync("app/gestion/page.tsx", "utf8")
+  assert(gestionPage.includes("signaturePdfTooLargeMessage()"), "la gestion refuse le PDF trop lourd avant l'envoi")
+  assert(signaturePdfTooLargeMessage().includes("3 Mo"), "le message annonce 3 Mo")
+  const oversized = Buffer.alloc(MAX_LOCAL_SIGNATURE_PDF_BYTES + 1)
+  oversized.write("%PDF-", 0, "latin1")
+  let rejectedOversized = false
+  try {
+    await createSignRequestWithFallback(oversized)
+  } catch (error) {
+    rejectedOversized = error instanceof Error && error.message === signaturePdfTooLargeMessage()
+  }
+  assert(rejectedOversized, "un PDF au-dessus de 3 Mo est refusé")
   assert(contractPdf.includes("LOCAL_DOCUMENT_KEY_PREFIX"), "le devis signé local se relit sans Supabase")
 
   const decoded = decodeStoredPdfBase64(stored[FALLBACK_PDF_KEY])

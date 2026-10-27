@@ -13,6 +13,11 @@ export const LOCAL_DOCUMENT_KEY_PREFIX = "local-document:" as const
 
 /** PDF brut maximal. Reste sous la limite de réponse serveur (environ 4,5 Mo). */
 export const MAX_LOCAL_SIGNATURE_PDF_BYTES = 3 * 1024 * 1024
+
+export function signaturePdfTooLargeMessage(): string {
+  const mega = MAX_LOCAL_SIGNATURE_PDF_BYTES / (1024 * 1024)
+  return `PDF trop volumineux pour la signature (max. ${mega} Mo).`
+}
 /** Le PDF signé peut grossir un peu après l'apposition de l'image. */
 export const MAX_LOCAL_SIGNED_PDF_BYTES = 4 * 1024 * 1024
 

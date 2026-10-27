@@ -4,7 +4,11 @@ import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { createSignRequestWithFallback } from "@/lib/esign/create-sign-request-with-fallback"
-import { FALLBACK_PDF_KEY } from "@/lib/esign/local-signature-fallback"
+import {
+  FALLBACK_PDF_KEY,
+  MAX_LOCAL_SIGNATURE_PDF_BYTES,
+  signaturePdfTooLargeMessage,
+} from "@/lib/esign/local-signature-fallback"
 import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import {
@@ -27,8 +31,6 @@ import {
 } from "@/lib/insurance-product"
 
 export const runtime = "nodejs"
-
-const MAX_BYTES = 15 * 1024 * 1024
 
 function normalizeNextPath(raw: string | null): string {
   const d = "/espace-client"
@@ -184,8 +186,8 @@ export async function POST(request: NextRequest) {
     if (!file || !(file instanceof Blob) || file.size === 0) {
       return NextResponse.json({ error: "Fichier PDF requis" }, { status: 400 })
     }
-    if (file.size > MAX_BYTES) {
-      return NextResponse.json({ error: "PDF trop volumineux (max. 15 Mo)" }, { status: 400 })
+    if (file.size > MAX_LOCAL_SIGNATURE_PDF_BYTES) {
+      return NextResponse.json({ error: signaturePdfTooLargeMessage() }, { status: 400 })
     }
     const mime = (file as File).type || ""
     if (mime && mime !== "application/pdf") {
@@ -422,9 +424,8 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("[gestion/sign/send-custom-devis-pdf]", error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Erreur lors de l’envoi" },
-      { status: 500 }
-    )
+    const message = error instanceof Error ? error.message : "Erreur lors de l’envoi"
+    const tooLarge = message === signaturePdfTooLargeMessage()
+    return NextResponse.json({ error: message }, { status: tooLarge ? 400 : 500 })
   }
 }

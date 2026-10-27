@@ -23,6 +23,10 @@ function mapDestinationConstruction(dest?: string): string {
   }
   return dest ? (map[dest] ?? "Usage personnel") : ""
 }
+import {
+  MAX_LOCAL_SIGNATURE_PDF_BYTES,
+  signaturePdfTooLargeMessage,
+} from "@/lib/esign/local-signature-fallback"
 import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 import { ACTIVITES_BTP } from "@/lib/activites-btp"
@@ -2434,8 +2438,15 @@ export default function GestionPage() {
                     ref={customDevisPdfInputRef}
                     type="file"
                     accept="application/pdf"
+                    onChange={(event) => {
+                      const picked = event.target.files?.[0]
+                      if (!picked || picked.size <= MAX_LOCAL_SIGNATURE_PDF_BYTES) return
+                      event.target.value = ""
+                      setToast({ message: signaturePdfTooLargeMessage(), type: "error" })
+                    }}
                     className="block w-full text-sm text-gray-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-[#2563eb] file:text-white"
                   />
+                  <p className="text-xs text-gray-400">PDF jusqu’à 3 Mo. Au-delà, l’envoi est refusé avant la signature.</p>
                   <label className="text-sm text-gray-300">
                     {customDevisProductType === "assurance_titre"
                       ? "Prime TTC totale (€)"
@@ -2536,6 +2547,10 @@ export default function GestionPage() {
                   }
                   if (!file) {
                     setToast({ message: "Sélectionnez un fichier PDF.", type: "error" })
+                    return
+                  }
+                  if (file.size > MAX_LOCAL_SIGNATURE_PDF_BYTES) {
+                    setToast({ message: signaturePdfTooLargeMessage(), type: "error" })
                     return
                   }
                   const primeTtcAnnuel = Number(customDevisPrime.replace(",", "."))
