@@ -49,8 +49,8 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
         <p className="mb-2">
           <strong>Adresse de construction :</strong> {facts.constructionAddress || "Non renseignée"}
         </p>
-        <p className="mb-4">
-          <strong>Montant des garanties :</strong> {guaranteeLabel}
+        <p className="mb-4 text-2xl font-bold text-black">
+          Montant des garanties : {guaranteeLabel}
         </p>
         <p className="mb-4">
           est garantie au titre de l&apos;<strong>assurance dommage ouvrage</strong>.
@@ -76,7 +76,7 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
       </div>
 
       <div className="mb-8">
-        <h3 className="font-bold text-black mb-2 uppercase text-xs">Garanties</h3>
+        <h3 className="mb-3 text-xl font-bold uppercase text-black">Garanties</h3>
         <p className="text-xs text-[#171717] mb-3">
           DOMMAGES – OUVRAGE : garantie obligatoire. Habitation : à hauteur du coût de réparation des dommages. Hors
           habitation : à hauteur du coût de réparation des dommages dans la limite du coût total de construction déclaré.
@@ -87,17 +87,17 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
         <table className="w-full border-collapse border border-[#e5e5e5]">
           <thead>
             <tr className="bg-[#dbeafe]">
-              <th className="border border-[#e5e5e5] p-2 text-left text-xs">Garantie</th>
-              <th className="border border-[#e5e5e5] p-2 text-left text-xs">Durée</th>
-              <th className="border border-[#e5e5e5] p-2 text-left text-xs">Objet</th>
+              <th className="border border-[#e5e5e5] p-3 text-left text-base font-bold">Garantie</th>
+              <th className="border border-[#e5e5e5] p-3 text-left text-base font-bold">Durée</th>
+              <th className="border border-[#e5e5e5] p-3 text-left text-base font-bold">Objet</th>
             </tr>
           </thead>
           <tbody>
             {(["I1", "I2", "I3"] as const).map((key) => (
               <tr key={key}>
-                <td className="border border-[#e5e5e5] p-2 text-xs font-medium">{DO_GARANTIES_LEGALES[key].libelle}</td>
-                <td className="border border-[#e5e5e5] p-2 text-xs">{DO_GARANTIES_LEGALES[key].duree}</td>
-                <td className="border border-[#e5e5e5] p-2 text-xs text-[#171717]">{DO_GARANTIES_LEGALES[key].description}</td>
+                <td className="border border-[#e5e5e5] p-3 text-lg font-bold text-black">{DO_GARANTIES_LEGALES[key].libelle}</td>
+                <td className="border border-[#e5e5e5] p-3 text-lg font-bold text-black">{DO_GARANTIES_LEGALES[key].duree}</td>
+                <td className="border border-[#e5e5e5] p-3 text-sm text-[#171717]">{DO_GARANTIES_LEGALES[key].description}</td>
               </tr>
             ))}
           </tbody>

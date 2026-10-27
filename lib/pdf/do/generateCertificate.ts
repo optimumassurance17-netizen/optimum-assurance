@@ -118,9 +118,9 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,
-    font,
-    10,
-    13
+    fontBold,
+    14,
+    18
   )
   y -= 6
   y = drawWrappedText(
@@ -214,26 +214,44 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
     13
   )
   y -= 14
+  if (y < PDF_PAGE.marginBottom + 110) {
+    page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+    y = drawOptimumHeader(page, font, fontBold, "ATTESTATION — suite", "Garanties", accelerantLogo)
+  }
   drawTextPdf(page, "Garanties", {
     x: PDF_PAGE.marginX,
     y,
-    size: 11,
+    size: 14,
     font: fontBold,
     color: PDF_COLORS.text,
   })
-  y -= 14
+  y -= 18
   for (const row of [DO_GARANTIES_LEGALES.I1, DO_GARANTIES_LEGALES.I2, DO_GARANTIES_LEGALES.I3]) {
+    if (y < PDF_PAGE.marginBottom + 70) {
+      page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+      y = drawOptimumHeader(page, font, fontBold, "ATTESTATION — suite", "Garanties", accelerantLogo)
+    }
     y = drawWrappedText(
       page,
-      `${row.libelle} — ${row.duree}. ${row.description}`,
+      `${row.libelle} — ${row.duree}`,
+      PDF_PAGE.marginX,
+      y,
+      PDF_PAGE.contentWidth,
+      fontBold,
+      13,
+      16
+    )
+    y = drawWrappedText(
+      page,
+      row.description,
       PDF_PAGE.marginX,
       y,
       PDF_PAGE.contentWidth,
       font,
-      8,
-      11
+      10,
+      13
     )
-    y -= 4
+    y -= 8
   }
   y -= 6
   y = drawWrappedText(

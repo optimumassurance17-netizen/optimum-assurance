@@ -612,23 +612,32 @@ export default function Home() {
           <p className="text-[#171717] text-center mb-12 text-sm">
             Transparence totale — pas de frais cachés
           </p>
-          <div className="overflow-x-auto overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0 rounded-xl border border-slate-200/90 bg-white shadow-sm touch-pan-x">
-            <table className="w-full text-sm min-w-[500px]">
+          <ul className="space-y-4 sm:hidden">
+            {garantiesDecennale.map((g) => (
+              <li key={g.nom} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p className="text-xl font-bold text-slate-900">{g.nom}</p>
+                <p className="mt-3 text-lg font-bold text-slate-900">Franchise : {g.franchise}</p>
+                <p className="text-lg font-bold text-slate-900">Plafond : {g.plafond}</p>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto overscroll-x-contain rounded-xl border border-slate-200/90 bg-white shadow-sm sm:block">
+            <table className="w-full text-base">
               <thead>
                 <tr className="border-b-2 border-blue-600">
-                  <th className="text-left py-4 px-4 font-semibold text-slate-900">Garantie</th>
-                  <th className="text-left py-4 px-4 font-semibold text-slate-900 hidden sm:table-cell">Description</th>
-                  <th className="text-left py-4 px-4 font-semibold text-slate-900">Franchise</th>
-                  <th className="text-left py-4 px-4 font-semibold text-slate-900">Plafond</th>
+                  <th className="text-left py-4 px-3 sm:px-4 text-base sm:text-lg font-bold text-slate-900">Garantie</th>
+                  <th className="text-left py-4 px-4 text-lg font-bold text-slate-900 hidden sm:table-cell">Description</th>
+                  <th className="text-left py-4 px-3 sm:px-4 text-base sm:text-lg font-bold text-slate-900">Franchise</th>
+                  <th className="text-left py-4 px-3 sm:px-4 text-base sm:text-lg font-bold text-slate-900">Plafond</th>
                 </tr>
               </thead>
               <tbody>
                 {garantiesDecennale.map((g, i) => (
                   <tr key={i} className="border-b border-[#e5e5e5] hover:bg-blue-50/50 transition-colors">
-                    <td className="py-4 px-4 font-medium text-slate-900">{g.nom}</td>
-                    <td className="py-4 px-4 text-[#171717] hidden sm:table-cell">{g.description}</td>
-                    <td className="py-4 px-4 text-[#171717]">{g.franchise}</td>
-                    <td className="py-4 px-4 text-[#171717]">{g.plafond}</td>
+                    <td className="py-5 px-3 sm:px-4 text-lg sm:text-xl font-bold text-slate-900">{g.nom}</td>
+                    <td className="py-5 px-4 text-base text-[#171717] hidden sm:table-cell">{g.description}</td>
+                    <td className="py-5 px-3 sm:px-4 text-base sm:text-lg font-bold text-slate-900">{g.franchise}</td>
+                    <td className="py-5 px-3 sm:px-4 text-base sm:text-lg font-bold text-slate-900">{g.plafond}</td>
                   </tr>
                 ))}
               </tbody>

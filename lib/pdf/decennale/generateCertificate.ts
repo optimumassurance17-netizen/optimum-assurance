@@ -171,26 +171,44 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     13
   )
   y -= 14
+  if (y < PDF_PAGE.marginBottom + 120) {
+    page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+    y = drawOptimumHeader(page, font, fontBold, "ATTESTATION — suite", "Garanties", accelerantLogo)
+  }
   drawTextPdf(page, "Garanties, montants et franchise", {
     x: PDF_PAGE.marginX,
     y,
-    size: 11,
+    size: 14,
     font: fontBold,
     color: PDF_COLORS.text,
   })
-  y -= 14
+  y -= 18
   for (const row of decennaleGarantieRows({})) {
+    if (y < PDF_PAGE.marginBottom + 70) {
+      page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+      y = drawOptimumHeader(page, font, fontBold, "ATTESTATION — suite", "Garanties", accelerantLogo)
+    }
     y = drawWrappedText(
       page,
-      `${row.nom} — plafond ${row.plafond} — franchise ${row.franchise}. ${row.description}`,
+      `${row.nom} — plafond ${row.plafond} — franchise ${row.franchise}`,
+      PDF_PAGE.marginX,
+      y,
+      PDF_PAGE.contentWidth,
+      fontBold,
+      13,
+      16
+    )
+    y = drawWrappedText(
+      page,
+      row.description,
       PDF_PAGE.marginX,
       y,
       PDF_PAGE.contentWidth,
       font,
-      8,
-      11
+      10,
+      13
     )
-    y -= 4
+    y -= 8
   }
   {
     const continued = drawClausesPaginated({

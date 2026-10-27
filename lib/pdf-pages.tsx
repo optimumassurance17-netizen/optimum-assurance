@@ -17,7 +17,7 @@ function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
   const rows = decennaleGarantieRows(data)
   return (
     <View style={{ marginTop: 10 }}>
-      <Text style={pdfTheme.h3}>Garanties, montants et franchise</Text>
+      <Text style={[pdfTheme.h3, { fontSize: 14 }]}>Garanties, montants et franchise</Text>
       <View style={pdfTheme.tableCard}>
         <View style={[pdfTheme.tableHeader, { flexDirection: "row" }]}>
           <Text style={[pdfTheme.tableHeaderText, { width: "60%" }]}>Garantie</Text>
@@ -27,11 +27,11 @@ function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
         {rows.map((row, index) => (
           <View key={row.nom} style={index === rows.length - 1 ? pdfTheme.rowLast : pdfTheme.row}>
             <View style={{ width: "60%" }}>
-              <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: "#0f172a" }}>{row.nom}</Text>
-              <Text style={{ fontSize: 7, color: "#475569", marginTop: 1 }}>{row.description}</Text>
+              <Text style={{ fontSize: 13, fontFamily: "Helvetica-Bold", color: "#0f172a" }}>{row.nom}</Text>
+              <Text style={{ fontSize: 9, color: "#475569", marginTop: 2 }}>{row.description}</Text>
             </View>
-            <Text style={{ width: "22%", fontSize: 8, textAlign: "right", color: "#0f172a" }}>{row.plafond}</Text>
-            <Text style={{ width: "18%", fontSize: 8, textAlign: "right", fontFamily: "Helvetica-Bold", color: "#0f172a" }}>
+            <Text style={{ width: "22%", fontSize: 12, textAlign: "right", fontFamily: "Helvetica-Bold", color: "#0f172a" }}>{row.plafond}</Text>
+            <Text style={{ width: "18%", fontSize: 12, textAlign: "right", fontFamily: "Helvetica-Bold", color: "#0f172a" }}>
               {row.franchise}
             </Text>
           </View>
@@ -93,15 +93,17 @@ function DoGarantiesPdf() {
   const rows = [DO_GARANTIES_LEGALES.I1, DO_GARANTIES_LEGALES.I2, DO_GARANTIES_LEGALES.I3]
   return (
     <View style={{ marginTop: 10 }}>
-      <Text style={pdfTheme.h3}>Garanties</Text>
-      <Text style={pdfTheme.p}>Franchise : aucune (garantie obligatoire)</Text>
+      <Text style={[pdfTheme.h3, { fontSize: 14 }]}>Garanties</Text>
+      <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", fontSize: 12 }]}>Franchise : aucune (garantie obligatoire)</Text>
       <Text style={pdfTheme.p}>
         Protection juridique : défense/recours selon les conditions contractuelles applicables.
       </Text>
       {rows.map((row) => (
-        <Text key={row.code} style={pdfTheme.p}>
-          {row.libelle} — {row.duree}. {row.description}
-        </Text>
+        <View key={row.code} style={{ marginBottom: 6 }}>
+          <Text style={{ fontSize: 13, fontFamily: "Helvetica-Bold", color: "#0f172a" }}>{row.libelle}</Text>
+          <Text style={{ fontSize: 12, fontFamily: "Helvetica-Bold", color: "#0f172a" }}>{row.duree}</Text>
+          <Text style={{ fontSize: 9, color: "#475569" }}>{row.description}</Text>
+        </View>
       ))}
     </View>
   )
@@ -410,7 +412,9 @@ export function AttestationDoPDFPage({
         <Text style={pdfTheme.p}>La société Optimum Assurance atteste que :</Text>
         <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#0f172a" }]}>{d.raisonSociale ?? "—"}</Text>
         <Text style={pdfTheme.p}>Adresse de construction : {facts.constructionAddress || "Non renseignée"}</Text>
-        <Text style={pdfTheme.p}>Montant des garanties : {guaranteeLabel}</Text>
+        <Text style={{ fontSize: 14, fontFamily: "Helvetica-Bold", color: "#0f172a", marginBottom: 8 }}>
+          Montant des garanties : {guaranteeLabel}
+        </Text>
         <Text style={pdfTheme.p}>Type de garantie : {typeGarantie}</Text>
         <Text style={pdfTheme.p}>
           Validité : du {d.dateSignature ?? "—"} au {d.dateEcheance ?? "—"}. La garantie obligatoire court dix ans à

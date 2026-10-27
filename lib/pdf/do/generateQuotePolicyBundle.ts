@@ -116,9 +116,9 @@ export async function generateDOQuotePolicyBundle(
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,
-    font,
-    10,
-    13
+    fontBold,
+    14,
+    18
   )
   if (data.constructionNature) {
     y -= 8

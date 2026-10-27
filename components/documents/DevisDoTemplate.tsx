@@ -133,8 +133,8 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
               <td>{facts.constructionAddress || "Non renseignée"}</td>
             </tr>
             <tr>
-              <td className="py-1 pr-4 text-[#171717]">Montant des garanties</td>
-              <td>{guaranteeLabel}</td>
+              <td className="py-1 pr-4 text-lg font-bold text-black">Montant des garanties</td>
+              <td className="text-xl font-bold text-black">{guaranteeLabel}</td>
             </tr>
           </tbody>
         </table>
@@ -210,7 +210,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
 
       {/* Garanties proposées */}
       <div className="mb-6">
-        <h3 className="font-bold text-black mb-2 uppercase text-xs">Garanties proposées</h3>
+        <h3 className="mb-3 text-xl font-bold uppercase text-black">Garanties proposées</h3>
         <p className="text-xs text-[#171717] mb-3">{DO_GARANTIE_OBLIGATOIRE_LIGNE}</p>
         <ul className="list-disc list-inside text-xs text-[#171717] space-y-1 mb-3">
           {DO_GARANTIES_NON_SOUSCRITES.map((line) => (
@@ -225,26 +225,26 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
         <table className="w-full border-collapse border border-[#e5e5e5] mb-3">
           <thead>
             <tr className="bg-[#dbeafe]">
-              <th className="border border-[#e5e5e5] p-2 text-left text-xs">Garantie</th>
-              <th className="border border-[#e5e5e5] p-2 text-left text-xs">Durée</th>
-              <th className="border border-[#e5e5e5] p-2 text-left text-xs">Objet</th>
+              <th className="border border-[#e5e5e5] p-3 text-left text-base font-bold">Garantie</th>
+              <th className="border border-[#e5e5e5] p-3 text-left text-base font-bold">Durée</th>
+              <th className="border border-[#e5e5e5] p-3 text-left text-base font-bold">Objet</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td className="border border-[#e5e5e5] p-2 text-xs font-medium">{DO_GARANTIES_LEGALES.I1.libelle}</td>
-              <td className="border border-[#e5e5e5] p-2 text-xs">{DO_GARANTIES_LEGALES.I1.duree}</td>
-              <td className="border border-[#e5e5e5] p-2 text-xs text-[#171717]">{DO_GARANTIES_LEGALES.I1.description}</td>
+              <td className="border border-[#e5e5e5] p-3 text-lg font-bold text-black">{DO_GARANTIES_LEGALES.I1.libelle}</td>
+              <td className="border border-[#e5e5e5] p-3 text-lg font-bold text-black">{DO_GARANTIES_LEGALES.I1.duree}</td>
+              <td className="border border-[#e5e5e5] p-3 text-sm text-[#171717]">{DO_GARANTIES_LEGALES.I1.description}</td>
             </tr>
             <tr>
-              <td className="border border-[#e5e5e5] p-2 text-xs font-medium">{DO_GARANTIES_LEGALES.I2.libelle}</td>
-              <td className="border border-[#e5e5e5] p-2 text-xs">{DO_GARANTIES_LEGALES.I2.duree}</td>
-              <td className="border border-[#e5e5e5] p-2 text-xs text-[#171717]">{DO_GARANTIES_LEGALES.I2.description}</td>
+              <td className="border border-[#e5e5e5] p-3 text-lg font-bold text-black">{DO_GARANTIES_LEGALES.I2.libelle}</td>
+              <td className="border border-[#e5e5e5] p-3 text-lg font-bold text-black">{DO_GARANTIES_LEGALES.I2.duree}</td>
+              <td className="border border-[#e5e5e5] p-3 text-sm text-[#171717]">{DO_GARANTIES_LEGALES.I2.description}</td>
             </tr>
             <tr>
-              <td className="border border-[#e5e5e5] p-2 text-xs font-medium">{DO_GARANTIES_LEGALES.I3.libelle}</td>
-              <td className="border border-[#e5e5e5] p-2 text-xs">{DO_GARANTIES_LEGALES.I3.duree}</td>
-              <td className="border border-[#e5e5e5] p-2 text-xs text-[#171717]">{DO_GARANTIES_LEGALES.I3.description}</td>
+              <td className="border border-[#e5e5e5] p-3 text-lg font-bold text-black">{DO_GARANTIES_LEGALES.I3.libelle}</td>
+              <td className="border border-[#e5e5e5] p-3 text-lg font-bold text-black">{DO_GARANTIES_LEGALES.I3.duree}</td>
+              <td className="border border-[#e5e5e5] p-3 text-sm text-[#171717]">{DO_GARANTIES_LEGALES.I3.description}</td>
             </tr>
           </tbody>
         </table>

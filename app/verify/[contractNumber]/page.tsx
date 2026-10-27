@@ -175,8 +175,8 @@ export default async function VerifyByContractNumberPage({
                 )}
                 {doFacts && (
                   <div className="border-t border-slate-100 pt-3">
-                    <dt className="font-semibold text-slate-900">Montant des garanties</dt>
-                    <dd className="mt-1 text-slate-800">
+                    <dt className="text-lg font-bold text-slate-900">Montant des garanties</dt>
+                    <dd className="mt-1 text-2xl font-bold text-slate-900">
                       {doFacts.guaranteeAmount != null
                         ? `${doFacts.guaranteeAmount.toLocaleString("fr-FR")} €`
                         : "Non renseigné"}

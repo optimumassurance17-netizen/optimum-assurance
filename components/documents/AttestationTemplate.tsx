@@ -80,7 +80,7 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
       </div>
 
       <div className="mb-8">
-        <h3 className="font-bold text-black mb-2 uppercase text-xs">Objet des garanties, montants & franchises</h3>
+        <h3 className="mb-3 text-xl font-bold uppercase text-black">Objet des garanties, montants & franchises</h3>
         <p className="text-xs text-[#171717] mb-3">
           Garantie de la responsabilité décennale conformément aux articles L.241-1 et L.241-2 du Code des assurances.
         </p>

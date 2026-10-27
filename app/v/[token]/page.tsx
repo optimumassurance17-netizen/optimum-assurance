@@ -152,11 +152,12 @@ export default async function VerificationPage({
                 <strong>Type de garantie :</strong> {typeGarantieDo}<br />
                 <strong>Adresse de construction :</strong> {doFacts?.constructionAddress || "Non renseignée"}
                 <br />
-                <strong>Montant des garanties :</strong>{" "}
-                {doFacts?.guaranteeAmount != null
-                  ? `${doFacts.guaranteeAmount.toLocaleString("fr-FR")} €`
-                  : "Non renseigné"}
-                <br />
+                <span style={{ display: "block", marginTop: "8px", fontSize: "1.35rem", fontWeight: 700, color: "#0a0a0a" }}>
+                  Montant des garanties :{" "}
+                  {doFacts?.guaranteeAmount != null
+                    ? `${doFacts.guaranteeAmount.toLocaleString("fr-FR")} €`
+                    : "Non renseigné"}
+                </span>
                 <strong>Validité :</strong> unique de 10 ans, non résiliable
                 {data.dateSignature && data.dateEcheance && (
                   <><br />({data.dateSignature} → {data.dateEcheance})</>
