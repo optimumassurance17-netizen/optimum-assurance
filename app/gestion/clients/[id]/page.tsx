@@ -28,6 +28,7 @@ import { Toast } from "@/components/Toast"
 import { AutoriserDevisButton } from "@/components/gestion/AutoriserDevisButton"
 import { ModifierDevisButton } from "@/components/gestion/ModifierDevisButton"
 import { DeleteErroneousContractButton } from "@/components/gestion/DeleteErroneousContractButton"
+import { EditDoDecennaleContractButton } from "@/components/gestion/EditDoDecennaleContractButton"
 import { isPerDocumentDevisEditionType } from "@/lib/devis-edition"
 
 function prettyQuestionnaireJson(raw: string | null | undefined): string {
@@ -208,6 +209,13 @@ interface ClientData {
     premium?: number
     paidAt?: string | null
     hasCertificate?: boolean
+    clientName?: string
+    siret?: string | null
+    address?: string | null
+    activitiesJson?: string | null
+    projectName?: string | null
+    projectAddress?: string | null
+    constructionNature?: string | null
   }[]
   canGenerateDecennaleAttestation?: boolean
   payments: {
@@ -1871,6 +1879,27 @@ export default function ClientDetailPage() {
                               }}
                             />
                           ) : null}
+                          <EditDoDecennaleContractButton
+                            contract={{
+                              id: contract.id,
+                              contractNumber: contract.contractNumber,
+                              productType: contract.productType,
+                              clientName: contract.clientName || getInsuranceProductLabel(contract.productType),
+                              siret: contract.siret,
+                              address: contract.address,
+                              activitiesJson: contract.activitiesJson,
+                              projectName: contract.projectName,
+                              projectAddress: contract.projectAddress,
+                              constructionNature: contract.constructionNature,
+                              premium: contract.premium ?? 0,
+                            }}
+                            onSaved={async () => {
+                              const reload = await fetch(`/api/gestion/clients/${clientId}`, { cache: "no-store" })
+                              if (reload.ok) setData(await readResponseJson<ClientData>(reload))
+                              setToast({ message: `Contrat ${contract.contractNumber} modifié.`, type: "success" })
+                            }}
+                            onError={(message) => setToast({ message, type: "error" })}
+                          />
                           <DeleteErroneousContractButton
                             contractNumber={contract.contractNumber}
                             endpoint={`/api/gestion/insurance-contracts/${contract.id}`}
@@ -2037,6 +2066,14 @@ export default function ClientDetailPage() {
                           >
                             Voir
                           </Link>
+                          {d.type === "contrat" ? (
+                            <Link
+                              href={`/gestion?editDoc=${d.id}`}
+                              className="text-sky-400 hover:text-sky-300 text-sm"
+                            >
+                              Modifier
+                            </Link>
+                          ) : null}
                           {d.type === "contrat" ? (
                             <DeleteErroneousContractButton
                               contractNumber={d.numero}

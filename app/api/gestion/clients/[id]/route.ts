@@ -184,6 +184,13 @@ export async function GET(
               status: true,
               premium: true,
               paidAt: true,
+              clientName: true,
+              siret: true,
+              address: true,
+              activitiesJson: true,
+              projectName: true,
+              projectAddress: true,
+              constructionNature: true,
               storedDocuments: {
                 where: { type: "certificate" },
                 take: 1,

@@ -399,6 +399,11 @@ interface DashboardData {
     exclusionsJson?: string | null
     clientName: string
     siret?: string | null
+    address?: string | null
+    activitiesJson?: string | null
+    projectName?: string | null
+    projectAddress?: string | null
+    constructionNature?: string | null
     userId: string | null
     premium: number
     status: string
@@ -4303,23 +4308,21 @@ export default function GestionPage() {
                           documentId={d.id}
                           onResult={(result) => setToast({ message: result.message, type: result.type })}
                         />
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(d)}
+                          className="text-sky-400 hover:text-sky-300 text-sm min-h-[44px] inline-flex items-center px-2"
+                        >
+                          Modifier
+                        </button>
                         {d.status === "valide" && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(d)}
-                              className="text-sky-400 hover:text-sky-300 text-sm min-h-[44px] inline-flex items-center px-2"
-                            >
-                              Modifier
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setResiliationModal({ docId: d.id, motif: "" })}
-                              className="text-gray-200 hover:text-white text-sm min-h-[44px] inline-flex items-center px-2"
-                            >
-                              Autoriser annulation
-                            </button>
-                          </>
+                          <button
+                            type="button"
+                            onClick={() => setResiliationModal({ docId: d.id, motif: "" })}
+                            className="text-gray-200 hover:text-white text-sm min-h-[44px] inline-flex items-center px-2"
+                          >
+                            Autoriser annulation
+                          </button>
                         )}
                         <DeleteErroneousContractButton
                           contractNumber={d.numero}

@@ -55,6 +55,7 @@ const ACTION_LABELS: Record<string, string> = {
   client_quote_deleted: "Devis supprimé par le client",
   client_quote_draft_deleted: "Brouillon de devis supprimé",
   gestion_contract_deleted_after_error: "Contrat supprimé après erreur",
+  gestion_contract_updated: "Contrat modifié",
 }
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {

@@ -8,6 +8,10 @@ import { prisma } from "@/lib/prisma"
 import { Prisma } from "@/lib/prisma-client"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { logContractAction } from "@/lib/insurance-contract-service"
+import {
+  payloadTouchesPlatformContractIdentity,
+  readPlatformContractIdentityPatch,
+} from "@/lib/platform-contract-edit"
 
 /**
  * Ajustement manuel de la prime contrat.
@@ -36,6 +40,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       status?: unknown
       rejectedReason?: unknown
       paidAt?: unknown
+      clientName?: unknown
+      siret?: unknown
+      address?: unknown
+      activities?: unknown
+      projectName?: unknown
+      projectAddress?: unknown
+      constructionNature?: unknown
     }
 
     const existing = await prisma.insuranceContract.findUnique({ where: { id } })
@@ -48,8 +59,37 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       status?: string
       rejectedReason?: string | null
       paidAt?: Date | null
+      clientName?: string
+      siret?: string | null
+      address?: string
+      activitiesJson?: string | null
+      projectName?: string | null
+      projectAddress?: string | null
+      constructionNature?: string | null
     } = {}
     const changed: Record<string, unknown> = {}
+
+    if (payloadTouchesPlatformContractIdentity(payload)) {
+      const identity = readPlatformContractIdentityPatch(existing.productType, payload)
+      if (!identity.ok) {
+        return NextResponse.json({ error: identity.error }, { status: identity.status })
+      }
+      updates.clientName = identity.patch.clientName
+      updates.siret = identity.patch.siret
+      updates.address = identity.patch.address
+      updates.activitiesJson = identity.patch.activitiesJson
+      changed.clientName = { from: existing.clientName, to: identity.patch.clientName }
+      changed.address = { from: existing.address, to: identity.patch.address }
+      changed.activitiesJson = { from: existing.activitiesJson, to: identity.patch.activitiesJson }
+      if (existing.productType === "do") {
+        updates.projectName = identity.patch.projectName
+        updates.projectAddress = identity.patch.projectAddress
+        updates.constructionNature = identity.patch.constructionNature
+        changed.projectName = { from: existing.projectName, to: identity.patch.projectName }
+        changed.projectAddress = { from: existing.projectAddress, to: identity.patch.projectAddress }
+        changed.constructionNature = { from: existing.constructionNature, to: identity.patch.constructionNature }
+      }
+    }
 
     if ("premium" in payload) {
       const premium =
@@ -124,6 +164,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       changed,
       session.user.email
     )
+
+    if (payloadTouchesPlatformContractIdentity(payload)) {
+      await logAdminActivity({
+        adminEmail: session.user.email,
+        action: "gestion_contract_updated",
+        targetType: "insurance_contract",
+        targetId: id,
+        details: {
+          contractNumber: existing.contractNumber,
+          productType: existing.productType,
+          changed: Object.keys(changed),
+        },
+      })
+    }
 
     return NextResponse.json({ ok: true, contract: updated })
   } catch (e) {

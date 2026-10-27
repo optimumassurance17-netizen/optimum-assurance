@@ -5,6 +5,13 @@ import {
   erroneousContractDeleteConfirm,
   isErroneousContractDocumentType,
 } from "../lib/erroneous-contract-delete"
+import {
+  activitiesJsonFromInput,
+  activitiesLabelFromJson,
+  isEditablePlatformContractProduct,
+  payloadTouchesPlatformContractIdentity,
+  readPlatformContractIdentityPatch,
+} from "../lib/platform-contract-edit"
 
 assert.equal(isErroneousContractDocumentType("contrat"), true)
 assert.equal(isErroneousContractDocumentType("devis"), false)
@@ -62,5 +69,42 @@ assert(fiche.includes("DeleteErroneousContractButton"), "la fiche client propose
 assert(fiche.includes('d.type === "contrat"'), "la fiche ne propose la suppression que pour un contrat")
 assert(documentPage.includes("DeleteErroneousContractButton"), "la page du contrat propose la suppression")
 assert(documentPage.includes('document.type === "contrat"'), "la page du document limite le bouton au contrat")
+
+assert.equal(isEditablePlatformContractProduct("do"), true)
+assert.equal(isEditablePlatformContractProduct("decennale"), true)
+assert.equal(isEditablePlatformContractProduct("rc_fabriquant"), false)
+assert.equal(isEditablePlatformContractProduct("assurance_titre"), false)
+assert.equal(activitiesJsonFromInput("Maçonnerie, Plomberie"), JSON.stringify(["Maçonnerie", "Plomberie"]))
+assert.equal(activitiesLabelFromJson(JSON.stringify(["Maçonnerie"])), "Maçonnerie")
+const doPatch = readPlatformContractIdentityPatch("do", {
+  clientName: " SCI Test ",
+  address: " 1 rue du Chantier ",
+  siret: "123 456 789 00012",
+  activities: "Gros oeuvre",
+  projectName: "Villa",
+  projectAddress: "2 rue du Chantier",
+  constructionNature: "Maison",
+})
+assert.equal(doPatch.ok, true)
+if (doPatch.ok) {
+  assert.equal(doPatch.patch.clientName, "SCI Test")
+  assert.equal(doPatch.patch.projectAddress, "2 rue du Chantier")
+}
+const refused = readPlatformContractIdentityPatch("rc_fabriquant", { clientName: "X", address: "Y" })
+assert.equal(refused.ok, false)
+assert.equal(payloadTouchesPlatformContractIdentity({ premium: 10 }), false)
+assert.equal(payloadTouchesPlatformContractIdentity({ clientName: "X" }), true)
+
+const editor = readFileSync("components/gestion/EditDoDecennaleContractButton.tsx", "utf8")
+assert(editor.includes("isEditablePlatformContractProduct"), "le bouton ne s'ouvre que pour le DO et la décennale")
+assert(editor.includes("Adresse du chantier"), "le dommage ouvrage corrige le chantier")
+assert(editor.includes("method: \"PATCH\""), "la modification enregistre le contrat")
+assert(insuranceRoute.includes("readPlatformContractIdentityPatch"), "l'API accepte la correction du contrat")
+assert(insuranceRoute.includes("gestion_contract_updated"), "la modification est journalisée")
+assert(labels.includes('gestion_contract_updated: "Contrat modifié"'), "le journal nomme la modification")
+assert(platform.includes("EditDoDecennaleContractButton"), "les contrats plateforme se modifient")
+assert(fiche.includes("EditDoDecennaleContractButton"), "la fiche modifie le DO et la décennale")
+assert(fiche.includes("/gestion?editDoc="), "la fiche ouvre la modification du contrat signé")
+assert(dashboard.includes(">Modifier<") || dashboard.includes("Modifier\n"), "le contrat signé reste modifiable")
 
 console.log("Suppression d'un contrat créé par erreur : vérifications OK")

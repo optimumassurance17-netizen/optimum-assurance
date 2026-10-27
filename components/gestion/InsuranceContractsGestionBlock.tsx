@@ -15,6 +15,7 @@ import {
 import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
 import { DocumentRequestButton } from "@/components/gestion/DocumentRequestButton"
 import { DeleteErroneousContractButton } from "@/components/gestion/DeleteErroneousContractButton"
+import { EditDoDecennaleContractButton } from "@/components/gestion/EditDoDecennaleContractButton"
 import {
   canValidateDoPaymentManually,
   ValidateDoPaymentButton,
@@ -26,6 +27,12 @@ export type InsuranceContractGestionRow = {
   productType: string
   exclusionsJson?: string | null
   clientName: string
+  siret?: string | null
+  address?: string | null
+  activitiesJson?: string | null
+  projectName?: string | null
+  projectAddress?: string | null
+  constructionNature?: string | null
   userId: string | null
   clientUserId?: string | null
   premium: number
@@ -533,6 +540,14 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                         >
                           Régénérer PDF
                         </button>
+                        <EditDoDecennaleContractButton
+                          contract={c}
+                          onSaved={async () => {
+                            setToast({ message: `Contrat ${c.contractNumber} modifié.`, type: "success" })
+                            await onRefresh()
+                          }}
+                          onError={(message) => setToast({ message, type: "error" })}
+                        />
                         <DeleteErroneousContractButton
                           contractNumber={c.contractNumber}
                           endpoint={`/api/gestion/insurance-contracts/${c.id}`}
