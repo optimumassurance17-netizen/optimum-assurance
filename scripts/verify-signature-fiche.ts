@@ -142,10 +142,12 @@ assert(
 )
 
 const route = readFileSync("app/api/gestion/clients/[id]/relance-signature/route.ts", "utf8")
-assert(route.includes("rappelSignatureEnAttente"), "la relance envoie le rappel existant")
-assert(route.includes('isReminderUnsubscribed(email, "signature")'), "la désinscription signature est respectée")
+const reminderSend = readFileSync("lib/signature-reminder-send.ts", "utf8")
+assert(route.includes("sendPendingSignatureReminder"), "la relance fiche réutilise l'envoi commun")
+assert(reminderSend.includes("rappelSignatureEnAttente"), "la relance envoie le rappel existant")
+assert(reminderSend.includes('isReminderUnsubscribed(email, "signature")'), "la désinscription signature est respectée")
 assert(!route.includes("createSignRequest"), "la fiche ne crée pas de nouvelle demande")
-assert(!route.includes("payments.create"), "la relance ne crée pas de paiement")
+assert(!reminderSend.includes("payments.create"), "la relance ne crée pas de paiement")
 
 const fiche = readFileSync("app/gestion/clients/[id]/page.tsx", "utf8")
 assert(fiche.includes("Relancer la signature"), "la fiche affiche le bouton de relance")
@@ -170,7 +172,14 @@ assert(!dashboardRoute.includes("createSignRequest"), "le tableau de bord ne cr�
 const dashboardPage = readFileSync("app/gestion/page.tsx", "utf8")
 assert(dashboardPage.includes("Signatures en attente"), "le tableau de bord liste les signatures ouvertes")
 assert(dashboardPage.includes("Relancé le"), "la liste indique la dernière relance")
-assert(!dashboardPage.includes("relance-signature"), "la liste du tableau de bord n'envoie pas de rappel")
+assert(!dashboardPage.includes("relance-signature"), "la liste du tableau de bord n'ouvre pas la route fiche")
+assert(
+  dashboardPage.includes("Envoyer un rappel de signature par email au client ?"),
+  "le bouton Réparer prévient qu'un email part"
+)
+const repairRoute = readFileSync("app/api/gestion/signatures/repair/route.ts", "utf8")
+assert(repairRoute.includes("sendPendingSignatureReminder"), "Réparer envoie le rappel de signature")
+assert(repairRoute.includes("isLocalSignableContract"), "la signature de secours ne bloque plus le rappel")
 
 const cron = readFileSync("app/api/cron/rappel-signatures-en-attente/route.ts", "utf8")
 assert(cron.includes("signatureReminderPayload(pending, userLabel, SITE_URL)"), "le cron réutilise le même lien")

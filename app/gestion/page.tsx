@@ -3899,7 +3899,7 @@ export default function GestionPage() {
                                   onClick={async () => {
                                     if (
                                       !window.confirm(
-                                        "Relancer la finalisation de cette signature bloquée ?"
+                                        "Envoyer un rappel de signature par email au client ? Le lien déjà ouvert est renvoyé."
                                       )
                                     ) {
                                       return
@@ -3911,9 +3911,17 @@ export default function GestionPage() {
                                         headers: { "Content-Type": "application/json" },
                                         body: JSON.stringify({ signatureRequestId: s.signatureRequestId }),
                                       })
-                                      const j = (await readResponseJson(res)) as { error?: string; message?: string }
+                                      const j = (await readResponseJson(res)) as {
+                                        error?: string
+                                        message?: string
+                                        warning?: string
+                                        emailSent?: boolean
+                                      }
                                       if (!res.ok) throw new Error(j.error || res.statusText)
-                                      setToast({ message: j.message || "Finalisation relancée.", type: "success" })
+                                      setToast({
+                                        message: j.message || j.warning || "Rappel de signature envoyé.",
+                                        type: j.emailSent === false ? "warning" : "success",
+                                      })
                                       const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
                                       if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
                                     } catch (e) {

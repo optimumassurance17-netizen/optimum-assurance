@@ -607,6 +607,13 @@ export default function GestionRectificationPage() {
                         type="button"
                         disabled={repairingSignatureId === s.signatureRequestId}
                           onClick={async () => {
+                            if (
+                              !window.confirm(
+                                "Envoyer un rappel de signature par email au client ? Le lien déjà ouvert est renvoyé."
+                              )
+                            ) {
+                              return
+                            }
                             setRepairingSignatureId(s.signatureRequestId)
                             try {
                               const res = await fetch("/api/gestion/signatures/repair", {
@@ -614,10 +621,18 @@ export default function GestionRectificationPage() {
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ signatureRequestId: s.signatureRequestId }),
                               })
-                              const json = await readResponseJson<{ error?: string }>(res)
+                              const json = await readResponseJson<{
+                                error?: string
+                                message?: string
+                                warning?: string
+                                emailSent?: boolean
+                              }>(res)
                               if (!res.ok) throw new Error(json.error || "Réparation impossible")
                               await loadDashboard()
-                              setToast({ type: "success", message: "Réparation signature effectuée." })
+                              setToast({
+                                type: json.emailSent === false ? "warning" : "success",
+                                message: json.message || json.warning || "Rappel de signature envoyé.",
+                              })
                             } catch (error) {
                               setToast({
                                 type: "error",

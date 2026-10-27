@@ -3,11 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
-import { logAdminActivity } from "@/lib/admin-activity"
-import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
-import { signatureReminderPayload } from "@/lib/signature-reminder"
-import { SITE_URL } from "@/lib/site-url"
+import { sendPendingSignatureReminder } from "@/lib/signature-reminder-send"
 
 /** Renvoie le lien de signature déjà ouvert. Ne crée pas de nouvelle demande. */
 export async function POST(
@@ -37,9 +33,9 @@ export async function POST(
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, raisonSociale: true },
+      select: { id: true },
     })
-    if (!user?.email?.trim()) {
+    if (!user) {
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 })
     }
 
@@ -50,46 +46,22 @@ export async function POST(
       return NextResponse.json({ error: "Aucune signature en attente pour cette fiche." }, { status: 404 })
     }
 
-    const email = user.email.trim().toLowerCase()
-    if (await isReminderUnsubscribed(email, "signature")) {
-      return NextResponse.json(
-        { error: "Ce client s'est désinscrit des rappels de signature. L'email n'a pas été envoyé." },
-        { status: 409 }
-      )
-    }
-
-    const payload = signatureReminderPayload(
+    const reminded = await sendPendingSignatureReminder({
       pending,
-      (user.raisonSociale || user.email).trim(),
-      SITE_URL
-    )
-    const template = EMAIL_TEMPLATES.rappelSignatureEnAttente(
-      payload.raisonSociale,
-      payload.signatureLink,
-      email,
-      { produitLabel: payload.produitLabel, reference: payload.reference }
-    )
-    const sent = await sendEmail({
-      to: email,
-      subject: template.subject,
-      text: template.text,
-      html: template.html,
-    })
-    await logAdminActivity({
       adminEmail: session.user.email,
-      action: "signature_relance_manuelle",
-      targetType: "user",
-      targetId: user.id,
-      details: {
-        signatureRequestId,
-        contractNumero: pending.contractNumero,
-        emailSent: sent,
-      },
     })
-    if (!sent) {
-      return NextResponse.json({ ...emailNotSentBody(), signatureLink: payload.signatureLink })
+    if (!reminded.ok) {
+      return NextResponse.json({ error: reminded.error }, { status: reminded.status })
     }
-    return NextResponse.json({ ok: true, emailSent: true, sentTo: email })
+    if (!reminded.emailSent) {
+      return NextResponse.json({
+        ok: true,
+        emailSent: false,
+        warning: reminded.warning,
+        signatureLink: reminded.signatureLink,
+      })
+    }
+    return NextResponse.json({ ok: true, emailSent: true, sentTo: reminded.sentTo })
   } catch (error) {
     console.error("[gestion/clients/relance-signature]", error)
     return NextResponse.json({ error: "Impossible de relancer la signature." }, { status: 500 })
