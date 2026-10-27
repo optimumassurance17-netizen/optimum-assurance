@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import type { RcProQuoteRecord } from "@/src/modules/rcpro/types/rcpro.types"
+import { frenchStatusLabel } from "@/lib/status-labels"
 
 type QuotesResponse = { quotes: RcProQuoteRecord[] }
 
@@ -77,7 +78,7 @@ export default function RcProClientSpacePage() {
             <li key={quote.id} className="rounded border p-4">
               <p className="font-medium">{quote.activity}</p>
               <p className="text-sm opacity-80">
-                {quote.price.toLocaleString("fr-FR")} € — {quote.status}
+                {quote.price.toLocaleString("fr-FR")} € — {frenchStatusLabel(quote.status)}
               </p>
               <p className="text-xs opacity-70 mt-1">
                 Créé le {new Date(quote.created_at).toLocaleString("fr-FR")}

@@ -2,21 +2,25 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 const STORAGE_KEY = "optimum-cookies-consent"
+const HIDDEN_PREFIXES = ["/gestion", "/admin", "/espace-client", "/dashboard"]
 
 export function CookieBanner() {
+  const pathname = usePathname() || ""
+  const hidden = HIDDEN_PREFIXES.some((prefix) => pathname.startsWith(prefix))
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    if (typeof window === "undefined") return
+    if (hidden || typeof window === "undefined") return
     const consent = localStorage.getItem(STORAGE_KEY)
     if (consent) return
 
     // Delay banner rendering slightly to avoid impacting first paint/LCP.
     const timer = window.setTimeout(() => setVisible(true), 1200)
     return () => window.clearTimeout(timer)
-  }, [])
+  }, [hidden])
 
   const accept = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ accepted: true, date: new Date().toISOString() }))
@@ -28,7 +32,7 @@ export function CookieBanner() {
     setVisible(false)
   }
 
-  if (!visible) return null
+  if (hidden || !visible) return null
 
   return (
     <div

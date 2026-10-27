@@ -11,19 +11,19 @@ type RcProOptionsProps = {
 export const RC_PRO_AVAILABLE_OPTIONS: RcProOptionInput[] = [
   {
     code: "protection-juridique-renforcee",
-    label: "Protection juridique renforcee (+20 EUR)",
+    label: "Protection juridique renforcée (+20 €)",
     type: "fixed",
     value: 20,
   },
   {
     code: "cyber-assistance",
-    label: "Cyber assistance (+35 EUR)",
+    label: "Cyber assistance (+35 €)",
     type: "fixed",
     value: 35,
   },
   {
     code: "defense-recours-plus",
-    label: "Defense / recours Plus (+8%)",
+    label: "Défense / recours Plus (+8 %)",
     type: "percent",
     value: 8,
   },

@@ -38,6 +38,7 @@ import { DuplicateAccountsPanel } from "@/components/gestion/DuplicateAccountsPa
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { extractClientIdentityFromRecord } from "@/lib/client-identity-extract"
+import { frenchStatusLabel } from "@/lib/status-labels"
 import {
   DO_DEVIS_LEADS_SECTION_ID,
   doDevisLeadRowId,
@@ -3107,7 +3108,7 @@ export default function GestionPage() {
                                     : `J-${row.daysUntil}`}
                               </p>
                               <p className="text-[11px] text-gray-400 mt-0.5">
-                                Mandat Mollie : {row.mollieMandateId || "pas encore créé"} · {row.status}
+                                Mandat Mollie : {row.mollieMandateId || "pas encore créé"} · {frenchStatusLabel(row.status)}
                                 {row.lastError ? ` · ${row.lastError}` : ""}
                               </p>
                               <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -4174,7 +4175,7 @@ export default function GestionPage() {
                           d.status === "resilie" ? "bg-gray-700 text-gray-200" :
                           "bg-blue-900/50 text-sky-300"
                         }`}>
-                          {d.status}
+                          {frenchStatusLabel(d.status)}
                         </span>
                       </td>
                       <td className="p-3 sm:p-4 hidden sm:table-cell">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
@@ -4292,7 +4293,7 @@ export default function GestionPage() {
                           d.status === "resilie" ? "bg-gray-700 text-gray-200" :
                           "bg-blue-900/50 text-sky-300"
                         }`}>
-                          {d.status}
+                          {frenchStatusLabel(d.status)}
                         </span>
                       </td>
                       <td className="p-3 sm:p-4 hidden sm:table-cell">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>

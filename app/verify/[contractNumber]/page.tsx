@@ -7,6 +7,7 @@ import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { DelegationLegalLine } from "@/components/premium/DelegationLegalLine"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { getInsuranceProductLabel } from "@/lib/insurance-product"
+import { frenchStatusLabel } from "@/lib/status-labels"
 import { readAssuranceTitreContractConfig } from "@/lib/assurance-titre-contract-config"
 import { loadDoAttestationFacts } from "@/lib/do-attestation-source"
 
@@ -90,7 +91,7 @@ export default async function VerifyByContractNumberPage({
                 <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
                   <dt className="font-semibold text-slate-900">Statut</dt>
                   <dd className="text-slate-800">
-                    {ic.status}
+                    {frenchStatusLabel(ic.status)}
                     {isActive ? " (actif)" : " (inactif)"}
                   </dd>
                 </div>

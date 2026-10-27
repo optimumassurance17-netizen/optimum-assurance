@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import type { RcProQuoteRecord } from "@/src/modules/rcpro/types/rcpro.types"
+import { frenchStatusLabel } from "@/lib/status-labels"
 
 export default function RcProClientQuoteDetailPage() {
   const params = useParams<{ id: string }>()
@@ -95,7 +96,7 @@ export default function RcProClientQuoteDetailPage() {
             </div>
             <div>
               <dt className="text-xs uppercase text-[#666]">Statut</dt>
-              <dd className="font-medium text-[#0a0a0a]">{quote.status}</dd>
+              <dd className="font-medium text-[#0a0a0a]">{frenchStatusLabel(quote.status)}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase text-[#666]">Chiffre d&apos;affaires</dt>

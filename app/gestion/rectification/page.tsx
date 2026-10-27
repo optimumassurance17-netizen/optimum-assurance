@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { readResponseJson } from "@/lib/read-response-json"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
+import { getInsuranceProductLabel, isInsurancePlatformProductType } from "@/lib/insurance-product"
+import { frenchStatusLabel } from "@/lib/status-labels"
 import { Toast } from "@/components/Toast"
 
 type DashboardContract = {
@@ -306,7 +308,10 @@ export default function GestionRectificationPage() {
                       <div>
                         <p className="font-mono text-sm text-white">{c.contractNumber}</p>
                         <p className="text-xs text-gray-400">
-                          {c.productType} · {c.clientName} · {c.user?.email || "sans utilisateur lié"}
+                          {(isInsurancePlatformProductType(c.productType)
+                            ? getInsuranceProductLabel(c.productType)
+                            : c.productType)}{" "}
+                          · {c.clientName} · {c.user?.email || "sans utilisateur lié"}
                         </p>
                       </div>
                       {c.userId ? (
@@ -346,7 +351,7 @@ export default function GestionRectificationPage() {
                         >
                           {Object.values(CONTRACT_STATUS).map((statusValue) => (
                             <option key={statusValue} value={statusValue}>
-                              {statusValue}
+                              {frenchStatusLabel(statusValue)}
                             </option>
                           ))}
                         </select>
@@ -418,7 +423,7 @@ export default function GestionRectificationPage() {
                         {savingContractId === c.id ? "Enregistrement..." : "Enregistrer rectification"}
                       </button>
                       <span className="text-xs text-gray-400">
-                        Prime actuelle : {formatMoney(c.premium)} · statut : {c.status}
+                        Prime actuelle : {formatMoney(c.premium)} · statut : {frenchStatusLabel(c.status)}
                         {c.paidAt ? ` · payé le ${new Date(c.paidAt).toLocaleDateString("fr-FR")}` : " · non payé"}
                       </span>
                     </div>
@@ -468,9 +473,9 @@ export default function GestionRectificationPage() {
                           }
                           className="w-full bg-[#141414] border border-gray-600 rounded px-2 py-1.5 text-sm text-white"
                         >
-                          <option value="paid">paid</option>
-                          <option value="pending">pending</option>
-                          <option value="failed">failed</option>
+                          <option value="paid">Payé</option>
+                          <option value="pending">En attente</option>
+                          <option value="failed">Échoué</option>
                         </select>
                       </div>
                       <div>

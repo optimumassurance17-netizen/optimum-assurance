@@ -24,6 +24,7 @@ import { DeclarerSinistreCard } from "@/components/espace-client/DeclarerSinistr
 import { DemandesDocumentClient } from "@/components/espace-client/DemandesDocumentClient"
 import { SupprimerDevisButton } from "@/components/espace-client/SupprimerDevisButton"
 import { isClientDeletableQuoteDocument } from "@/lib/client-quote-delete"
+import { frenchStatusLabel } from "@/lib/status-labels"
 
 interface DocumentItem {
   id: string
@@ -162,7 +163,7 @@ function getDocumentStatusBadge(doc: DocumentItem): { label: string; className: 
   if (status === "suspendu" || status === "failed" || status === "rejected") {
     return { label: status === "rejected" ? "Refusé" : "Suspendu", className: "bg-red-50 text-red-700 border-red-200" }
   }
-  return { label: status, className: "bg-slate-50 text-slate-700 border-slate-200" }
+  return { label: frenchStatusLabel(status), className: "bg-slate-50 text-slate-700 border-slate-200" }
 }
 
 function getActionPriorityWeight(priority: AutonomyStatusAction["priority"]): number {
@@ -517,7 +518,7 @@ export default function EspaceClientPage() {
 
             {autonomyStatus.sepaSubscription && (
               <p className="text-xs text-[#155e75] mb-4">
-                SEPA : <strong>{autonomyStatus.sepaSubscription.status}</strong>
+                SEPA : <strong>{frenchStatusLabel(autonomyStatus.sepaSubscription.status)}</strong>
                 {autonomyStatus.sepaSubscription.nextSepaDue
                   ? ` · prochaine échéance ${new Date(autonomyStatus.sepaSubscription.nextSepaDue).toLocaleDateString("fr-FR")}`
                   : ""}
@@ -834,7 +835,7 @@ export default function EspaceClientPage() {
                       ) : (
                         <>{c.premium.toLocaleString("fr-FR")} € TTC · </>
                       )}
-                      <span className="font-medium">{c.status}</span>
+                      <span className="font-medium">{frenchStatusLabel(c.status)}</span>
                     </p>
                     {c.status === CONTRACT_STATUS.rejected && c.rejectedReason && (
                       <p className="text-xs text-red-700 mt-2">{c.rejectedReason}</p>

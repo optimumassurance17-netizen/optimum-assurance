@@ -13,6 +13,7 @@ import {
   insuranceProductUsesDirectMollieAfterApproval,
 } from "@/lib/insurance-product"
 import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
+import { frenchStatusLabel } from "@/lib/status-labels"
 import { DocumentRequestButton } from "@/components/gestion/DocumentRequestButton"
 import { DeleteErroneousContractButton } from "@/components/gestion/DeleteErroneousContractButton"
 import { EditDoDecennaleContractButton } from "@/components/gestion/EditDoDecennaleContractButton"
@@ -224,7 +225,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                       ) : null}
                     </td>
                     <td className="p-3 sm:p-4">
-                      <span className="text-xs text-gray-200">{c.status}</span>
+                      <span className="text-xs text-gray-200">{frenchStatusLabel(c.status)}</span>
                       {c.paidAt ? (
                         <p className="text-xs text-gray-500 mt-1">Payé {new Date(c.paidAt).toLocaleDateString("fr-FR")}</p>
                       ) : null}
@@ -232,7 +233,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                     <td className="p-3 sm:p-4 text-xs text-gray-300">
                       {paidCount}/{c.lifecyclePayments.length} ligne(s) — dernier :{" "}
                       {c.lifecyclePayments[0]
-                        ? `${c.lifecyclePayments[0].status} ${c.lifecyclePayments[0].amount.toLocaleString("fr-FR")} €`
+                        ? `${frenchStatusLabel(c.lifecyclePayments[0].status)} ${c.lifecyclePayments[0].amount.toLocaleString("fr-FR")} €`
                         : "—"}
                     </td>
                     <td className="p-3 sm:p-4">

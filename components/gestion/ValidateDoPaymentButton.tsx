@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { readResponseJson } from "@/lib/read-response-json"
+import { frenchStatusLabel } from "@/lib/status-labels"
 
 export type DoPaymentContract = {
   productType: string
@@ -29,7 +30,7 @@ export function doPaymentStatusLabel(contract: DoPaymentContract): string {
   if (contract.status === CONTRACT_STATUS.active && contract.paidAt) return "Actif"
   if (contract.status === CONTRACT_STATUS.rejected) return "Refusé"
   if (contract.status === CONTRACT_STATUS.draft) return "Brouillon"
-  return contract.status
+  return frenchStatusLabel(contract.status)
 }
 
 type Props = {

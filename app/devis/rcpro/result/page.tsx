@@ -25,7 +25,7 @@ function RcProResultContent() {
     setAccepted(checked)
     setLogError(null)
     if (!checked || logged) return
-    const priceLabel = price != null ? `${price.toLocaleString("fr-FR")} EUR` : ""
+    const priceLabel = price != null ? `${price.toLocaleString("fr-FR")} €` : ""
     try {
       const response = await fetch("/api/devoir-conseil/log", {
         method: "POST",
@@ -82,7 +82,7 @@ function RcProResultContent() {
           ) : (
             <>
               <p className="text-sm text-[#475569]">Tarif estimé TTC</p>
-              <p className="mt-2 text-3xl font-bold text-[#0f172a]">{price.toLocaleString("fr-FR")} EUR</p>
+              <p className="mt-2 text-3xl font-bold text-[#0f172a]">{price.toLocaleString("fr-FR")} €</p>
               {quoteId && <p className="mt-2 text-xs text-[#64748b]">Référence devis : {quoteId}</p>}
               <p className="mt-4 text-xs text-[#64748b]">
                 Ce résultat est indicatif et soumis à validation finale du dossier.

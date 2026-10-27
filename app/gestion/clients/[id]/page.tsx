@@ -30,6 +30,7 @@ import { ModifierDevisButton } from "@/components/gestion/ModifierDevisButton"
 import { DeleteErroneousContractButton } from "@/components/gestion/DeleteErroneousContractButton"
 import { EditDoDecennaleContractButton } from "@/components/gestion/EditDoDecennaleContractButton"
 import { isPerDocumentDevisEditionType } from "@/lib/devis-edition"
+import { frenchStatusLabel } from "@/lib/status-labels"
 
 function prettyQuestionnaireJson(raw: string | null | undefined): string {
   if (!raw?.trim()) return ""
@@ -2005,7 +2006,7 @@ export default function ClientDetailPage() {
                           d.status === "resilie" ? "bg-gray-700 text-gray-200" :
                           "bg-blue-900/50 text-sky-200"
                         }`}>
-                          {d.status}
+                          {frenchStatusLabel(d.status)}
                         </span>
                       </td>
                       <td className="p-4">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>

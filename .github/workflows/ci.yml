@@ -74,6 +74,9 @@ jobs:
       - name: Vérification suppression contrat créé par erreur
         run: npm run test:suppression-contrat-erreur
 
+      - name: Vérification libellés de statut
+        run: npm run test:status-labels
+
       - name: Prisma generate + Next build
         run: npm run build
 
