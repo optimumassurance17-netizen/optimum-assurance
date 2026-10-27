@@ -13,7 +13,7 @@ export const runtime = "nodejs"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-/** PDF non signé du parcours de secours. L'identifiant tient lieu de secret, comme le lien Supabase. */
+/** PDF non signé de la signature intégrée. L'identifiant du lien tient lieu de secret. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   if (!UUID_RE.test(id)) {

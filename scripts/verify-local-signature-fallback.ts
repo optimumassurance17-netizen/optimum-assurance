@@ -76,8 +76,11 @@ async function main() {
   const supabaseClient = readFileSync("lib/supabase.ts", "utf8")
   const gestion = readFileSync("app/gestion/page.tsx", "utf8")
   assert(preview.includes("isRebuildableDecennaleContract"), "l'aperçu ouvre un contrat décennale sans Supabase")
-  assert(preview.includes("4_500"), "l'attente Supabase reste courte")
+  assert(!preview.includes("createSupabaseServiceClient"), "l'aperçu ne consulte plus Supabase")
+  assert(!preview.includes("sign_requests"), "l'aperçu ne lit plus les demandes Supabase")
   assert(signRoute.includes("completeRebuiltDecennaleSignature"), "la signature finalise le contrat reconstruit")
+  assert(!signRoute.includes("createSupabaseServiceClient"), "la signature ne passe plus par Supabase")
+  assert(!signRoute.includes("sign_requests"), "la signature ne lit plus les demandes Supabase")
   assert(supabaseClient.includes("ipv4first"), "les appels Supabase préfèrent IPv4")
   assert(
     nextSerialNumero("CTR-2026-", ["CTR-2026-0002", "CTR-2026-0010"]) === "CTR-2026-0011",
@@ -97,9 +100,10 @@ async function main() {
   const repairRoute = readFileSync("app/api/gestion/signatures/repair/route.ts", "utf8")
   assert(repairRoute.includes("sendPendingSignatureReminder"), "Réparer relance la signature par email")
   assert(
-    repairRoute.includes("isLocalSignableContract"),
-    "la signature de secours part en rappel au lieu d'échouer"
+    !repairRoute.includes("repairPendingSignature"),
+    "Réparer n'interroge plus Supabase avant le rappel"
   )
+  assert(!repairRoute.includes("createSupabaseServiceClient"), "Réparer ne contacte plus Supabase")
 
   const source = await PDFDocument.create()
   source.addPage([400, 600])

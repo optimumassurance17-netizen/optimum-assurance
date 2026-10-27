@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Vérifie la config Supabase (intégration Vercel + service role) et l’existence
- * des ressources MVP signature : tables sign_requests / signatures, buckets documents / signed_documents.
+ * La signature électronique est intégrée à l'application.
+ * Ce contrôle ne exige plus les tables sign_requests / signatures.
+ * Il signale seulement si Supabase reste joignable pour la GED et les anciens PDF.
  *
  * Usage : npm run verify:supabase
- * Charge .env puis .env.local (comme Next.js).
  */
 import { createClient } from "@supabase/supabase-js"
 import { readFileSync, existsSync } from "node:fs"
@@ -31,19 +31,15 @@ function loadEnvFile(filePath, { override = false } = {}) {
 
 loadEnvFile(resolve(root, ".env"))
 loadEnvFile(resolve(root, ".env.local"), { override: true })
-/** Fichier créé par `vercel env pull .env.vercel.pull` (déjà couvert par .gitignore via .env*). */
 loadEnvFile(resolve(root, ".env.vercel.pull"), { override: true })
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
-const anonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY?.trim()
 
-console.log("\n🔌 Vérification Supabase (signature / Storage)\n")
+console.log("\nSignature électronique : intégrée à l'application, sans Supabase.\n")
 
 if (!url) {
-  console.log("○ NEXT_PUBLIC_SUPABASE_URL absent — rien à vérifier (optionnel).\n")
+  console.log("○ NEXT_PUBLIC_SUPABASE_URL absent — la GED distante n'est pas configurée.\n")
   process.exit(0)
 }
 
@@ -53,74 +49,23 @@ if (!url.startsWith("https://") || !url.includes("supabase.co")) {
 }
 
 if (!serviceKey) {
-  console.log("⚠️  SUPABASE_SERVICE_ROLE_KEY manquant — impossible de vérifier les tables / buckets.")
-  console.log("   L’intégration Vercel envoie souvent l’URL + la clé anon uniquement.")
-  console.log("   Ajoute la clé service_role : Supabase → Project Settings → API → service_role")
-  console.log("   puis Vercel → Environment Variables → Redeploy.")
-  console.log("   Ensuite : npm run verify:supabase\n")
+  console.log("○ SUPABASE_SERVICE_ROLE_KEY absente — la GED distante n'est pas vérifiable.\n")
   process.exit(0)
-}
-
-if (!anonKey) {
-  console.log("⚠️  NEXT_PUBLIC_SUPABASE_ANON_KEY manquant (recommandé pour le client Supabase).\n")
 }
 
 const supabase = createClient(url, serviceKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 })
 
-let failed = false
-
-const { error: t1 } = await supabase.from("sign_requests").select("id").limit(1)
-if (t1) {
-  const msg = t1.message || String(t1)
-  if (/relation|does not exist|schema cache|not find/i.test(msg)) {
-    console.error("❌ Table public.sign_requests introuvable.")
-    console.error("   Exécute sql/supabase-esign-complete.sql ou : npm run supabase:install\n")
-    failed = true
-  } else {
-    console.error("❌ sign_requests :", msg, "\n")
-    failed = true
-  }
-} else {
-  console.log("✅ Table sign_requests accessible")
-}
-
-const { error: t2 } = await supabase.from("signatures").select("id").limit(1)
-if (t2) {
-  const msg = t2.message || String(t2)
-  if (/relation|does not exist|schema cache|not find/i.test(msg)) {
-    console.error("❌ Table public.signatures introuvable.\n")
-    failed = true
-  } else {
-    console.error("❌ signatures :", msg, "\n")
-    failed = true
-  }
-} else {
-  console.log("✅ Table signatures accessible")
-}
-
-for (const bucket of ["documents", "signed_documents"]) {
-  const { error: be } = await supabase.storage.from(bucket).list("", { limit: 1 })
-  if (be) {
-    const msg = be.message || String(be)
-    if (/not found|bucket|does not exist/i.test(msg)) {
-      console.error(`❌ Bucket Storage « ${bucket} » introuvable ou inaccessible.`)
-      console.error("   Exécute sql/supabase-esign-storage.sql (ou la migration supabase/migrations/).\n")
-      failed = true
-    } else {
-      console.error(`❌ Bucket ${bucket} :`, msg, "\n")
-      failed = true
-    }
+const gedBucket = process.env.SUPABASE_GED_BUCKET?.trim() || "client_documents"
+for (const bucket of [gedBucket, "signed_documents"]) {
+  const { error } = await supabase.storage.from(bucket).list("", { limit: 1 })
+  if (error) {
+    console.log(`○ Bucket « ${bucket} » non vérifié : ${error.message || error}`)
   } else {
     console.log(`✅ Bucket « ${bucket} » accessible`)
   }
 }
 
-if (failed) {
-  console.log("💡 Après correction sur le dashboard Supabase, relance : npm run verify:supabase\n")
-  process.exit(1)
-}
-
-console.log("\n✅ Supabase OK pour /sign et /api/sign.\n")
+console.log("\n✅ Contrôle terminé. La signature ne dépend pas de ces buckets.\n")
 process.exit(0)

@@ -1,15 +1,11 @@
-import { randomUUID } from "node:crypto"
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
-import { applySignatureToPdf } from "@/lib/esign/apply-signature-to-pdf"
-import { ESIGN_BUCKET_ORIGINALS, ESIGN_BUCKET_SIGNED } from "@/lib/esign/buckets"
 import {
   completeLocalSignature,
   completeRebuiltDecennaleSignature,
   LocalSignatureError,
 } from "@/lib/esign/complete-local-signature"
 import { getClientIp, getUserAgent } from "@/lib/esign/get-request-meta"
-import { sha256Hex } from "@/lib/esign/hash-pdf"
 import {
   isLocalSignableContract,
   isRebuildableDecennaleContract,
@@ -18,13 +14,8 @@ import {
 } from "@/lib/esign/local-signature-fallback"
 import type { PendingSignature } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
-import { createSupabaseServiceClient } from "@/lib/supabase"
-import { applyPendingFinalize } from "@/lib/pending-signature-finalize"
 
 export const runtime = "nodejs"
-
-/** Lien de téléchargement immédiat (buckets privés). */
-const SIGNED_DOWNLOAD_TTL_SEC = 60 * 60 * 24 * 7
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -148,140 +139,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const supabase = createSupabaseServiceClient()
-  if (!supabase) {
-    const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
-    if (offline) return offline
-    return NextResponse.json({ error: "Configuration Supabase incomplète (clé service)." }, { status: 500 })
-  }
+  const rebuilt = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
+  if (rebuilt) return rebuilt
 
-  let signRequest: { document_storage_path: string } | null = null
-  try {
-    const loaded = await supabase
-      .from("sign_requests")
-      .select("id, document_storage_path")
-      .eq("id", id)
-      .abortSignal(AbortSignal.timeout(4_500))
-      .maybeSingle()
-    if (!loaded.error && loaded.data?.document_storage_path) {
-      signRequest = { document_storage_path: loaded.data.document_storage_path }
-    } else if (loaded.error) {
-      const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
-      if (offline) return offline
-      return NextResponse.json({ error: "Impossible de charger la demande de signature." }, { status: 500 })
-    }
-  } catch (error) {
-    console.error("[api/sign] lecture demande", safeLogMessage(error))
-    const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
-    if (offline) return offline
-    return NextResponse.json({ error: "Impossible de charger la demande de signature." }, { status: 500 })
-  }
-  if (!signRequest?.document_storage_path) {
-    const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
-    if (offline) return offline
-    return NextResponse.json({ error: "Demande de signature introuvable." }, { status: 404 })
-  }
-
-  let downloaded: Blob | null = null
-  try {
-    const result = await supabase.storage.from(ESIGN_BUCKET_ORIGINALS).download(signRequest.document_storage_path)
-    if (!result.error && result.data) downloaded = result.data
-  } catch (error) {
-    console.error("[api/sign] téléchargement original", safeLogMessage(error))
-  }
-
-  if (!downloaded) {
-    const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
-    if (offline) return offline
-    return NextResponse.json(
-      { error: "Téléchargement du PDF original impossible (bucket ou chemin)." },
-      { status: 502 }
-    )
-  }
-
-  const originalBytes = new Uint8Array(await downloaded.arrayBuffer())
-  const signedAtIso = new Date().toISOString()
-
-  let signedBytes: Uint8Array
-  try {
-    signedBytes = await applySignatureToPdf(originalBytes, signature, emailNorm, signedAtIso)
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Traitement PDF impossible."
-    return NextResponse.json({ error: msg }, { status: 422 })
-  }
-
-  const documentHash = sha256Hex(signedBytes)
-  const objectName = `${randomUUID()}.pdf`
-
-  const { error: upError } = await supabase.storage.from(ESIGN_BUCKET_SIGNED).upload(objectName, signedBytes, {
-    contentType: "application/pdf",
-    upsert: false,
-  })
-
-  if (upError) {
-    const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
-    if (offline) return offline
-    return NextResponse.json({ error: "Échec de l’envoi du PDF signé vers le stockage." }, { status: 502 })
-  }
-
-  const { data: origPublic } = supabase.storage
-    .from(ESIGN_BUCKET_ORIGINALS)
-    .getPublicUrl(signRequest.document_storage_path)
-
-  const { data: signedPublic } = supabase.storage.from(ESIGN_BUCKET_SIGNED).getPublicUrl(objectName)
-
-  const documentUrl = origPublic.publicUrl
-  const signedDocumentReferenceUrl = signedPublic.publicUrl
-
-  const { data: signedLink, error: signUrlError } = await supabase.storage
-    .from(ESIGN_BUCKET_SIGNED)
-    .createSignedUrl(objectName, SIGNED_DOWNLOAD_TTL_SEC)
-
-  const signedDocumentUrl =
-    !signUrlError && signedLink?.signedUrl ? signedLink.signedUrl : signedDocumentReferenceUrl
-
-  const { data: row, error: insError } = await supabase
-    .from("signatures")
-    .insert({
-      document_url: documentUrl,
-      signed_document_url: signedDocumentReferenceUrl,
-      email: emailNorm,
-      ip: getClientIp(request),
-      user_agent: getUserAgent(request),
-      document_hash: documentHash,
-    })
-    .select("id, signed_document_url")
-    .single()
-
-  if (insError || !row) {
-    const offline = await rebuiltDecennaleResponse(pending, signature, emailNorm, request)
-    if (offline) return offline
-    return NextResponse.json({ error: "Enregistrement de la piste d’audit impossible." }, { status: 500 })
-  }
-
-  if (pending) {
-    try {
-      const raw = JSON.parse(pending.contractData || "{}") as Record<string, unknown>
-      const isCustomPdf = raw.customUploadedDevisFlow === true
-      await applyPendingFinalize(
-        pending,
-        isCustomPdf ? { signedQuoteStorageKey: objectName } : undefined
-      )
-    } catch (e) {
-      console.error("[api/sign] applyPendingFinalize", e)
-      return NextResponse.json(
-        {
-          error:
-            "Signature enregistrée mais la finalisation du contrat a échoué. Contactez le support avec votre e-mail.",
-        },
-        { status: 500 }
-      )
-    }
-  }
-
-  return NextResponse.json({
-    signedDocumentUrl,
-    signatureId: row.id,
-    documentHash,
-  })
+  return NextResponse.json({ error: "Demande de signature introuvable." }, { status: 404 })
 }

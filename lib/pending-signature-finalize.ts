@@ -1,5 +1,5 @@
 /**
- * Finalisation contrat après signature (POST /api/sign — Supabase Sign).
+ * Finalisation contrat après signature (POST /api/sign).
  */
 import { Prisma, type PendingSignature } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"

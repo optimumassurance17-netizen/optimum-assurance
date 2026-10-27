@@ -3,8 +3,6 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { isLocalSignableContract, readContractObject } from "@/lib/esign/local-signature-fallback"
-import { repairPendingSignature } from "@/lib/pending-signature-repair"
 import { sendPendingSignatureReminder } from "@/lib/signature-reminder-send"
 
 const UUID_RE = /^[0-9a-f-]{36}$/i
@@ -44,26 +42,6 @@ export async function POST(request: NextRequest) {
     }
 
     const actorEmail = session.user.email || "admin"
-    const localSignature = isLocalSignableContract(readContractObject(pending.contractData))
-    if (!localSignature) {
-      const result = await repairPendingSignature(pending, actorEmail)
-      if (result.repaired) {
-        return NextResponse.json({
-          ok: true,
-          repaired: true,
-          message: "Signature finalisée.",
-        })
-      }
-      const canRemind =
-        result.code === "local_fallback" ||
-        result.code === "signed_not_found" ||
-        result.code === "missing_request" ||
-        result.code === "invalid_signed_url"
-      if (!canRemind) {
-        return NextResponse.json({ error: result.reason }, { status: result.status })
-      }
-    }
-
     const reminded = await sendPendingSignatureReminder({ pending, adminEmail: actorEmail })
     if (!reminded.ok) {
       return NextResponse.json({ error: reminded.error }, { status: reminded.status })

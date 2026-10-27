@@ -33,7 +33,7 @@ export interface SouscriptionData extends DevisData {
   telephone: string
   representantLegal: string
   civilite: "M" | "Mme" | "Mlle"
-  /** Après `/api/sign/create-request` : id `sign_requests` (Supabase). */
+  /** Après `/api/sign/create-request` : identifiant de la demande locale. */
   signatureRequestId?: string
   /** Données contrat pour mandat / paiement (post-signature). */
   signedContractNumero?: string

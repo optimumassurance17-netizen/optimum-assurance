@@ -4,7 +4,7 @@
 
 ### Architecture
 
-Next.js 16 (App Router) + Prisma/PostgreSQL + NextAuth v4 + Mollie (paiements) + Resend (emails) + Supabase (signature électronique). Voir `.cursor/rules/optimum-assurance.mdc` pour le récapitulatif complet du projet.
+Next.js 16 (App Router) + Prisma/PostgreSQL + NextAuth v4 + Mollie (paiements) + Resend (emails) + signature électronique intégrée. Supabase sert à la GED. Voir `.cursor/rules/optimum-assurance.mdc` pour le récapitulatif complet du projet.
 
 ### Services requis
 

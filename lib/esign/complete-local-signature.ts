@@ -78,7 +78,7 @@ async function completeLocalCustomPdfSignature(
 export async function completeLocalDecennaleSignature(input: LocalSignatureInput): Promise<{ documentHash: string; signedDocumentUrl: string }> {
   const raw = readContractObject(input.pending.contractData)
   if (!raw || !isLocalFallbackContract(raw)) {
-    throw new LocalSignatureError("Demande de signature de secours introuvable.", 404)
+    throw new LocalSignatureError("Demande de signature introuvable.", 404)
   }
 
   const original = decodeStoredPdfBase64(raw[FALLBACK_PDF_KEY])
@@ -89,7 +89,7 @@ export async function completeLocalDecennaleSignature(input: LocalSignatureInput
   return completeDecennaleSignatureFromPdf({ ...input, originalPdf: original })
 }
 
-/** Signe un contrat décennale reconstruit quand Supabase ne renvoie pas le PDF original. */
+/** Signe un contrat décennale reconstruit quand le PDF n'est pas déjà stocké dans le dossier. */
 export async function completeRebuiltDecennaleSignature(input: {
   pending: PendingSignature
   signaturePngDataUrl: string

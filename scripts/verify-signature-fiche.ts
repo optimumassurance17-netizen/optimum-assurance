@@ -179,7 +179,8 @@ assert(
 )
 const repairRoute = readFileSync("app/api/gestion/signatures/repair/route.ts", "utf8")
 assert(repairRoute.includes("sendPendingSignatureReminder"), "Réparer envoie le rappel de signature")
-assert(repairRoute.includes("isLocalSignableContract"), "la signature de secours ne bloque plus le rappel")
+assert(!repairRoute.includes("createSupabaseServiceClient"), "Réparer ne contacte plus Supabase")
+assert(!repairRoute.includes("repairPendingSignature"), "Réparer n'attend plus une pièce Supabase")
 
 const cron = readFileSync("app/api/cron/rappel-signatures-en-attente/route.ts", "utf8")
 assert(cron.includes("signatureReminderPayload(pending, userLabel, SITE_URL)"), "le cron réutilise le même lien")

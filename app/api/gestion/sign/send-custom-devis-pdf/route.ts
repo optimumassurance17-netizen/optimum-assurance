@@ -259,7 +259,6 @@ export async function POST(request: NextRequest) {
       periodicityForQuality = titleConfig.periodicite
       coverageDurationYearsForLog = titleConfig.coverageDurationYears
       contractData = {
-        signatureProvider: "supabase",
         customUploadedDevisFlow: true,
         productType,
         modeEtude: true,
@@ -302,7 +301,6 @@ export async function POST(request: NextRequest) {
       amountPerInstallment = rcConfig.montantParEcheanceTtc
       periodicityForQuality = rcConfig.periodicite
       contractData = {
-        signatureProvider: "supabase",
         customUploadedDevisFlow: true,
         productType,
         modeEtude: true,

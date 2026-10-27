@@ -1,5 +1,4 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { notFound } from "next/navigation"
 import { SignDocumentClient } from "@/components/esign/SignDocumentClient"
 import { resolveSignPreview } from "@/lib/esign/resolve-sign-preview"
@@ -34,34 +33,6 @@ export default async function SignDocumentPage({ params, searchParams }: PagePro
   const preview = await resolveSignPreview(id)
   if (preview.kind === "missing") notFound()
 
-  if (preview.kind === "unconfigured") {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-16">
-        <p className="text-slate-700">
-          Configuration Supabase incomplète (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY).
-        </p>
-        <Link href="/" className="mt-4 inline-block text-blue-600 underline">
-          Accueil
-        </Link>
-      </main>
-    )
-  }
-
-  if (preview.kind === "unavailable") {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-16">
-        <h1 className="text-2xl font-bold text-slate-900">Document indisponible</h1>
-        <p className="mt-2 text-slate-600">
-          Le service de signature est momentanément indisponible. Rouvrez le lien dans quelques instants.
-        </p>
-        <Link href="/" className="mt-6 inline-block text-blue-600 underline">
-          Accueil
-        </Link>
-      </main>
-    )
-  }
-
-  const localFallback = preview.kind === "local"
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
       <header className="mb-8">
@@ -70,15 +41,9 @@ export default async function SignDocumentPage({ params, searchParams }: PagePro
       </header>
       <SignDocumentClient
         documentId={preview.documentId}
-        documentSignedUrl={
-          preview.kind === "local" ? `/api/sign/local-pdf/${preview.documentId}` : preview.url
-        }
+        documentSignedUrl={`/api/sign/local-pdf/${preview.documentId}`}
         afterSignRedirect={afterSignRedirect}
-        notice={
-          localFallback
-            ? "Vous signez directement auprès d’Optimum Assurance. Après validation, le parcours continue vers le mandat SEPA."
-            : undefined
-        }
+        notice="Vous signez directement auprès d’Optimum Assurance. Après validation, le parcours continue vers le mandat SEPA."
       />
     </main>
   )

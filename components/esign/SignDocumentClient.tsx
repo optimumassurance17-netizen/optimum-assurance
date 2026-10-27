@@ -12,7 +12,7 @@ type Props = {
   documentSignedUrl: string
   /** Après succès, redirection (chemin interne) au lieu de l’écran de téléchargement seul. */
   afterSignRedirect?: string
-  /** Mention affichée quand la signature de secours remplace Supabase. */
+  /** Mention affichée au-dessus du document à signer. */
   notice?: string
 }
 
