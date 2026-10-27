@@ -5,6 +5,7 @@ import { randomBytes } from "crypto"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { asJsonObject } from "@/lib/json-object"
+import { collapseDecennaleContractDuplicates } from "@/lib/decennale-contract-replacement"
 import { getNextNumero } from "@/lib/documents"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
@@ -148,6 +149,13 @@ export async function POST(request: NextRequest) {
         },
       })
 
+      if (type === "contrat") {
+        await collapseDecennaleContractDuplicates({
+          userId: session.user.id,
+          keepDocumentId: document.id,
+        })
+      }
+
       return NextResponse.json({
         id: document.id,
         numero: document.numero,
@@ -161,6 +169,12 @@ export async function POST(request: NextRequest) {
           where: { type: "contrat", numero },
         })
         if (existing) {
+          if (existing.userId === session.user.id) {
+            await collapseDecennaleContractDuplicates({
+              userId: session.user.id,
+              keepDocumentId: existing.id,
+            })
+          }
           return NextResponse.json({
             id: existing.id,
             numero: existing.numero,
