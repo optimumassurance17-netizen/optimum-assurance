@@ -9,6 +9,11 @@ import {
   MAX_LOCAL_SIGNATURE_PDF_BYTES,
   signaturePdfTooLargeMessage,
 } from "@/lib/esign/local-signature-fallback"
+import {
+  deleteSignaturePdfUpload,
+  saveSignaturePdfChunk,
+  takeSignaturePdfUpload,
+} from "@/lib/esign/signature-pdf-upload"
 import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import {
@@ -31,6 +36,11 @@ import {
 } from "@/lib/insurance-product"
 
 export const runtime = "nodejs"
+
+function textField(source: FormData | Record<string, unknown>, key: string): string {
+  const value = source instanceof FormData ? source.get(key) : source[key]
+  return typeof value === "string" ? value.trim() : ""
+}
 
 function normalizeNextPath(raw: string | null): string {
   const d = "/espace-client"
@@ -84,53 +94,75 @@ async function updateSourceLeadStatus(params: {
  * Après signature, un InsuranceContract produit est créé (voir applyPendingFinalize).
  */
 export async function POST(request: NextRequest) {
+  let uploadToken: string | null = null
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id || !isAdmin(session)) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }
 
-    let form: FormData
-    try {
-      form = await request.formData()
-    } catch {
-      return NextResponse.json({ error: "Formulaire multipart invalide" }, { status: 400 })
+    const contentType = request.headers.get("content-type") || ""
+    let source: FormData | Record<string, unknown>
+    let preparedPdf: Buffer | null = null
+    if (contentType.includes("application/json")) {
+      let body: unknown
+      try {
+        body = await request.json()
+      } catch {
+        return NextResponse.json({ error: "JSON invalide" }, { status: 400 })
+      }
+      if (!body || typeof body !== "object") {
+        return NextResponse.json({ error: "Corps invalide" }, { status: 400 })
+      }
+      const record = body as Record<string, unknown>
+      const chunk = record.pdfChunk
+      if (chunk && typeof chunk === "object") {
+        const piece = chunk as Record<string, unknown>
+        const saved = await saveSignaturePdfChunk({
+          token: typeof piece.token === "string" ? piece.token : "",
+          index: typeof piece.index === "number" ? piece.index : Number.NaN,
+          total: typeof piece.total === "number" ? piece.total : Number.NaN,
+          data: typeof piece.data === "string" ? piece.data : "",
+          adminEmail: session.user.email || "admin",
+        })
+        if (!saved.ok) return NextResponse.json({ error: saved.error }, { status: saved.status })
+        return NextResponse.json({ ok: true })
+      }
+      if (typeof record.pdfUploadToken !== "string") {
+        return NextResponse.json({ error: "Fichier PDF requis" }, { status: 400 })
+      }
+      uploadToken = record.pdfUploadToken
+      source = record
+    } else {
+      try {
+        source = await request.formData()
+      } catch {
+        return NextResponse.json({ error: "Formulaire multipart invalide" }, { status: 400 })
+      }
     }
 
-    const userId = typeof form.get("userId") === "string" ? (form.get("userId") as string).trim() : ""
-    const productType = normalizeInsurancePlatformProductType(
-      typeof form.get("productType") === "string" ? (form.get("productType") as string).trim() : "",
-      "rc_fabriquant"
-    )
+    const userId = textField(source, "userId")
+    const productType = normalizeInsurancePlatformProductType(textField(source, "productType"), "rc_fabriquant")
     if (productType !== "rc_fabriquant" && productType !== "assurance_titre") {
       return NextResponse.json(
         { error: "Produit non supporté pour ce flux PDF (RC Fabriquant ou Assurance titre)." },
         { status: 400 }
       )
     }
-    const primeTtcRaw = form.get("primeTtc")
-    const primeAnnuelleTtcRaw = form.get("primeAnnuelleTtc")
-    const primeAnnuelleHtRaw = form.get("primeAnnuelleHt") ?? form.get("primeHtAnnuel")
-    const periodiciteRaw = form.get("periodicite")
-    const coverageDurationYearsRaw = form.get("coverageDurationYears")
-    const sourceLeadType = normalizeSourceLeadType(
-      typeof form.get("sourceLeadType") === "string" ? (form.get("sourceLeadType") as string).trim() : null
-    )
-    const sourceLeadId =
-      typeof form.get("sourceLeadId") === "string" ? (form.get("sourceLeadId") as string).trim() : ""
-    const devisReference =
-      typeof form.get("devisReference") === "string" ? (form.get("devisReference") as string).trim().slice(0, 120) : ""
+    const primeTtcRaw = textField(source, "primeTtc")
+    const primeAnnuelleTtcRaw = textField(source, "primeAnnuelleTtc")
+    const primeAnnuelleHtRaw = textField(source, "primeAnnuelleHt") || textField(source, "primeHtAnnuel")
+    const periodiciteRaw = textField(source, "periodicite")
+    const coverageDurationYearsRaw = textField(source, "coverageDurationYears")
+    const sourceLeadType = normalizeSourceLeadType(textField(source, "sourceLeadType") || null)
+    const sourceLeadId = textField(source, "sourceLeadId")
+    const devisReference = textField(source, "devisReference").slice(0, 120)
     const produitLabel =
-      typeof form.get("produitLabel") === "string"
-        ? (form.get("produitLabel") as string).trim().slice(0, 120)
-        : productType === "assurance_titre"
-          ? "Assurance titre — proposition digitale"
-          : "RC Fabriquant — proposition"
-    const afterSignNextPath = normalizeNextPath(
-      typeof form.get("afterSignNextPath") === "string" ? (form.get("afterSignNextPath") as string) : null
-    )
+      textField(source, "produitLabel").slice(0, 120) ||
+      (productType === "assurance_titre" ? "Assurance titre — proposition digitale" : "RC Fabriquant — proposition")
+    const afterSignNextPath = normalizeNextPath(textField(source, "afterSignNextPath") || null)
 
-    const file = form.get("pdf")
+    const file = source instanceof FormData ? source.get("pdf") : null
     if (!userId) {
       return NextResponse.json({ error: "Client (userId) requis" }, { status: 400 })
     }
@@ -138,9 +170,7 @@ export async function POST(request: NextRequest) {
     const periodicite =
       productType === "assurance_titre"
         ? "annuel"
-        : normalizeRcFabPeriodicity(
-            typeof periodiciteRaw === "string" ? periodiciteRaw.trim().toLowerCase() : null
-          )
+        : normalizeRcFabPeriodicity(periodiciteRaw ? periodiciteRaw.toLowerCase() : null)
     const primeAnnuelleTtcParsed =
       typeof primeAnnuelleTtcRaw === "string"
         ? Number(primeAnnuelleTtcRaw.replace(",", "."))
@@ -183,15 +213,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Prime annuelle HT invalide" }, { status: 400 })
     }
 
-    if (!file || !(file instanceof Blob) || file.size === 0) {
-      return NextResponse.json({ error: "Fichier PDF requis" }, { status: 400 })
-    }
-    if (file.size > MAX_LOCAL_SIGNATURE_PDF_BYTES) {
-      return NextResponse.json({ error: signaturePdfTooLargeMessage() }, { status: 400 })
-    }
-    const mime = (file as File).type || ""
-    if (mime && mime !== "application/pdf") {
-      return NextResponse.json({ error: "Le fichier doit être un PDF" }, { status: 400 })
+    if (!preparedPdf) {
+      if (!file || !(file instanceof Blob) || file.size === 0) {
+        return NextResponse.json({ error: "Fichier PDF requis" }, { status: 400 })
+      }
+      if (file.size > MAX_LOCAL_SIGNATURE_PDF_BYTES) {
+        return NextResponse.json({ error: signaturePdfTooLargeMessage() }, { status: 400 })
+      }
+      const mime = (file as File).type || ""
+      if (mime && mime !== "application/pdf") {
+        return NextResponse.json({ error: "Le fichier doit être un PDF" }, { status: 400 })
+      }
     }
 
     const user = await prisma.user.findUnique({
@@ -221,7 +253,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const buf = Buffer.from(await file.arrayBuffer())
+    if (uploadToken) {
+      try {
+        preparedPdf = await takeSignaturePdfUpload(uploadToken, session.user.email || "admin")
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Envoi de PDF invalide."
+        return NextResponse.json({ error: message }, { status: 400 })
+      }
+    }
+
+    const buf = preparedPdf ?? Buffer.from(await (file as Blob).arrayBuffer())
     if (buf.length < 5 || buf.subarray(0, 5).toString() !== "%PDF-") {
       return NextResponse.json({ error: "Le fichier n’est pas un PDF valide (en-tête manquant)" }, { status: 400 })
     }
@@ -427,5 +468,11 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : "Erreur lors de l’envoi"
     const tooLarge = message === signaturePdfTooLargeMessage()
     return NextResponse.json({ error: message }, { status: tooLarge ? 400 : 500 })
+  } finally {
+    if (uploadToken) {
+      await deleteSignaturePdfUpload(uploadToken).catch((error) => {
+        console.error("[gestion/sign/send-custom-devis-pdf] nettoyage morceaux", error)
+      })
+    }
   }
 }

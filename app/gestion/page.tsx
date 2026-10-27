@@ -27,6 +27,7 @@ import {
   MAX_LOCAL_SIGNATURE_PDF_BYTES,
   signaturePdfTooLargeMessage,
 } from "@/lib/esign/local-signature-fallback"
+import { postCustomDevisPdf } from "@/lib/esign/send-custom-devis-client"
 import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
 import { ACTIVITES_BTP } from "@/lib/activites-btp"
@@ -2446,7 +2447,9 @@ export default function GestionPage() {
                     }}
                     className="block w-full text-sm text-gray-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-[#2563eb] file:text-white"
                   />
-                  <p className="text-xs text-gray-400">PDF jusqu’à 3 Mo. Au-delà, l’envoi est refusé avant la signature.</p>
+                  <p className="text-xs text-gray-400">
+                    PDF jusqu’à {MAX_LOCAL_SIGNATURE_PDF_BYTES / (1024 * 1024)} Mo. Au-delà, l’envoi est refusé avant la signature.
+                  </p>
                   <label className="text-sm text-gray-300">
                     {customDevisProductType === "assurance_titre"
                       ? "Prime TTC totale (€)"
@@ -2578,26 +2581,23 @@ export default function GestionPage() {
                   }
                   setCustomDevisSending(true)
                   try {
-                    const fd = new FormData()
-                    fd.append("pdf", file)
-                    fd.append("userId", customDevisUserId)
-                    fd.append("productType", customDevisProductType)
-                    fd.append("primeTtc", String(primeTtcAnnuel))
-                    fd.append("primeAnnuelleTtc", String(primeTtcAnnuel))
-                    if (primeHtAnnuel != null) fd.append("primeAnnuelleHt", String(primeHtAnnuel))
-                    fd.append("periodicite", customDevisPeriodicity)
-                    if (coverageYears != null && Number.isFinite(coverageYears)) {
-                      fd.append("coverageDurationYears", String(coverageYears))
+                    const fields: Record<string, string> = {
+                      userId: customDevisUserId,
+                      productType: customDevisProductType,
+                      primeTtc: String(primeTtcAnnuel),
+                      primeAnnuelleTtc: String(primeTtcAnnuel),
+                      periodicite: customDevisPeriodicity,
                     }
-                    if (customDevisRef.trim()) fd.append("devisReference", customDevisRef.trim())
-                    if (customDevisLabel.trim()) fd.append("produitLabel", customDevisLabel.trim())
-                    if (customDevisNextPath.trim()) fd.append("afterSignNextPath", customDevisNextPath.trim())
-                    if (customDevisSourceLeadType) fd.append("sourceLeadType", customDevisSourceLeadType)
-                    if (customDevisSourceLeadId) fd.append("sourceLeadId", customDevisSourceLeadId)
-                    const res = await fetch("/api/gestion/sign/send-custom-devis-pdf", {
-                      method: "POST",
-                      body: fd,
-                    })
+                    if (primeHtAnnuel != null) fields.primeAnnuelleHt = String(primeHtAnnuel)
+                    if (coverageYears != null && Number.isFinite(coverageYears)) {
+                      fields.coverageDurationYears = String(coverageYears)
+                    }
+                    if (customDevisRef.trim()) fields.devisReference = customDevisRef.trim()
+                    if (customDevisLabel.trim()) fields.produitLabel = customDevisLabel.trim()
+                    if (customDevisNextPath.trim()) fields.afterSignNextPath = customDevisNextPath.trim()
+                    if (customDevisSourceLeadType) fields.sourceLeadType = customDevisSourceLeadType
+                    if (customDevisSourceLeadId) fields.sourceLeadId = customDevisSourceLeadId
+                    const res = await postCustomDevisPdf(file, fields)
                     const j = (await res.json().catch(() => ({}))) as {
                       error?: string
                       message?: string

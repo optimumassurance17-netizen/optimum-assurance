@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { pdfBytesResponse } from "@/lib/esign/pdf-bytes-response"
 import { renderContractPdf, type DocPdfType } from "@/lib/insurance-contract-pdf"
 import { prepareDoContractForPdf } from "@/lib/do-attestation-source"
 import { PdfValidationError } from "@/lib/pdf/errors"
@@ -46,17 +47,7 @@ export async function GET(
         ? `${contract.contractNumber}-fic.pdf`
         : `${contract.contractNumber}-${docType}.pdf`
     const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
-    const buf = Buffer.from(u8)
-    const safeFilename = filename.replace(/"/g, "_")
-    return new NextResponse(buf, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${safeFilename}"`,
-        "Content-Length": String(buf.byteLength),
-        "Cache-Control": "private, no-store, must-revalidate",
-      },
-    })
+    return pdfBytesResponse(u8, filename.replace(/"/g, "_"), "inline")
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erreur"
     if (

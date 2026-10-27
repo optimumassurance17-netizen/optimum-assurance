@@ -5,7 +5,13 @@ import React from "react"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { DocumentsCombinedPDF } from "@/components/pdf/DocumentsCombinedPDF"
-import { LOCAL_SIGNED_PDF_KEY, decodeStoredPdfBase64, stripSignatureBinaries } from "@/lib/esign/local-signature-fallback"
+import {
+  LOCAL_SIGNED_PDF_KEY,
+  MAX_LOCAL_SIGNED_PDF_BYTES,
+  decodeStoredPdfBase64,
+  stripSignatureBinaries,
+} from "@/lib/esign/local-signature-fallback"
+import { pdfBytesResponse } from "@/lib/esign/pdf-bytes-response"
 import { qrCodePngDataUri } from "@/lib/qr-pdf"
 import { SITE_URL } from "@/lib/site-url"
 
@@ -41,19 +47,10 @@ export async function GET(
     }
 
     if (document.type === "contrat") {
-      const signedBytes = decodeStoredPdfBase64(data[LOCAL_SIGNED_PDF_KEY])
+      const signedBytes = decodeStoredPdfBase64(data[LOCAL_SIGNED_PDF_KEY], MAX_LOCAL_SIGNED_PDF_BYTES)
       if (signedBytes) {
         const safeNumero = document.numero.replace(/[^A-Za-z0-9._-]/g, "") || "contrat"
-        const filename = `${safeNumero}.pdf`
-        return new NextResponse(Buffer.from(signedBytes), {
-          status: 200,
-          headers: {
-            "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename="${filename}"`,
-            "Cache-Control": "private, no-store",
-            "X-Content-Type-Options": "nosniff",
-          },
-        })
+        return pdfBytesResponse(signedBytes, `${safeNumero}.pdf`, "attachment")
       }
     }
 

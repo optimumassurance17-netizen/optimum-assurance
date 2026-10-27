@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { pdfBytesResponse } from "@/lib/esign/pdf-bytes-response"
 import {
   FALLBACK_PDF_KEY,
   decodeStoredPdfBase64,
@@ -48,13 +49,5 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 
   const safeNumero = pending.contractNumero.replace(/[^A-Za-z0-9._-]/g, "") || "contrat"
-  return new NextResponse(Buffer.from(bytes), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="contrat-${safeNumero}.pdf"`,
-      "Cache-Control": "private, no-store",
-      "X-Content-Type-Options": "nosniff",
-    },
-  })
+  return pdfBytesResponse(bytes, `contrat-${safeNumero}.pdf`, "inline")
 }
