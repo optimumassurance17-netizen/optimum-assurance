@@ -185,5 +185,10 @@ assert(!repairRoute.includes("repairPendingSignature"), "Réparer n'attend plus 
 const cron = readFileSync("app/api/cron/rappel-signatures-en-attente/route.ts", "utf8")
 assert(cron.includes("signatureReminderPayload(pending, userLabel, SITE_URL)"), "le cron réutilise le même lien")
 assert(!cron.includes("function getSignatureReminderPayload"), "le cron n'a plus sa copie locale du lien")
+const vercel = readFileSync("vercel.json", "utf8")
+const health = readFileSync("app/api/health/route.ts", "utf8")
+assert(vercel.includes("/api/cron/rappel-signatures-en-attente"), "le rappel de 11 h reste planifié")
+assert(!vercel.includes("repair-signatures-bloquees"), "la tâche de 11 h 30 n'est plus planifiée")
+assert(!health.includes("repair-signatures-bloquees"), "la santé ne liste plus la tâche retirée")
 
 console.log("verify-signature-fiche: ok")
