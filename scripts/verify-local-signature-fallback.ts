@@ -135,8 +135,13 @@ async function main() {
   assert(customSend.includes("signaturePdfTooLargeMessage()"), "le refus de taille part avant l'envoi")
   const gestionPage = readFileSync("app/gestion/page.tsx", "utf8")
   assert(gestionPage.includes("signaturePdfTooLargeMessage()"), "la gestion refuse le PDF trop lourd avant l'envoi")
-  assert(MAX_LOCAL_SIGNATURE_PDF_BYTES === 5 * 1024 * 1024, "la signature accepte 5 Mo")
-  assert(signaturePdfTooLargeMessage().includes("5 Mo"), "le message annonce 5 Mo")
+  assert(MAX_LOCAL_SIGNATURE_PDF_BYTES >= 5 * 1024 * 1024, "la signature accepte au moins 5 Mo")
+  assert(MAX_LOCAL_SIGNATURE_PDF_BYTES === 15 * 1024 * 1024, "le plafond reste 15 Mo")
+  assert(signaturePdfTooLargeMessage().includes("15 Mo"), "le message annonce 15 Mo")
+  const fiveMegabytes = Buffer.alloc(5 * 1024 * 1024)
+  fiveMegabytes.write("%PDF-", 0, "latin1")
+  const acceptedFive = await createSignRequestWithFallback(fiveMegabytes)
+  assert(acceptedFive.fallbackPdfBase64.length > 80, "un PDF de 5 Mo est accepté")
   const gestionClient = readFileSync("lib/esign/send-custom-devis-client.ts", "utf8")
   assert(gestionClient.includes("pdfUploadToken"), "un PDF de plus de 2 Mo part en morceaux")
   assert(customSend.includes("pdfUploadToken"), "l'invitation reconstitue les morceaux")
@@ -150,7 +155,7 @@ async function main() {
   } catch (error) {
     rejectedOversized = error instanceof Error && error.message === signaturePdfTooLargeMessage()
   }
-  assert(rejectedOversized, "un PDF au-dessus de 5 Mo est refusé")
+  assert(rejectedOversized, "un PDF au-dessus de 15 Mo est refusé")
   assert(contractPdf.includes("LOCAL_DOCUMENT_KEY_PREFIX"), "le devis signé local se relit sans Supabase")
 
   const decoded = decodeStoredPdfBase64(stored[FALLBACK_PDF_KEY])

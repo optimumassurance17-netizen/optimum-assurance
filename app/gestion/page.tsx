@@ -2448,7 +2448,8 @@ export default function GestionPage() {
                     className="block w-full text-sm text-gray-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-[#2563eb] file:text-white"
                   />
                   <p className="text-xs text-gray-400">
-                    PDF jusqu’à {MAX_LOCAL_SIGNATURE_PDF_BYTES / (1024 * 1024)} Mo. Au-delà, l’envoi est refusé avant la signature.
+                    Un PDF de 5 Mo passe. Taille maximale : {MAX_LOCAL_SIGNATURE_PDF_BYTES / (1024 * 1024)} Mo.
+                    Au-delà, l’envoi est refusé avant la signature.
                   </p>
                   <label className="text-sm text-gray-300">
                     {customDevisProductType === "assurance_titre"

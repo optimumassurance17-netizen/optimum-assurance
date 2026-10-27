@@ -11,8 +11,11 @@ export const LOCAL_SIGNED_PDF_KEY = "localSignedPdfBase64" as const
 export const LOCAL_SIGNED_DOCUMENT_TYPE = "signature_locale" as const
 export const LOCAL_DOCUMENT_KEY_PREFIX = "local-document:" as const
 
-/** PDF brut maximal accepté pour la signature intégrée. */
-export const MAX_LOCAL_SIGNATURE_PDF_BYTES = 5 * 1024 * 1024
+/**
+ * PDF brut maximal. 15 Mo couvre un devis d'au moins 5 Mo, avec de la marge.
+ * L'envoi est découpé : l'hébergement coupe un corps unique vers 4,5 Mo.
+ */
+export const MAX_LOCAL_SIGNATURE_PDF_BYTES = 15 * 1024 * 1024
 /**
  * Taille d'un morceau envoyé par la gestion.
  * Le corps d'une fonction d'hébergement est coupé vers 4,5 Mo : un morceau de 2 Mo,
@@ -25,7 +28,7 @@ export function signaturePdfTooLargeMessage(): string {
   return `PDF trop volumineux pour la signature (max. ${mega} Mo).`
 }
 /** Le PDF signé peut grossir un peu après l'apposition de l'image. */
-export const MAX_LOCAL_SIGNED_PDF_BYTES = 6 * 1024 * 1024
+export const MAX_LOCAL_SIGNED_PDF_BYTES = 20 * 1024 * 1024
 
 const CONNECTIVITY_RE =
   /injoignable|ne répond pas|ne repond pas|fetch failed|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|getaddrinfo|UND_ERR_CONNECT|UND_ERR_SOCKET|UND_ERR_HEADERS_TIMEOUT|UND_ERR_BODY_TIMEOUT|UND_ERR_CONNECT_TIMEOUT|AbortError|aborted|timeout/i
