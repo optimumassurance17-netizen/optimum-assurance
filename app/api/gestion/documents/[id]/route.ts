@@ -20,6 +20,10 @@ import {
   ERRONEOUS_CONTRACT_DELETE_ACTION,
   isErroneousContractDocumentType,
 } from "@/lib/erroneous-contract-delete"
+import {
+  alignUserAttestationsWithContract,
+  snapshotFromContractDocument,
+} from "@/lib/attestation-follows-contract-sync"
 import { Prisma } from "@/lib/prisma-client"
 
 function parseDocumentData(value: string | null): Record<string, unknown> {
@@ -147,12 +151,36 @@ export async function PATCH(
       }
     }
 
+    let attestationsAligned: string[] = []
+    if (document.type === "contrat") {
+      const snapshot = snapshotFromContractDocument(document.numero, mergedData)
+      if (snapshot) {
+        try {
+          attestationsAligned = await alignUserAttestationsWithContract({
+            userId: document.userId,
+            snapshot,
+            previousClientName: typeof currentData.raisonSociale === "string" ? currentData.raisonSociale : null,
+            previousProjectAddress:
+              (typeof currentData.adresseOperation === "string" && currentData.adresseOperation) ||
+              (typeof currentData.projectAddress === "string" && currentData.projectAddress) ||
+              null,
+          })
+        } catch (error) {
+          console.error("[gestion/documents] attestation", error)
+        }
+      }
+    }
+
     await logAdminActivity({
       adminEmail: session.user.email || "admin",
       action: "document_update",
       targetType: "document",
       targetId: id,
-      details: { numero: document.numero, modifiedKeys: Object.keys(filteredModifications) },
+      details: {
+        numero: document.numero,
+        modifiedKeys: Object.keys(filteredModifications),
+        attestationsAligned,
+      },
     })
 
     // Avenants: tracer une preuve DDA structurée lors des modifications.

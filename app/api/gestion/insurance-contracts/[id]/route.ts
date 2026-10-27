@@ -7,7 +7,11 @@ import { ERRONEOUS_CONTRACT_DELETE_ACTION } from "@/lib/erroneous-contract-delet
 import { prisma } from "@/lib/prisma"
 import { Prisma } from "@/lib/prisma-client"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
-import { logContractAction } from "@/lib/insurance-contract-service"
+import { logContractAction, regenerateContractPdfs } from "@/lib/insurance-contract-service"
+import {
+  alignUserAttestationsWithContract,
+  snapshotFromInsuranceContract,
+} from "@/lib/attestation-follows-contract-sync"
 import {
   payloadTouchesPlatformContractIdentity,
   readPlatformContractIdentityPatch,
@@ -165,7 +169,33 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       session.user.email
     )
 
-    if (payloadTouchesPlatformContractIdentity(payload)) {
+    let attestationsAligned: string[] = []
+    const shouldAlignAttestation =
+      (existing.productType === "do" || existing.productType === "decennale") &&
+      Boolean(existing.userId) &&
+      (payloadTouchesPlatformContractIdentity(payload) || "premium" in payload)
+    if (shouldAlignAttestation && existing.userId) {
+      const snapshot = snapshotFromInsuranceContract({ ...existing, ...updates })
+      if (snapshot) {
+        try {
+          attestationsAligned = await alignUserAttestationsWithContract({
+            userId: existing.userId,
+            snapshot,
+            previousClientName: existing.clientName,
+            previousProjectAddress: existing.projectAddress,
+          })
+        } catch (error) {
+          console.error("[gestion/insurance-contracts] attestation", error)
+        }
+        try {
+          await regenerateContractPdfs(id, session.user.email)
+        } catch (error) {
+          console.error("[gestion/insurance-contracts] pdf", error)
+        }
+      }
+    }
+
+    if (payloadTouchesPlatformContractIdentity(payload) || attestationsAligned.length > 0) {
       await logAdminActivity({
         adminEmail: session.user.email,
         action: "gestion_contract_updated",
@@ -175,6 +205,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           contractNumber: existing.contractNumber,
           productType: existing.productType,
           changed: Object.keys(changed),
+          attestationsAligned,
         },
       })
     }

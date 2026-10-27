@@ -12,6 +12,10 @@ import {
   payloadTouchesPlatformContractIdentity,
   readPlatformContractIdentityPatch,
 } from "../lib/platform-contract-edit"
+import {
+  alignAttestationWithContract,
+  selectAttestationsToAlign,
+} from "../lib/attestation-follows-contract"
 
 assert.equal(isErroneousContractDocumentType("contrat"), true)
 assert.equal(isErroneousContractDocumentType("devis"), false)
@@ -106,5 +110,94 @@ assert(platform.includes("EditDoDecennaleContractButton"), "les contrats platefo
 assert(fiche.includes("EditDoDecennaleContractButton"), "la fiche modifie le DO et la décennale")
 assert(fiche.includes("/gestion?editDoc="), "la fiche ouvre la modification du contrat signé")
 assert(dashboard.includes(">Modifier<") || dashboard.includes("Modifier\n"), "le contrat signé reste modifiable")
+
+const older = new Date("2026-01-01T00:00:00.000Z")
+const newer = new Date("2026-06-01T00:00:00.000Z")
+const doRows = [
+  {
+    id: "att-do",
+    type: "attestation_do",
+    status: "valide",
+    createdAt: older,
+    data: { raisonSociale: "Ancien DO", adresseOperation: "2 rue Ancienne", primeAnnuelle: 100, beneficiaireNom: "ne pas toucher" },
+  },
+  {
+    id: "att-autre",
+    type: "attestation_do",
+    status: "valide",
+    createdAt: newer,
+    data: { raisonSociale: "Autre chantier", adresseOperation: "9 rue Autre", sourceContractNumero: "AUTRE" },
+  },
+]
+const doSnapshot = {
+  product: "do" as const,
+  contractNumber: "EDIT-DO-1",
+  raisonSociale: "DO Corrigé",
+  adresseOperation: "20 rue du Chantier",
+  primeAnnuelle: 900,
+  coutConstruction: 250000,
+}
+const doChosen = selectAttestationsToAlign(doRows, doSnapshot, { clientName: "Ancien DO", projectAddress: "2 rue Ancienne" })
+assert.deepEqual(doChosen.map((row) => row.id), ["att-do"], "seule l'attestation du chantier modifié suit le contrat")
+const doAligned = alignAttestationWithContract(doRows[0].data, doSnapshot)
+assert.equal(doAligned.adresseOperation, "20 rue du Chantier")
+assert.equal(doAligned.projectAddress, "20 rue du Chantier")
+assert.equal(doAligned.raisonSociale, "DO Corrigé")
+assert.equal(doAligned.primeAnnuelle, 900)
+assert.equal(doAligned.coutConstruction, 250000)
+assert.equal(doAligned.beneficiaireNom, "ne pas toucher")
+
+const decRows = [
+  {
+    id: "att-dec",
+    type: "attestation",
+    status: "valide",
+    createdAt: newer,
+    data: { raisonSociale: "Ancienne Décennale", activites: ["Plomberie"], primeAnnuelle: 1000, sourceContractNumero: "EDIT-DEC-1" },
+  },
+  {
+    id: "att-nominative",
+    type: "attestation_nominative",
+    status: "valide",
+    createdAt: newer,
+    data: {
+      raisonSociale: "Ancienne Décennale",
+      activites: ["Plomberie"],
+      attestationNominative: true,
+      beneficiaireNom: "Jean Martin",
+      chantierAdresse: "chantier du bénéficiaire",
+      sourceContractNumber: "EDIT-DEC-1",
+    },
+  },
+  {
+    id: "att-resiliee",
+    type: "attestation",
+    status: "resilie",
+    createdAt: newer,
+    data: { raisonSociale: "Ancienne Décennale", sourceContractNumero: "EDIT-DEC-1" },
+  },
+]
+const decSnapshot = {
+  product: "decennale" as const,
+  contractNumber: "EDIT-DEC-1",
+  raisonSociale: "Décennale Corrigée",
+  adresse: "30 rue Neuve",
+  clearLocality: true,
+  activites: ["Électricité"],
+  primeAnnuelle: 1400,
+}
+const decChosen = selectAttestationsToAlign(decRows, decSnapshot, { clientName: "Ancienne Décennale" })
+assert.deepEqual(
+  decChosen.map((row) => row.id).sort(),
+  ["att-dec", "att-nominative"],
+  "l'attestation résiliée ne suit pas le nouveau contrat"
+)
+const nominative = alignAttestationWithContract(decRows[1].data, decSnapshot)
+assert.equal(nominative.raisonSociale, "Décennale Corrigée")
+assert.equal(nominative.beneficiaireNom, "Jean Martin")
+assert.equal(nominative.chantierAdresse, "chantier du bénéficiaire")
+assert.deepEqual(nominative.activites, ["Électricité"])
+assert(insuranceRoute.includes("alignUserAttestationsWithContract"), "modifier le contrat aligne l'attestation")
+assert(documentRoute.includes("alignUserAttestationsWithContract"), "modifier le contrat signé aligne l'attestation")
 
 console.log("Suppression d'un contrat créé par erreur : vérifications OK")
