@@ -20,7 +20,14 @@ const checks = [
       if (json.email?.resend !== "configured") throw new Error("RESEND_API_KEY manquant")
       if (json.email?.from !== "configured") throw new Error("EMAIL_FROM manquant")
       if (json.crons?.secret !== "configured") throw new Error("CRON_SECRET manquant")
-      if (json.esign?.ready !== true) throw new Error("esign.ready=false")
+      // `ged` décrit le stockage des documents. L'ancien champ `esign` couvrait les mêmes clés, le temps d'un déploiement précédent.
+      const storageReady =
+        json.ged?.ready === true || (json.ged == null && json.esign?.ready === true)
+      if (!storageReady) {
+        throw new Error(
+          "ged.ready=false (stockage des documents : NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)"
+        )
+      }
       if (json.sirene?.insee !== "configured") throw new Error("sirene.insee manquant")
     },
   },

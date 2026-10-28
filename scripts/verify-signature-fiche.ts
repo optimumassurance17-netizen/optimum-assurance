@@ -190,5 +190,8 @@ const health = readFileSync("app/api/health/route.ts", "utf8")
 assert(vercel.includes("/api/cron/rappel-signatures-en-attente"), "le rappel de 11 h reste planifié")
 assert(!vercel.includes("repair-signatures-bloquees"), "la tâche de 11 h 30 n'est plus planifiée")
 assert(!health.includes("repair-signatures-bloquees"), "la santé ne liste plus la tâche retirée")
+assert(health.includes("function gedEnv"), "la santé décrit le stockage des documents")
+assert(health.includes("ged,"), "la réponse santé expose ged")
+assert(!health.includes("esign"), "la santé ne présente plus la signature comme dépendante de Supabase")
 
 console.log("verify-signature-fiche: ok")

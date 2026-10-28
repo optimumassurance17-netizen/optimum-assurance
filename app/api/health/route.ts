@@ -31,8 +31,8 @@ const CRON_ROUTES = [
   "/api/cron/relance-echeance-10-jours",
 ] as const
 
-/** Clés Supabase encore utilisées par la GED et les anciens PDF. La signature n’en dépend plus. */
-function esignEnv() {
+/** Clés Supabase de la GED et des anciens PDF. La signature intégrée n’en dépend pas. */
+function gedEnv() {
   const supabaseUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim())
   const serviceRole = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim())
   return {
@@ -47,7 +47,7 @@ function esignEnv() {
  * GET /api/health
  * Ne teste pas l’API Resend (pas d’email envoyé) — indique seulement si les variables sont présentes.
  * Les crons `/api/cron/*` refusent les appels en prod sans `CRON_SECRET` (503) ; Vercel envoie `Authorization: Bearer …` si la variable est définie.
- * `esign` : présence de NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (GED et anciens PDF). La signature est intégrée à l’application.
+ * `ged` : présence de NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (stockage des documents et anciens PDF). La signature est intégrée à l’application et n’utilise pas ces clés.
  * `sirene` : présence des clés INSEE pour `/api/siret` (préremplissage SIRET) — pas d’appel API ici.
  * `titleQuestionnaireColumns` : colonnes User du questionnaire assurance titre (`ok` déjà là, `added` créées à cet appel, `failed` si l'ALTER est refusé).
  */
@@ -57,7 +57,7 @@ export async function GET() {
     routes: CRON_ROUTES,
     count: CRON_ROUTES.length,
   }
-  const esign = esignEnv()
+  const ged = gedEnv()
   const sirene = getSireneEnvStatus()
   try {
     await prisma.$queryRaw`SELECT 1`
@@ -72,7 +72,7 @@ export async function GET() {
         from: emailFromConfigured() ? "configured" : "missing",
       },
       crons,
-      esign,
+      ged,
       sirene,
     })
   } catch (error) {
@@ -87,7 +87,7 @@ export async function GET() {
           from: emailFromConfigured() ? "configured" : "missing",
         },
         crons,
-        esign,
+        ged,
         sirene,
       },
       { status: 503 }
