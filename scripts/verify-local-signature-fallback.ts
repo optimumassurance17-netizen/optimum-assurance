@@ -3,6 +3,7 @@ import {
   applySignatureToPdf,
   SIGNATURE_STAMP_MAX_HEIGHT_PT,
   SIGNATURE_STAMP_MAX_WIDTH_PT,
+  signatureStampLines,
   signatureStampSize,
 } from "../lib/esign/apply-signature-to-pdf"
 import { signaturePageNotice } from "../lib/esign/signature-page-notice"
@@ -168,6 +169,21 @@ async function main() {
   assert(decoded, "le PDF stocké doit être relu")
   const signed = await applySignatureToPdf(decoded, PNG_DATA_URL, "client@example.com", "2026-10-08T12:00:00.000Z")
   assert(Buffer.from(signed.subarray(0, 5)).toString("latin1") === "%PDF-", "le PDF signé reste un PDF")
+  const stamp = signatureStampLines("client@example.com", "2026-10-08T12:00:00.000Z")
+  assert(stamp[0] === "Signé par client@example.com", "la première ligne nomme le signataire en français")
+  assert(stamp[1] === "le 8 octobre 2026 à 14 h 00, heure de Paris.", "la date est en français, à l'heure de Paris")
+  assert(
+    signatureStampLines("client@example.com", "2026-01-15T12:00:00.000Z")[1] ===
+      "le 15 janvier 2026 à 13 h 00, heure de Paris.",
+    "l'heure d'hiver de Paris est respectée"
+  )
+  assert(
+    signatureStampLines("client@example.com", "pas-une-date")[1] === "Date de signature indisponible.",
+    "une date illisible reste une phrase française"
+  )
+  const stampSource = readFileSync("lib/esign/apply-signature-to-pdf.ts", "utf8")
+  assert(stampSource.includes("heure de Paris"), "la mention du PDF précise l'heure de Paris")
+  assert(!stampSource.includes("Signed by"), "la mention anglaise a disparu")
 
   const widePad = signatureStampSize(560, 200, 595, 842)
   assert(

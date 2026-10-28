@@ -7,9 +7,62 @@ function stripPngBase64(dataUrl: string): Uint8Array {
   return Uint8Array.from(Buffer.from(raw, "base64"))
 }
 
-function sanitizeLine(text: string, maxLen: number): string {
-  const ascii = text.replace(/[^\x20-\x7E]/g, "?")
-  return ascii.length > maxLen ? `${ascii.slice(0, maxLen - 1)}…` : ascii
+const PARIS = "Europe/Paris"
+
+/** Garde les lettres françaises que la police du PDF sait écrire. */
+function keepWinAnsi(text: string): string {
+  let out = ""
+  for (const ch of text.normalize("NFC")) {
+    const code = ch.codePointAt(0) ?? 0
+    if (code === 0x20 || (code >= 0x21 && code <= 0x7e) || (code >= 0xa1 && code <= 0xff)) out += ch
+    else if (ch === "€") out += " EUR "
+    else out += " "
+  }
+  return out.replace(/\s+/g, " ").trim()
+}
+
+function frenchSignatureWhen(signedAtIso: string): string {
+  const date = new Date(signedAtIso)
+  if (Number.isNaN(date.getTime())) return "date de signature indisponible"
+  const day = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: PARIS,
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date)
+  const parts = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: PARIS,
+    hour: "numeric",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date)
+  const hour = String(Number(parts.find((part) => part.type === "hour")?.value ?? "0"))
+  const minute = parts.find((part) => part.type === "minute")?.value ?? "00"
+  return `${day} à ${hour} h ${minute}`
+}
+
+/** Deux lignes entièrement en français, heure de Paris. */
+export function signatureStampLines(email: string, signedAtIso: string): [string, string] {
+  const safeEmail = keepWinAnsi(email) || "signataire"
+  const when = frenchSignatureWhen(signedAtIso)
+  if (when === "date de signature indisponible") {
+    return [`Signé par ${safeEmail}`, "Date de signature indisponible."]
+  }
+  return [`Signé par ${safeEmail}`, `le ${when}, heure de Paris.`]
+}
+
+function fitStampLine(
+  font: { widthOfTextAtSize: (text: string, size: number) => number },
+  line: string,
+  size: number,
+  maxWidth: number
+): string {
+  if (font.widthOfTextAtSize(line, size) <= maxWidth) return line
+  let shown = line
+  while (shown.length > 12 && font.widthOfTextAtSize(`${shown}...`, size) > maxWidth) {
+    shown = shown.slice(0, -1)
+  }
+  return `${shown}...`
 }
 
 /** Taille maximale du trait sur la page, en points PDF (environ 6,3 cm × 2,3 cm). */
@@ -30,7 +83,7 @@ export function signatureStampSize(
 }
 
 /**
- * Ajoute l’image de signature et une ligne de texte sur la première page (coin bas-gauche).
+ * Ajoute l’image de signature et la mention en français sur la première page (coin bas-gauche).
  */
 export async function applySignatureToPdf(
   pdfBytes: Uint8Array,
@@ -60,14 +113,25 @@ export async function applySignatureToPdf(
   page.drawImage(png, { x: imgX, y: imgY, width: drawW, height: drawH })
 
   const font = await doc.embedFont(StandardFonts.Helvetica)
-  const line = sanitizeLine(`Signed by ${email} on ${signedAtIso}`, 200)
-  const textY = Math.max(24, imgY - 18)
-  page.drawText(line, {
-    x: imgX,
-    y: textY,
-    size: 9,
-    font,
-    color: rgb(0.15, 0.15, 0.15),
+  const maxTextWidth = Math.max(120, width - imgX - margin)
+  const lines = signatureStampLines(email, signedAtIso)
+  let textSize = 9
+  while (
+    textSize > 6.5 &&
+    lines.some((line) => font.widthOfTextAtSize(line, textSize) > maxTextWidth)
+  ) {
+    textSize -= 0.5
+  }
+  const color = rgb(0.15, 0.15, 0.15)
+  lines.forEach((line, index) => {
+    const shown = fitStampLine(font, line, textSize, maxTextWidth)
+    page.drawText(shown, {
+      x: imgX,
+      y: imgY - 14 - index * (textSize + 3),
+      size: textSize,
+      font,
+      color,
+    })
   })
 
   return doc.save()
