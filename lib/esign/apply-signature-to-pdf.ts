@@ -12,6 +12,23 @@ function sanitizeLine(text: string, maxLen: number): string {
   return ascii.length > maxLen ? `${ascii.slice(0, maxLen - 1)}…` : ascii
 }
 
+/** Taille maximale du trait sur la page, en points PDF (environ 6,3 cm × 2,3 cm). */
+export const SIGNATURE_STAMP_MAX_WIDTH_PT = 180
+export const SIGNATURE_STAMP_MAX_HEIGHT_PT = 64
+
+/** Ramène le trait dans le cadre, en l’agrandissant s’il a été dessiné petit. */
+export function signatureStampSize(
+  imageWidth: number,
+  imageHeight: number,
+  pageWidth: number,
+  pageHeight: number
+): { width: number; height: number } {
+  const maxW = Math.min(SIGNATURE_STAMP_MAX_WIDTH_PT, Math.max(48, pageWidth * 0.45))
+  const maxH = Math.min(SIGNATURE_STAMP_MAX_HEIGHT_PT, Math.max(24, pageHeight * 0.16))
+  const scale = Math.min(maxW / imageWidth, maxH / imageHeight)
+  return { width: imageWidth * scale, height: imageHeight * scale }
+}
+
 /**
  * Ajoute l’image de signature et une ligne de texte sur la première page (coin bas-gauche).
  */
@@ -29,11 +46,9 @@ export async function applySignatureToPdf(
 
   const pngBytes = stripPngBase64(signaturePngDataUrl)
   const png = await doc.embedPng(pngBytes)
+  if (png.width < 1 || png.height < 1) throw new Error("Signature vide")
 
-  const maxW = Math.min(200, width * 0.45)
-  const scale = maxW / png.width
-  const drawW = png.width * scale
-  const drawH = png.height * scale
+  const { width: drawW, height: drawH } = signatureStampSize(png.width, png.height, width, height)
   const margin = 48
   const imgX = margin
   const imgY = margin

@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { SignDocumentClient } from "@/components/esign/SignDocumentClient"
 import { resolveSignPreview } from "@/lib/esign/resolve-sign-preview"
+import { signaturePageNotice } from "@/lib/esign/signature-page-notice"
 
 function normalizeInternalNext(next: string | string[] | undefined): string | undefined {
   const raw = Array.isArray(next) ? next[0] : next
@@ -43,7 +44,7 @@ export default async function SignDocumentPage({ params, searchParams }: PagePro
         documentId={preview.documentId}
         documentSignedUrl={`/api/sign/local-pdf/${preview.documentId}`}
         afterSignRedirect={afterSignRedirect}
-        notice="Vous signez directement auprès d’Optimum Assurance. Après validation, le parcours continue vers le mandat SEPA."
+        notice={signaturePageNotice(afterSignRedirect)}
       />
     </main>
   )

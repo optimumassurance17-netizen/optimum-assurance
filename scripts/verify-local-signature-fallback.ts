@@ -1,5 +1,11 @@
 import { PDFDocument } from "pdf-lib"
-import { applySignatureToPdf } from "../lib/esign/apply-signature-to-pdf"
+import {
+  applySignatureToPdf,
+  SIGNATURE_STAMP_MAX_HEIGHT_PT,
+  SIGNATURE_STAMP_MAX_WIDTH_PT,
+  signatureStampSize,
+} from "../lib/esign/apply-signature-to-pdf"
+import { signaturePageNotice } from "../lib/esign/signature-page-notice"
 import { readFileSync } from "node:fs"
 import { nextSerialNumero } from "../lib/document-numero"
 import { createSignRequestWithFallback } from "../lib/esign/create-sign-request-with-fallback"
@@ -162,6 +168,34 @@ async function main() {
   assert(decoded, "le PDF stocké doit être relu")
   const signed = await applySignatureToPdf(decoded, PNG_DATA_URL, "client@example.com", "2026-10-08T12:00:00.000Z")
   assert(Buffer.from(signed.subarray(0, 5)).toString("latin1") === "%PDF-", "le PDF signé reste un PDF")
+
+  const widePad = signatureStampSize(560, 200, 595, 842)
+  assert(
+    widePad.width <= SIGNATURE_STAMP_MAX_WIDTH_PT && widePad.height <= SIGNATURE_STAMP_MAX_HEIGHT_PT,
+    "le cadre entier reste dans la taille maximale"
+  )
+  const smallStroke = signatureStampSize(30, 12, 595, 842)
+  assert(
+    smallStroke.height === SIGNATURE_STAMP_MAX_HEIGHT_PT && smallStroke.width <= SIGNATURE_STAMP_MAX_WIDTH_PT,
+    "un petit trait est agrandi jusqu’à une taille lisible"
+  )
+  const tallStroke = signatureStampSize(40, 300, 595, 842)
+  assert(tallStroke.height === SIGNATURE_STAMP_MAX_HEIGHT_PT, "un trait trop haut est limité")
+  assert(tallStroke.width < 40, "la largeur suit la limite de hauteur")
+
+  const sepaNotice = signaturePageNotice("/mandat-sepa")
+  const clientNotice = signaturePageNotice("/espace-client")
+  assert(sepaNotice.includes("mandat SEPA"), "la décennale annonce le mandat SEPA")
+  assert(clientNotice.includes("espace client"), "un devis envoyé à part annonce l’espace client")
+  assert(!clientNotice.includes("mandat SEPA"), "un devis envoyé à part n’annonce pas le mandat SEPA")
+  assert(!signaturePageNotice(undefined).includes("mandat SEPA"), "sans suite prévue, le bandeau n’annonce pas le mandat")
+  const signPage = readFileSync("app/sign/[id]/page.tsx", "utf8")
+  const signClient = readFileSync("components/esign/SignDocumentClient.tsx", "utf8")
+  assert(signPage.includes("signaturePageNotice(afterSignRedirect)"), "la page utilise la suite réelle")
+  assert(!signPage.includes("continue vers le mandat SEPA."), "la page n’annonce plus le mandat pour tous les documents")
+  assert(!signClient.includes("width: 560"), "le cadre n’est plus figé à 560 pixels")
+  assert(signClient.includes("getTrimmedCanvas"), "seul le trait est envoyé, sans le vide autour")
+  assert(signClient.includes("h-48 w-full"), "le cadre suit la largeur de l’écran")
 
   const signedBase64 = Buffer.from(signed).toString("base64")
   const withBinaries = {

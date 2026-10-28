@@ -7,6 +7,17 @@ import type { SignatureCanvas as SignatureCanvasHandle } from "react-signature-c
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/** Le cadre entier contient beaucoup de vide : on n’envoie que le trait, à sa vraie taille. */
+function signaturePng(pad: SignatureCanvasHandle): string {
+  try {
+    const trimmed = pad.getTrimmedCanvas()
+    if (trimmed.width >= 1 && trimmed.height >= 1) return trimmed.toDataURL("image/png")
+  } catch {
+    // Le cadre entier reste une signature valide.
+  }
+  return pad.toDataURL("image/png")
+}
+
 type Props = {
   documentId: string
   documentSignedUrl: string
@@ -48,7 +59,7 @@ export function SignDocumentClient({ documentId, documentSignedUrl, afterSignRed
       return
     }
 
-    const dataUrl = pad.toDataURL("image/png")
+    const dataUrl = signaturePng(pad)
     setLoading(true)
     try {
       const res = await fetch("/api/sign", {
@@ -123,9 +134,7 @@ export function SignDocumentClient({ documentId, documentSignedUrl, afterSignRed
             ref={sigRef}
             penColor="#0f172a"
             canvasProps={{
-              className: "mx-auto block w-full max-w-full touch-none rounded-lg bg-white",
-              width: 560,
-              height: 200,
+              className: "block h-48 w-full max-w-full touch-none rounded-lg bg-white",
             }}
           />
         </div>
