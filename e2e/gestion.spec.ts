@@ -440,6 +440,15 @@ test.describe("Gestion CRM — contrats plateforme", () => {
     })
 
     await page.goto("/gestion")
+    await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toHaveCount(0)
+    await expect(page.getByRole("heading", { name: "Créer un contrat dommage ouvrage" })).toHaveCount(0)
+    await page.getByRole("button", { name: "Graphiques et créations" }).click()
+    await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toBeVisible()
+    await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Devis DO" }).click()
+    await expect(page.getByRole("heading", { name: "Créer un contrat dommage ouvrage" })).toBeVisible()
+    await page.getByRole("button", { name: "Revenir au travail du jour" }).click()
+    await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toHaveCount(0)
+    await page.getByRole("button", { name: "Graphiques et créations" }).click()
     await page.getByRole("combobox").first().selectOption("client_do_1")
     await page.locator('input[type="file"]').setInputFiles({
       name: "devis.pdf",
@@ -998,6 +1007,9 @@ test.describe("Gestion CRM — parcours admin (optionnel)", () => {
     await expect(page.getByRole("heading", { name: "Gestion CRM" })).toBeVisible()
 
     await expect(page.getByRole("navigation", { name: "Accès rapide sections gestion" })).toBeVisible()
+    await expect(page.getByLabel("Recherche fiche client")).toBeVisible()
+    await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toHaveCount(0)
+    await page.getByRole("button", { name: "Graphiques et créations" }).click()
     await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toBeVisible()
   })
 })

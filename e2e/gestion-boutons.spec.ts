@@ -235,6 +235,9 @@ test.describe("Gestion — boutons d'action", () => {
 
     await page.goto("/gestion")
     await expect(page.getByRole("heading", { name: "Gestion CRM" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Actions du jour (automatique)" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toHaveCount(0)
+    await expect(page.getByRole("heading", { name: "Créer un avenant" })).toHaveCount(0)
 
     const exports = page.getByRole("toolbar", { name: "Exports du tableau de bord" })
     for (const name of ["Export paiements", "Export clients"]) {
@@ -300,6 +303,35 @@ test.describe("Gestion — boutons d'action", () => {
     expect(calls).toEqual(
       expect.arrayContaining(["access:client_do_1", "quote", "documents", "payment", "validate-do-payment"])
     )
+  })
+
+  test("Sur mobile, la gestion s'ouvre sur le travail du jour", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await mockAdmin(page)
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildDashboard()),
+      })
+    })
+
+    await page.goto("/gestion")
+    const openTools = page.getByRole("button", { name: "Graphiques et créations" })
+    await openTools.scrollIntoViewIfNeeded()
+    await expectInsideViewport(openTools)
+    await expect(page.getByRole("heading", { name: "Actions du jour (automatique)" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toHaveCount(0)
+    await expect(page.getByRole("heading", { name: "Créer un avenant" })).toHaveCount(0)
+
+    await openTools.click()
+    await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toBeVisible()
+    await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Avenant" }).click()
+    await expect(page.locator("#creer-avenant")).toBeInViewport()
+
+    await page.getByRole("button", { name: "Revenir au travail du jour" }).click()
+    await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toHaveCount(0)
+    await expect(page.locator("#actions-du-jour")).toBeVisible()
   })
 
   test("La fiche client déclenche chaque action de la barre", async ({ page }) => {

@@ -2,6 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
+const GESTION_OUTIL_IDS = new Set([
+  "devis-pdf-personnalise",
+  "stats-gestion",
+  "funnel-conversion",
+  "pilotage-commercial-v2",
+  "comptabilite-v2",
+  "devis-decennale-manuel",
+  "devis-do-manuel",
+  "rc-fabriquant-contrat",
+  "creer-avenant",
+])
+
+function gestionOutilIdFromHash(hash: string): string | null {
+  const id = hash.replace(/^#/, "")
+  return GESTION_OUTIL_IDS.has(id) ? id : null
+}
+
 function mapTypeOuvrageToConstruction(typeOuvrage?: string): string {
   const map: Record<string, string> = {
     maison_individuelle: "Maison unifamiliale",
@@ -580,6 +597,8 @@ export default function GestionPage() {
   const [devisDecUserFilter, setDevisDecUserFilter] = useState("")
   const [devisDecSubmitting, setDevisDecSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [outilsOuverts, setOutilsOuverts] = useState(false)
+  const [outilScroll, setOutilScroll] = useState<{ id: string; n: number } | null>(null)
   const [docTypeFilter, setDocTypeFilter] = useState<string>("all")
   const [actionsFilter, setActionsFilter] = useState<"all" | "high" | "overdue72h">("all")
   const [signatureFlowFilter, setSignatureFlowFilter] = useState<
@@ -685,6 +704,48 @@ export default function GestionPage() {
     []
   )
 
+  const ouvrirOutil = useCallback((id: string) => {
+    setOutilsOuverts(true)
+    setOutilScroll((prev) => ({ id, n: (prev?.n ?? 0) + 1 }))
+    const nextHash = `#${id}`
+    if (window.location.hash !== nextHash) {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${nextHash}`)
+    }
+  }, [])
+
+  const revenirAuTravail = useCallback(() => {
+    setOutilsOuverts(false)
+    setOutilScroll(null)
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`)
+    window.setTimeout(() => {
+      document.getElementById("recherche-gestion")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 60)
+  }, [])
+
+  useEffect(() => {
+    if (!outilScroll || !outilsOuverts || loading) return
+    const id = outilScroll.id
+    const timer = window.setTimeout(() => {
+      const target = document.getElementById(id)
+      if (!target) return
+      target.scrollIntoView({ behavior: "smooth", block: "start" })
+      setOutilScroll(null)
+    }, 60)
+    return () => window.clearTimeout(timer)
+  }, [outilScroll, outilsOuverts, loading])
+
+  useEffect(() => {
+    const openFromLocation = () => {
+      const id = gestionOutilIdFromHash(window.location.hash)
+      if (!id) return
+      setOutilsOuverts(true)
+      setOutilScroll((prev) => ({ id, n: (prev?.n ?? 0) + 1 }))
+    }
+    openFromLocation()
+    window.addEventListener("hashchange", openFromLocation)
+    return () => window.removeEventListener("hashchange", openFromLocation)
+  }, [])
+
   const prefillDevisDoFromLead = (leadId: string) => {
     const lead = data?.devisDoLeads?.find((item) => item.id === leadId)
     if (!lead) return
@@ -738,9 +799,7 @@ export default function GestionPage() {
         operationLines,
       }
     })
-    window.setTimeout(() => {
-      document.getElementById("devis-do-manuel")?.scrollIntoView({ behavior: "smooth", block: "start" })
-    }, 50)
+    ouvrirOutil("devis-do-manuel")
   }
 
   const handleCreateLeadAccount = async (leadId: string, leadType: string) => {
@@ -858,14 +917,9 @@ export default function GestionPage() {
       } else {
         setCustomDevisCoverageYears("10")
       }
-      window.setTimeout(() => {
-        document.getElementById("devis-pdf-personnalise")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        })
-      }, 50)
+      ouvrirOutil("devis-pdf-personnalise")
     },
-    []
+    [ouvrirOutil]
   )
 
   const [rcContratLeadId, setRcContratLeadId] = useState("")
@@ -2190,7 +2244,7 @@ export default function GestionPage() {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-10">
         {data && (
           <>
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start">
+            <div id="recherche-gestion" className="grid scroll-mt-24 gap-3 xl:grid-cols-[minmax(0,1fr)_24rem] xl:items-start">
               <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <input
@@ -2229,44 +2283,25 @@ export default function GestionPage() {
               aria-label="Accès rapide sections gestion"
             >
               <span className="text-xs text-gray-500 w-full sm:w-auto sm:mr-1">Accès rapide</span>
-              <a
-                  href="#devis-pdf-personnalise"
-                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              <button
+                type="button"
+                aria-pressed={outilsOuverts}
+                onClick={() => {
+                  if (outilsOuverts) revenirAuTravail()
+                  else ouvrirOutil("devis-pdf-personnalise")
+                }}
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2563eb] text-white border border-[#1d4ed8] hover:bg-[#1d4ed8]"
               >
-                Devis PDF perso
-              </a>
-              <a
-                href="#stats-gestion"
-                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
-              >
-                Indicateurs
-              </a>
-              <a
-                href="#pilotage-commercial-v2"
-                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#0b3b2f] text-emerald-100 border border-emerald-800/80 hover:bg-[#104536]"
-              >
-                Pilotage commercial V2
-              </a>
-              <a
-                href="#funnel-conversion"
-                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#123524] text-emerald-100 border border-emerald-700/70 hover:bg-[#17452e]"
-              >
-                Funnel conversion
-              </a>
-              <a
-                href="#comptabilite-v2"
-                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#312e81] text-indigo-100 border border-indigo-700/80 hover:bg-[#3730a3]"
-              >
-                Comptabilité & impayés V2
-              </a>
-              {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
+                {outilsOuverts ? "Revenir au travail du jour" : "Graphiques et créations"}
+              </button>
+              {data.dashboardActionsSummary ? (
                 <a
                   href="#actions-du-jour"
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#4a2c08] text-amber-100 border border-amber-700/70 hover:bg-[#5c3710]"
                 >
                   Actions du jour
                 </a>
-              )}
+              ) : null}
               <a
                 href="#clients"
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
@@ -2278,18 +2313,6 @@ export default function GestionPage() {
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
               >
                 Signatures
-              </a>
-              <a
-                href="#devis-decennale-manuel"
-                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
-              >
-                Devis déc. manuel
-              </a>
-              <a
-                href="#devis-do-manuel"
-                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
-              >
-                Devis DO
               </a>
               {(data.devisDoLeads?.length ?? 0) > 0 && (
                 <a
@@ -2347,12 +2370,6 @@ export default function GestionPage() {
                   Études
                 </a>
               )}
-              <a
-                href="#rc-fabriquant-contrat"
-                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
-              >
-                Contrat RC
-              </a>
               {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
                 <a
                   href="#rc-fabriquant-leads"
@@ -2369,7 +2386,99 @@ export default function GestionPage() {
                   Assurance titre
                 </a>
               )}
+              <a
+                href="#devis-pdf-personnalise"
+                onClick={(event) => {
+                  event.preventDefault()
+                  ouvrirOutil("devis-pdf-personnalise")
+                }}
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Devis PDF perso
+              </a>
+              <a
+                href="#stats-gestion"
+                onClick={(event) => {
+                  event.preventDefault()
+                  ouvrirOutil("stats-gestion")
+                }}
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Indicateurs
+              </a>
+              <a
+                href="#pilotage-commercial-v2"
+                onClick={(event) => {
+                  event.preventDefault()
+                  ouvrirOutil("pilotage-commercial-v2")
+                }}
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#0b3b2f] text-emerald-100 border border-emerald-800/80 hover:bg-[#104536]"
+              >
+                Pilotage commercial V2
+              </a>
+              <a
+                href="#funnel-conversion"
+                onClick={(event) => {
+                  event.preventDefault()
+                  ouvrirOutil("funnel-conversion")
+                }}
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#123524] text-emerald-100 border border-emerald-700/70 hover:bg-[#17452e]"
+              >
+                Funnel conversion
+              </a>
+              <a
+                href="#comptabilite-v2"
+                onClick={(event) => {
+                  event.preventDefault()
+                  ouvrirOutil("comptabilite-v2")
+                }}
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#312e81] text-indigo-100 border border-indigo-700/80 hover:bg-[#3730a3]"
+              >
+                Comptabilité & impayés V2
+              </a>
+              <a
+                href="#devis-decennale-manuel"
+                onClick={(event) => {
+                  event.preventDefault()
+                  ouvrirOutil("devis-decennale-manuel")
+                }}
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Devis déc. manuel
+              </a>
+              <a
+                href="#devis-do-manuel"
+                onClick={(event) => {
+                  event.preventDefault()
+                  ouvrirOutil("devis-do-manuel")
+                }}
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Devis DO
+              </a>
+              <a
+                href="#rc-fabriquant-contrat"
+                onClick={(event) => {
+                  event.preventDefault()
+                  ouvrirOutil("rc-fabriquant-contrat")
+                }}
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Contrat RC
+              </a>
+              <a
+                href="#creer-avenant"
+                onClick={(event) => {
+                  event.preventDefault()
+                  ouvrirOutil("creer-avenant")
+                }}
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Avenant
+              </a>
             </nav>
+            {outilsOuverts ? (
+            <>
             <section
               id="devis-pdf-personnalise"
               className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 scroll-mt-24"
@@ -3293,8 +3402,10 @@ export default function GestionPage() {
                 </div>
               </section>
             )}
+            </>
+            ) : null}
 
-            {data.dashboardActionsSummary && (data.dashboardActionsSummary.total ?? 0) > 0 && (
+            {data.dashboardActionsSummary ? (
               <section id="actions-du-jour" className="scroll-mt-24 bg-[#252525] rounded-xl p-5 border border-amber-700/60">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <h2 className="text-lg font-semibold text-white">Actions du jour (automatique)</h2>
@@ -3407,7 +3518,9 @@ export default function GestionPage() {
                 <div className="space-y-2">
                   {filteredDashboardActions.length === 0 ? (
                     <div className="rounded-lg border border-gray-700 bg-[#1f1f1f] px-3 py-2 text-sm text-gray-300">
-                      Aucune action pour ce filtre.
+                      {(data.dashboardActionsSummary?.total ?? 0) === 0
+                        ? "Rien à traiter pour le moment."
+                        : "Aucune action pour ce filtre."}
                     </div>
                   ) : (
                     filteredDashboardActions.map((a) => (
@@ -3541,7 +3654,7 @@ export default function GestionPage() {
                   )}
                 </div>
               </section>
-            )}
+            ) : null}
           </>
         )}
 
@@ -4462,6 +4575,8 @@ export default function GestionPage() {
           </section>
         )}
 
+        {outilsOuverts ? (
+        <>
         {/* Devis décennale — saisie manuelle puis envoi lien /sign depuis la fiche document */}
         <section id="devis-decennale-manuel" className="scroll-mt-24">
           <h2 className="text-lg font-semibold text-white mb-4">Devis décennale (manuel)</h2>
@@ -5052,6 +5167,8 @@ export default function GestionPage() {
             {rcContratGenerating ? "Génération…" : "Générer le contrat"}
           </button>
         </section>
+        </>
+        ) : null}
 
         {/* Demandes devis DO en attente */}
         {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
@@ -5271,12 +5388,7 @@ export default function GestionPage() {
                               type="button"
                               onClick={() => {
                                 selectRcContratLead(d.id)
-                                window.setTimeout(() => {
-                                  document.getElementById("rc-fabriquant-contrat")?.scrollIntoView({
-                                    behavior: "smooth",
-                                    block: "start",
-                                  })
-                                }, 50)
+                                ouvrirOutil("rc-fabriquant-contrat")
                               }}
                               className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-teal-400/70 text-teal-50 hover:bg-teal-900/40"
                             >
@@ -5565,8 +5677,8 @@ export default function GestionPage() {
           </section>
         )}
 
-        {/* Avenants */}
-        <section>
+        {outilsOuverts ? (
+        <section id="creer-avenant" className="scroll-mt-24">
           <h2 className="text-lg font-semibold text-white mb-4">Créer un avenant</h2>
           <form onSubmit={handleCreateAvenant} className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 max-w-xl">
             <div>
@@ -5653,6 +5765,7 @@ export default function GestionPage() {
             </button>
           </form>
         </section>
+        ) : null}
 
         {/* Liste des avenants - historique par client */}
         <section>
