@@ -61,7 +61,7 @@ const checks = [
     name: "programmatic-sitemap",
     path: "/sitemap-programmatic.xml",
     contentType: /application\/xml|text\/xml/i,
-    mustContain: ["<urlset"],
+    mustContain: ["<urlset", "<url>", "<loc>https://www.optimum-assurance.fr</loc>"],
     mustNotContain: ["/assurance-decennale/", "/dommage-ouvrage/"],
   },
   {
