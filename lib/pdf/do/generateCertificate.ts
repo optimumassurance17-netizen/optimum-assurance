@@ -7,7 +7,7 @@ import { loadAccelerantLogoImage } from "../shared/accelerantLogo"
 import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
-import { embedVerificationQr } from "../shared/qrCode"
+import { drawAttestationQrRow, embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { doConstructionAddressLine, doGuaranteeAmountLine } from "@/lib/do-attestation-facts"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
@@ -40,6 +40,7 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
     certificateActive ? "Document officiel" : "Non payé / non actif",
     accelerantLogo
   )
+  y = drawAttestationQrRow(page, qrImage, font, fontBold, y, verifyUrl)
   if (!certificateActive) {
     y = drawWrappedText(
       page,
@@ -304,28 +305,7 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
   y -= 12
   y = drawWrappedText(page, ANTI_FRAUD_LINE, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, fontBold, 9, 12, PDF_COLORS.primary)
   y -= 10
-  y = drawWrappedText(page, ATTESTATION_WARNING, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, fontBold, 9, 12)
-  y -= 16
-
-  const qrSize = 100
-  page.drawImage(qrImage, {
-    x: PDF_PAGE.marginX,
-    y: y - qrSize,
-    width: qrSize,
-    height: qrSize,
-  })
-  y = y - qrSize - 8
-  y = drawWrappedText(
-    page,
-    `Vérification : ${verifyUrl}`,
-    PDF_PAGE.marginX,
-    y,
-    PDF_PAGE.contentWidth,
-    font,
-    8,
-    10,
-    PDF_COLORS.muted
-  )
+  drawWrappedText(page, ATTESTATION_WARNING, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, fontBold, 9, 12)
 
   return finalizeWithFooters(pdfDoc, font, fontBold)
 }

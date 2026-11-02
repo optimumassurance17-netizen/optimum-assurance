@@ -59,6 +59,22 @@ function chunkLinesByLength(lines: readonly string[], maxChars: number): string[
   return chunks
 }
 
+function AttestationQrBlock({ dataUri, url }: { dataUri?: string; url?: string }) {
+  if (!dataUri) return null
+  return (
+    <View style={{ flexDirection: "row", marginTop: 2, marginBottom: 10, alignItems: "center" }}>
+      {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
+      <Image src={dataUri} style={{ width: 68, height: 68, marginRight: 10 }} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold", color: "#1e40af" }}>
+          Vérification en ligne
+        </Text>
+        {url ? <Text style={{ fontSize: 7, lineHeight: 1.35, color: "#475569" }}>{url}</Text> : null}
+      </View>
+    </View>
+  )
+}
+
 function CpLines({ lines }: { lines: readonly string[] }) {
   return (
     <View style={{ marginTop: 8 }}>
@@ -214,6 +230,7 @@ export function AttestationPDFPage({
       <PdfBrandHeader tagline="Assurance décennale professionnelle" />
       <Text style={pdfTheme.h2Center}>ATTESTATION D&apos;ASSURANCE</Text>
       <Text style={[pdfTheme.subtitleCenter, { color: "#2563eb", fontFamily: "Helvetica-Bold" }]}>N° {numero}</Text>
+      <AttestationQrBlock dataUri={d.verificationQrDataUri} url={d.verificationUrl} />
       <View style={pdfTheme.attestCard}>
         <Text style={pdfTheme.p}>La société Optimum Assurance atteste que :</Text>
         <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#0f172a" }]}>{d.raisonSociale ?? "—"}</Text>
@@ -239,20 +256,6 @@ export function AttestationPDFPage({
         </Text>
         <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         <DecennaleGarantiesPdf data={data} />
-        {d.verificationQrDataUri && (
-          <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
-            {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
-            <Image src={d.verificationQrDataUri} style={{ width: 72, height: 72, marginRight: 10 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold", color: "#1e40af" }}>
-                Vérification en ligne
-              </Text>
-              {d.verificationUrl ? (
-                <Text style={{ fontSize: 7, lineHeight: 1.35, color: "#475569" }}>{d.verificationUrl}</Text>
-              ) : null}
-            </View>
-          </View>
-        )}
       </View>
       <View style={{ flexDirection: "row", marginTop: 14 }}>
         <View
@@ -322,6 +325,7 @@ export function AttestationNominativePDFPage({
       <PdfBrandHeader tagline="Attestation décennale nominative" />
       <Text style={pdfTheme.h2Center}>ATTESTATION D&apos;ASSURANCE NOMINATIVE</Text>
       <Text style={[pdfTheme.subtitleCenter, { color: "#2563eb", fontFamily: "Helvetica-Bold" }]}>N° {numero}</Text>
+      <AttestationQrBlock dataUri={d.verificationQrDataUri} url={d.verificationUrl} />
       <View style={pdfTheme.attestCard}>
         <Text style={pdfTheme.p}>La société Optimum Assurance atteste que :</Text>
         <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#0f172a" }]}>{d.raisonSociale ?? "—"}</Text>
@@ -348,23 +352,6 @@ export function AttestationNominativePDFPage({
         {d.chantierAdresse ? <Text style={pdfTheme.p}>Adresse du chantier : {d.chantierAdresse}</Text> : null}
         {d.objetMission ? <Text style={pdfTheme.p}>Objet / lot : {d.objetMission}</Text> : null}
       </View>
-
-      {d.verificationQrDataUri && (
-        <View style={pdfTheme.section}>
-          <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-            {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
-            <Image src={d.verificationQrDataUri} style={{ width: 72, height: 72, marginRight: 10 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold", color: "#1e40af" }}>
-                Vérification en ligne
-              </Text>
-              {d.verificationUrl ? (
-                <Text style={{ fontSize: 7, lineHeight: 1.35, color: "#475569" }}>{d.verificationUrl}</Text>
-              ) : null}
-            </View>
-          </View>
-        </View>
-      )}
 
       <Text style={[pdfTheme.legalText, { marginTop: 14 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
@@ -408,6 +395,7 @@ export function AttestationDoPDFPage({
       <Text style={[pdfTheme.subtitleCenter, { color: "#2563eb", fontFamily: "Helvetica-Bold" }]}>
         Dommage Ouvrage — N° {numero}
       </Text>
+      <AttestationQrBlock dataUri={d.verificationQrDataUri} url={d.verificationUrl} />
       <View style={pdfTheme.attestCard}>
         <Text style={pdfTheme.p}>La société Optimum Assurance atteste que :</Text>
         <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#0f172a" }]}>{d.raisonSociale ?? "—"}</Text>
@@ -431,20 +419,6 @@ export function AttestationDoPDFPage({
         ) : null}
         <Text style={pdfTheme.p}>Prime : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         <DoGarantiesPdf />
-        {d.verificationQrDataUri && (
-          <View style={{ flexDirection: "row", marginTop: 14, alignItems: "flex-start" }}>
-            {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/Image sans alt ; QR décoratif, URL en texte */}
-            <Image src={d.verificationQrDataUri} style={{ width: 72, height: 72, marginRight: 10 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 8, marginBottom: 4, fontFamily: "Helvetica-Bold", color: "#1e40af" }}>
-                Vérification en ligne
-              </Text>
-              {d.verificationUrl ? (
-                <Text style={{ fontSize: 7, lineHeight: 1.35, color: "#475569" }}>{d.verificationUrl}</Text>
-              ) : null}
-            </View>
-          </View>
-        )}
       </View>
       <Text style={[pdfTheme.legalText, { marginTop: 14 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>

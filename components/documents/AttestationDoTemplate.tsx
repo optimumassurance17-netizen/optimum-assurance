@@ -39,7 +39,17 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
       <h2 className="text-xl font-semibold mb-2 text-center">ATTESTATION D&apos;ASSURANCE</h2>
       <p className="text-center font-semibold mb-8 text-[#2563eb]">Dommage Ouvrage</p>
 
-      <p className="text-center mb-8">N° {numero}</p>
+      <p className="text-center mb-4">N° {numero}</p>
+
+      {verificationUrl && (
+        <div className="mb-8 flex items-center justify-center gap-4">
+          <QRCodeSVG value={verificationUrl} size={80} level="M" />
+          <div className="text-xs text-[#171717]">
+            <p className="font-medium text-black">Vérification en ligne</p>
+            <p>Scannez le QR code pour vérifier l&apos;authenticité de cette attestation</p>
+          </div>
+        </div>
+      )}
 
       <div className="border-2 border-[#E5E0D8] p-6 rounded-xl mb-8">
         <p className="mb-4">
@@ -113,16 +123,6 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
           Conditions d&apos;émission et de validité des attestations
         </a>
       </p>
-
-      {verificationUrl && (
-        <div className="flex items-center gap-4 mb-8 print:flex">
-          <QRCodeSVG value={verificationUrl} size={80} level="M" />
-          <div className="text-xs text-[#171717]">
-            <p className="font-medium text-black">Vérification en ligne</p>
-            <p>Scannez le QR code pour vérifier l&apos;authenticité de cette attestation</p>
-          </div>
-        </div>
-      )}
 
       <p className="text-sm">
         Fait à Cholet, le {new Date().toLocaleDateString("fr-FR")}

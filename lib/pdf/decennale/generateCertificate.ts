@@ -7,7 +7,7 @@ import { loadAccelerantLogoImage } from "../shared/accelerantLogo"
 import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
-import { embedVerificationQr } from "../shared/qrCode"
+import { drawAttestationQrRow, embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
@@ -51,6 +51,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     certificateActive ? "Document officiel" : "Non payé / non actif",
     accelerantLogo
   )
+  y = drawAttestationQrRow(page, qrImage, font, fontBold, y, verifyUrl)
   if (!certificateActive) {
     y = drawWrappedText(
       page,
@@ -251,26 +252,6 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
   y -= 10
   y = drawWrappedText(page, ATTESTATION_WARNING, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, fontBold, 9, 12)
   y -= 16
-
-  const qrSize = 100
-  page.drawImage(qrImage, {
-    x: PDF_PAGE.marginX,
-    y: y - qrSize,
-    width: qrSize,
-    height: qrSize,
-  })
-  y = y - qrSize - 8
-  y = drawWrappedText(
-    page,
-    `Vérification : ${verifyUrl}`,
-    PDF_PAGE.marginX,
-    y,
-    PDF_PAGE.contentWidth,
-    font,
-    8,
-    10,
-    PDF_COLORS.muted
-  )
 
   const signatureTopY = Math.max(y + 26, 152)
   const signatureX = PDF_PAGE.width - PDF_PAGE.marginX - 180
