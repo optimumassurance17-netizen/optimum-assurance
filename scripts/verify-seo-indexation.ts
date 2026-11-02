@@ -10,7 +10,7 @@ import {
 } from "../lib/seo-programmatic/indexability"
 import { fetchProgrammaticSitemapUrls, getDecennaleLocalPage, getDoLocalPage } from "../lib/seo-programmatic/queries"
 import { buildStaticSitemapEntries } from "../lib/sitemap/build-sitemap-entries"
-import { renderUrlset } from "../lib/sitemap/xml"
+import { ensureSitemapEntries, renderUrlset } from "../lib/sitemap/xml"
 
 delete process.env.NEXT_PUBLIC_SUPABASE_URL
 delete process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -65,8 +65,18 @@ async function main() {
 const programmatic = await fetchProgrammaticSitemapUrls()
 assert.deepEqual(programmatic, [])
 assert.deepEqual(listIndexableProgrammaticSitemapPaths(), [])
-assert.equal(renderUrlset([]).includes("/assurance-decennale/"), false)
-assert.equal(renderUrlset([]).includes("<urlset"), true)
+const emptyProgrammatic = renderUrlset(
+  ensureSitemapEntries([], {
+    url: "https://www.optimum-assurance.fr",
+    lastModified: new Date("2026-11-02T00:00:00.000Z"),
+    changeFrequency: "weekly",
+    priority: 1,
+  })
+)
+assert.match(emptyProgrammatic, /<url>/)
+assert.match(emptyProgrammatic, /<loc>https:\/\/www\.optimum-assurance\.fr<\/loc>/)
+assert.equal(emptyProgrammatic.includes("/assurance-decennale/"), false)
+assert.throws(() => renderUrlset([]), /balise url/)
 
 const staticPaths = buildStaticSitemapEntries().map((entry) => new URL(entry.url).pathname)
 for (const required of [
@@ -121,6 +131,8 @@ assert.doesNotMatch(etudePage, /"use client"/)
 assert.match(etudePage, /Demande d’étude décennale/)
 assert.match(etudePage, /ne vaut ni acceptation/)
 assert.doesNotMatch(programmaticRoute, /plombier\/paris/)
+assert.match(programmaticRoute, /ensureSitemapEntries/)
+assert.doesNotMatch(programmaticRoute, /renderUrlset\(\[\]\)/)
 
 console.log("Indexation SEO : vérifications OK")
 }

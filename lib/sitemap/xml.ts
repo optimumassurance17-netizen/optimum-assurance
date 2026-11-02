@@ -36,7 +36,18 @@ function indexEntryToXml(e: SitemapIndexEntry): string {
   </sitemap>`
 }
 
+/**
+ * Google Search Console refuse un urlset sans balise url.
+ * Tant qu'aucune page programmatique n'est indexable, on déclare la page d'accueil.
+ */
+export function ensureSitemapEntries(entries: SitemapEntry[], fallback: SitemapEntry): SitemapEntry[] {
+  return entries.length > 0 ? entries : [fallback]
+}
+
 export function renderUrlset(entries: SitemapEntry[]): string {
+  if (entries.length === 0) {
+    throw new Error("Un sitemap urlset doit contenir au moins une balise url.")
+  }
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${entries.map(entryToXml).join("\n")}
