@@ -599,4 +599,72 @@ test.describe("Gestion — boutons d'action", () => {
       releaseDashboard()
     }
   })
+
+  test("La rectification reste ouverte pendant le chargement", async ({ page }) => {
+    test.setTimeout(60_000)
+    await mockAdmin(page)
+    let releaseInitial = () => {}
+    let releaseRefresh = () => {}
+    const initialGate = new Promise<void>((resolve) => {
+      releaseInitial = resolve
+    })
+    const refreshGate = new Promise<void>((resolve) => {
+      releaseRefresh = resolve
+    })
+    let phase: "initial" | "refresh" = "initial"
+    let refreshStarted = false
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      if (phase === "refresh") refreshStarted = true
+      await (phase === "initial" ? initialGate : refreshGate)
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          users: [],
+          insuranceContracts: [
+            {
+              id: "contract_do_1",
+              contractNumber: "DO-2026-001",
+              productType: "do",
+              clientName: "Client DO",
+              userId: "client_do_1",
+              premium: 2400,
+              status: "approved",
+              paidAt: null,
+              createdAt: "2026-06-09T08:00:00.000Z",
+              user: { id: "client_do_1", email: "client-do@example.com", raisonSociale: "Client DO" },
+            },
+          ],
+          payments: [],
+          pendingSignatures: [],
+        }),
+      })
+    })
+
+    try {
+      await page.goto("/gestion/rectification")
+      await expect(page.getByRole("heading", { name: "Gestion — Rectification 100%" })).toBeVisible()
+      await expect(page.getByRole("link", { name: "← Retour dashboard" })).toBeVisible()
+      await expect(page.getByRole("status")).toHaveText("Chargement des contrats, paiements et signatures…")
+      await expect(page.getByRole("heading", { name: "Rectification contrats plateforme" })).toHaveCount(0)
+      const search = page.getByLabel("Recherche transverse (client, contrat, paiement, signature)")
+      await search.fill("DO-2026")
+
+      releaseInitial()
+      await expect(page.getByText("DO-2026-001")).toBeVisible()
+      await expect(search).toHaveValue("DO-2026")
+      await expect(page.getByRole("status")).toHaveCount(0)
+
+      phase = "refresh"
+      await page.getByRole("button", { name: "Rafraîchir" }).click()
+      await expect.poll(() => refreshStarted).toBe(true)
+      await expect(page.getByText("DO-2026-001")).toBeVisible()
+      releaseRefresh()
+      await expect(page.getByText("Données actualisées.")).toBeVisible()
+      await expect(page.getByText("DO-2026-001")).toBeVisible()
+    } finally {
+      releaseInitial()
+      releaseRefresh()
+    }
+  })
 })

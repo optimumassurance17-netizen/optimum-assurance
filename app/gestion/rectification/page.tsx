@@ -229,10 +229,10 @@ export default function GestionRectificationPage() {
       .slice(0, 120)
   }, [data, query])
 
-  if (status === "loading" || loading) {
+  if (status !== "authenticated") {
     return (
       <main className="gestion-app min-h-screen bg-[#1a1a1a] flex items-center justify-center">
-        <p className="text-gray-200">Chargement rectification…</p>
+        <p className="text-gray-200">Chargement...</p>
       </main>
     )
   }
@@ -253,6 +253,7 @@ export default function GestionRectificationPage() {
             </Link>
             <button
               type="button"
+              disabled={loading}
               onClick={() => {
                 setLoading(true)
                 void (async () => {
@@ -269,7 +270,7 @@ export default function GestionRectificationPage() {
                   }
                 })()
               }}
-              className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-[#2563eb]/70 text-[#93c5fd] hover:bg-[#2563eb]/20"
+              className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-[#2563eb]/70 text-[#93c5fd] hover:bg-[#2563eb]/20 disabled:opacity-50"
             >
               Rafraîchir
             </button>
@@ -279,8 +280,11 @@ export default function GestionRectificationPage() {
 
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         <div className="rounded-xl border border-gray-700 bg-[#222] p-4">
-          <label className="block text-sm text-gray-300 mb-2">Recherche transverse (client, contrat, paiement, signature)</label>
+          <label htmlFor="recherche-rectification" className="block text-sm text-gray-300 mb-2">
+            Recherche transverse (client, contrat, paiement, signature)
+          </label>
           <input
+            id="recherche-rectification"
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -289,6 +293,12 @@ export default function GestionRectificationPage() {
           />
         </div>
 
+        {loading && !data ? (
+          <p className="text-gray-300" role="status">
+            Chargement des contrats, paiements et signatures…
+          </p>
+        ) : (
+        <>
         <section className="rounded-xl border border-gray-700 bg-[#252525] p-5">
           <h2 className="text-lg font-semibold text-white mb-4">Rectification contrats plateforme</h2>
           <div className="space-y-3">
@@ -654,6 +664,8 @@ export default function GestionRectificationPage() {
             )}
           </div>
         </section>
+        </>
+        )}
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
