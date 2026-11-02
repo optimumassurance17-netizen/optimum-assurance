@@ -47,6 +47,8 @@ type ClientQuickSearchProps = {
   placeholder?: string
   helperText?: string
   className?: string
+  query?: string
+  onQueryChange?: (query: string) => void
 }
 
 const SEARCH_DEBOUNCE_MS = 180
@@ -56,10 +58,17 @@ export function ClientQuickSearch({
   placeholder = "Nom, email ou SIRET…",
   helperText,
   className = "",
+  query: queryProp,
+  onQueryChange,
 }: ClientQuickSearchProps) {
   const router = useRouter()
   const inputId = useId()
-  const [query, setQuery] = useState("")
+  const [uncontrolledQuery, setUncontrolledQuery] = useState("")
+  const query = onQueryChange ? (queryProp ?? "") : uncontrolledQuery
+  const setQuery = (value: string) => {
+    if (onQueryChange) onQueryChange(value)
+    else setUncontrolledQuery(value)
+  }
   const [results, setResults] = useState<ClientQuickSearchResult[]>([])
   const [devisDoLeads, setDevisDoLeads] = useState<DoDevisSearchResult[]>([])
   const [contracts, setContracts] = useState<ContractSearchResult[]>([])

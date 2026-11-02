@@ -597,6 +597,7 @@ export default function GestionPage() {
   const [devisDecUserFilter, setDevisDecUserFilter] = useState("")
   const [devisDecSubmitting, setDevisDecSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [ficheSearchQuery, setFicheSearchQuery] = useState("")
   const [outilsOuverts, setOutilsOuverts] = useState(false)
   const [outilScroll, setOutilScroll] = useState<{ id: string; n: number } | null>(null)
   const [docTypeFilter, setDocTypeFilter] = useState<string>("all")
@@ -2017,10 +2018,34 @@ export default function GestionPage() {
     }
   }
 
-  if (status === "loading" || loading) {
+  if (status !== "authenticated") {
     return (
       <main className="gestion-app min-h-screen bg-[#1a1a1a] flex items-center justify-center">
         <p className="text-gray-200">Chargement...</p>
+      </main>
+    )
+  }
+
+  if (!error && !data && loading) {
+    return (
+      <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
+        <header className="border-b border-gray-700 px-6 py-4">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-xl font-semibold text-white">Gestion CRM</h1>
+          </div>
+        </header>
+        <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+          <ClientQuickSearch
+            label="Recherche fiche client"
+            placeholder="Nom, email ou SIRET"
+            helperText="Ouvre une fiche, une demande de devis, ou le contrat dommage ouvrage pour valider le paiement."
+            query={ficheSearchQuery}
+            onQueryChange={setFicheSearchQuery}
+          />
+          <p className="text-gray-300" role="status">
+            Chargement du travail du jour…
+          </p>
+        </div>
       </main>
     )
   }
@@ -2276,6 +2301,8 @@ export default function GestionPage() {
                 label="Recherche fiche client"
                 placeholder="Nom, email ou SIRET"
                 helperText="Ouvre une fiche, une demande de devis, ou le contrat dommage ouvrage pour valider le paiement."
+                query={ficheSearchQuery}
+                onQueryChange={setFicheSearchQuery}
               />
             </div>
             <nav

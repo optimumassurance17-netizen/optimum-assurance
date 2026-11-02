@@ -545,4 +545,58 @@ test.describe("Gestion — boutons d'action", () => {
     )
     await expect(result.getByRole("button", { name: "Valider le paiement" })).toBeVisible()
   })
+
+  test("La recherche fiche reste disponible pendant le chargement du tableau", async ({ page }) => {
+    test.setTimeout(60_000)
+    await mockAdmin(page)
+    let releaseDashboard = () => {}
+    const dashboardGate = new Promise<void>((resolve) => {
+      releaseDashboard = resolve
+    })
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await dashboardGate
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildDashboard()),
+      })
+    })
+    await page.route("**/api/gestion/clients/search?**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          results: [
+            {
+              id: "client_gokse",
+              email: "sci@example.com",
+              raisonSociale: "SCI Gokse",
+              siret: null,
+            },
+          ],
+          devisDoLeads: [],
+          contracts: [],
+        }),
+      })
+    })
+
+    try {
+      await page.goto("/gestion")
+      await expect(page.getByRole("heading", { name: "Gestion CRM" })).toBeVisible()
+      await expect(page.getByRole("status")).toHaveText("Chargement du travail du jour…")
+      await expect(page.getByRole("button", { name: "Export clients" })).toHaveCount(0)
+      const search = page.getByLabel("Recherche fiche client")
+      await search.fill("gokse")
+      await expect(page.getByRole("link", { name: /SCI Gokse/ })).toBeVisible()
+
+      releaseDashboard()
+      await expect(page.getByRole("heading", { name: "Actions du jour (automatique)" })).toBeVisible()
+      await expect(search).toHaveValue("gokse")
+      await expect(page.getByRole("link", { name: /SCI Gokse/ })).toBeVisible()
+      await expect(page.getByLabel("Recherche fiche client")).toHaveCount(1)
+      await expect(page.getByRole("status")).toHaveCount(0)
+    } finally {
+      releaseDashboard()
+    }
+  })
 })
