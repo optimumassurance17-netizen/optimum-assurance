@@ -785,6 +785,7 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
     })
 
     await page.goto("/gestion/clients/client_1")
+    await page.getByRole("button", { name: "Questionnaires et conformité" }).click()
     await expect(page.getByRole("heading", { name: "Conformité DDA" })).toBeVisible()
     await expect(page.getByText("Devoir de conseil confirmé")).toBeVisible()
     await expect(page.getByText("Besoins RC fabricant enregistrés")).toBeVisible()
@@ -898,6 +899,7 @@ test.describe("Gestion CRM — Sirene", () => {
 
     await page.goto("/gestion/clients/client_1")
     await expect(page.getByRole("heading", { name: "Fiche client" })).toBeVisible()
+    await page.getByRole("button", { name: "Modifier les coordonnées" }).click()
 
     const siretField = page.locator("label").filter({ hasText: /^SIRET$/ }).first().locator("xpath=..")
     await siretField.locator("input").fill("73282932000074")
@@ -978,6 +980,7 @@ test.describe("Gestion CRM — Sirene", () => {
     await page.getByRole("link", { name: /Beta Conseil/ }).click()
 
     await expect(page).toHaveURL(/\/gestion\/clients\/client_2/)
+    await page.getByRole("button", { name: "Modifier les coordonnées" }).click()
     const emailInput = page.locator("label").filter({ hasText: /^Email \(connexion\)$/ }).first().locator("xpath=..").locator("input")
     const raisonInput = page.locator("label").filter({ hasText: /^Raison sociale$/ }).first().locator("xpath=..").locator("input")
     await expect(emailInput).toHaveValue("autre@example.com")
