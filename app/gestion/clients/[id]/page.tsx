@@ -369,6 +369,8 @@ export default function ClientDetailPage() {
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileSireneLoading, setProfileSireneLoading] = useState(false)
   const [profileSireneError, setProfileSireneError] = useState<string | null>(null)
+  const [coordonneesOuvertes, setCoordonneesOuvertes] = useState(false)
+  const [dossierComplet, setDossierComplet] = useState(false)
   const [devisAutonomySaving, setDevisAutonomySaving] = useState(false)
   const [doQuoteChantier, setDoQuoteChantier] = useState("")
   const [doQuoteCost, setDoQuoteCost] = useState("")
@@ -954,9 +956,43 @@ export default function ClientDetailPage() {
             </div>
           </div>
           <p className="text-xs text-gray-200 mb-4">
-            Client depuis le {new Date(user.createdAt).toLocaleDateString("fr-FR")} — modifiez les coordonnées compte
-            (connexion, facturation) ci-dessous.
+            Client depuis le {new Date(user.createdAt).toLocaleDateString("fr-FR")}. La fiche s&apos;ouvre sur le
+            dossier. Les coordonnées et les questionnaires restent à un clic.
           </p>
+          <nav className="mb-4 flex flex-wrap gap-2" aria-label="Accès rapide de la fiche">
+            <a href="#signature-contrat" className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:text-white">
+              Signature
+            </a>
+            <a href="#documents-client" className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:text-white">
+              Documents
+            </a>
+            <a href="#echeances-client" className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:text-white">
+              Échéances
+            </a>
+            <a href="#paiements-client" className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:text-white">
+              Paiements
+            </a>
+            <a href="#supprimer-fiche" className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-red-950/40 text-red-100 border border-red-800/70 hover:bg-red-900/40">
+              Supprimer
+            </a>
+          </nav>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-700 bg-[#1a1a1a] px-3 py-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white">{user.raisonSociale || "Sans raison sociale"}</p>
+              <p className="text-xs text-gray-300 break-all">
+                {user.email}
+                {user.siret ? ` · ${user.siret}` : ""}
+              </p>
+            </div>
+            <button
+              type="button"
+              aria-pressed={coordonneesOuvertes}
+              onClick={() => setCoordonneesOuvertes((open) => !open)}
+              className="text-xs sm:text-sm px-3 py-2 rounded-lg border border-[#2563eb]/70 text-[#93c5fd] hover:bg-[#2563eb]/20"
+            >
+              {coordonneesOuvertes ? "Masquer les coordonnées" : "Modifier les coordonnées"}
+            </button>
+          </div>
           <div className="mb-4 rounded-xl border border-gray-700 bg-[#202020] p-4">
             <ClientQuickSearch
               label="Recherche rapide d'une autre fiche client"
@@ -964,6 +1000,8 @@ export default function ClientDetailPage() {
               helperText="Ouvre une autre fiche client sans revenir au dashboard."
             />
           </div>
+          {coordonneesOuvertes ? (
+          <>
           {questionnaireProfilePrefill && questionnaireProfilePrefill.sources.length > 0 ? (
             <div className="mb-4 rounded-lg border border-sky-800/60 bg-sky-950/20 p-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1199,9 +1237,22 @@ export default function ClientDetailPage() {
               </button>
             </div>
           </form>
+          </>
+          ) : null}
         </section>
 
-        <section className="bg-[#252525] rounded-xl p-6 border border-gray-700">
+        <div>
+          <button
+            type="button"
+            aria-pressed={dossierComplet}
+            onClick={() => setDossierComplet((open) => !open)}
+            className="text-sm px-3 py-2 rounded-lg border border-gray-600 text-gray-100 hover:border-[#2563eb]"
+          >
+            {dossierComplet ? "Masquer questionnaires et conformité" : "Questionnaires et conformité"}
+          </button>
+        </div>
+        {dossierComplet ? (
+        <section id="questionnaires-conformite" className="scroll-mt-24 bg-[#252525] rounded-xl p-6 border border-gray-700">
           <h2 className="text-lg font-semibold text-white mb-2">
             Autorisation de modification du devis
           </h2>
@@ -1344,8 +1395,9 @@ export default function ClientDetailPage() {
             </div>
           </div>
         </section>
+        ) : null}
 
-        {(user.doInitialQuestionnaireJson?.trim() || user.doEtudeQuestionnaireJson?.trim()) && (
+        {dossierComplet && (user.doInitialQuestionnaireJson?.trim() || user.doEtudeQuestionnaireJson?.trim()) && (
           <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4">
             <h2 className="text-lg font-semibold text-white">Questionnaires dommage ouvrage</h2>
             <p className="text-xs text-gray-400">
@@ -1493,7 +1545,7 @@ export default function ClientDetailPage() {
           </section>
         ) : null}
 
-        {(ddaConsents.length > 0 || ddaEvents.length > 0) && (
+        {dossierComplet && (ddaConsents.length > 0 || ddaEvents.length > 0) && (
           <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-5">
             <div>
               <h2 className="text-lg font-semibold text-white">Conformité DDA</h2>
@@ -1607,7 +1659,7 @@ export default function ClientDetailPage() {
           </section>
         )}
 
-        {(user.titleInitialQuestionnaireJson?.trim() || user.titleEtudeQuestionnaireJson?.trim()) && (
+        {dossierComplet && (user.titleInitialQuestionnaireJson?.trim() || user.titleEtudeQuestionnaireJson?.trim()) && (
           <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4">
             <h2 className="text-lg font-semibold text-white">Questionnaires Assurance titre</h2>
             <p className="text-xs text-gray-400">
@@ -1641,7 +1693,7 @@ export default function ClientDetailPage() {
           </section>
         )}
 
-        <section className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4">
+        <section id="signature-contrat" className="scroll-mt-24 bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-white">Signature du contrat</h2>
             <span
@@ -1923,7 +1975,7 @@ export default function ClientDetailPage() {
           </section>
         ) : null}
 
-        <section>
+        <section id="documents-client" className="scroll-mt-24">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <h2 className="text-lg font-semibold text-white">Documents</h2>
             {data.devisAutonomy?.allowDevisEdition ? (
@@ -2396,7 +2448,7 @@ export default function ClientDetailPage() {
           </div>
         </section>
 
-        <section>
+        <section id="echeances-client" className="scroll-mt-24">
           <h2 className="text-lg font-semibold text-white mb-2">Échéances</h2>
           <p className="text-sm text-gray-300 mb-4">
             Chaque échéance peut être envoyée en règlement par carte bancaire, marquée réglée, ou validée
@@ -2538,7 +2590,7 @@ export default function ClientDetailPage() {
           </div>
         </section>
 
-        <section>
+        <section id="paiements-client" className="scroll-mt-24">
           <h2 className="text-lg font-semibold text-white mb-4">Paiements</h2>
           <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
             {payments.length === 0 ? (
@@ -2587,7 +2639,7 @@ export default function ClientDetailPage() {
           </div>
         </section>
 
-        <section className="border border-red-900/60 rounded-xl p-6 bg-red-950/20">
+        <section id="supprimer-fiche" className="scroll-mt-24 border border-red-900/60 rounded-xl p-6 bg-red-950/20">
           <h2 className="text-lg font-semibold text-red-200 mb-2">Zone sensible</h2>
           <p className="text-sm text-gray-200 mb-4">
             Supprime définitivement le compte, l’accès à l’espace client, les documents décennale / DO, les paiements

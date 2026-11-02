@@ -350,6 +350,8 @@ test.describe("Gestion — boutons d'action", () => {
     await page.locator("#actions-du-jour").getByRole("link", { name: /Contrat approuvé non payé/ }).click()
     await expect(page).toHaveURL(/\/gestion\/clients\/client_do_1/)
     await expect(page.getByRole("heading", { name: "Fiche client" })).toBeVisible()
+    await expect(page.getByText("Client DO", { exact: true })).toBeVisible()
+    await page.getByRole("button", { name: "Modifier les coordonnées" }).click()
     await expect(
       page.locator("label", { hasText: /^Raison sociale$/ }).locator("xpath=following-sibling::input")
     ).toHaveValue("Client DO")
@@ -442,6 +444,8 @@ test.describe("Gestion — boutons d'action", () => {
     })
 
     await page.goto("/gestion/clients/client_1")
+    await expect(page.getByRole("heading", { name: "Autorisation de modification du devis" })).toHaveCount(0)
+    await expect(page.getByRole("heading", { name: "Signature du contrat" })).toBeVisible()
     const toolbar = page.getByRole("toolbar", { name: "Actions de la fiche client" })
     await expect(toolbar).toBeVisible()
     const names = [
@@ -483,8 +487,14 @@ test.describe("Gestion — boutons d'action", () => {
     await page.getByRole("button", { name: "Envoyer", exact: true }).click()
     await expect(page.getByText("Email envoyé à client@example.com")).toBeVisible()
 
+    await page.getByRole("button", { name: "Modifier les coordonnées" }).click()
     await page.getByRole("button", { name: "Enregistrer la fiche" }).click()
     await expect(page.getByText("Fiche enregistrée")).toBeVisible()
+
+    await page.getByRole("button", { name: "Questionnaires et conformité" }).click()
+    await expect(page.getByRole("heading", { name: "Autorisation de modification du devis" })).toBeVisible()
+    await page.getByRole("link", { name: "Supprimer" }).click()
+    await expect(page.getByRole("heading", { name: "Zone sensible" })).toBeInViewport()
 
     expect(calls).toContain("access")
     expect(calls).toContain("attestation")
