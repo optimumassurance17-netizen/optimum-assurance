@@ -87,7 +87,7 @@ export default function EtudeDomainePage() {
               raisonSociale={raisonSociale}
               siret={siret}
               telephone={telephone}
-              intro="Créez votre espace avec cet e-mail pour suivre l’étude de faisabilité et déposer les pièces demandées."
+              intro="Le compte est créé automatiquement avec cet e-mail. Le mot de passe arrive par email."
             />
           </div>
         </div>

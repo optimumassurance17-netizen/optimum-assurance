@@ -325,7 +325,7 @@ export function FormulaireDevisDommageOuvrage() {
           <ol className="text-black text-sm space-y-1 list-decimal list-inside">
             {eligibleOnlineDo ? (
               <>
-                <li>Créer le compte ou se connecter avec le même email</li>
+                <li>Votre espace client s&apos;ouvre automatiquement avec cette adresse</li>
                 <li>Valider la souscription : un virement unique Mollie s&apos;ouvre pour le montant indiqué</li>
                 <li>L&apos;attestation est délivrée après réception des fonds</li>
               </>
@@ -367,8 +367,8 @@ export function FormulaireDevisDommageOuvrage() {
             redirectTo={eligibleOnlineDo ? "/souscription-dommage-ouvrage" : "/espace-client"}
             intro={
               eligibleOnlineDo
-                ? "Vous pouvez créer le compte maintenant, puis finaliser la souscription en ligne avec la même adresse."
-                : "Créez votre espace client pour que l’équipe y ajoute le devis et que vous puissiez déposer les pièces."
+                ? "Le compte est créé automatiquement avec cette adresse. Le mot de passe arrive par email, puis la souscription continue."
+                : "Le compte est créé automatiquement avec cette adresse. Le mot de passe arrive par email, pour déposer les pièces."
             }
           />
         ) : null}

@@ -178,7 +178,7 @@ export function FormulaireRcFabriquant() {
           raisonSociale={data.raisonSociale}
           siret={data.siret}
           telephone={data.telephone}
-          intro="Créez votre espace avec l’e-mail de la demande pour déposer les pièces RC Fabriquant et suivre la proposition."
+          intro="Le compte est créé automatiquement avec l’e-mail de la demande. Le mot de passe arrive par email."
         />
       </div>
     )

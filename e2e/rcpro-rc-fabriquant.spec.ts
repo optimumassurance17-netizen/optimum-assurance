@@ -135,6 +135,16 @@ test.describe("RC Pro et RC fabriquant", () => {
         }),
       })
     })
+    await page.route("**/api/auth/register", async (route) => {
+      const body = route.request().postDataJSON() as { automatic?: boolean; email?: string }
+      expect(body.automatic).toBe(true)
+      expect(body.email).toBe("contact@rc-battery.example")
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Un compte existe déjà avec cet email" }),
+      })
+    })
     await page.route("**/api/devis-rc-fabriquant", async (route) => {
       await route.fulfill({
         status: 200,
@@ -171,7 +181,7 @@ test.describe("RC Pro et RC fabriquant", () => {
 
     await expect(page.getByText("Demande envoyée")).toBeVisible()
     await expect(page.getByText(/Nous avons bien reçu votre demande de devis RC Fabriquant/i)).toBeVisible()
-    await expect(page.getByRole("button", { name: "Créer mon espace client" })).toBeVisible()
+    await expect(page.getByText("Un compte existe déjà avec cet email")).toBeVisible({ timeout: 15000 })
     await expect(page.getByText("contact@rc-battery.example")).toBeVisible()
   })
 })

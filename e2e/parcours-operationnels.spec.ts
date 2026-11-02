@@ -57,6 +57,16 @@ test.describe("Parcours opérationnels décennale et dommage ouvrage", () => {
       })
     })
 
+    await page.route("**/api/auth/register", async (route) => {
+      const body = route.request().postDataJSON() as { automatic?: boolean }
+      expect(body.automatic).toBe(true)
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Un compte existe déjà avec cet email" }),
+      })
+    })
+
     await page.goto("/devis-dommage-ouvrage")
     await dismissCookieBanner(page)
 
@@ -106,7 +116,7 @@ test.describe("Parcours opérationnels décennale et dommage ouvrage", () => {
     await submitButton.click()
 
     await expect(page.getByRole("heading", { name: "Demande envoyée" })).toBeVisible()
-    await expect(page.getByRole("button", { name: "Créer mon espace client" })).toBeVisible()
+    await expect(page.getByText("Un compte existe déjà avec cet email")).toBeVisible({ timeout: 15000 })
     await expect(page.getByRole("link", { name: "Finaliser la souscription en ligne" })).toBeVisible()
 
     await page.getByRole("link", { name: "Finaliser la souscription en ligne" }).click()

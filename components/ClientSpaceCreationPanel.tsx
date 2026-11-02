@@ -1,10 +1,10 @@
 "use client"
 
-import { FormEvent, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { signIn, useSession } from "next-auth/react"
-import { readResponseJson } from "@/lib/read-response-json"
+import { useSession } from "next-auth/react"
+import { createClientAccountAutomatically } from "@/lib/auto-client-account"
 
 type ClientSpaceCreationPanelProps = {
   email: string
@@ -16,11 +16,6 @@ type ClientSpaceCreationPanelProps = {
   ville?: string | null
   redirectTo?: string
   intro?: string
-}
-
-function optionalText(value: string | null | undefined): string | undefined {
-  const normalized = value?.trim()
-  return normalized ? normalized : undefined
 }
 
 export function ClientSpaceCreationPanel({
@@ -36,10 +31,11 @@ export function ClientSpaceCreationPanel({
 }: ClientSpaceCreationPanelProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null)
+  const [phase, setPhase] = useState<"creating" | "created" | "exists" | "error">("creating")
+  const [attempt, setAttempt] = useState(0)
+  const started = useRef(false)
 
   const normalizedEmail = email.trim()
   const loginHref = `/connexion?callbackUrl=${encodeURIComponent(redirectTo)}`
@@ -47,65 +43,56 @@ export function ClientSpaceCreationPanel({
   const sameSession =
     status === "authenticated" && sessionEmail.length > 0 && sessionEmail === normalizedEmail.toLowerCase()
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError(null)
+  useEffect(() => {
+    if (status === "loading" || !normalizedEmail) return
+    if (sameSession || status === "authenticated") return
+    if (started.current) return
+    started.current = true
 
-    if (password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caractères.")
-      return
-    }
-    if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.")
-      return
-    }
-
-    setLoading(true)
-    try {
-      const registerRes = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: normalizedEmail,
-          password,
-          raisonSociale: optionalText(raisonSociale),
-          siret: optionalText(siret),
-          telephone: optionalText(telephone),
-          adresse: optionalText(adresse),
-          codePostal: optionalText(codePostal),
-          ville: optionalText(ville),
-        }),
-      })
-      const registerJson = await readResponseJson<{ error?: string }>(registerRes)
-      if (!registerRes.ok) {
-        throw new Error(registerJson.error || "Création de compte impossible")
+    void createClientAccountAutomatically({
+      email: normalizedEmail,
+      raisonSociale,
+      siret,
+      telephone,
+      adresse,
+      codePostal,
+      ville,
+    }).then((result) => {
+      if (result.ok) {
+        setPhase("created")
+        if (!result.emailSent && result.temporaryPassword) {
+          setTemporaryPassword(result.temporaryPassword)
+          return
+        }
+        router.push(redirectTo)
+        router.refresh()
+        return
       }
-
-      const signInResult = await signIn("credentials", {
-        email: normalizedEmail,
-        password,
-        redirect: false,
-      })
-      if (signInResult?.error) {
-        throw new Error("Compte créé mais connexion échouée. Connectez-vous avec le mot de passe choisi.")
-      }
-
-      router.push(redirectTo)
-      router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur")
-    } finally {
-      setLoading(false)
-    }
-  }
+      setError(result.message)
+      setPhase(result.reason === "exists" ? "exists" : "error")
+    })
+  }, [
+    adresse,
+    codePostal,
+    normalizedEmail,
+    raisonSociale,
+    redirectTo,
+    router,
+    sameSession,
+    siret,
+    status,
+    telephone,
+    ville,
+    attempt,
+  ])
 
   return (
     <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm">
       <p className="text-sm font-semibold uppercase tracking-wide text-[#2563eb]">Espace client</p>
-      <h3 className="mt-2 text-xl font-bold text-slate-900">Créer votre espace pour suivre le dossier</h3>
+      <h3 className="mt-2 text-xl font-bold text-slate-900">Ouverture de votre espace client</h3>
       <p className="mt-2 text-sm leading-relaxed text-slate-600">
         {intro ||
-          "Le compte reprend l’adresse de la demande. Vous pourrez y déposer les pièces et suivre les échanges."}
+          "Le compte est créé automatiquement avec l’adresse de la demande. Le mot de passe arrive par email."}
       </p>
 
       {sameSession ? (
@@ -128,76 +115,49 @@ export function ClientSpaceCreationPanel({
           </div>
         </div>
       ) : (
-        <div className="mt-5 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-          <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <p className="text-sm font-semibold text-slate-900">Créer mon espace client</p>
-            <p className="mt-1 text-sm text-slate-600">
-              Compte associé à <strong>{normalizedEmail}</strong>
-            </p>
-            <div className="mt-4 grid gap-4">
-              <div>
-                <label htmlFor="client-space-password" className="mb-1 block text-sm font-medium text-slate-800">
-                  Mot de passe
-                </label>
-                <input
-                  id="client-space-password"
-                  type="password"
-                  minLength={8}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                  placeholder="Minimum 8 caractères"
-                  required
-                  autoComplete="new-password"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="client-space-password-confirm"
-                  className="mb-1 block text-sm font-medium text-slate-800"
-                >
-                  Confirmer le mot de passe
-                </label>
-                <input
-                  id="client-space-password-confirm"
-                  type="password"
-                  minLength={8}
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                  required
-                  autoComplete="new-password"
-                />
-              </div>
-              {error ? (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                  <p>{error}</p>
-                  {error.toLowerCase().includes("existe déjà") ? (
-                    <Link href={loginHref} className="mt-2 inline-block font-semibold text-[#2563eb] hover:underline">
-                      Se connecter avec ce compte
-                    </Link>
-                  ) : null}
-                </div>
-              ) : null}
-              <button
-                type="submit"
-                disabled={loading}
-                className="rounded-xl bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:bg-slate-300"
+        <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5" aria-live="polite">
+          <p className="text-sm text-slate-600">
+            Compte associé à <strong>{normalizedEmail}</strong>
+          </p>
+          {phase === "creating" ? (
+            <p className="mt-3 text-sm font-semibold text-slate-900">Création de votre espace client...</p>
+          ) : null}
+          {phase === "created" && temporaryPassword ? (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+              <p>L&apos;email n&apos;est pas parti. Conservez ce mot de passe temporaire :</p>
+              <p className="mt-2 font-mono font-semibold">{temporaryPassword}</p>
+              <Link
+                href={redirectTo}
+                className="mt-3 inline-flex rounded-xl bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
               >
-                {loading ? "Création..." : "Créer mon espace client"}
-              </button>
+                Continuer
+              </Link>
             </div>
-          </form>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">Déjà client ?</p>
-            <p className="mt-1 text-sm leading-relaxed text-slate-600">
-              Connectez-vous pour retrouver vos documents, déposer les pièces et suivre le dossier.
-            </p>
-            <Link href={loginHref} className="mt-4 inline-flex items-center text-sm font-semibold text-[#2563eb] hover:underline">
-              J&apos;ai déjà un compte
-            </Link>
-          </div>
+          ) : null}
+          {phase === "created" && !temporaryPassword ? (
+            <p className="mt-3 text-sm font-semibold text-slate-900">Espace ouvert. Redirection...</p>
+          ) : null}
+          {error ? (
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <p>{error}</p>
+              {phase === "exists" ? (
+                <Link href={loginHref} className="mt-2 inline-block font-semibold text-[#2563eb] hover:underline">
+                  Se connecter avec ce compte
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className="mt-3 rounded-xl bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+                  onClick={() => {
+                    started.current = false
+                    setAttempt((value) => value + 1)
+                  }}
+                >
+                  Réessayer
+                </button>
+              )}
+            </div>
+          ) : null}
         </div>
       )}
     </div>

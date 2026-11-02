@@ -34,6 +34,17 @@ test.describe("Assurance titre", () => {
       })
     })
 
+    await page.route("**/api/auth/register", async (route) => {
+      const body = route.request().postDataJSON() as { automatic?: boolean; email?: string }
+      expect(body.automatic).toBe(true)
+      expect(body.email).toBe("marie.dupont@example.com")
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Un compte existe déjà avec cet email" }),
+      })
+    })
+
     await page.goto("/assurance-titre")
     await dismissCookieBanner(page)
 
@@ -85,8 +96,8 @@ test.describe("Assurance titre", () => {
 
     await expect(page.getByText("Demande envoyée")).toBeVisible()
     await expect(page.getByText(/Nous avons bien reçu votre demande d'étude/i)).toBeVisible()
-    await expect(page.getByRole("button", { name: /Créer mon espace client/i })).toBeVisible()
-    await expect(page.getByRole("link", { name: /J'ai déjà un compte/i })).toBeVisible()
+    await expect(page.getByText("Un compte existe déjà avec cet email")).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole("link", { name: "Se connecter avec ce compte" })).toBeVisible()
   })
 
   test("espace client assurance titre redirige vers la connexion si non authentifié", async ({ page }) => {

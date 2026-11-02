@@ -4,6 +4,7 @@ import { Prisma } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { sendAccountCreationMailCopy, sendAccountCreationSummaryAlert } from "@/lib/account-creation-alert"
+import { generateTempPassword, sendClientAccessEmail } from "@/lib/client-access"
 import { duplicateSiretAccountMessage, findClientBySiret, normalizeAccountSiret } from "@/lib/client-account"
 
 function isPlausibleEmail(value: string): boolean {
@@ -24,7 +25,12 @@ export async function POST(request: NextRequest) {
     }
     const body = bodyRaw as Record<string, unknown>
     const email = optionalTrimmed(body.email)?.toLowerCase() ?? ""
-    const password = typeof body.password === "string" ? body.password : ""
+    const automatic = body.automatic === true
+    const password = automatic
+      ? generateTempPassword()
+      : typeof body.password === "string"
+        ? body.password
+        : ""
     const raisonSociale = optionalTrimmed(body.raisonSociale)
     const siretInput = optionalTrimmed(body.siret)
     const siret = normalizeAccountSiret(siretInput) ?? siretInput
@@ -78,23 +84,32 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const template = EMAIL_TEMPLATES.bienvenue(raisonSociale ?? user.email)
-    const welcomeHtml = (template as { html?: string }).html
-    const welcomeEmailSent = await sendEmail({
-      to: user.email,
-      subject: template.subject,
-      text: template.text,
-      html: welcomeHtml,
-    })
+    let welcomeEmailSent = false
+    if (automatic) {
+      welcomeEmailSent = await sendClientAccessEmail({
+        email: user.email,
+        tempPassword: password,
+        mode: "created",
+      })
+    } else {
+      const template = EMAIL_TEMPLATES.bienvenue(raisonSociale ?? user.email)
+      const welcomeHtml = (template as { html?: string }).html
+      welcomeEmailSent = await sendEmail({
+        to: user.email,
+        subject: template.subject,
+        text: template.text,
+        html: welcomeHtml,
+      })
+      await sendAccountCreationMailCopy({
+        clientEmail: user.email,
+        subject: template.subject,
+        text: template.text,
+        html: welcomeHtml,
+      })
+    }
     if (!welcomeEmailSent) {
       console.warn("[auth/register] Email bienvenue non envoyé", { userId: user.id, email: user.email })
     }
-    await sendAccountCreationMailCopy({
-      clientEmail: user.email,
-      subject: template.subject,
-      text: template.text,
-      html: welcomeHtml,
-    })
 
     void sendAccountCreationSummaryAlert({
       source: "register_public",
@@ -115,6 +130,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       id: user.id,
       email: user.email,
+      emailSent: welcomeEmailSent,
+      ...(automatic ? { temporaryPassword: password } : {}),
     })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {

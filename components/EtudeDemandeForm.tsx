@@ -75,7 +75,7 @@ export function EtudeDemandeForm() {
           email={email}
           raisonSociale={donnees?.raisonSociale}
           siret={donnees?.siret}
-          intro="Créez votre espace avec cet e-mail pour recevoir la proposition et déposer le relevé de sinistralité."
+          intro="Le compte est créé automatiquement avec cet e-mail. Le mot de passe arrive par email."
         />
       </div>
     )

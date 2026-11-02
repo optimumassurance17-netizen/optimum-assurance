@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { signIn, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
+import { createClientAccountAutomatically } from "@/lib/auto-client-account"
 import Link from "next/link"
 import { Header } from "@/components/Header"
 import { Stepper } from "@/components/Stepper"
@@ -19,10 +20,14 @@ export default function CreerComptePage() {
   const [data, setData] = useState<
     (SouscriptionData & { signature?: string }) | (DoSouscriptionInsurancePayload & { signature?: string }) | null
   >(null)
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const autoStarted = useRef(false)
+  const continueRef = useRef<
+    (payload: (SouscriptionData & { signature?: string }) | (DoSouscriptionInsurancePayload & { signature?: string })) => Promise<void>
+  >(async () => {})
+  const loggedInRef = useRef<() => Promise<void>>(async () => {})
 
   const continueAfterAccount = async (
     payload: (SouscriptionData & { signature?: string }) | (DoSouscriptionInsurancePayload & { signature?: string }),
@@ -138,61 +143,8 @@ export default function CreerComptePage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-
-    if (password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caractères")
-      return
-    }
-    if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas")
-      return
-    }
-    if (!data?.email) return
-
-    setLoading(true)
-
-    try {
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: data.email,
-            password,
-            raisonSociale: data.raisonSociale,
-            siret: data.siret,
-            adresse: data.adresse,
-            codePostal: data.codePostal,
-            ville: data.ville,
-            telephone: data.telephone,
-          }),
-        })
-
-        const result = await readResponseJson<{ error?: string }>(res)
-
-        if (!res.ok) {
-          throw new Error(result.error || "Erreur lors de la création du compte")
-        }
-
-        const signInResult = await signIn("credentials", {
-          email: data.email,
-          password,
-          redirect: false,
-        })
-
-        if (signInResult?.error) {
-          throw new Error("Compte créé mais connexion échouée")
-        }
-
-      await continueAfterAccount(data, { trackAccount: true })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur")
-    } finally {
-      setLoading(false)
-    }
-  }
+  continueRef.current = continueAfterAccount
+  loggedInRef.current = handleContinueLoggedIn
 
   const sessionEmail = session?.user?.email?.trim().toLowerCase() ?? ""
   const sameSession = Boolean(data?.email) && status === "authenticated" && sessionEmail === data!.email.trim().toLowerCase()
@@ -200,6 +152,44 @@ export default function CreerComptePage() {
   const loginHref = `/connexion?callbackUrl=${encodeURIComponent(
     data && isDoSouscriptionPayload(data) ? "/souscription-dommage-ouvrage" : "/souscription"
   )}`
+
+  useEffect(() => {
+    if (!data?.email || status === "loading" || otherSession) return
+    if (autoStarted.current) return
+    autoStarted.current = true
+
+    if (sameSession) {
+      void loggedInRef.current()
+      return
+    }
+
+    void createClientAccountAutomatically({
+      email: data.email,
+      raisonSociale: data.raisonSociale,
+      siret: data.siret,
+      adresse: data.adresse,
+      codePostal: data.codePostal,
+      ville: data.ville,
+      telephone: data.telephone,
+    }).then(async (result) => {
+      if (!result.ok) {
+        setError(result.message)
+        setLoading(false)
+        return
+      }
+      if (!result.emailSent && result.temporaryPassword) {
+        setTemporaryPassword(result.temporaryPassword)
+        setLoading(false)
+        return
+      }
+      try {
+        await continueRef.current(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erreur")
+        setLoading(false)
+      }
+    })
+  }, [data, otherSession, sameSession, status])
 
   if (!data) {
     return (
@@ -216,10 +206,10 @@ export default function CreerComptePage() {
       <div className="max-w-2xl mx-auto px-6 py-12">
         <Stepper currentStep="compte" />
         <h1 className="text-3xl font-semibold mb-2 text-black">
-          Créer votre espace client
+          Votre espace client
         </h1>
         <p className="text-[#171717] mb-8">
-          Choisissez un mot de passe pour accéder à votre espace client et suivre vos documents.
+          Le compte est créé automatiquement. Le mot de passe est envoyé par email, puis le parcours continue.
         </p>
 
         <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-8">
@@ -267,45 +257,27 @@ export default function CreerComptePage() {
           </div>
         ) : null}
 
-        {!sameSession ? (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block mb-2 font-medium text-black">
-              Mot de passe *
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={8}
-              required
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] outline-none bg-[#e4e4e4]"
-              placeholder="Minimum 8 caractères"
-            />
+        {!sameSession && !otherSession && !error ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6" aria-live="polite">
+            {temporaryPassword ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                <p>L&apos;email n&apos;est pas parti. Conservez ce mot de passe temporaire :</p>
+                <p className="mt-2 font-mono font-semibold">{temporaryPassword}</p>
+                <button
+                  type="button"
+                  onClick={() => void handleContinueLoggedIn()}
+                  disabled={loading}
+                  className="mt-4 w-full bg-[#2563eb] text-white py-3 rounded-xl hover:bg-[#1d4ed8] font-medium disabled:bg-slate-300"
+                >
+                  {loading ? "Poursuite en cours..." : "Continuer"}
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm font-semibold text-slate-900">
+                {loading ? "Création de votre espace client..." : "Préparation du compte..."}
+              </p>
+            )}
           </div>
-
-          <div>
-            <label className="block mb-2 font-medium text-black">
-              Confirmer le mot de passe *
-            </label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              minLength={8}
-              required
-              className="w-full border border-[#d4d4d4] rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] outline-none bg-[#e4e4e4]"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#2563eb] text-white py-4 rounded-xl hover:bg-[#1d4ed8] transition font-medium disabled:bg-slate-300 disabled:cursor-not-allowed"
-          >
-            {loading ? "Création en cours..." : "Créer mon espace et continuer"}
-          </button>
-        </form>
         ) : null}
 
         <p className="text-center text-sm text-[#171717] mt-6 space-x-4">
