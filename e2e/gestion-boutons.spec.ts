@@ -85,11 +85,30 @@ function buildDashboard() {
         lifecyclePayments: [],
       },
     ],
-    dashboardActions: [],
+    dashboardActions: [
+      {
+        id: "ctr-contract_do_1",
+        kind: "approved_unpaid_contract",
+        priority: "high",
+        title: "Contrat approuvé non payé",
+        description: "DO-2026-001 (do) — 30h",
+        href: "/gestion/clients/client_do_1",
+        ageHours: 30,
+      },
+      {
+        id: "lead-dec-lead_dec_1",
+        kind: "decennale_lead_followup",
+        priority: "medium",
+        title: "Lead devis décennale à relancer",
+        description: "lead-sans-compte@example.com — 30h",
+        href: "#leads-decennale",
+        ageHours: 30,
+      },
+    ],
     dashboardActionsSummary: {
-      total: 0,
-      high: 0,
-      medium: 0,
+      total: 2,
+      high: 1,
+      medium: 1,
       overdue72h: 0,
       dismissedToday: 0,
     },
@@ -236,6 +255,15 @@ test.describe("Gestion — boutons d'action", () => {
     await page.goto("/gestion")
     await expect(page.getByRole("heading", { name: "Gestion CRM" })).toBeVisible()
     await expect(page.getByRole("heading", { name: "Actions du jour (automatique)" })).toBeVisible()
+    const actions = page.locator("#actions-du-jour")
+    await expect(actions.getByRole("link", { name: /Contrat approuvé non payé/ })).toHaveAttribute(
+      "href",
+      "/gestion/clients/client_do_1"
+    )
+    await expect(actions.getByText("Ouvre la fiche client")).toBeVisible()
+    await actions.getByRole("link", { name: /Lead devis décennale/ }).click()
+    await expect(page.locator("#leads-decennale")).toBeInViewport()
+    await page.evaluate(() => window.scrollTo(0, 0))
     await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toHaveCount(0)
     await expect(page.getByRole("heading", { name: "Créer un avenant" })).toHaveCount(0)
 
@@ -303,6 +331,28 @@ test.describe("Gestion — boutons d'action", () => {
     expect(calls).toEqual(
       expect.arrayContaining(["access:client_do_1", "quote", "documents", "payment", "validate-do-payment"])
     )
+
+    await page.route("**/api/gestion/clients/client_do_1", async (route) => {
+      if (route.request().method() !== "GET") {
+        await route.fallback()
+        return
+      }
+      const body = buildClient()
+      body.user.id = "client_do_1"
+      body.user.email = "client-do@example.com"
+      body.user.raisonSociale = "Client DO"
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(body),
+      })
+    })
+    await page.locator("#actions-du-jour").getByRole("link", { name: /Contrat approuvé non payé/ }).click()
+    await expect(page).toHaveURL(/\/gestion\/clients\/client_do_1/)
+    await expect(page.getByRole("heading", { name: "Fiche client" })).toBeVisible()
+    await expect(
+      page.locator("label", { hasText: /^Raison sociale$/ }).locator("xpath=following-sibling::input")
+    ).toHaveValue("Client DO")
   })
 
   test("Sur mobile, la gestion s'ouvre sur le travail du jour", async ({ page }) => {

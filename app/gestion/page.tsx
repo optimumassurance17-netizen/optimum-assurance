@@ -3529,34 +3529,57 @@ export default function GestionPage() {
                       className="rounded-lg border border-gray-700 bg-[#1f1f1f] px-3 py-2"
                     >
                       <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-3">
-                        <a
-                          href={a.href}
-                          onClick={(event) => {
-                            if (a.kind !== "do_devis_pending" || !a.href.startsWith("#")) return
-                            event.preventDefault()
-                            const rowId = a.href.slice(1)
-                            setSearchQuery("")
-                            window.setTimeout(() => {
-                              document.getElementById(rowId)?.scrollIntoView({ behavior: "smooth", block: "start" })
-                            }, 50)
-                          }}
-                          className="block min-w-0 flex-1 hover:text-[#2563eb] transition-colors"
-                        >
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${
-                                a.priority === "high"
-                                  ? "bg-red-900/40 text-red-200 border border-red-700/50"
-                                  : "bg-amber-900/40 text-amber-200 border border-amber-700/50"
-                              }`}
-                            >
-                              {a.priority === "high" ? "Haute" : "Moyenne"}
-                            </span>
-                            <span className="text-sm font-medium text-white">{a.title}</span>
-                            <span className="text-xs text-gray-400">{a.ageHours}h</span>
-                          </div>
-                          <p className="text-xs text-gray-300 mt-1">{a.description}</p>
-                        </a>
+                        {a.href.startsWith("/gestion/clients/") ? (
+                          <Link
+                            href={a.href}
+                            className="block min-w-0 flex-1 hover:text-[#2563eb] transition-colors"
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span
+                                className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${
+                                  a.priority === "high"
+                                    ? "bg-red-900/40 text-red-200 border border-red-700/50"
+                                    : "bg-amber-900/40 text-amber-200 border border-amber-700/50"
+                                }`}
+                              >
+                                {a.priority === "high" ? "Haute" : "Moyenne"}
+                              </span>
+                              <span className="text-sm font-medium text-white">{a.title}</span>
+                              <span className="text-xs text-gray-400">{a.ageHours}h</span>
+                            </div>
+                            <p className="text-xs text-gray-300 mt-1">{a.description}</p>
+                            <p className="text-[11px] text-[#93c5fd] mt-1">Ouvre la fiche client</p>
+                          </Link>
+                        ) : (
+                          <a
+                            href={a.href}
+                            onClick={(event) => {
+                              if (a.kind !== "do_devis_pending" || !a.href.startsWith("#")) return
+                              event.preventDefault()
+                              const rowId = a.href.slice(1)
+                              setSearchQuery("")
+                              window.setTimeout(() => {
+                                document.getElementById(rowId)?.scrollIntoView({ behavior: "smooth", block: "start" })
+                              }, 50)
+                            }}
+                            className="block min-w-0 flex-1 hover:text-[#2563eb] transition-colors"
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span
+                                className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded ${
+                                  a.priority === "high"
+                                    ? "bg-red-900/40 text-red-200 border border-red-700/50"
+                                    : "bg-amber-900/40 text-amber-200 border border-amber-700/50"
+                                }`}
+                              >
+                                {a.priority === "high" ? "Haute" : "Moyenne"}
+                              </span>
+                              <span className="text-sm font-medium text-white">{a.title}</span>
+                              <span className="text-xs text-gray-400">{a.ageHours}h</span>
+                            </div>
+                            <p className="text-xs text-gray-300 mt-1">{a.description}</p>
+                          </a>
+                        )}
                         <div className="shrink-0 flex flex-col sm:flex-row items-stretch gap-2">
                           {a.kind === "do_devis_pending" && a.leadId ? (
                             <button

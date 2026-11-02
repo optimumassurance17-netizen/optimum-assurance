@@ -57,6 +57,12 @@ export const maxDuration = 60
 
 /** Limite les listes CRM pour éviter timeouts Vercel / réponses JSON énormes. */
 const DASH_LIST_LIMIT = 3000
+
+/** Ouvre la fiche client quand elle existe. Sinon, reste sur la section de la liste. */
+function ficheClientHref(userId: string | null | undefined, fallback: string): string {
+  const id = typeof userId === "string" ? userId.trim() : ""
+  return id ? `/gestion/clients/${id}` : fallback
+}
 /** Pour le calcul des stats DO (sommes JSON) — plafond pour ne pas charger 100k lignes. */
 const DO_STATS_ATTESTATIONS_CAP = 10_000
 const CONVERSION_EVENTS = [
@@ -897,6 +903,14 @@ export async function GET() {
       dismissedLogs.map((l) => (typeof l.targetId === "string" ? l.targetId : "")).filter(Boolean)
     )
 
+    const clientIdByEmail = new Map<string, string>()
+    for (const user of users) {
+      const email = user.email.trim().toLowerCase()
+      if (email && !clientIdByEmail.has(email)) clientIdByEmail.set(email, user.id)
+    }
+    const clientIdForEmail = (email: string | null | undefined) =>
+      email ? clientIdByEmail.get(email.trim().toLowerCase()) : undefined
+
     const dashboardActions: DashboardAction[] = []
 
     for (const p of pendingSignaturesRaw) {
@@ -909,7 +923,7 @@ export async function GET() {
         priority: ageMs >= overdue72hMs ? "high" : "medium",
         title: "Signature en attente",
         description: `Référence ${p.contractNumero} — ${ageHours}h`,
-        href: p.userId ? `/gestion/clients/${p.userId}` : "#signatures-attente",
+        href: ficheClientHref(p.userId, "#signatures-attente"),
         ageHours,
       })
     }
@@ -925,7 +939,7 @@ export async function GET() {
         priority: ageMs >= overdue72hMs ? "high" : "medium",
         title: "Contrat approuvé non payé",
         description: `${c.contractNumber} (${c.productType}) — ${ageHours}h`,
-        href: "#contrats-plateforme",
+        href: ficheClientHref(c.user?.id ?? c.userId, "#contrats-plateforme"),
         ageHours,
       })
     }
@@ -941,7 +955,7 @@ export async function GET() {
         priority: ageMs >= overdue72hMs ? "high" : "medium",
         title: "Lead devis décennale à relancer",
         description: `${d.email} — ${ageHours}h`,
-        href: "#leads-decennale",
+        href: ficheClientHref(clientIdForEmail(d.email), "#leads-decennale"),
         ageHours,
       })
     }
@@ -957,7 +971,7 @@ export async function GET() {
         priority: ageMs >= overdue72hMs ? "high" : "medium",
         title: "Demande étude à traiter",
         description: `${e.email} — ${ageHours}h`,
-        href: "#etudes-do",
+        href: ficheClientHref(clientIdForEmail(e.email), "#etudes-do"),
         ageHours,
       })
     }
@@ -973,7 +987,7 @@ export async function GET() {
         priority: ageMs >= overdue72hMs ? "high" : "medium",
         title: "Lead RC Fabriquant à traiter",
         description: `${l.email} — ${ageHours}h`,
-        href: "#rc-fabriquant-leads",
+        href: ficheClientHref(l.matchedUser?.id, "#rc-fabriquant-leads"),
         ageHours,
       })
     }
@@ -1018,7 +1032,7 @@ export async function GET() {
         priority: ageMs >= overdue72hMs ? "high" : "medium",
         title: "DDA incomplète (contrat)",
         description: `${c.contractNumber} (${produitLabel}) — manque: ${missing || "preuve"} — ${ageHours}h`,
-        href: userId ? `/gestion/clients/${userId}` : "#contrats-plateforme",
+        href: ficheClientHref(userId, "#contrats-plateforme"),
         ageHours,
         remediation,
       })
@@ -1087,7 +1101,7 @@ export async function GET() {
         priority: ageMs >= overdue72hMs ? "high" : "medium",
         title: "RC Fabriquant sans preuve DDA",
         description: `${l.email} — statut ${statut} — ${ageHours}h`,
-        href: "#rc-fabriquant-leads",
+        href: ficheClientHref(l.matchedUser?.id, "#rc-fabriquant-leads"),
         ageHours,
         remediation,
       })
@@ -1104,7 +1118,7 @@ export async function GET() {
         priority: ageMs >= overdue72hMs ? "high" : "medium",
         title: "Lead Assurance titre à traiter",
         description: `${l.email} — ${ageHours}h`,
-        href: "#assurance-titre-leads",
+        href: ficheClientHref(l.matchedUser?.id, "#assurance-titre-leads"),
         ageHours,
       })
     }
