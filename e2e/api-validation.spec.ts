@@ -181,6 +181,13 @@ test.describe("API validations critiques", () => {
     expect(res.status()).toBe(403)
   })
 
+  test("Gestion création client: route admin protégée sans session", async ({ request }) => {
+    const res = await request.post("/api/gestion/clients/create", {
+      data: { email: "client@example.com", raisonSociale: "Client" },
+    })
+    expect(res.status()).toBe(403)
+  })
+
   test("Gestion création avenant: route admin protégée sans session", async ({ request }) => {
     const res = await request.post("/api/gestion/avenants", {
       data: {

@@ -706,4 +706,95 @@ test.describe("Gestion — boutons d'action", () => {
     await expect(clients.getByText("client-30@example.com")).toBeVisible()
     await expect(clients.getByRole("link", { name: "Fiche client →" })).toHaveCount(1)
   })
+
+  test("Un compte client se crée depuis la gestion et reste choisi pour le devis", async ({ page }) => {
+    await mockAdmin(page)
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildDashboard()),
+      })
+    })
+    let payload: Record<string, unknown> | null = null
+    await page.route("**/api/gestion/clients/create", async (route) => {
+      payload = route.request().postDataJSON() as Record<string, unknown>
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "client_new_1",
+          email: "nouveau@example.com",
+          raisonSociale: "Nouveau Client",
+          siret: "55208131700034",
+          accessMode: "created",
+          emailSent: true,
+        }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await expect(page.getByRole("heading", { name: "Nouveau client" })).toHaveCount(0)
+    await expect(page.getByRole("link", { name: "Nouveau client" })).toHaveCount(0)
+    await page.getByRole("button", { name: "Graphiques et créations" }).click()
+
+    const form = page.locator("#nouveau-client")
+    await expect(form.getByRole("heading", { name: "Nouveau client" })).toBeVisible()
+    await expect(form.getByText("pas un administrateur")).toBeVisible()
+    await form.getByLabel("Email").fill("nouveau@example.com")
+    await form.getByLabel("Raison sociale").fill("Nouveau Client")
+    await form.getByLabel("SIRET").fill("55208131700034")
+    await form.getByLabel("Téléphone").fill("0612345678")
+    await form.getByRole("button", { name: "Créer le compte client" }).click()
+
+    await expect(form.getByRole("status")).toContainText("Compte client créé pour nouveau@example.com")
+    await expect(form.getByRole("status")).toContainText("pas un administrateur")
+    expect(payload).toMatchObject({
+      email: "nouveau@example.com",
+      raisonSociale: "Nouveau Client",
+      siret: "55208131700034",
+      telephone: "0612345678",
+    })
+    expect(payload).not.toHaveProperty("role")
+    await expect(page.locator("#devis-decennale-manuel select").first()).toHaveValue("client_new_1")
+    await expect(page.locator("#devis-do-manuel select[required]")).toHaveValue("client_new_1")
+    await expect(page.locator("#devis-do-manuel input[type='tel']")).toHaveValue("0612345678")
+    await expect(page.locator("#devis-pdf-personnalise select").first()).toHaveValue("client_new_1")
+  })
+
+  test("Un email déjà connu ne change pas le mot de passe et reste choisi pour le devis", async ({ page }) => {
+    await mockAdmin(page)
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(buildDashboard()),
+      })
+    })
+    await page.route("**/api/gestion/clients/create", async (route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: "application/json",
+        body: JSON.stringify({
+          existing: true,
+          id: "client_do_1",
+          email: "client-do@example.com",
+          raisonSociale: "Client DO",
+          error:
+            "Un compte client existe déjà pour cet email. Le mot de passe n'a pas été changé. Choisissez ce client dans le devis.",
+        }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await page.getByRole("button", { name: "Graphiques et créations" }).click()
+    const form = page.locator("#nouveau-client")
+    await form.getByLabel("Email").fill("client-do@example.com")
+    await form.getByLabel("Raison sociale").fill("Client DO")
+    await form.getByRole("button", { name: "Créer le compte client" }).click()
+
+    await expect(form.getByRole("status")).toContainText("mot de passe n'a pas été changé")
+    await expect(page.locator("#devis-decennale-manuel select").first()).toHaveValue("client_do_1")
+    await expect(page.locator("#devis-do-manuel select[required]")).toHaveValue("client_do_1")
+  })
 })

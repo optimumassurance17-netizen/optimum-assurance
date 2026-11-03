@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 const GESTION_OUTIL_IDS = new Set([
+  "nouveau-client",
   "devis-pdf-personnalise",
   "stats-gestion",
   "funnel-conversion",
@@ -641,6 +642,17 @@ export default function GestionPage() {
   const [devisDecActiviteSearch, setDevisDecActiviteSearch] = useState("")
   const [devisDecUserFilter, setDevisDecUserFilter] = useState("")
   const [devisDecSubmitting, setDevisDecSubmitting] = useState(false)
+  const [newClientForm, setNewClientForm] = useState({
+    email: "",
+    raisonSociale: "",
+    siret: "",
+    telephone: "",
+    adresse: "",
+    codePostal: "",
+    ville: "",
+  })
+  const [newClientSubmitting, setNewClientSubmitting] = useState(false)
+  const [newClientNotice, setNewClientNotice] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [ficheSearchQuery, setFicheSearchQuery] = useState("")
   const [outilsOuverts, setOutilsOuverts] = useState(false)
@@ -710,7 +722,7 @@ export default function GestionPage() {
   }
 
   const upsertUserLocally = useCallback(
-    (user: { id: string; email: string; raisonSociale?: string | null }) => {
+    (user: { id: string; email: string; raisonSociale?: string | null; siret?: string | null }) => {
       setData((prev) => {
         if (!prev?.users) return prev
         const existingById = prev.users.findIndex((row) => row.id === user.id)
@@ -718,7 +730,7 @@ export default function GestionPage() {
           id: user.id,
           email: user.email,
           raisonSociale: user.raisonSociale ?? null,
-          siret: null,
+          siret: user.siret ?? null,
           createdAt: new Date().toISOString(),
         }
 
@@ -728,6 +740,7 @@ export default function GestionPage() {
             ...nextUsers[existingById],
             email: user.email,
             raisonSociale: user.raisonSociale ?? nextUsers[existingById].raisonSociale,
+            siret: user.siret ?? nextUsers[existingById].siret,
           }
           return { ...prev, users: nextUsers }
         }
@@ -742,6 +755,7 @@ export default function GestionPage() {
             id: user.id,
             email: user.email,
             raisonSociale: user.raisonSociale ?? nextUsers[existingByEmail].raisonSociale,
+            siret: user.siret ?? nextUsers[existingByEmail].siret,
           }
           return { ...prev, users: nextUsers }
         }
@@ -947,10 +961,87 @@ export default function GestionPage() {
     }
   }
 
+  const selectClientForDevis = (userId: string, telephone?: string) => {
+    setDevisDecUserFilter("")
+    setCustomDevisUserFilter("")
+    setDevisDecForm((current) => ({ ...current, userId }))
+    setDevisDoForm((current) => ({
+      ...current,
+      userId,
+      telephone: telephone?.trim() || current.telephone,
+    }))
+    setCustomDevisUserId(userId)
+  }
+
+  const handleCreateClientAccount = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setNewClientSubmitting(true)
+    setNewClientNotice(null)
+    try {
+      const res = await fetch("/api/gestion/clients/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newClientForm),
+      })
+      const json = await readResponseJson<{
+        error?: string
+        existing?: boolean
+        id?: string
+        email?: string
+        raisonSociale?: string | null
+        siret?: string | null
+        emailSent?: boolean
+        temporaryPassword?: string
+        warning?: string
+      }>(res)
+      if (json.existing && json.id && json.email) {
+        upsertUserLocally({
+          id: json.id,
+          email: json.email,
+          raisonSociale: json.raisonSociale,
+          siret: newClientForm.siret || null,
+        })
+        selectClientForDevis(json.id, newClientForm.telephone)
+        const message =
+          json.error ||
+          `Un compte client existe déjà pour ${json.email}. Le mot de passe n'a pas été changé.`
+        setNewClientNotice(message)
+        setToast({ message, type: "warning" })
+        return
+      }
+      if (!res.ok || !json.id || !json.email) {
+        throw new Error(json.error || "Erreur création compte")
+      }
+      upsertUserLocally({
+        id: json.id,
+        email: json.email,
+        raisonSociale: json.raisonSociale,
+        siret: json.siret ?? (newClientForm.siret || null),
+      })
+      selectClientForDevis(json.id, newClientForm.telephone)
+      const created = `Compte client créé pour ${json.email}. Ce n'est pas un administrateur. Il est déjà choisi dans les devis ci-dessous.`
+      const message =
+        json.emailSent === false
+          ? `${json.warning || "Compte créé, mais l'email n'est pas parti."}${
+              json.temporaryPassword ? ` Mot de passe temporaire : ${json.temporaryPassword}.` : ""
+            } ${created}`
+          : created
+      setNewClientNotice(message)
+      setToast({ message, type: json.emailSent === false ? "warning" : "success" })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erreur création compte"
+      setNewClientNotice(message)
+      setToast({ message, type: "error" })
+    } finally {
+      setNewClientSubmitting(false)
+    }
+  }
+
   const customDevisUserOptions = useMemo(() => {
-    if (!data?.users) return []
+    const users = data?.users
+    if (!users) return []
     const q = customDevisUserFilter.trim().toLowerCase()
-    let list = [...data.users]
+    let list = [...users]
     if (q) {
       list = list.filter(
         (u) =>
@@ -960,8 +1051,11 @@ export default function GestionPage() {
       )
     }
     list.sort((a, b) => a.email.localeCompare(b.email))
-    return list.slice(0, 300)
-  }, [data?.users, customDevisUserFilter])
+    const sliced = list.slice(0, 300)
+    const selected = users.find((user) => user.id === customDevisUserId)
+    if (selected && !sliced.some((user) => user.id === selected.id)) return [selected, ...sliced]
+    return sliced
+  }, [data?.users, customDevisUserFilter, customDevisUserId])
 
   const prefillCustomDevisForProduct = useCallback(
     (params: {
@@ -1046,9 +1140,10 @@ export default function GestionPage() {
   const rcContratIndicative = rcContratDemande ? rcFabPrimeIndicativeTtc(rcContratDemande) : null
 
   const devisDecUserOptions = useMemo(() => {
-    if (!data?.users) return []
+    const users = data?.users
+    if (!users) return []
     const q = devisDecUserFilter.trim().toLowerCase()
-    let list = [...data.users]
+    let list = [...users]
     if (q) {
       list = list.filter(
         (u) =>
@@ -1058,8 +1153,11 @@ export default function GestionPage() {
       )
     }
     list.sort((a, b) => a.email.localeCompare(b.email))
-    return list.slice(0, 300)
-  }, [data?.users, devisDecUserFilter])
+    const sliced = list.slice(0, 300)
+    const selected = users.find((user) => user.id === devisDecForm.userId)
+    if (selected && !sliced.some((user) => user.id === selected.id)) return [selected, ...sliced]
+    return sliced
+  }, [data?.users, devisDecUserFilter, devisDecForm.userId])
 
   const devisDecActiviteOptions = useMemo(() => {
     const q = devisDecActiviteSearch.trim().toLowerCase()
@@ -2542,6 +2640,16 @@ export default function GestionPage() {
               {outilsOuverts ? (
               <>
               <a
+                href="#nouveau-client"
+                onClick={(event) => {
+                  event.preventDefault()
+                  ouvrirOutil("nouveau-client")
+                }}
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+              >
+                Nouveau client
+              </a>
+              <a
                 href="#devis-pdf-personnalise"
                 onClick={(event) => {
                   event.preventDefault()
@@ -2636,6 +2744,121 @@ export default function GestionPage() {
             </nav>
             {outilsOuverts ? (
             <>
+            <section id="nouveau-client" className="scroll-mt-24 max-w-xl">
+              <h2 className="text-lg font-semibold text-white mb-4">Nouveau client</h2>
+              <p className="text-sm text-gray-200 mb-4">
+                Crée un compte client, pas un administrateur. Le client reçoit un mot de passe temporaire par email,
+                puis il est déjà choisi dans les devis décennale, dommage ouvrage et PDF.
+              </p>
+              <form
+                onSubmit={handleCreateClientAccount}
+                className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 mb-10"
+              >
+                <div>
+                  <label htmlFor="nouveau-client-email" className="block text-sm font-medium text-gray-200 mb-1">
+                    Email
+                  </label>
+                  <input
+                    id="nouveau-client-email"
+                    type="email"
+                    required
+                    value={newClientForm.email}
+                    onChange={(event) => setNewClientForm((current) => ({ ...current, email: event.target.value }))}
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="nouveau-client-raison" className="block text-sm font-medium text-gray-200 mb-1">
+                    Raison sociale
+                  </label>
+                  <input
+                    id="nouveau-client-raison"
+                    required
+                    value={newClientForm.raisonSociale}
+                    onChange={(event) =>
+                      setNewClientForm((current) => ({ ...current, raisonSociale: event.target.value }))
+                    }
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="nouveau-client-siret" className="block text-sm font-medium text-gray-200 mb-1">
+                      SIRET
+                    </label>
+                    <input
+                      id="nouveau-client-siret"
+                      inputMode="numeric"
+                      value={newClientForm.siret}
+                      onChange={(event) => setNewClientForm((current) => ({ ...current, siret: event.target.value }))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="nouveau-client-telephone" className="block text-sm font-medium text-gray-200 mb-1">
+                      Téléphone
+                    </label>
+                    <input
+                      id="nouveau-client-telephone"
+                      value={newClientForm.telephone}
+                      onChange={(event) =>
+                        setNewClientForm((current) => ({ ...current, telephone: event.target.value }))
+                      }
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="nouveau-client-adresse" className="block text-sm font-medium text-gray-200 mb-1">
+                    Adresse
+                  </label>
+                  <input
+                    id="nouveau-client-adresse"
+                    value={newClientForm.adresse}
+                    onChange={(event) => setNewClientForm((current) => ({ ...current, adresse: event.target.value }))}
+                    className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="nouveau-client-cp" className="block text-sm font-medium text-gray-200 mb-1">
+                      Code postal
+                    </label>
+                    <input
+                      id="nouveau-client-cp"
+                      value={newClientForm.codePostal}
+                      onChange={(event) =>
+                        setNewClientForm((current) => ({ ...current, codePostal: event.target.value }))
+                      }
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="nouveau-client-ville" className="block text-sm font-medium text-gray-200 mb-1">
+                      Ville
+                    </label>
+                    <input
+                      id="nouveau-client-ville"
+                      value={newClientForm.ville}
+                      onChange={(event) => setNewClientForm((current) => ({ ...current, ville: event.target.value }))}
+                      className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={newClientSubmitting}
+                  className="bg-[#2563eb] text-white px-4 py-2.5 rounded-lg font-medium hover:bg-[#1d4ed8] disabled:opacity-50"
+                >
+                  {newClientSubmitting ? "Création…" : "Créer le compte client"}
+                </button>
+                {newClientNotice ? (
+                  <p role="status" className="text-sm text-gray-200">
+                    {newClientNotice}
+                  </p>
+                ) : null}
+              </form>
+            </section>
             <section
               id="devis-pdf-personnalise"
               className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 scroll-mt-24"
