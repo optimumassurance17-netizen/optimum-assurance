@@ -27,6 +27,7 @@ const GESTION_LISTE_IDS = new Set([
   "signatures-attente",
   "paiements",
   "attestations",
+  "devis-emis",
   "contrats",
   "etudes-do",
   "rc-fabriquant-leads",
@@ -1374,10 +1375,27 @@ export default function GestionPage() {
   }, [data, docTypeFilter])
 
   const contrats = useMemo(() => (data ? data.documents.filter((d) => d.type === "contrat") : []), [data])
+  const issuedQuotes = useMemo(() => {
+    if (!data) return []
+    return data.documents
+      .filter((d) => d.type === "devis" || d.type === "devis_do")
+      .sort((a, b) => {
+        const aExpired = isDisplayedQuoteExpired(a.createdAt)
+        const bExpired = isDisplayedQuoteExpired(b.createdAt)
+        if (aExpired !== bExpired) return aExpired ? -1 : 1
+        const aTime = new Date(a.createdAt).getTime()
+        const bTime = new Date(b.createdAt).getTime()
+        return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime)
+      })
+  }, [data])
   const filteredUsers = useMemo(() => (data ? filterUsersBySearch(data.users, searchQuery) : []), [data, searchQuery])
   const filteredPayments = useMemo(() => (data ? filterBySearch(data.payments, searchQuery) : []), [data, searchQuery])
   const filteredAttestations = useMemo(() => filterBySearch(attestations, searchQuery), [attestations, searchQuery])
   const filteredContrats = useMemo(() => filterBySearch(contrats, searchQuery), [contrats, searchQuery])
+  const filteredIssuedQuotes = useMemo(
+    () => filterBySearch(issuedQuotes, searchQuery),
+    [issuedQuotes, searchQuery]
+  )
   const listsNarrowed = searchQuery.trim().length > 0
   const visibleUsers = useMemo(() => takeDashboardRows(filteredUsers, listsNarrowed), [filteredUsers, listsNarrowed])
   const visiblePayments = useMemo(
@@ -1392,6 +1410,11 @@ export default function GestionPage() {
     () => takeDashboardRows(filteredContrats, listsNarrowed),
     [filteredContrats, listsNarrowed]
   )
+  const visibleIssuedQuotes = useMemo(
+    () => takeDashboardRows(filteredIssuedQuotes, listsNarrowed),
+    [filteredIssuedQuotes, listsNarrowed]
+  )
+  const expiredIssuedQuotes = issuedQuotes.filter((d) => isDisplayedQuoteExpired(d.createdAt)).length
 
   const dashboardUserLookup = useMemo(() => {
     const users = data?.users ?? []
@@ -2563,6 +2586,15 @@ export default function GestionPage() {
               >
                 Attestations
               </a>
+              {issuedQuotes.length > 0 && (
+                <a
+                  href="#devis-emis"
+                  onClick={onListAnchor("devis-emis")}
+                  className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+                >
+                  Devis émis
+                </a>
+              )}
               <a
                 href="#contrats"
                 onClick={onListAnchor("contrats")}
@@ -4824,6 +4856,84 @@ export default function GestionPage() {
             </table>
           </div>
         </section>
+
+        {issuedQuotes.length > 0 && (
+          <section id="devis-emis" className="scroll-mt-24">
+            <h2 className="text-lg font-semibold text-white mb-2">Devis émis</h2>
+            <p className="text-sm text-gray-200 mb-3">
+              {expiredIssuedQuotes > 0
+                ? `${expiredIssuedQuotes.toLocaleString("fr-FR")} devis expiré${expiredIssuedQuotes > 1 ? "s" : ""}. Passé 60 jours, pas de relance.`
+                : "Propositions décennale et dommage ouvrage, valables 60 jours."}
+            </p>
+            <DashboardListNote shown={visibleIssuedQuotes.length} total={filteredIssuedQuotes.length} subject="devis" />
+            <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full text-sm min-w-[400px]">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 sm:p-4 font-medium">Type</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">N°</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Client</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Statut</th>
+                    <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">Date</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredIssuedQuotes.length === 0 ? (
+                    <tr><td colSpan={6} className="p-4 text-gray-200">Aucun devis</td></tr>
+                  ) : (
+                    visibleIssuedQuotes.map((d) => {
+                      const quoteExpired = isDisplayedQuoteExpired(d.createdAt)
+                      const issuedAt = d.createdAt ? new Date(d.createdAt) : null
+                      return (
+                        <tr key={d.id} className="border-b border-gray-700/50">
+                          <td className="p-3 sm:p-4">
+                            <span className="text-xs text-gray-200">
+                              {d.type === "devis_do" ? "Dommage ouvrage" : "Décennale"}
+                            </span>
+                          </td>
+                          <td className="p-3 sm:p-4 font-mono">{d.numero}</td>
+                          <td className="p-3 sm:p-4">{d.user.raisonSociale || d.user.email}</td>
+                          <td className="p-3 sm:p-4">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              quoteExpired ? "bg-amber-900/50 text-amber-200" :
+                              d.status === "valide" ? "bg-green-900/50 text-green-300" :
+                              d.status === "resilie" ? "bg-gray-700 text-gray-200" :
+                              "bg-blue-900/50 text-sky-300"
+                            }`}>
+                              {quoteExpired ? "Expiré" : frenchStatusLabel(d.status)}
+                            </span>
+                          </td>
+                          <td className="p-3 sm:p-4 hidden sm:table-cell">
+                            {issuedAt && !Number.isNaN(issuedAt.getTime())
+                              ? issuedAt.toLocaleDateString("fr-FR")
+                              : "—"}
+                          </td>
+                          <td className="p-3 sm:p-4">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Link
+                                href={`/gestion/documents/${d.id}`}
+                                className="text-[#2563eb] hover:text-[#1d4ed8] text-sm min-h-[44px] inline-flex items-center"
+                              >
+                                Voir
+                              </Link>
+                              <Link
+                                href={`/gestion/clients/${d.userId}`}
+                                className="text-gray-200 hover:text-white text-sm min-h-[44px] inline-flex items-center"
+                              >
+                                Client
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
 
         {/* Contrats - autorisation annulation */}
         <section id="contrats" className="scroll-mt-24">

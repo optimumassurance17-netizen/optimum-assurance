@@ -988,6 +988,187 @@ test.describe("Gestion CRM — Sirene", () => {
   })
 })
 
+test.describe("Gestion CRM — devis émis", () => {
+  test("Le tableau distingue un devis expiré, un devis récent et un contrat ancien", async ({ page }) => {
+    await mockGestionAuth(page)
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          users: [
+            {
+              id: "client_expire",
+              email: "expire@example.com",
+              raisonSociale: "Atelier Expire",
+              siret: "11111111111111",
+              createdAt: "2026-01-01T08:00:00.000Z",
+            },
+            {
+              id: "client_recent",
+              email: "recent@example.com",
+              raisonSociale: "Atelier Recent",
+              siret: "22222222222222",
+              createdAt: "2026-11-01T08:00:00.000Z",
+            },
+            {
+              id: "client_sans",
+              email: "sans@example.com",
+              raisonSociale: "Atelier Sans Date",
+              siret: "33333333333333",
+              createdAt: "2026-11-01T08:00:00.000Z",
+            },
+          ],
+          documents: [
+            {
+              id: "devis_recent",
+              userId: "client_recent",
+              type: "devis",
+              numero: "DEV-RECENT",
+              status: "valide",
+              createdAt: "2026-11-01T08:00:00.000Z",
+              user: { email: "recent@example.com", raisonSociale: "Atelier Recent" },
+            },
+            {
+              id: "devis_expire",
+              userId: "client_expire",
+              type: "devis",
+              numero: "DEV-EXPIRE",
+              status: "valide",
+              createdAt: "2026-01-01T08:00:00.000Z",
+              user: { email: "expire@example.com", raisonSociale: "Atelier Expire" },
+            },
+            {
+              id: "devis_sans",
+              userId: "client_sans",
+              type: "devis_do",
+              numero: "DO-SANS-DATE",
+              status: "valide",
+              user: { email: "sans@example.com", raisonSociale: "Atelier Sans Date" },
+            },
+            {
+              id: "ctr_ancien",
+              userId: "client_expire",
+              type: "contrat",
+              numero: "CTR-ANCIEN",
+              status: "valide",
+              createdAt: "2026-01-01T08:00:00.000Z",
+              user: { email: "expire@example.com", raisonSociale: "Atelier Expire" },
+            },
+          ],
+          payments: [],
+          devisLeads: [],
+          devisDrafts: [],
+          pendingSignatures: [],
+          insuranceContracts: [],
+          dashboardActions: [],
+          dashboardActionsSummary: {
+            total: 0,
+            high: 0,
+            medium: 0,
+            overdue72h: 0,
+            dismissedToday: 0,
+          },
+        }),
+      })
+    })
+
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto("/gestion")
+    await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Devis émis" }).click()
+
+    const section = page.locator("#devis-emis")
+    await expect(section.getByRole("heading", { name: "Devis émis" })).toBeVisible()
+    await expect(section.getByText("1 devis expiré. Passé 60 jours, pas de relance.")).toBeVisible()
+
+    const expiredRow = section.locator("tr", { hasText: "DEV-EXPIRE" })
+    const recentRow = section.locator("tr", { hasText: "DEV-RECENT" })
+    const undatedRow = section.locator("tr", { hasText: "DO-SANS-DATE" })
+    await expect(expiredRow.getByText("Expiré", { exact: true })).toBeVisible()
+    await expect(expiredRow.getByText("Décennale")).toBeVisible()
+    await expect(recentRow.getByText("Valide", { exact: true })).toBeVisible()
+    await expect(recentRow.getByText("Expiré", { exact: true })).toHaveCount(0)
+    await expect(undatedRow.getByText("Valide", { exact: true })).toBeVisible()
+    await expect(undatedRow.getByText("Dommage ouvrage")).toBeVisible()
+    await expect(undatedRow.getByText("Expiré", { exact: true })).toHaveCount(0)
+    await expect(expiredRow.getByRole("link", { name: "Voir" })).toHaveAttribute("href", "/gestion/documents/devis_expire")
+    await expect(expiredRow.getByRole("link", { name: "Client" })).toHaveAttribute("href", "/gestion/clients/client_expire")
+    await expect(section.locator("tbody tr td.font-mono").first()).toHaveText("DEV-EXPIRE")
+
+    const contractRow = page.locator("#contrats tr", { hasText: "CTR-ANCIEN" })
+    await expect(contractRow.getByText("Valide", { exact: true })).toBeVisible()
+    await expect(contractRow.getByText("Expiré", { exact: true })).toHaveCount(0)
+
+    await page.getByPlaceholder(/Rechercher/).fill("DEV-RECENT")
+    await expect(section.locator("tr", { hasText: "DEV-RECENT" })).toBeVisible()
+    await expect(section.locator("tr", { hasText: "DEV-EXPIRE" })).toHaveCount(0)
+    await expect(page.locator("#contrats").getByText("Aucun contrat")).toBeVisible()
+  })
+
+  test("La liste des devis émis s'arrête à 25 lignes et la recherche retrouve la suivante", async ({ page }) => {
+    await mockGestionAuth(page)
+    const documents = [
+      {
+        id: "devis_expire",
+        userId: "client_1",
+        type: "devis",
+        numero: "DEV-EXPIRE",
+        status: "valide",
+        createdAt: "2026-01-01T08:00:00.000Z",
+        user: { email: "client@example.com", raisonSociale: "Atelier Expire" },
+      },
+      ...Array.from({ length: 25 }, (_, index) => {
+        const n = String(index + 2).padStart(2, "0")
+        return {
+          id: `devis_${n}`,
+          userId: "client_1",
+          type: "devis",
+          numero: `DEV-${n}`,
+          status: "valide",
+          createdAt: "2026-11-01T08:00:00.000Z",
+          user: { email: "client@example.com", raisonSociale: "Atelier Expire" },
+        }
+      }),
+    ]
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          users: [
+            {
+              id: "client_1",
+              email: "client@example.com",
+              raisonSociale: "Atelier Expire",
+              siret: "11111111111111",
+              createdAt: "2026-01-01T08:00:00.000Z",
+            },
+          ],
+          documents,
+          payments: [],
+          devisLeads: [],
+          devisDrafts: [],
+          pendingSignatures: [],
+          insuranceContracts: [],
+          dashboardActions: [],
+          dashboardActionsSummary: { total: 0, high: 0, medium: 0, overdue72h: 0, dismissedToday: 0 },
+        }),
+      })
+    })
+
+    await page.goto("/gestion")
+    const section = page.locator("#devis-emis")
+    await expect(section.getByText("25 sur 26 devis")).toBeVisible()
+    await expect(section.locator("tbody tr")).toHaveCount(25)
+    await expect(section.locator("tr", { hasText: "DEV-EXPIRE" })).toBeVisible()
+    await expect(section.locator("tr", { hasText: "DEV-26" })).toHaveCount(0)
+
+    await page.getByPlaceholder(/Rechercher/).fill("DEV-26")
+    await expect(section.locator("tr", { hasText: "DEV-26" })).toBeVisible()
+    await expect(section.locator("tr", { hasText: "DEV-EXPIRE" })).toHaveCount(0)
+  })
+})
+
 test.describe("Gestion CRM — parcours admin (optionnel)", () => {
   test.beforeEach(() => {
     test.skip(
