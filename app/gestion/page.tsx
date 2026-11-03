@@ -2440,6 +2440,14 @@ export default function GestionPage() {
               >
                 {listesOuvertes ? "Masquer les listes" : "Listes"}
               </button>
+              <Link
+                href="/gestion/rectification"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#1f2937] text-cyan-100 border border-cyan-700/70 hover:bg-[#273547]"
+              >
+                Rectification 100%
+              </Link>
+              {listesOuvertes ? (
+              <>
               <a
                 href="#clients"
                 onClick={onListAnchor("clients")}
@@ -2484,12 +2492,6 @@ export default function GestionPage() {
               >
                 Contrats
               </a>
-              <Link
-                href="/gestion/rectification"
-                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#1f2937] text-cyan-100 border border-cyan-700/70 hover:bg-[#273547]"
-              >
-                Rectification 100%
-              </Link>
               {(data.devisLeads?.length ?? 0) > 0 && (
                 <a
                   href="#leads-decennale"
@@ -2535,6 +2537,10 @@ export default function GestionPage() {
                   Assurance titre
                 </a>
               )}
+              </>
+              ) : null}
+              {outilsOuverts ? (
+              <>
               <a
                 href="#devis-pdf-personnalise"
                 onClick={(event) => {
@@ -2625,6 +2631,8 @@ export default function GestionPage() {
               >
                 Avenant
               </a>
+              </>
+              ) : null}
             </nav>
             {outilsOuverts ? (
             <>

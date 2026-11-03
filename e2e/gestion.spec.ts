@@ -240,6 +240,7 @@ test.describe("Gestion CRM — création compte lead", () => {
     })
 
     await page.goto("/gestion")
+    await page.getByRole("button", { name: "Listes" }).click()
     await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Leads déc." }).click()
     await expect(page.getByRole("button", { name: "Créer le compte" })).toBeVisible()
     await page.getByRole("button", { name: "Créer le compte" }).click()
@@ -278,6 +279,7 @@ test.describe("Gestion CRM — création compte lead", () => {
     })
 
     await page.goto("/gestion")
+    await page.getByRole("button", { name: "Listes" }).click()
     await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Leads déc." }).click()
     await page.getByRole("button", { name: "Créer le compte" }).click()
 
