@@ -14,6 +14,17 @@ import { resolve } from "node:path"
 
 const root = resolve(process.cwd())
 
+const adminSource = readFileSync(resolve(root, "lib/supabase/admin.ts"), "utf8")
+const supabaseSource = readFileSync(resolve(root, "lib/supabase.ts"), "utf8")
+if (!adminSource.includes("createSupabaseServiceClient")) {
+  console.error("❌ LinkPilot doit réutiliser le client Supabase qui préfère IPv4")
+  process.exit(1)
+}
+if (!supabaseSource.includes('setDefaultResultOrder("ipv4first")')) {
+  console.error("❌ Le client Supabase ne force plus IPv4")
+  process.exit(1)
+}
+
 function loadEnvFile(filePath, { override = false } = {}) {
   if (!existsSync(filePath)) return
   const content = readFileSync(filePath, "utf-8")

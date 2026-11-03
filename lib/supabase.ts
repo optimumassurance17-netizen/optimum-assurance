@@ -6,7 +6,7 @@ import { getSupabaseAnonKey, getSupabaseUrl } from "@/utils/supabase/env"
 let ipv4Preferred = false
 
 /** Undici/Vercel tente parfois l’IPv6 en premier et laisse la signature en attente plusieurs secondes. */
-function preferIpv4Lookup() {
+export function preferSupabaseIpv4() {
   if (ipv4Preferred) return
   ipv4Preferred = true
   try {
@@ -17,7 +17,7 @@ function preferIpv4Lookup() {
   }
 }
 
-preferIpv4Lookup()
+preferSupabaseIpv4()
 
 /** Origine du projet, sans chemin (`/rest/v1` casserait l’URL Storage). */
 export function supabaseProjectOrigin(raw: string | undefined | null): string | null {
@@ -50,7 +50,7 @@ export function createSupabaseServiceClient(): SupabaseClient | null {
   const url = supabaseProjectOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL)
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
   if (!url || !key) return null
-  preferIpv4Lookup()
+  preferSupabaseIpv4()
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   })

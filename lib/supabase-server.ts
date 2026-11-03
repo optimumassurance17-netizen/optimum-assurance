@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import { preferSupabaseIpv4, supabaseProjectOrigin } from "@/lib/supabase"
 
 /**
  * Client Supabase pour le serveur (build ISR, routes, sitemap).
@@ -6,7 +7,8 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js"
  * en lecture, la clé anon suffit si les politiques « select public » sont actives.
  */
 export function createSupabaseServerClient(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+  preferSupabaseIpv4()
+  const url = supabaseProjectOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL)
   const key =
     process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()

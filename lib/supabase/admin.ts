@@ -1,20 +1,20 @@
 import "server-only"
-import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import type { SupabaseClient } from "@supabase/supabase-js"
+import { createSupabaseServiceClient } from "@/lib/supabase"
 
 let cachedClient: SupabaseClient | null = null
 
+/**
+ * Client service role pour LinkPilot.
+ * Réutilise le client qui préfère l’IPv4 : sur Vercel, l’IPv6 de Supabase
+ * répond souvent par « TypeError: fetch failed ».
+ */
 export function getSupabaseAdminClient(): SupabaseClient {
   if (cachedClient) return cachedClient
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
-  if (!url || !serviceRoleKey) {
+  const client = createSupabaseServiceClient()
+  if (!client) {
     throw new Error("Supabase admin non configuré (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)")
   }
-  cachedClient = createClient(url, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  })
+  cachedClient = client
   return cachedClient
 }

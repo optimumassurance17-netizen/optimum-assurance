@@ -52,7 +52,12 @@ export function LinkPilotDashboard() {
         setToxicDomains(toxicRes.items ?? [])
       } catch (err) {
         if (!alive) return
-        setError(err instanceof Error ? err.message : "Impossible de charger LinkPilot")
+        const message = err instanceof Error ? err.message : "Impossible de charger LinkPilot"
+        setError(
+          message.includes("fetch failed")
+            ? "LinkPilot n'arrive pas à joindre Supabase. Réessayez dans un instant."
+            : message
+        )
       } finally {
         if (alive) setLoading(false)
       }
