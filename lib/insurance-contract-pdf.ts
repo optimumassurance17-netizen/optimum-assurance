@@ -8,12 +8,8 @@ import { generateDOCertificate } from "@/lib/pdf/do/generateCertificate"
 import { generateDOQuotePolicyBundle } from "@/lib/pdf/do/generateQuotePolicyBundle"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import type { InsuranceCertificateData, InsuranceData } from "@/lib/pdf/types"
-import {
-  INVOICE_FIRST_SETTLEMENT_NOTE,
-  INVOICE_PAYMENT_METHOD_PRIMARY,
-  LEGAL_DELEGATION_MANDATORY,
-  ORIAS_NUMBER,
-} from "@/lib/legal-branding"
+import { invoiceSettlementCopy } from "@/lib/contract-client-documents"
+import { LEGAL_DELEGATION_MANDATORY, ORIAS_NUMBER } from "@/lib/legal-branding"
 import { SITE_URL } from "@/lib/site-url"
 import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
 import { parseDoConstructionCost } from "@/lib/do-attestation-facts"
@@ -150,14 +146,15 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
     y -= 4
   }
   y -= 14
-  page.drawText(sanitizeForPdfLib(`Moyen de paiement : ${INVOICE_PAYMENT_METHOD_PRIMARY}`), {
+  const settlement = invoiceSettlementCopy(c.productType)
+  page.drawText(sanitizeForPdfLib(`Moyen de paiement : ${settlement.method}`), {
     x: 50,
     y,
     size: 10,
     font,
   })
   y -= 14
-  page.drawText(sanitizeForPdfLib(INVOICE_FIRST_SETTLEMENT_NOTE), { x: 50, y, size: 9, font })
+  page.drawText(sanitizeForPdfLib(settlement.note), { x: 50, y, size: 9, font, maxWidth: 500 })
   y -= 14
   if (c.paidAt) {
     page.drawText(

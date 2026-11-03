@@ -1,5 +1,10 @@
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
+import {
+  clientDocumentTypeForStoredPdf,
+  invoiceSettlementCopy,
+} from "../lib/contract-client-documents"
+import { INVOICE_PAYMENT_METHOD_PRIMARY } from "../lib/legal-branding"
 import { resolveManualRcPaymentStep } from "../lib/rc-manual-payment"
 
 const first = resolveManualRcPaymentStep({
@@ -62,5 +67,24 @@ assert(fiche.includes("ValidateRcPaymentButton"), "la fiche client propose le vi
 assert(search.includes("ValidateRcPaymentButton"), "la recherche propose le virement")
 assert(email.includes("confirmationPaiementRcManuel"), "l'email de virement RC existe")
 assert(service.includes("current.productType !== \"do\""), "le paiement manuel du dommage ouvrage reste séparé")
+assert(service.includes("upsertStoredContractPdf"), "la facture déjà présente est mise à jour")
+assert(!service.includes("contractStoredDocument.createMany"), "un second insert de facture n'est plus tenté")
+assert(service.includes("commitPaymentOrDuplicate"), "un virement déjà enregistré ne renvoie pas une erreur")
+assert.equal(clientDocumentTypeForStoredPdf("rc_fabriquant", "invoice"), "facture_rc")
+assert.equal(clientDocumentTypeForStoredPdf("rc_fabriquant", "certificate"), "attestation_rc")
+assert.equal(clientDocumentTypeForStoredPdf("do", "invoice"), "facture_do")
+assert.equal(clientDocumentTypeForStoredPdf("decennale", "invoice"), "facture_decennale")
+assert.equal(clientDocumentTypeForStoredPdf("decennale", "certificate"), "attestation")
+assert.equal(invoiceSettlementCopy("rc_fabriquant").method, "Virement bancaire")
+assert.equal(invoiceSettlementCopy("decennale").method, INVOICE_PAYMENT_METHOD_PRIMARY)
+assert.doesNotMatch(invoiceSettlementCopy("rc_fabriquant").note, /SEPA|Mollie/)
+assert(readFileSync("app/api/documents/list/route.ts", "utf8").includes("clientDocumentTypeForStoredPdf"), "la liste client distingue la facture RC")
+assert(readFileSync("app/espace-client/page.tsx", "utf8").includes("Facture RC fabriquant"), "l'espace client nomme la facture RC")
+assert(readFileSync("lib/insurance-contract-pdf.ts", "utf8").includes("invoiceSettlementCopy"), "la facture RC indique le virement")
+assert(
+  route.includes("La facture RC fabriquant existe déjà"),
+  "un doublon de facture répond sans erreur serveur"
+)
+assert(service.includes("invoiceMissing"), "une facture RC absente est recrée sans second insert")
 
 console.log("verify-rc-manual-payment: ok")

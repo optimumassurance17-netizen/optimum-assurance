@@ -81,6 +81,50 @@ async function mockClientApis(page: Page, draftDeletes: string[]) {
   })
 }
 
+test.describe("Espace client — facture RC fabriquant", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockSession(page)
+  })
+
+  test("affiche la facture RC à part de la facture décennale", async ({ page }) => {
+    await mockClientApis(page, [])
+    await page.route("**/api/documents/list", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          {
+            id: "doc_fac_dec",
+            type: "facture_decennale",
+            numero: "FAC-DEC-2026-001",
+            status: "valide",
+            createdAt: "2026-10-02T08:00:00.000Z",
+          },
+          {
+            id: "contract:fac_rc",
+            type: "facture_rc",
+            numero: "RCFAB-1 — Facture",
+            status: "active",
+            createdAt: "2026-11-03T08:00:00.000Z",
+            href: "/api/contracts/ctr_rc/pdf/invoice",
+            generated: true,
+            paymentStatus: "paid",
+          },
+        ]),
+      })
+    })
+
+    await page.goto("/espace-client")
+    await expect(page.getByRole("heading", { name: "Mon espace client" })).toBeVisible()
+    await expect(page.getByText("Facture acquittée décennale")).toBeVisible()
+    await expect(page.getByText("Facture RC fabriquant")).toBeVisible()
+    await expect(page.getByRole("link", { name: /RCFAB-1/ })).toHaveAttribute(
+      "href",
+      "/api/contracts/ctr_rc/pdf/invoice"
+    )
+  })
+})
+
 test.describe("Espace client — supprimer un devis", () => {
   test.beforeEach(async ({ page }) => {
     await mockSession(page)

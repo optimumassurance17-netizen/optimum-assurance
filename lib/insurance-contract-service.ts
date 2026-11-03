@@ -1,4 +1,4 @@
-import type { InsuranceContract } from "@/lib/prisma-client"
+import { Prisma, type InsuranceContract } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
 import { allocateNextContractNumber } from "@/lib/pdf/shared/contractNumber"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
@@ -209,10 +209,50 @@ export function insuranceContractPaymentAmountMatches(
   return premiumMatchesMollieAmount(expected, paidAmount)
 }
 
+function isUniqueConstraint(error: unknown): boolean {
+  return (
+    (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") ||
+    (typeof error === "object" && error !== null && "code" in error && error.code === "P2002")
+  )
+}
+
+/** Une facture déjà enregistrée est mise à jour. Un second insert du même type ne doit pas échouer. */
+async function upsertStoredContractPdf(contractId: string, type: string, url: string): Promise<void> {
+  const where = { contractId_type: { contractId, type } }
+  try {
+    await prisma.contractStoredDocument.upsert({
+      where,
+      create: { contractId, type, url },
+      update: { url },
+    })
+  } catch (error) {
+    if (!isUniqueConstraint(error)) throw error
+    await prisma.contractStoredDocument.update({ where, data: { url } })
+  }
+}
+
+async function commitPaymentOrDuplicate(work: () => Promise<void>): Promise<"ok" | "duplicate"> {
+  try {
+    await work()
+    return "ok"
+  } catch (error) {
+    if (!isUniqueConstraint(error)) throw error
+    return "duplicate"
+  }
+}
+
 async function generatePostPaymentPdfs(contractId: string, fresh: InsuranceContract): Promise<void> {
   const ready = await prepareDoContractForPdf(fresh)
   const certBytes = await renderContractPdf(ready, "certificate")
-  const invBytes = await renderContractPdf(ready, "invoice")
+  let invBytes: Uint8Array | null = null
+  let invoiceSkipped = false
+  try {
+    invBytes = await renderContractPdf(ready, "invoice")
+  } catch (error) {
+    if (fresh.productType !== "rc_fabriquant") throw error
+    invoiceSkipped = true
+    console.error("[generatePostPaymentPdfs] facture RC:", error)
+  }
   let scheduleBytes: Uint8Array | null = null
   if (insuranceProductHasSchedule(fresh.productType)) {
     try {
@@ -222,36 +262,49 @@ async function generatePostPaymentPdfs(contractId: string, fresh: InsuranceContr
     }
   }
   const baseUrl = `${SITE_URL}/api/contracts/${contractId}/pdf`
-  const deleteTypes =
-    insuranceProductHasSchedule(fresh.productType)
-      ? (["certificate", "invoice", "schedule"] as const)
-      : (["certificate", "invoice"] as const)
-  await prisma.contractStoredDocument.deleteMany({
-    where: { contractId, type: { in: [...deleteTypes] } },
-  })
-  const rows: { contractId: string; type: string; url: string }[] = [
-    { contractId, type: "certificate", url: `${baseUrl}/certificate` },
-    { contractId, type: "invoice", url: `${baseUrl}/invoice` },
-  ]
-  if (scheduleBytes) {
-    rows.push({ contractId, type: "schedule", url: `${baseUrl}/schedule` })
+  await upsertStoredContractPdf(contractId, "certificate", `${baseUrl}/certificate`)
+  if (invBytes) {
+    try {
+      await upsertStoredContractPdf(contractId, "invoice", `${baseUrl}/invoice`)
+    } catch (error) {
+      if (fresh.productType !== "rc_fabriquant") throw error
+      invoiceSkipped = true
+      console.error("[generatePostPaymentPdfs] facture RC déjà présente:", error)
+    }
   }
-  await prisma.contractStoredDocument.createMany({ data: rows })
+  if (scheduleBytes) {
+    await upsertStoredContractPdf(contractId, "schedule", `${baseUrl}/schedule`)
+  } else if (insuranceProductHasSchedule(fresh.productType)) {
+    await prisma.contractStoredDocument.deleteMany({ where: { contractId, type: "schedule" } })
+  }
   await logContractAction(contractId, "pdfs_generated", {
     certificateBytes: certBytes.byteLength,
-    invoiceBytes: invBytes.byteLength,
+    ...(invBytes ? { invoiceBytes: invBytes.byteLength } : { invoiceSkipped: true }),
     ...(scheduleBytes ? { scheduleBytes: scheduleBytes.byteLength } : {}),
   })
+  if (invoiceSkipped) {
+    await logContractAction(contractId, "pdf_generation_failed", {
+      context: "rc_fabriquant_invoice_kept",
+      message: "La facture RC fabriquant existante est conservée. L'attestation a été générée.",
+    })
+  }
 }
 
 /** Si paiement enregistré mais PDF attestation/facture absents (retry webhook ou panne). */
 export async function ensurePostPaymentPdfsIfMissing(contractId: string): Promise<void> {
   const c = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
   if (!c || c.status !== CONTRACT_STATUS.active || !c.paidAt) return
-  const hasCert = await prisma.contractStoredDocument.findFirst({
-    where: { contractId, type: "certificate" },
-  })
-  if (hasCert) return
+  const [hasCert, hasInvoice] = await Promise.all([
+    prisma.contractStoredDocument.findFirst({
+      where: { contractId, type: "certificate" },
+    }),
+    prisma.contractStoredDocument.findFirst({
+      where: { contractId, type: "invoice" },
+      select: { id: true },
+    }),
+  ])
+  const invoiceMissing = c.productType === "rc_fabriquant" && !hasInvoice
+  if (hasCert && !invoiceMissing) return
   const fresh = await prisma.insuranceContract.findUniqueOrThrow({ where: { id: contractId } })
   try {
     await generatePostPaymentPdfs(contractId, fresh)
@@ -314,35 +367,43 @@ export async function processInsuranceContractPaymentSuccess(
       validUntil: c.validUntil,
       monthsStep: readRcFabDossierConfig(c.exclusionsJson, c.premium, c.contractNumber).monthsStep,
     })
-    await prisma.$transaction(async (tx) => {
-      await tx.contractLifecyclePayment.upsert({
-        where: { molliePaymentId },
-        create: {
-          contractId,
-          molliePaymentId,
-          amount,
-          status: "paid",
-          paidAt,
-        },
-        update: { status: "paid", paidAt },
-      })
-      await tx.insuranceContract.update({
-        where: { id: contractId },
-        data: { paidAt, validFrom: coverage.validFrom, validUntil: coverage.validUntil },
-      })
-      await tx.contractActionLog.create({
-        data: {
-          contractId,
-          action: "installment_paid",
-          details: JSON.stringify({
+    const installmentWrite = await commitPaymentOrDuplicate(() =>
+      prisma.$transaction(async (tx) => {
+        await tx.contractLifecyclePayment.upsert({
+          where: { molliePaymentId },
+          create: {
+            contractId,
             molliePaymentId,
             amount,
-            productType: c.productType,
-            validUntil: coverage.validUntil.toISOString(),
-          }),
-        },
+            status: "paid",
+            paidAt,
+          },
+          update: { status: "paid", paidAt },
+        })
+        await tx.insuranceContract.update({
+          where: { id: contractId },
+          data: { paidAt, validFrom: coverage.validFrom, validUntil: coverage.validUntil },
+        })
+        await tx.contractActionLog.create({
+          data: {
+            contractId,
+            action: "installment_paid",
+            details: JSON.stringify({
+              molliePaymentId,
+              amount,
+              productType: c.productType,
+              validUntil: coverage.validUntil.toISOString(),
+            }),
+          },
+        })
       })
-    })
+    )
+    if (installmentWrite === "duplicate") {
+      const current = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
+      if (!current) return { ok: false, error: "NOT_FOUND" }
+      await ensurePostPaymentPdfsIfMissing(current.id)
+      return { ok: true, contract: current, idempotent: true }
+    }
     const fresh = await prisma.insuranceContract.findUniqueOrThrow({ where: { id: contractId } })
     try {
       await generatePostPaymentPdfs(contractId, fresh)
@@ -395,40 +456,48 @@ export async function processInsuranceContractPaymentSuccess(
             }).validUntil
           : addYears(paidAt, 1)
 
-  await prisma.$transaction(async (tx) => {
-    await tx.contractLifecyclePayment.upsert({
-      where: { molliePaymentId },
-      create: {
-        contractId,
-        molliePaymentId,
-        amount,
-        status: "paid",
-        paidAt,
-      },
-      update: {
-        status: "paid",
-        paidAt,
-      },
-    })
+  const paymentWrite = await commitPaymentOrDuplicate(() =>
+    prisma.$transaction(async (tx) => {
+      await tx.contractLifecyclePayment.upsert({
+        where: { molliePaymentId },
+        create: {
+          contractId,
+          molliePaymentId,
+          amount,
+          status: "paid",
+          paidAt,
+        },
+        update: {
+          status: "paid",
+          paidAt,
+        },
+      })
 
-    await tx.insuranceContract.update({
-      where: { id: contractId },
-      data: {
-        status: CONTRACT_STATUS.active,
-        paidAt,
-        validFrom,
-        validUntil,
-      },
-    })
+      await tx.insuranceContract.update({
+        where: { id: contractId },
+        data: {
+          status: CONTRACT_STATUS.active,
+          paidAt,
+          validFrom,
+          validUntil,
+        },
+      })
 
-    await tx.contractActionLog.create({
-      data: {
-        contractId,
-        action: "payment_paid",
-        details: JSON.stringify({ molliePaymentId, amount }),
-      },
+      await tx.contractActionLog.create({
+        data: {
+          contractId,
+          action: "payment_paid",
+          details: JSON.stringify({ molliePaymentId, amount }),
+        },
+      })
     })
-  })
+  )
+  if (paymentWrite === "duplicate") {
+    const current = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
+    if (!current) return { ok: false, error: "NOT_FOUND" }
+    await ensurePostPaymentPdfsIfMissing(current.id)
+    return { ok: true, contract: current, idempotent: true }
+  }
 
   const fresh = await prisma.insuranceContract.findUniqueOrThrow({ where: { id: contractId } })
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { clientDocumentTypeForStoredPdf } from "@/lib/contract-client-documents"
 import { collapseDecennaleContractDuplicates } from "@/lib/decennale-contract-replacement"
 import { prisma } from "@/lib/prisma"
 import { LOCAL_SIGNED_DOCUMENT_TYPE } from "@/lib/esign/local-signature-fallback"
@@ -46,7 +47,7 @@ export async function GET() {
       const requiredTypes = requiredGeneratedDocTypes(contract.productType)
       const materialized = contract.storedDocuments.map((doc) => ({
         id: `contract:${doc.id}`,
-        type: toClientDocumentType(contract.productType, doc.type),
+        type: clientDocumentTypeForStoredPdf(contract.productType, doc.type),
         numero: `${contract.contractNumber} — ${labelContractDoc(doc.type)}`,
         status: contract.status,
         createdAt: doc.createdAt,
@@ -60,7 +61,7 @@ export async function GET() {
         .filter((type) => !existingByType.has(type))
         .map((type) => ({
           id: `contract-virtual:${contract.id}:${type}`,
-          type: toClientDocumentType(contract.productType, type),
+          type: clientDocumentTypeForStoredPdf(contract.productType, type),
           numero: `${contract.contractNumber} — ${labelContractDoc(type)}`,
           status: contract.status,
           createdAt: contract.createdAt,
@@ -108,16 +109,6 @@ function buildGeneratedPaymentStatus(
     return contractStatus === "approved" || contractStatus === "active" ? "ready" : "pending_validation"
   }
   return contractStatus
-}
-
-function toClientDocumentType(productType: string, docType: string): string {
-  if (docType === "quote") return productType === "do" ? "devis_do" : "devis_cp"
-  if (docType === "policy") return "conditions_particulieres"
-  if (docType === "certificate") return productType === "do" ? "attestation_do" : "attestation"
-  if (docType === "invoice") return productType === "do" ? "facture_do" : "facture_decennale"
-  if (docType === "schedule") return "echeancier"
-  if (docType === "fic") return "fic"
-  return `contrat_${docType}`
 }
 
 function labelContractDoc(type: string): string {

@@ -137,6 +137,19 @@ export async function POST(
     })
   } catch (error) {
     console.error("[gestion/insurance-contracts/validate-rc-payment]", error)
+    const duplicate =
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code?: string }).code === "P2002"
+    if (duplicate) {
+      return NextResponse.json({
+        ok: true,
+        alreadyPaid: true,
+        emailSent: false,
+        warning: "La facture RC fabriquant existe déjà. Le virement et l'attestation restent enregistrés.",
+      })
+    }
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
   }
 }
