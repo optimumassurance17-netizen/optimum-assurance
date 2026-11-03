@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { quoteStillValidSince } from "@/lib/quote-validity"
 
 type PendingContractData = {
   customUploadedDevisFlow?: unknown
@@ -29,7 +30,7 @@ export async function GET() {
     }
 
     const rows = await prisma.pendingSignature.findMany({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, createdAt: { gt: quoteStillValidSince() } },
       orderBy: { createdAt: "desc" },
       take: 20,
       select: {

@@ -13,6 +13,7 @@ import {
   rcFabUsesBatteriesWording,
   type RcFabDossierConfig,
 } from "@/lib/rc-fabriquant-dossier-config"
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quote-validity"
 
 export type RcFabBatteriesDocumentData = {
   nomSociete: string
@@ -48,8 +49,6 @@ function rcFabHeadings(activite: string): {
     certificate: "Responsabilité Civile Fabricant",
   }
 }
-
-const QUOTE_VALIDITY_DAYS = 30
 
 type DrawState = {
   page: import("pdf-lib").PDFPage

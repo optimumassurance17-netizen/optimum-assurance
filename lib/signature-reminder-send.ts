@@ -5,6 +5,7 @@ import { logAdminActivity } from "@/lib/admin-activity"
 import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 import { signatureReminderPayload } from "@/lib/signature-reminder"
 import { SITE_URL } from "@/lib/site-url"
+import { isQuoteExpired, QUOTE_EXPIRED_ERROR } from "@/lib/quote-validity"
 
 export type SignatureReminderSendResult =
   | { ok: true; emailSent: true; sentTo: string; signatureLink: string; message: string }
@@ -16,6 +17,9 @@ export async function sendPendingSignatureReminder(input: {
   pending: PendingSignature
   adminEmail: string
 }): Promise<SignatureReminderSendResult> {
+  if (isQuoteExpired(input.pending.createdAt)) {
+    return { ok: false, error: QUOTE_EXPIRED_ERROR, status: 410 }
+  }
   const user = await prisma.user.findUnique({
     where: { id: input.pending.userId },
     select: { id: true, email: true, raisonSociale: true },

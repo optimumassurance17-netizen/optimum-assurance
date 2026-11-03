@@ -8,7 +8,7 @@ import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 
 import { SITE_URL as APP_URL } from "@/lib/site-url"
 import { FRANCHISE_DECENNALE_EUR } from "@/lib/tarification"
-const DRAFT_EXPIRY_DAYS = 7
+import { quoteExpiresAt } from "@/lib/quote-validity"
 
 /**
  * Envoie une remise personnalisée au client (prime après étude)
@@ -99,8 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = crypto.randomBytes(24).toString("hex")
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + DRAFT_EXPIRY_DAYS)
+    const expiresAt = quoteExpiresAt(new Date())
     const resumeUrl = `${APP_URL}/devis/resume/${token}`
 
     await prisma.devisDraft.create({

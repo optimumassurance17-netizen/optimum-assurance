@@ -18,6 +18,7 @@ import { logAdminActivity } from "@/lib/admin-activity"
 import { validateSignatureQualityGate } from "@/lib/signature-quality-gates"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
+import { isQuoteExpired, QUOTE_EXPIRED_ERROR } from "@/lib/quote-validity"
 
 export const runtime = "nodejs"
 
@@ -69,6 +70,9 @@ export async function POST(request: NextRequest) {
         { error: "Document introuvable ou ce n’est pas un devis décennale." },
         { status: 404 }
       )
+    }
+    if (isQuoteExpired(doc.createdAt)) {
+      return NextResponse.json({ error: QUOTE_EXPIRED_ERROR }, { status: 410 })
     }
 
     let devisData: Record<string, unknown> = {}

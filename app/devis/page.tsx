@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quote-validity"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -397,7 +398,7 @@ function DevisPageContent() {
           {[
             ["Tarif indicatif immédiat", "Après saisie du SIRET, du CA et d'au moins une activité."],
             ["SIRET pré-rempli", "Cliquez sur Remplir pour récupérer vos coordonnées d'entreprise."],
-            ["Reprise par email", "Après calcul du tarif, sauvegardez votre devis 7 jours pour revenir plus tard."],
+            ["Reprise par email", `Après calcul du tarif, sauvegardez votre devis ${QUOTE_VALIDITY_DAYS} jours pour revenir plus tard.`],
           ].map(([title, body]) => (
             <div key={title} className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm">
               <p className="text-sm font-semibold text-slate-900 mb-1">{title}</p>
@@ -816,7 +817,7 @@ function DevisPageContent() {
                 <p>Plafond : {tarif.plafond.toLocaleString("fr-FR")} €</p>
               </div>
               <div className="mt-4 pt-4 border-t border-blue-600/20">
-                <label htmlFor="email-devis-save" className="block text-sm font-medium text-slate-900 mb-2">Sauvegarder et recevoir un lien pour reprendre ce devis (valable 7 jours)</label>
+                <label htmlFor="email-devis-save" className="block text-sm font-medium text-slate-900 mb-2">Sauvegarder et recevoir un lien pour reprendre ce devis (valable {QUOTE_VALIDITY_DAYS} jours)</label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     id="email-devis-save"

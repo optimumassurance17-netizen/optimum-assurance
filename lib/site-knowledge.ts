@@ -1,3 +1,5 @@
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quote-validity"
+
 /**
  * Connaissance « site » pour l’assistant IA (chat) et documentation interne.
  * À tenir à jour quand les parcours ou URLs changent.
@@ -17,7 +19,7 @@ export const SITE_KNOWLEDGE = `
 - **Cycle de vie contrats (Prisma, pas Supabase)** : **POST /api/contracts/create**, **/api/contracts/validate** (admin), **/api/contracts/pay** (Mollie virement, metadata insurance_contract), **GET /api/contracts/[id]/pdf/[docType]**, **POST /api/pdf/generate**, **POST /api/contracts/[id]/regenerate** (admin), **PATCH /api/gestion/insurance-contracts/[id]** (prime / prochaine échéance, admin). Webhook Mollie enrichi pour activer le contrat et générer les PDF. **/gestion** : tableau **Contrats plateforme** (actions manuelles) ; **/admin** : liste filtrable (100 derniers).
 - **Compte** : **/connexion**, **/creer-compte**, **/mot-de-passe-oublie**, **/reinitialiser-mot-de-passe**.
 - **Espace client** (connecté) : **/espace-client** — liste des documents, profil ; **/espace-client/documents/[id]** — détail d’un document (devis, contrat, attestation, DO…) ; **/espace-client/regularisation** — régularisation d’impayé **décennale** uniquement (le DO est payé en une fois avant l’attestation).
-- **Reprise de devis** : lien par email **/devis/resume/[token]** (brouillon sauvegardé 7 jours).
+- **Reprise de devis** : lien par email **/devis/resume/[token]** (brouillon sauvegardé ${QUOTE_VALIDITY_DAYS} jours).
 - **Étude dossier complexe** : si le devis décennale nécessite une étude (ex. **plusieurs sinistres**), redirection vers **/etude** après le formulaire. Si le client **ne trouve pas son activité** dans la liste : page **/etude/domaine** (demande d'étude pour cas spécifique).
 - **Vérification publique d’attestation** : **/v/[token]** (QR code / lien de vérification).
 

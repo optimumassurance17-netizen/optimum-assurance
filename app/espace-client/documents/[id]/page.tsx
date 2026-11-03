@@ -12,6 +12,7 @@ import { DevoirConseil } from "@/components/DevoirConseil"
 import { readResponseJson } from "@/lib/read-response-json"
 import { isClientQuoteEditionLocked, isContractCoverageLocked } from "@/lib/devis-edition"
 import { isStoredClientQuoteType } from "@/lib/client-quote-delete"
+import { isQuoteExpired, QUOTE_EXPIRED_ERROR } from "@/lib/quote-validity"
 import { SupprimerDevisButton } from "@/components/espace-client/SupprimerDevisButton"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
@@ -70,6 +71,7 @@ export default function DocumentPage() {
     data: Record<string, unknown>
     verificationToken?: string | null
     allowDevisEdition?: boolean
+    createdAt?: string
   } | null>(null)
   const [loading, setLoading] = useState(true)
   const [payLoading, setPayLoading] = useState(false)
@@ -174,6 +176,12 @@ export default function DocumentPage() {
     ? isContractCoverageLocked(document.type, document.status, document.allowDevisEdition === true)
     : false
   const editionLocked = quoteLocked || coverageLocked
+  const quoteExpired = Boolean(
+    document &&
+      (document.type === "devis" || document.type === "devis_do") &&
+      document.createdAt &&
+      isQuoteExpired(document.createdAt)
+  )
 
   useEffect(() => {
     if (!document) return
@@ -373,7 +381,7 @@ export default function DocumentPage() {
             { label: document?.numero || "Document" },
           ]}
         />
-        {document.type === "devis_do" && (
+        {document.type === "devis_do" && !quoteExpired && (
           <div className="mb-6 print:hidden space-y-3">
             <p className="text-sm text-[#333333]">
               Règlement : <strong>uniquement virement bancaire</strong> (Mollie). Page sécurisée avec RIB et référence.
@@ -395,7 +403,10 @@ export default function DocumentPage() {
             ← Retour
           </Link>
           <div className="flex flex-wrap items-center gap-3">
-            {document.type === "devis_do" && (
+            {quoteExpired && (
+              <p className="text-sm font-medium text-amber-800">{QUOTE_EXPIRED_ERROR}</p>
+            )}
+            {document.type === "devis_do" && !quoteExpired && (
               <button
                 onClick={handlePayDevisDo}
                 disabled={payLoading || !devoirConseilAccepte}

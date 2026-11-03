@@ -10,6 +10,7 @@ import {
   buildDdaSuitabilityStatement,
   normalizeDdaProduct,
 } from "@/lib/dda-compliance"
+import { isQuoteExpired, QUOTE_EXPIRED_ERROR } from "@/lib/quote-validity"
 
 /**
  * Crée un paiement Mollie pour un document devis_do.
@@ -43,6 +44,9 @@ export async function POST(
 
     if (!document) {
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
+    }
+    if (isQuoteExpired(document.createdAt)) {
+      return NextResponse.json({ error: QUOTE_EXPIRED_ERROR }, { status: 410 })
     }
 
     const data = JSON.parse(document.data) as {

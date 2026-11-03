@@ -6,19 +6,19 @@ import {
   safeLogMessage,
 } from "@/lib/esign/local-signature-fallback"
 import { prisma } from "@/lib/prisma"
+import { isQuoteExpired } from "@/lib/quote-validity"
 
 export type SignPreview =
   | { kind: "local"; documentId: string }
+  | { kind: "expired" }
   | { kind: "missing" }
 
-async function loadPendingContract(id: string): Promise<Record<string, unknown> | null> {
+async function loadPending(id: string): Promise<{ contractData: string; createdAt: Date } | null> {
   try {
-    const pending = await prisma.pendingSignature.findUnique({
+    return await prisma.pendingSignature.findUnique({
       where: { signatureRequestId: id },
-      select: { contractData: true },
+      select: { contractData: true, createdAt: true },
     })
-    if (!pending) return null
-    return readContractObject(pending.contractData)
   } catch (error) {
     console.error("[esign] dossier signature", safeLogMessage(error))
     return null
@@ -27,9 +27,12 @@ async function loadPendingContract(id: string): Promise<Record<string, unknown> 
 
 /** Aperçu du contrat à signer. Le PDF reste dans le dossier, sans Supabase. */
 export async function resolveSignPreview(id: string): Promise<SignPreview> {
-  const pendingData = await loadPendingContract(id)
-  if (isLocalSignableContract(pendingData) || isRebuildableDecennaleContract(pendingData)) {
-    return { kind: "local", documentId: id }
+  const pending = await loadPending(id)
+  if (!pending) return { kind: "missing" }
+  const pendingData = readContractObject(pending.contractData)
+  if (!isLocalSignableContract(pendingData) && !isRebuildableDecennaleContract(pendingData)) {
+    return { kind: "missing" }
   }
-  return { kind: "missing" }
+  if (isQuoteExpired(pending.createdAt)) return { kind: "expired" }
+  return { kind: "local", documentId: id }
 }

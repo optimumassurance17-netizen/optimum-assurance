@@ -11,6 +11,7 @@ import { AutoriserDevisButton } from "@/components/gestion/AutoriserDevisButton"
 import { ModifierDevisButton } from "@/components/gestion/ModifierDevisButton"
 import { DeleteErroneousContractButton } from "@/components/gestion/DeleteErroneousContractButton"
 import { isPerDocumentDevisEditionType } from "@/lib/devis-edition"
+import { isQuoteExpired, QUOTE_EXPIRED_ERROR } from "@/lib/quote-validity"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
 const DevisDoTemplate = dynamic(() => import("@/components/documents/DevisDoTemplate").then((m) => m.DevisDoTemplate), { ssr: false })
@@ -38,6 +39,7 @@ export default function GestionDocumentPage() {
     userId: string
     verificationToken?: string | null
     allowDevisEdition?: boolean
+    createdAt?: string
   } | null>(null)
   const [loading, setLoading] = useState(true)
   const [signatureSendLoading, setSignatureSendLoading] = useState(false)
@@ -98,6 +100,9 @@ export default function GestionDocumentPage() {
     )
   }
 
+  const quoteExpired =
+    document.type === "devis" && Boolean(document.createdAt && isQuoteExpired(document.createdAt))
+
   return (
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
       <header className="border-b border-gray-700 px-6 py-4 print:hidden">
@@ -106,7 +111,10 @@ export default function GestionDocumentPage() {
             ← Fiche client
           </Link>
           <div className="flex flex-wrap gap-3 items-center justify-end">
-            {document.type === "devis" && (
+            {document.type === "devis" && quoteExpired && (
+              <p className="text-sm text-amber-300">{QUOTE_EXPIRED_ERROR}</p>
+            )}
+            {document.type === "devis" && !quoteExpired && (
               <button
                 type="button"
                 disabled={signatureSendLoading}

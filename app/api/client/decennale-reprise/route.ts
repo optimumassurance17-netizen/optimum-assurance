@@ -8,6 +8,7 @@ import {
   isSepaSubscriptionForCurrentDecennale,
 } from "@/lib/decennale-payment-progress"
 import { prisma } from "@/lib/prisma"
+import { quoteStillValidSince } from "@/lib/quote-validity"
 
 function asTrimmedString(value: unknown): string | null {
   if (typeof value !== "string") return null
@@ -40,7 +41,7 @@ export async function GET() {
     const email = session.user.email?.trim().toLowerCase() || ""
     const [pendingRows, contrats, payments, sepa, user, doContract, drafts] = await Promise.all([
       prisma.pendingSignature.findMany({
-        where: { userId },
+        where: { userId, createdAt: { gt: quoteStillValidSince() } },
         orderBy: { createdAt: "desc" },
         take: 20,
         select: { signatureRequestId: true, contractData: true },

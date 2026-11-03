@@ -14,8 +14,7 @@ import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { appendDecennaleActivityDetailsAnnex } from "@/lib/pdf/decennale/activityDetailsAnnex"
 import { decennaleConditionsParticulieresLines } from "@/lib/conditions-particulieres"
 import { drawClausesPaginated } from "../shared/drawClauses"
-
-const QUOTE_VALIDITY_DAYS = 30
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quote-validity"
 
 /**
  * Devis décennale — pdf-lib, mentions légales Accelerant / délégation (pied de page).
@@ -196,7 +195,7 @@ export async function generateDecennaleQuote(data: InsuranceData): Promise<Uint8
     "5) Paiement : le contrat n’est effectif qu’après signature électronique et encaissement selon le parcours de paiement prévu.",
     "6) Pièces et conformité : des justificatifs complémentaires peuvent être exigés avant l’émission définitive (Kbis, identité, antécédents, etc.).",
     "7) Déclaration du risque : toute information inexacte ou omission significative peut entraîner révision, exclusion, résiliation ou nullité selon le cadre contractuel.",
-    "8) Validité : la proposition est valable 30 jours, sauf évolution du risque déclaré ou des conditions techniques de souscription.",
+    `8) Validité : la proposition est valable ${QUOTE_VALIDITY_DAYS} jours, sauf évolution du risque déclaré ou des conditions techniques de souscription.`,
     "9) Protection juridique : garantie défense/recours incluse selon les conditions contractuelles applicables.",
   ]
 

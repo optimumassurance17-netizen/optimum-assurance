@@ -8,6 +8,7 @@ import { logAdminActivity } from "@/lib/admin-activity"
 import { sendOperationsAlert } from "@/lib/operations-alert"
 import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 import { signatureReminderPayload } from "@/lib/signature-reminder"
+import { quoteStillValidSince } from "@/lib/quote-validity"
 
 const CLIENT_REMINDER_AFTER_HOURS = 24
 const ADMIN_ALERT_AFTER_HOURS = 72
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     const clientReminderThreshold = new Date(now.getTime() - CLIENT_REMINDER_AFTER_HOURS * 60 * 60 * 1000)
 
     const pendingSignatures = await prisma.pendingSignature.findMany({
-      where: { createdAt: { lte: clientReminderThreshold } },
+      where: { createdAt: { lte: clientReminderThreshold, gt: quoteStillValidSince(now) } },
       orderBy: { createdAt: "asc" },
       take: MAX_PENDING_SIGNATURES,
     })

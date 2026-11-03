@@ -37,7 +37,8 @@ const DECENNALE_MENTIONS: MentionCheck[] = [
 const DO_QUOTE_MENTIONS: MentionCheck[] = [
   ...DEVOIR_CONSEIL_ONLY,
   { label: "article L.242-1", regex: /L\.?\s*242-1/i },
-  { label: "validité 90 jours", regex: /90 jours/i },
+  { label: "validité 60 jours", regex: /Validité du devis : 60 jours/i },
+  { label: "offre d'indemnité 90 jours", regex: /90 jours/i },
   { label: "ajustement de prime au-delà de 10 %", regex: /10\s*%/ },
   { label: "mention Bon pour accord", regex: /Bon pour accord/i },
   { label: "questionnaire d'étude", regex: /questionnaire d'.tude/i },
@@ -241,6 +242,8 @@ async function main(): Promise<void> {
   const assuranceTitrePolicyText = await extractPdfText(assuranceTitrePolicyPdf)
   const assuranceTitreCertificateText = await extractPdfText(assuranceTitreCertificatePdf)
 
+  assert.match(decQuoteText, /Validité du devis : 60 jours/, "le devis décennale est valable 60 jours")
+  assert.match(decQuoteText, /valable 60 jours/, "l'annexe du devis décennale reprend les 60 jours")
   assert.doesNotMatch(decQuoteText, /\[object Object\]/, "le devis décennale imprime le texte du devoir de conseil")
   assert.match(decQuoteText, /a été établi/, "le devis décennale reprend la phrase du devoir de conseil")
   assertMentions(decQuoteText, "devis décennale", DEVOIR_CONSEIL_ONLY)

@@ -9,6 +9,7 @@ import {
 } from "@/lib/esign/local-signature-fallback"
 import { renderPendingDecennalePdf } from "@/lib/esign/render-pending-decennale-pdf"
 import { prisma } from "@/lib/prisma"
+import { isQuoteExpired, QUOTE_EXPIRED_ERROR } from "@/lib/quote-validity"
 
 export const runtime = "nodejs"
 
@@ -23,10 +24,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   const pending = await prisma.pendingSignature.findUnique({
     where: { signatureRequestId: id },
-    select: { contractNumero: true, contractData: true },
+    select: { contractNumero: true, contractData: true, createdAt: true },
   })
   if (!pending) {
     return NextResponse.json({ error: "Document introuvable." }, { status: 404 })
+  }
+  if (isQuoteExpired(pending.createdAt)) {
+    return NextResponse.json({ error: QUOTE_EXPIRED_ERROR }, { status: 410 })
   }
 
   const raw = readContractObject(pending.contractData)

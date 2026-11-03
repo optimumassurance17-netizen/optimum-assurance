@@ -16,6 +16,7 @@ import { DEVOIR_CONSEIL_TEXT } from "@/lib/devoir-conseil"
 import { DECENNALE_EXCLUSIONS_AND_DECHEANCE_CLAUSES } from "@/lib/decennale-legal-clauses"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 import { ActivityDetailsBlock } from "@/components/documents/ActivityDetailsBlock"
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quote-validity"
 
 interface DevisTemplateProps {
   numero: string
@@ -86,7 +87,7 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
       {/* Proposition */}
       <div className="mb-6">
         <p className="font-semibold text-black">
-          Proposition n° {numero} valable 2 mois à partir du {dateCreation}
+          Proposition n° {numero} valable {QUOTE_VALIDITY_DAYS} jours à partir du {dateCreation}
         </p>
         <p className="text-xs text-[#171717] mt-0.5">
           Courtier de proximité : {COURTIER.nom} — ORIAS n° {COURTIER.orias} — {COURTIER.email}
@@ -247,7 +248,7 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
 
       {/* Validité */}
       <p className="text-xs text-[#171717] border-t border-[#e5e5e5] pt-4 mt-6">
-        Ce devis est valable 2 mois à compter de sa date d&apos;émission. Les conditions générales sont disponibles sur demande.
+        Ce devis est valable {QUOTE_VALIDITY_DAYS} jours à compter de sa date d&apos;émission. Les conditions générales sont disponibles sur demande.
         La prise d&apos;effet des garanties est conditionnée à l&apos;encaissement de la première cotisation et au retour
         de la proposition signée.
       </p>

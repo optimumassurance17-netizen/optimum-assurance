@@ -14,6 +14,7 @@ import {
 } from "@/lib/esign/local-signature-fallback"
 import type { PendingSignature } from "@/lib/prisma-client"
 import { prisma } from "@/lib/prisma"
+import { isQuoteExpired, QUOTE_EXPIRED_ERROR } from "@/lib/quote-validity"
 
 export const runtime = "nodejs"
 
@@ -109,7 +110,15 @@ export async function POST(request: NextRequest) {
   const pending = await prisma.pendingSignature.findUnique({
     where: { signatureRequestId: id },
   })
-  if (pending && isLocalSignableContract(readContractObject(pending.contractData))) {
+  const pendingContract = pending ? readContractObject(pending.contractData) : null
+  if (
+    pending &&
+    isQuoteExpired(pending.createdAt) &&
+    (isLocalSignableContract(pendingContract) || isRebuildableDecennaleContract(pendingContract))
+  ) {
+    return NextResponse.json({ error: QUOTE_EXPIRED_ERROR }, { status: 410 })
+  }
+  if (pending && isLocalSignableContract(pendingContract)) {
     try {
       const local = await completeLocalSignature({
         pending,

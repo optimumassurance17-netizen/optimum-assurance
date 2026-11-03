@@ -14,8 +14,7 @@ import {
   type ConversionTrackingContext,
 } from "@/lib/conversion-tracking"
 import { decennaleDevisMatchKey, findFirstMatchingKey, normalizeIntakeEmail } from "@/lib/devis-intake"
-
-const DRAFT_EXPIRY_DAYS = 7
+import { quoteExpiresAt } from "@/lib/quote-validity"
 
 type DecennaleDraftTarif = {
   primeAnnuelle?: number
@@ -66,8 +65,7 @@ export async function POST(request: NextRequest) {
       incomingKey
     )
     const token = crypto.randomBytes(24).toString("hex")
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + DRAFT_EXPIRY_DAYS)
+    const expiresAt = quoteExpiresAt(new Date())
     const resumeUrl = `${APP_URL}/devis/resume/${token}`
 
     await prisma.devisDraft.create({

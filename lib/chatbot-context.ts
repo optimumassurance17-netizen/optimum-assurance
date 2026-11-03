@@ -1,6 +1,7 @@
 /** Contexte pour l'assistant IA — assurance décennale Optimum */
 
 import { faqs } from "./faq-data"
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quote-validity"
 import { SITE_KNOWLEDGE } from "./site-knowledge"
 
 // Base FAQ pour le matching (mots-clés → réponse)
@@ -41,7 +42,7 @@ const FAQ_BASE: { q: string; r: string }[] = [
   { q: "guides pratiques obligation", r: "Les guides détaillés sont sur /guides et /guides/[slug] (ex. obligation décennale, dommage ouvrage, sinistre). La FAQ complète est sur /faq." },
   { q: "conditions générales dommage ouvrage CG DO", r: "Les conditions générales du produit dommage ouvrage sont sur /conditions-generales-dommage-ouvrage (annexées au devis). Les CGV de distribution sont sur /cgv." },
   { q: "contact formulaire email sans téléphone", r: "Pas de contact téléphone. Utilisez le formulaire /contact, l'email info@optimum-assurance.eu, ou ce chat. Réponse sous 24h en général pour l'email." },
-  { q: "reprendre devis brouillon lien sauvegardé", r: "Si vous avez sauvegardé un devis décennale par email, utilisez le lien reçu : /devis/resume/[token] — valable 7 jours." },
+  { q: "reprendre devis brouillon lien sauvegardé", r: `Si vous avez sauvegardé un devis décennale par email, utilisez le lien reçu : /devis/resume/[token] — valable ${QUOTE_VALIDITY_DAYS} jours.` },
   { q: "étude dossier sinistres devis complexe", r: "Si le formulaire de /devis indique qu'une étude est nécessaire (ex. plusieurs sinistres), vous pouvez être orienté vers /etude pour laisser votre email et être recontacté sous 24 h avec une proposition." },
   { q: "activité pas dans la liste métier domaine introuvable spécial", r: "Si votre activité BTP n'apparaît pas dans la liste du devis, ouvrez la page /etude/domaine : décrivez votre domaine, votre email et éventuellement SIRET et CA. Notre équipe étudie le dossier et recontacte sous 24 h." },
 ]

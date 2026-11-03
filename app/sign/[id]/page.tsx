@@ -1,8 +1,10 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { SignDocumentClient } from "@/components/esign/SignDocumentClient"
 import { resolveSignPreview } from "@/lib/esign/resolve-sign-preview"
 import { signaturePageNotice } from "@/lib/esign/signature-page-notice"
+import { QUOTE_EXPIRED_ERROR } from "@/lib/quote-validity"
 
 function normalizeInternalNext(next: string | string[] | undefined): string | undefined {
   const raw = Array.isArray(next) ? next[0] : next
@@ -33,6 +35,19 @@ export default async function SignDocumentPage({ params, searchParams }: PagePro
 
   const preview = await resolveSignPreview(id)
   if (preview.kind === "missing") notFound()
+  if (preview.kind === "expired") {
+    return (
+      <main className="mx-auto max-w-xl px-4 py-16">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Devis expiré</h1>
+        <p className="mt-3 text-sm leading-relaxed text-slate-700">{QUOTE_EXPIRED_ERROR}</p>
+        <p className="mt-6">
+          <Link href="/devis" className="font-medium text-blue-700 underline">
+            Demander un nouveau devis
+          </Link>
+        </p>
+      </main>
+    )
+  }
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">

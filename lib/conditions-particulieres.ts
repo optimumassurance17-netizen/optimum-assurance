@@ -2,6 +2,7 @@ import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
 import { DEFAULT_PUBLIC_CONTACT_EMAIL } from "@/lib/public-contact-email"
 import { rcFabUsesBatteriesWording } from "@/lib/rc-fabriquant-dossier-config"
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quote-validity"
 import { SITE_URL } from "@/lib/site-url"
 
 /**
@@ -56,8 +57,8 @@ export const DECENNALE_REGIME_EXPERT = [
   "Droit applicable. Le contrat est soumis au droit français. Les tribunaux français sont compétents. En cas de divergence, les conditions particulières prévalent sur les conditions générales, et l'annexe I de l'article A.243-1 prévaut sur toute stipulation moins favorable au titre de la seule garantie obligatoire. Courtier : Optimum Courtage, RCS Angers 450 788 278, ORIAS LPS 28931947, siège 14 rue d'Amboise, 49300 Cholet. Assurance de responsabilité civile professionnelle et garantie financière conformes aux articles L.512-6 et L.512-7.",
 ] as const
 
-/** Validité des propositions DO émises par Optimum (devis dommage ouvrage). */
-export const DO_QUOTE_VALIDITY_DAYS = 90
+/** Validité des propositions, y compris les devis dommage ouvrage. */
+export const DO_QUOTE_VALIDITY_DAYS = QUOTE_VALIDITY_DAYS
 
 /** Plafond de coût déjà retenu sur les propositions générées (honoraires et existants inclus). */
 export const DO_COUT_MAX_PROPOSITION_LABEL = "1 000 000 EUR TTC (honoraires et existants inclus)"

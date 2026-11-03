@@ -13,8 +13,7 @@ import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../
 import { appendDecennaleActivityDetailsAnnex } from "./activityDetailsAnnex"
 import { decennaleConditionsParticulieresLines } from "@/lib/conditions-particulieres"
 import { drawClausesPaginated } from "../shared/drawClauses"
-
-const QUOTE_VALIDITY_DAYS = 30
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quote-validity"
 
 export type DecennaleQuotePolicyBundleMode = "proposition" | "contrat"
 

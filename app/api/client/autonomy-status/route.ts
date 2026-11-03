@@ -11,6 +11,7 @@ import {
 } from "@/lib/decennale-payment-progress"
 import { isDecennaleAttestationType } from "@/lib/decennale-impaye"
 import { prisma } from "@/lib/prisma"
+import { quoteStillValidSince } from "@/lib/quote-validity"
 
 type PendingContractData = {
   customUploadedDevisFlow?: unknown
@@ -70,7 +71,7 @@ export async function GET() {
     ] =
       await Promise.all([
         prisma.pendingSignature.findMany({
-          where: { userId },
+          where: { userId, createdAt: { gt: quoteStillValidSince() } },
           orderBy: { createdAt: "desc" },
           take: 20,
           select: {
