@@ -988,6 +988,96 @@ test.describe("Gestion CRM — Sirene", () => {
   })
 })
 
+test.describe("Gestion CRM — virement RC fabriquant", () => {
+  test("Le virement reçu génère l'attestation et laisse la décennale de côté", async ({ page }) => {
+    await mockGestionAuth(page)
+    let payload: unknown = null
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          users: [
+            {
+              id: "client_rc_1",
+              email: "rc@example.com",
+              raisonSociale: "Atelier RC",
+              siret: "11111111111111",
+              createdAt: "2026-11-01T08:00:00.000Z",
+            },
+          ],
+          documents: [],
+          payments: [],
+          devisLeads: [],
+          devisDrafts: [],
+          pendingSignatures: [],
+          insuranceContracts: [
+            {
+              id: "ctr_rc",
+              contractNumber: "RCFAB-1",
+              productType: "rc_fabriquant",
+              clientName: "Atelier RC",
+              userId: "client_rc_1",
+              premium: 600,
+              status: "approved",
+              paidAt: null,
+              validUntil: null,
+              createdAt: "2026-11-01T08:00:00.000Z",
+              hasCertificate: false,
+              user: { id: "client_rc_1", email: "rc@example.com", raisonSociale: "Atelier RC" },
+              lifecyclePayments: [],
+            },
+            {
+              id: "ctr_dec",
+              contractNumber: "DEC-PLATEFORME",
+              productType: "decennale",
+              clientName: "Atelier RC",
+              userId: "client_rc_1",
+              premium: 2400,
+              status: "approved",
+              paidAt: null,
+              validUntil: null,
+              createdAt: "2026-11-01T08:00:00.000Z",
+              hasCertificate: false,
+              user: { id: "client_rc_1", email: "rc@example.com", raisonSociale: "Atelier RC" },
+              lifecyclePayments: [],
+            },
+          ],
+          dashboardActions: [],
+          dashboardActionsSummary: { total: 0, high: 0, medium: 0, overdue72h: 0, dismissedToday: 0 },
+        }),
+      })
+    })
+    await page.route("**/api/gestion/insurance-contracts/ctr_rc/validate-rc-payment", async (route) => {
+      payload = route.request().postDataJSON()
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, kind: "first", alreadyPaid: false, emailSent: true }),
+      })
+    })
+
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto("/gestion")
+    const table = page.locator("#contrats-plateforme")
+    const rcRow = table.locator("tr", { hasText: "RCFAB-1" })
+    const decRow = table.locator("tr", { hasText: "DEC-PLATEFORME" })
+    await expect(rcRow.getByRole("button", { name: "Virement reçu" })).toBeVisible()
+    await expect(decRow.getByRole("button", { name: "Virement reçu" })).toHaveCount(0)
+    await expect(decRow.getByRole("button", { name: "Valider le paiement" })).toHaveCount(0)
+
+    page.once("dialog", (dialog) => {
+      expect(dialog.type()).toBe("prompt")
+      expect(dialog.message()).toContain("RCFAB-1")
+      expect(dialog.message()).toContain("attestation")
+      return dialog.accept("VIR 03/11/2026")
+    })
+    await rcRow.getByRole("button", { name: "Virement reçu" }).click()
+    await expect(page.getByText("Virement enregistré. L'attestation RC fabriquant est disponible.")).toBeVisible()
+    expect(payload).toEqual({ virementReference: "VIR 03/11/2026" })
+  })
+})
+
 test.describe("Gestion CRM — devis émis", () => {
   test("Le tableau distingue un devis expiré, un devis récent et un contrat ancien", async ({ page }) => {
     await mockGestionAuth(page)

@@ -21,6 +21,8 @@ import {
   canValidateDoPaymentManually,
   ValidateDoPaymentButton,
 } from "@/components/gestion/ValidateDoPaymentButton"
+import { ValidateRcPaymentButton } from "@/components/gestion/ValidateRcPaymentButton"
+import { rcManualPaymentAction } from "@/lib/rc-manual-payment"
 
 export type InsuranceContractGestionRow = {
   id: string
@@ -127,8 +129,9 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
           virement, <strong>Valider le paiement</strong> active le contrat et délivre l’attestation sans attendre Mollie.
           La même action est dans <strong>Recherche fiche client</strong> et sur la fiche de la société.{" "}
           <strong>Assurance titre :</strong> paiement unique Mollie. <strong>RC Fabriquant :</strong> la prime = montant de la{" "}
-          <strong>prochaine échéance</strong> Mollie (souvent annuelle ÷ 4). Entre deux échéances, ajustez via « Modifier prime ». Pas d’automatisation
-          SEPA dédiée RC sur ce flux.
+          <strong>prochaine échéance</strong> (souvent annuelle ÷ 4). <strong>Virement reçu</strong> enregistre
+          l&apos;encaissement sur le compte et génère l&apos;attestation, sans attendre Mollie. Entre deux échéances,
+          ajustez via « Modifier prime ».
         </p>
       </div>
 
@@ -198,6 +201,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                 const rcFabAnnual = c.premium * rcFabInstallments
                 const clientUserId = c.clientUserId ?? c.userId
                 const contractHasLinkedClient = Boolean(c.userId && c.user?.email)
+                const rcAction = contractHasLinkedClient ? rcManualPaymentAction(c) : null
                 return (
                   <tr key={c.id} className="border-b border-gray-700/50">
                     <td className="p-3 sm:p-4">
@@ -224,7 +228,9 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                         </p>
                       ) : null}
                       {c.productType === "rc_fabriquant" ? (
-                        <p className="text-xs text-gray-500 mt-1">Montant du prochain virement Mollie (modifiable)</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Montant du prochain virement. Virement reçu l&apos;enregistre et génère l&apos;attestation.
+                        </p>
                       ) : null}
                       {c.productType === "assurance_titre" ? (
                         <p className="text-xs text-violet-300/90 mt-1">Paiement unique du dossier après signature électronique</p>
@@ -451,6 +457,18 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                             contractNumber={c.contractNumber}
                             premium={c.premium}
                             awaitingPayment={c.status === CONTRACT_STATUS.approved && !c.paidAt}
+                            onResult={(result) => {
+                              setToast(result)
+                              void onRefresh()
+                            }}
+                          />
+                        ) : null}
+                        {rcAction ? (
+                          <ValidateRcPaymentButton
+                            contractId={c.id}
+                            contractNumber={c.contractNumber}
+                            premium={c.premium}
+                            action={rcAction}
                             onResult={(result) => {
                               setToast(result)
                               void onRefresh()

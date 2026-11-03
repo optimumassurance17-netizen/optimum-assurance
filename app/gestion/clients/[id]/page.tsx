@@ -22,6 +22,8 @@ import {
   doPaymentStatusLabel,
   ValidateDoPaymentButton,
 } from "@/components/gestion/ValidateDoPaymentButton"
+import { ValidateRcPaymentButton } from "@/components/gestion/ValidateRcPaymentButton"
+import { rcManualPaymentAction } from "@/lib/rc-manual-payment"
 import { readResponseJson } from "@/lib/read-response-json"
 import { fetchClientSireneLookup, normalizeSiretForLookup } from "@/lib/client-sirene"
 import { Toast } from "@/components/Toast"
@@ -1888,6 +1890,12 @@ export default function ClientDetailPage() {
                       paidAt: contract.paidAt ?? null,
                       hasCertificate: contract.hasCertificate,
                     })
+                    const rcAction = rcManualPaymentAction({
+                      productType: contract.productType,
+                      status: contract.status ?? "",
+                      paidAt: contract.paidAt ?? null,
+                      hasCertificate: contract.hasCertificate,
+                    })
                     return (
                     <tr key={contract.id} className="border-b border-gray-700/50">
                       <td className="p-4">
@@ -1942,6 +1950,19 @@ export default function ClientDetailPage() {
                               contractNumber={contract.contractNumber}
                               premium={contract.premium ?? 0}
                               awaitingPayment={contract.status === CONTRACT_STATUS.approved && !contract.paidAt}
+                              onResult={async (result) => {
+                                setToast(result)
+                                const reload = await fetch(`/api/gestion/clients/${clientId}`, { cache: "no-store" })
+                                if (reload.ok) setData(await readResponseJson<ClientData>(reload))
+                              }}
+                            />
+                          ) : null}
+                          {rcAction ? (
+                            <ValidateRcPaymentButton
+                              contractId={contract.id}
+                              contractNumber={contract.contractNumber}
+                              premium={contract.premium ?? 0}
+                              action={rcAction}
                               onResult={async (result) => {
                                 setToast(result)
                                 const reload = await fetch(`/api/gestion/clients/${clientId}`, { cache: "no-store" })

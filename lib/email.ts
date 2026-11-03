@@ -467,6 +467,21 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nVotre virement de ${montant.toLocaleString("fr-FR")} € (Mollie) pour le devis dommage ouvrage ${numero} a bien été enregistré.\n\nVotre attestation DO et votre facture acquittée sont dans votre espace client. L'attestation comporte un QR code de vérification. Validité 10 ans, non résiliable.\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Votre <strong>virement</strong> de <strong>${montant.toLocaleString("fr-FR")} €</strong> (Mollie) pour le devis dommage ouvrage ${numero} a bien été enregistré.</p><p>Votre attestation DO et votre facture acquittée sont dans votre espace client. QR code sur l’attestation. Validité 10 ans, non résiliable.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
+  confirmationPaiementRcManuel: (
+    raisonSociale: string,
+    numero: string,
+    montant: number,
+    validite?: { du: string; au: string }
+  ) => {
+    const periode = validite
+      ? `Validité de l'attestation : du ${validite.du} au ${validite.au}.`
+      : "Votre attestation est disponible dans votre espace client."
+    return {
+      subject: `Virement enregistré — RC fabriquant ${numero} - Optimum Assurance`,
+      text: `Bonjour ${raisonSociale},\n\nNous avons enregistré le virement de ${montant.toLocaleString("fr-FR")} € de votre contrat RC fabriquant ${numero}.\n\n${periode}\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
+      html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Nous avons enregistré le virement de <strong>${montant.toLocaleString("fr-FR")} €</strong> de votre contrat <strong>RC fabriquant ${escapeHtmlForEmail(numero)}</strong>.</p><p>${escapeHtmlForEmail(periode)}</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+    }
+  },
   confirmationPaiementDoManuel: (raisonSociale: string, numero: string, montant: number) => ({
     subject: `Paiement enregistré — dommage ouvrage ${numero} - Optimum Assurance`,
     text: `Bonjour ${raisonSociale},\n\nNous avons enregistré le règlement de ${montant.toLocaleString("fr-FR")} € de votre contrat dommage ouvrage ${numero}.\n\nVotre attestation et votre facture sont disponibles dans votre espace client. Validité 10 ans.\n\n${DO_DOSSIER_VALIDE_MESSAGE}\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,

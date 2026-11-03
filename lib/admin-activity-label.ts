@@ -6,6 +6,7 @@ const ACTION_LABELS: Record<string, string> = {
   echeance_refus_sepa_prevenu: "Client prévenu du refus de prélèvement",
   echeance_lien_carte: "Lien carte envoyé",
   echeance_virement_externe: "Virement externe validé",
+  rc_payment_validated_manually: "Virement RC fabriquant validé",
   echeance_marquee_reglee: "Échéance marquée réglée",
   payment_paid: "Paiement confirmé",
   payment_rectified: "Paiement rectifié",

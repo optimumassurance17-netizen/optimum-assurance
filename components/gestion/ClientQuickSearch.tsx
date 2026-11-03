@@ -12,6 +12,8 @@ import {
   ValidateDoPaymentButton,
   type DoPaymentContract,
 } from "@/components/gestion/ValidateDoPaymentButton"
+import { ValidateRcPaymentButton } from "@/components/gestion/ValidateRcPaymentButton"
+import { rcManualPaymentAction } from "@/lib/rc-manual-payment"
 
 type ClientQuickSearchResult = {
   id: string
@@ -191,7 +193,9 @@ export function ClientQuickSearch({
               )}
               {contracts.length > 0 ? (
                 <ul className="divide-y divide-gray-700 border-t border-gray-700">
-                  {contracts.map((contract) => (
+                  {contracts.map((contract) => {
+                    const rcAction = rcManualPaymentAction(contract)
+                    return (
                     <li key={contract.id} className="flex flex-col gap-2 px-4 py-3">
                       <div>
                         <span className="text-[11px] uppercase tracking-wide text-emerald-300">Contrat</span>
@@ -245,9 +249,19 @@ export function ClientQuickSearch({
                             onResult={(result) => setNotice(result.message)}
                           />
                         ) : null}
+                        {rcAction ? (
+                          <ValidateRcPaymentButton
+                            contractId={contract.id}
+                            contractNumber={contract.contractNumber}
+                            premium={contract.premium}
+                            action={rcAction}
+                            onResult={(result) => setNotice(result.message)}
+                          />
+                        ) : null}
                       </div>
                     </li>
-                  ))}
+                    )
+                  })}
                 </ul>
               ) : null}
               {notice ? <p className="border-t border-gray-700 px-4 py-2 text-sm text-amber-100">{notice}</p> : null}

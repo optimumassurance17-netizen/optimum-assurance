@@ -13,6 +13,7 @@ import {
 } from "@/lib/insurance-product"
 import { readAssuranceTitreCoverageDurationYears } from "@/lib/assurance-titre-contract-config"
 import { readRcFabDossierConfig, rcFabAttestationWindow } from "@/lib/rc-fabriquant-dossier-config"
+import { resolveManualRcPaymentStep, type ManualRcPaymentKind } from "@/lib/rc-manual-payment"
 import { collapseDecennaleContractDuplicates } from "@/lib/decennale-contract-replacement"
 
 export type CreateContractInput = {
@@ -528,6 +529,102 @@ export async function validateDoPaymentManually(
     )
   }
   return { ok: true, contract: result.contract, idempotent: result.idempotent, amount }
+}
+
+export type ManualRcPaymentResult =
+  | {
+      ok: true
+      contract: InsuranceContract
+      idempotent: boolean
+      amount: number
+      certificateReady: boolean
+      kind: ManualRcPaymentKind
+    }
+  | {
+      ok: false
+      error:
+        | "NOT_FOUND"
+        | "NOT_RC"
+        | "NOT_PAYABLE"
+        | "REFERENCE_REQUIRED"
+        | "INVALID_AMOUNT"
+        | "AMOUNT_MISMATCH"
+        | "PDF_GENERATION_FAILED"
+    }
+
+/**
+ * Enregistre une échéance RC fabriquant reçue sur le compte, sans appel Mollie.
+ * Le premier encaissement active le contrat et délivre l'attestation.
+ * Chaque échéance suivante allonge la période et réimprime l'attestation.
+ */
+export async function validateRcFabriquantPaymentManually(
+  contractId: string,
+  actorEmail: string,
+  virementReference: string | null
+): Promise<ManualRcPaymentResult> {
+  const current = await prisma.insuranceContract.findUnique({ where: { id: contractId } })
+  if (!current) return { ok: false, error: "NOT_FOUND" }
+  if (current.productType !== "rc_fabriquant") return { ok: false, error: "NOT_RC" }
+
+  const amount = mollieExpectedAmountForInsuranceContract(current.productType, current.premium)
+  if (!(amount > 0)) return { ok: false, error: "INVALID_AMOUNT" }
+
+  const [paidPayments, certificate] = await Promise.all([
+    prisma.contractLifecyclePayment.findMany({
+      where: { contractId, status: "paid" },
+      orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
+      select: { molliePaymentId: true },
+    }),
+    prisma.contractStoredDocument.findFirst({
+      where: { contractId, type: "certificate" },
+      select: { id: true },
+    }),
+  ])
+  const step = resolveManualRcPaymentStep({
+    contractId,
+    status: current.status,
+    paidAt: current.paidAt,
+    paidPaymentIds: paidPayments.map((row) => row.molliePaymentId),
+    hasCertificate: Boolean(certificate),
+  })
+  if (!step.ok) return { ok: false, error: "NOT_PAYABLE" }
+  if (step.kind !== "retry" && !virementReference) return { ok: false, error: "REFERENCE_REQUIRED" }
+
+  const result = await processInsuranceContractPaymentSuccess(contractId, step.reference, amount)
+  if (!result.ok) {
+    if (result.error === "PDF_GENERATION_FAILED") return { ok: false, error: "PDF_GENERATION_FAILED" }
+    if (result.error === "AMOUNT_MISMATCH") return { ok: false, error: "AMOUNT_MISMATCH" }
+    if (result.error === "NOT_FOUND") return { ok: false, error: "NOT_FOUND" }
+    return { ok: false, error: "NOT_PAYABLE" }
+  }
+
+  const ready = await prisma.contractStoredDocument.findFirst({
+    where: { contractId, type: "certificate" },
+    select: { id: true },
+  })
+  if (!result.idempotent) {
+    await logContractAction(
+      contractId,
+      "payment_validated_manually",
+      {
+        productType: "rc_fabriquant",
+        amount,
+        reference: step.reference,
+        virementReference,
+        kind: step.kind,
+      },
+      actorEmail
+    )
+  }
+
+  return {
+    ok: true,
+    contract: result.contract,
+    idempotent: result.idempotent,
+    amount,
+    certificateReady: Boolean(ready),
+    kind: step.kind,
+  }
 }
 
 /**
