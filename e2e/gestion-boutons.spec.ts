@@ -689,10 +689,7 @@ test.describe("Gestion — boutons d'action", () => {
 
     await page.goto("/gestion")
     await expect(page.getByRole("heading", { name: "Actions du jour (automatique)" })).toBeVisible()
-    await expect(page.locator("#clients")).toHaveCount(0)
-    await expect(page.getByRole("link", { name: "Clients", exact: true })).toHaveCount(0)
-    await expect(page.getByRole("link", { name: "Devis DO" })).toHaveCount(0)
-    await page.getByRole("button", { name: "Listes" }).click()
+    await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Clients" }).click()
     const clients = page.locator("#clients")
     await expect(clients).toBeInViewport()
     await expect(clients.getByText("25 sur 30 clients. La recherche du tableau retrouve les autres.")).toBeVisible()
@@ -735,7 +732,7 @@ test.describe("Gestion — boutons d'action", () => {
 
     await page.goto("/gestion")
     await expect(page.getByRole("heading", { name: "Nouveau client" })).toHaveCount(0)
-    await expect(page.getByRole("link", { name: "Nouveau client" })).toHaveCount(0)
+    await expect(page.getByRole("link", { name: "Nouveau client" })).toBeVisible()
     await page.getByRole("button", { name: "Graphiques et créations" }).click()
 
     const form = page.locator("#nouveau-client")

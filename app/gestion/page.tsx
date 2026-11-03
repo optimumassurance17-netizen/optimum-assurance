@@ -656,7 +656,6 @@ export default function GestionPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [ficheSearchQuery, setFicheSearchQuery] = useState("")
   const [outilsOuverts, setOutilsOuverts] = useState(false)
-  const [listesOuvertes, setListesOuvertes] = useState(false)
   const [listeScroll, setListeScroll] = useState<{ id: string; n: number } | null>(null)
   const [outilScroll, setOutilScroll] = useState<{ id: string; n: number } | null>(null)
   const [docTypeFilter, setDocTypeFilter] = useState<string>("all")
@@ -776,7 +775,6 @@ export default function GestionPage() {
   }, [])
 
   const ouvrirListe = useCallback((id: string) => {
-    setListesOuvertes(true)
     setListeScroll((prev) => ({ id, n: (prev?.n ?? 0) + 1 }))
   }, [])
 
@@ -810,14 +808,14 @@ export default function GestionPage() {
   }, [outilScroll, outilsOuverts, loading])
 
   useEffect(() => {
-    if (!listeScroll || !listesOuvertes) return
+    if (!listeScroll) return
     const id = listeScroll.id
     const timer = window.setTimeout(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: "auto", block: "start" })
       setListeScroll(null)
     }, 60)
     return () => window.clearTimeout(timer)
-  }, [listeScroll, listesOuvertes])
+  }, [listeScroll])
 
   useEffect(() => {
     const openFromLocation = () => {
@@ -829,7 +827,6 @@ export default function GestionPage() {
       }
       const listeId = gestionListeIdFromHash(window.location.hash)
       if (!listeId) return
-      setListesOuvertes(true)
       setListeScroll((prev) => ({ id: listeId, n: (prev?.n ?? 0) + 1 }))
     }
     openFromLocation()
@@ -2464,11 +2461,7 @@ export default function GestionPage() {
                     type="search"
                     placeholder="Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant, devis DO)..."
                     value={searchQuery}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      setSearchQuery(value)
-                      if (value.trim()) setListesOuvertes(true)
-                    }}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-[29rem]"
                   />
                   {searchQuery.trim() ? (
@@ -2521,31 +2514,6 @@ export default function GestionPage() {
                   Actions du jour
                 </a>
               ) : null}
-              <button
-                type="button"
-                aria-pressed={listesOuvertes}
-                onClick={() => {
-                  if (listesOuvertes) {
-                    setListesOuvertes(false)
-                    window.setTimeout(() => {
-                      document.getElementById("actions-du-jour")?.scrollIntoView({ behavior: "smooth", block: "start" })
-                    }, 60)
-                    return
-                  }
-                  ouvrirListe("clients")
-                }}
-                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2563eb] text-white border border-[#1d4ed8] hover:bg-[#1d4ed8]"
-              >
-                {listesOuvertes ? "Masquer les listes" : "Listes"}
-              </button>
-              <Link
-                href="/gestion/rectification"
-                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#1f2937] text-cyan-100 border border-cyan-700/70 hover:bg-[#273547]"
-              >
-                Rectification 100%
-              </Link>
-              {listesOuvertes ? (
-              <>
               <a
                 href="#clients"
                 onClick={onListAnchor("clients")}
@@ -2590,6 +2558,12 @@ export default function GestionPage() {
               >
                 Contrats
               </a>
+              <Link
+                href="/gestion/rectification"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#1f2937] text-cyan-100 border border-cyan-700/70 hover:bg-[#273547]"
+              >
+                Rectification 100%
+              </Link>
               {(data.devisLeads?.length ?? 0) > 0 && (
                 <a
                   href="#leads-decennale"
@@ -2635,10 +2609,6 @@ export default function GestionPage() {
                   Assurance titre
                 </a>
               )}
-              </>
-              ) : null}
-              {outilsOuverts ? (
-              <>
               <a
                 href="#nouveau-client"
                 onClick={(event) => {
@@ -2739,8 +2709,6 @@ export default function GestionPage() {
               >
                 Avenant
               </a>
-              </>
-              ) : null}
             </nav>
             {outilsOuverts ? (
             <>
@@ -4082,8 +4050,6 @@ export default function GestionPage() {
           />
         )}
 
-        {listesOuvertes ? (
-        <>
         {/* Liste clients - accès fiche détaillée */}
         {data && (
           <section id="clients" className="scroll-mt-24">
@@ -4986,8 +4952,6 @@ export default function GestionPage() {
             </div>
           </section>
         )}
-        </>
-        ) : null}
 
         {outilsOuverts ? (
         <>
@@ -5584,8 +5548,6 @@ export default function GestionPage() {
         </>
         ) : null}
 
-        {listesOuvertes ? (
-        <>
         {/* Demandes devis DO en attente */}
         {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
           <section id="rc-fabriquant-leads" className="scroll-mt-24">
@@ -6092,8 +6054,6 @@ export default function GestionPage() {
             )}
           </section>
         )}
-        </>
-        ) : null}
 
         {outilsOuverts ? (
         <section id="creer-avenant" className="scroll-mt-24">
@@ -6185,8 +6145,6 @@ export default function GestionPage() {
         </section>
         ) : null}
 
-        {listesOuvertes ? (
-        <>
         {/* Liste des avenants - historique par client */}
         <section>
           <h2 className="text-lg font-semibold text-white mb-4">Historique des avenants</h2>
@@ -6305,8 +6263,6 @@ export default function GestionPage() {
             </div>
           </section>
         )}
-        </>
-        ) : null}
       </div>
 
       {/* Modal modification contrat / avenant — données alignées sur le JSON contrat / PDF */}
