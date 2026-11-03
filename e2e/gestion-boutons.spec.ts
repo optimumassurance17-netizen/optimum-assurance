@@ -667,4 +667,38 @@ test.describe("Gestion — boutons d'action", () => {
       releaseRefresh()
     }
   })
+
+  test("Les listes du tableau montrent d'abord les dossiers récents", async ({ page }) => {
+    await mockAdmin(page)
+    const dashboard = buildDashboard()
+    dashboard.users = Array.from({ length: 30 }, (_, index) => ({
+      id: `client_${index + 1}`,
+      email: `client-${String(index + 1).padStart(2, "0")}@example.com`,
+      raisonSociale: `Client ${index + 1}`,
+      siret: "",
+      createdAt: "2026-06-09T08:00:00.000Z",
+    }))
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(dashboard),
+      })
+    })
+
+    await page.goto("/gestion")
+    await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Clients" }).click()
+    const clients = page.locator("#clients")
+    await expect(clients).toBeInViewport()
+    await expect(clients.getByText("25 sur 30 clients. La recherche du tableau retrouve les autres.")).toBeVisible()
+    await expect(clients.getByRole("link", { name: "Fiche client →" })).toHaveCount(25)
+    await expect(clients.getByText("client-01@example.com")).toBeVisible()
+    await expect(clients.getByText("client-30@example.com")).toHaveCount(0)
+
+    await page
+      .getByPlaceholder("Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant, devis DO)...")
+      .fill("client-30@")
+    await expect(clients.getByText("client-30@example.com")).toBeVisible()
+    await expect(clients.getByRole("link", { name: "Fiche client →" })).toHaveCount(1)
+  })
 })

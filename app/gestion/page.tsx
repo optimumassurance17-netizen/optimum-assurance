@@ -549,6 +549,30 @@ function buildUniqueUserLookup(
   return unique
 }
 
+const DASHBOARD_ROW_PREVIEW = 25
+const DASHBOARD_ROW_SEARCH_CAP = 80
+
+function takeDashboardRows<T>(rows: T[], narrowed: boolean): T[] {
+  return rows.slice(0, narrowed ? DASHBOARD_ROW_SEARCH_CAP : DASHBOARD_ROW_PREVIEW)
+}
+
+function DashboardListNote({
+  shown,
+  total,
+  subject,
+}: {
+  shown: number
+  total: number
+  subject: string
+}) {
+  if (shown >= total) return null
+  return (
+    <p className="mb-3 text-sm text-gray-400">
+      {shown.toLocaleString("fr-FR")} sur {total.toLocaleString("fr-FR")} {subject}. La recherche du tableau retrouve les autres.
+    </p>
+  )
+}
+
 export default function GestionPage() {
   const { status } = useSession()
   const router = useRouter()
@@ -1205,6 +1229,20 @@ export default function GestionPage() {
   const filteredPayments = useMemo(() => (data ? filterBySearch(data.payments, searchQuery) : []), [data, searchQuery])
   const filteredAttestations = useMemo(() => filterBySearch(attestations, searchQuery), [attestations, searchQuery])
   const filteredContrats = useMemo(() => filterBySearch(contrats, searchQuery), [contrats, searchQuery])
+  const listsNarrowed = searchQuery.trim().length > 0
+  const visibleUsers = useMemo(() => takeDashboardRows(filteredUsers, listsNarrowed), [filteredUsers, listsNarrowed])
+  const visiblePayments = useMemo(
+    () => takeDashboardRows(filteredPayments, listsNarrowed),
+    [filteredPayments, listsNarrowed]
+  )
+  const visibleAttestations = useMemo(
+    () => takeDashboardRows(filteredAttestations, listsNarrowed),
+    [filteredAttestations, listsNarrowed]
+  )
+  const visibleContrats = useMemo(
+    () => takeDashboardRows(filteredContrats, listsNarrowed),
+    [filteredContrats, listsNarrowed]
+  )
 
   const dashboardUserLookup = useMemo(() => {
     const users = data?.users ?? []
@@ -3733,7 +3771,8 @@ export default function GestionPage() {
         {/* Liste clients - accès fiche détaillée */}
         {data && (
           <section id="clients" className="scroll-mt-24">
-            <h2 className="text-lg font-semibold text-white mb-4">Clients</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">Clients</h2>
+            <DashboardListNote shown={visibleUsers.length} total={filteredUsers.length} subject="clients" />
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[400px]">
                 <thead>
@@ -3749,7 +3788,7 @@ export default function GestionPage() {
                   {filteredUsers.length === 0 ? (
                     <tr><td colSpan={5} className="p-4 text-gray-200">Aucun client</td></tr>
                   ) : (
-                    filteredUsers.map((u) => (
+                    visibleUsers.map((u) => (
                       <tr key={u.id} className="border-b border-gray-700/50">
                         <td className="p-3 sm:p-4">{u.raisonSociale || "—"}</td>
                         <td className="p-3 sm:p-4">{u.email}</td>
@@ -4243,7 +4282,8 @@ export default function GestionPage() {
         )}
         {/* Paiements */}
         <section id="paiements" className="scroll-mt-24">
-          <h2 className="text-lg font-semibold text-white mb-4">Paiements</h2>
+          <h2 className="text-lg font-semibold text-white mb-2">Paiements</h2>
+          <DashboardListNote shown={visiblePayments.length} total={filteredPayments.length} subject="paiements" />
           <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
             <table className="w-full text-sm min-w-[500px]">
               <thead>
@@ -4262,7 +4302,7 @@ export default function GestionPage() {
                 {filteredPayments.length === 0 ? (
                   <tr><td colSpan={8} className="p-4 text-gray-200">Aucun paiement</td></tr>
                 ) : (
-                  filteredPayments.map((p) => {
+                  visiblePayments.map((p) => {
                     const described = describeClientPayment({
                       metadata: p.metadata,
                       molliePaymentId: p.molliePaymentId,
@@ -4326,6 +4366,11 @@ export default function GestionPage() {
               <option value="attestation_do">DO uniquement</option>
             </select>
           </div>
+          <DashboardListNote
+            shown={visibleAttestations.length}
+            total={filteredAttestations.length}
+            subject="attestations"
+          />
           <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
             <table className="w-full text-sm min-w-[400px]">
               <thead>
@@ -4342,7 +4387,7 @@ export default function GestionPage() {
                 {filteredAttestations.length === 0 ? (
                   <tr><td colSpan={6} className="p-4 text-gray-200">Aucune attestation</td></tr>
                 ) : (
-                  filteredAttestations.map((d) => (
+                  visibleAttestations.map((d) => (
                     <tr key={d.id} className="border-b border-gray-700/50">
                       <td className="p-3 sm:p-4">
                         <span className="text-xs text-gray-200">
@@ -4454,7 +4499,8 @@ export default function GestionPage() {
 
         {/* Contrats - autorisation annulation */}
         <section id="contrats" className="scroll-mt-24">
-          <h2 className="text-lg font-semibold text-white mb-4">Contrats</h2>
+          <h2 className="text-lg font-semibold text-white mb-2">Contrats</h2>
+          <DashboardListNote shown={visibleContrats.length} total={filteredContrats.length} subject="contrats" />
           <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
             <table className="w-full text-sm min-w-[400px]">
               <thead>
@@ -4470,7 +4516,7 @@ export default function GestionPage() {
                 {filteredContrats.length === 0 ? (
                   <tr><td colSpan={5} className="p-4 text-gray-200">Aucun contrat</td></tr>
                 ) : (
-                  filteredContrats.map((d) => (
+                  visibleContrats.map((d) => (
                     <tr key={d.id} className="border-b border-gray-700/50">
                       <td className="p-3 sm:p-4 font-mono">{d.numero}</td>
                       <td className="p-3 sm:p-4">{d.user.raisonSociale || d.user.email}</td>

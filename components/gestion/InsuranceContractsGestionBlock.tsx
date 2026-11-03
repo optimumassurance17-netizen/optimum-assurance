@@ -102,6 +102,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
       return c.productType === productFilter
     })
   }, [contracts, searchQuery, productFilter])
+  const visible = filtered.slice(0, searchQuery.trim() || productFilter !== "all" ? 80 : 25)
 
   const run = async (id: string, fn: () => Promise<void>) => {
     setBusyId(id)
@@ -161,6 +162,11 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
           Vue admin (100 contrats)
         </Link>
       </div>
+      {visible.length < filtered.length ? (
+        <p className="mb-3 text-sm text-gray-400">
+          {visible.length.toLocaleString("fr-FR")} sur {filtered.length.toLocaleString("fr-FR")} contrats plateforme. La recherche du tableau retrouve les autres.
+        </p>
+      ) : null}
 
       <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
         <table className="w-full text-sm min-w-[720px]">
@@ -182,7 +188,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                 </td>
               </tr>
             ) : (
-              filtered.map((c) => {
+              visible.map((c) => {
                 const paidCount = c.lifecyclePayments.filter((p) => p.status === "paid").length
                 const showRcFabHints = c.productType === "rc_fabriquant" && c.premium > 0
                 const rcFabInstallments =
