@@ -110,6 +110,7 @@ import {
   ASSURANCE_TITRE_OPERATION_LABELS,
 } from "@/lib/assurance-titre-types"
 import { describeClientPayment, pendingCardEcheanceId } from "@/lib/client-echeances"
+import { isDisplayedQuoteExpired } from "@/lib/quote-validity"
 
 function getRcFabLeadDraft(
   d: { id: string; statut?: string; notesInternes?: string | null },
@@ -410,6 +411,7 @@ interface DashboardData {
     signatureFlowLabel?: string
     ageHours?: number
     remindedAt?: string | null
+    expired?: boolean
     repairEligible?: boolean
   }[]
   sepaSubscriptions?: {
@@ -1473,7 +1475,9 @@ export default function GestionPage() {
       if (!matchesPendingSignatureSearch(signature, searchQuery)) return false
       if (signatureFlowFilter === "custom_pdf") return signature.signatureFlow === "custom_pdf"
       if (signatureFlowFilter === "decennale") return signature.signatureFlow !== "custom_pdf"
-      if (signatureFlowFilter === "repair_eligible") return signature.repairEligible === true
+      if (signatureFlowFilter === "repair_eligible") {
+        return signature.repairEligible === true && !isDisplayedQuoteExpired(signature.createdAt)
+      }
       return true
     })
   }, [data, searchQuery, signatureFlowFilter])
@@ -1526,12 +1530,18 @@ export default function GestionPage() {
     const contracts = resolvedInsuranceContracts
 
     const totalLeads = decennaleLeads.length + rcFabriquantLeads.length + doEtudeLeads.length
+    const decennaleStillOpen = decennaleLeads.filter(
+      (lead) => !lead.rappelSentAt && (lead.slaHours ?? 0) >= 24 && !isDisplayedQuoteExpired(lead.createdAt)
+    )
     const hotLeads =
-      decennaleLeads.filter((lead) => !lead.rappelSentAt && (lead.slaHours ?? 0) >= 24).length +
+      decennaleStillOpen.length +
       rcFabriquantLeads.filter((lead) => normalizeRcFabriquantLeadStatut(lead.statut) === "a_traiter").length +
       doEtudeLeads.filter((lead) => lead.statut === "pending").length
 
-    const devisEmis = data.documents.filter((d) => d.type === "devis" || d.type === "devis_do").length
+    const issuedQuotes = data.documents.filter((d) => d.type === "devis" || d.type === "devis_do")
+    const devisEmis = issuedQuotes.length
+    const expiredQuotes = issuedQuotes.filter((d) => isDisplayedQuoteExpired(d.createdAt)).length
+    const expiredPendingSignatures = pendingSignatures.filter((row) => isDisplayedQuoteExpired(row.createdAt)).length
     const signedContracts = contracts.filter((c) => c.status === "approved" || c.status === "active")
     const paidContracts = signedContracts.filter((c) => Boolean(c.paidAt))
     const paidRevenue = data.payments
@@ -1568,7 +1578,9 @@ export default function GestionPage() {
       totalLeads,
       hotLeads,
       devisEmis,
+      expiredQuotes,
       pendingSignatures: pendingSignatures.length,
+      expiredPendingSignatures,
       signedContracts: signedContracts.length,
       paidContracts: paidContracts.length,
       unpaidSignedContracts: signedContracts.length - paidContracts.length,
@@ -1580,7 +1592,7 @@ export default function GestionPage() {
           key: "decennale",
           label: "Décennale",
           leads: decennaleLeads.length,
-          toHandle: decennaleLeads.filter((lead) => !lead.rappelSentAt && (lead.slaHours ?? 0) >= 24).length,
+          toHandle: decennaleStillOpen.length,
         },
         {
           key: "rc-fabriquant",
@@ -3178,7 +3190,11 @@ export default function GestionPage() {
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">Signatures en attente</p>
                 <p className="text-2xl font-bold text-violet-300">{data.pendingSignatures?.length ?? 0}</p>
-                <p className="text-xs text-gray-200 mt-1">Non finalisées (PDF / sign)</p>
+                <p className="text-xs text-gray-200 mt-1">
+                  {(data.pendingSignatures ?? []).some((row) => isDisplayedQuoteExpired(row.createdAt))
+                    ? `${(data.pendingSignatures ?? []).filter((row) => isDisplayedQuoteExpired(row.createdAt)).length} expirée(s), sans relance`
+                    : "Non finalisées (PDF / sign)"}
+                </p>
               </div>
               <div className="bg-[#252525] rounded-xl p-4 border border-amber-900/40">
                 <p className="text-gray-200 text-sm">Contrats plateforme</p>
@@ -3273,10 +3289,18 @@ export default function GestionPage() {
                   <div className="rounded-lg border border-gray-700 bg-[#242a27] px-3 py-2">
                     <p className="text-[11px] text-gray-300">Devis émis</p>
                     <p className="text-xl font-semibold text-white">{pilotageV2.devisEmis}</p>
+                    {pilotageV2.expiredQuotes > 0 ? (
+                      <p className="text-[11px] text-amber-200">{pilotageV2.expiredQuotes} expiré(s)</p>
+                    ) : null}
                   </div>
                   <div className="rounded-lg border border-violet-700/50 bg-violet-950/20 px-3 py-2">
                     <p className="text-[11px] text-violet-200">Signatures en attente</p>
                     <p className="text-xl font-semibold text-violet-100">{pilotageV2.pendingSignatures}</p>
+                    {pilotageV2.expiredPendingSignatures > 0 ? (
+                      <p className="text-[11px] text-amber-200">
+                        dont {pilotageV2.expiredPendingSignatures} expirée(s)
+                      </p>
+                    ) : null}
                   </div>
                   <div className="rounded-lg border border-gray-700 bg-[#242a27] px-3 py-2">
                     <p className="text-[11px] text-gray-300">Contrats signés</p>
@@ -3706,6 +3730,9 @@ export default function GestionPage() {
                                 </p>
                                 <p className="text-[11px] text-gray-300">
                                   {flowLabel} · {row.contractNumero} · depuis {age}
+                                  {isDisplayedQuoteExpired(row.createdAt) ? (
+                                    <span className="text-amber-200"> · Expirée</span>
+                                  ) : null}
                                   {row.remindedAt
                                     ? ` · Relancé le ${new Date(row.remindedAt).toLocaleDateString("fr-FR")}`
                                     : ""}
@@ -4169,7 +4196,13 @@ export default function GestionPage() {
                         <td className="p-3 sm:p-4 text-right">
                           <div className="flex flex-col items-end gap-1">
                             <span>{l.primeAnnuelle != null ? `${l.primeAnnuelle.toLocaleString("fr-FR")} €` : "—"}</span>
-                            {typeof l.slaHours === "number" ? leadSlaBadge(l.slaHours) : null}
+                            {isDisplayedQuoteExpired(l.createdAt) ? (
+                              <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-amber-900/50 text-amber-200">
+                                Expiré
+                              </span>
+                            ) : typeof l.slaHours === "number" ? (
+                              leadSlaBadge(l.slaHours)
+                            ) : null}
                           </div>
                         </td>
                       </tr>
@@ -4233,7 +4266,8 @@ export default function GestionPage() {
             <p className="text-sm text-gray-400 mb-4 max-w-2xl">
               Décennale (contrat généré depuis un devis) ou <strong className="text-gray-200">PDF personnalisé</strong> (RC
               après signature). Tant qu&apos;une ligne est présente, le client ne peut pas recevoir une nouvelle invitation
-              sur le même compte.
+              sur le même compte. Passé 60 jours, l&apos;invitation est expirée : elle reste visible, elle s&apos;annule, et
+              le rappel n&apos;est plus proposé.
             </p>
             <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
               <button
@@ -4308,6 +4342,7 @@ export default function GestionPage() {
                   ) : (
                     filteredPendingSignatures.map((s) => {
                       const flow = s.signatureFlow ?? "decennale"
+                      const expired = isDisplayedQuoteExpired(s.createdAt)
                       return (
                         <tr key={s.id} className="border-b border-gray-700/50">
                           <td className="p-3 sm:p-4 whitespace-nowrap">{new Date(s.createdAt).toLocaleString("fr-FR")}</td>
@@ -4332,11 +4367,20 @@ export default function GestionPage() {
                             {s.user ? s.user.raisonSociale || s.user.email : "—"}
                           </td>
                           <td className="p-3 sm:p-4 whitespace-nowrap text-gray-200">
-                            {typeof s.ageHours === "number"
-                              ? s.ageHours < 24
-                                ? `${s.ageHours} h`
-                                : `${Math.floor(s.ageHours / 24)} j`
-                              : "—"}
+                            <div className="flex flex-col items-start gap-1">
+                              <span>
+                                {typeof s.ageHours === "number"
+                                  ? s.ageHours < 24
+                                    ? `${s.ageHours} h`
+                                    : `${Math.floor(s.ageHours / 24)} j`
+                                  : "—"}
+                              </span>
+                              {expired ? (
+                                <span className="inline-block text-xs font-medium uppercase tracking-wide bg-amber-900/50 text-amber-200 px-2 py-0.5 rounded">
+                                  Expirée
+                                </span>
+                              ) : null}
+                            </div>
                           </td>
                           <td className="p-3 sm:p-4 whitespace-nowrap text-gray-200">
                             {s.remindedAt ? new Date(s.remindedAt).toLocaleString("fr-FR") : "—"}
@@ -4393,6 +4437,7 @@ export default function GestionPage() {
                               >
                                 {cancellingSignatureId === s.signatureRequestId ? "…" : "Annuler"}
                               </button>
+                              {expired ? null : (
                               <button
                                   type="button"
                                   disabled={repairingSignatureId === s.signatureRequestId}
@@ -4437,6 +4482,7 @@ export default function GestionPage() {
                                 >
                                   {repairingSignatureId === s.signatureRequestId ? "…" : "Réparer"}
                                 </button>
+                              )}
                             </div>
                           </td>
                         </tr>

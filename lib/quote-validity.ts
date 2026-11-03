@@ -22,3 +22,12 @@ export function isQuoteExpired(issuedAt: Date | string, now = new Date()): boole
   if (Number.isNaN(issued.getTime())) return true
   return now.getTime() >= issued.getTime() + QUOTE_VALIDITY_MS
 }
+
+/** Affichage gestion : une date absente ne marque pas la proposition comme expirée. */
+export function isDisplayedQuoteExpired(
+  issuedAt: Date | string | null | undefined,
+  now = new Date()
+): boolean {
+  if (issuedAt == null || issuedAt === "") return false
+  return isQuoteExpired(issuedAt, now)
+}

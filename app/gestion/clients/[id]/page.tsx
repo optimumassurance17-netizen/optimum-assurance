@@ -31,6 +31,7 @@ import { DeleteErroneousContractButton } from "@/components/gestion/DeleteErrone
 import { EditDoDecennaleContractButton } from "@/components/gestion/EditDoDecennaleContractButton"
 import { isPerDocumentDevisEditionType } from "@/lib/devis-edition"
 import { frenchStatusLabel } from "@/lib/status-labels"
+import { QUOTE_EXPIRED_ERROR, isDisplayedQuoteExpired } from "@/lib/quote-validity"
 
 function prettyQuestionnaireJson(raw: string | null | undefined): string {
   if (!raw?.trim()) return ""
@@ -187,6 +188,7 @@ interface ClientData {
       createdAt: string
       signatureLink?: string
       remindedAt?: string | null
+      expired?: boolean
     }[]
   }
   activity?: { id: string; action: string; actionLabel: string; adminEmail: string; createdAt: string }[]
@@ -1723,7 +1725,9 @@ export default function ClientDetailPage() {
             <p className="text-sm text-gray-400">Aucune signature en attente à relancer.</p>
           ) : (
             <ul className="space-y-3">
-              {data.signature?.pending.map((row) => (
+              {data.signature?.pending.map((row) => {
+                const expired = isDisplayedQuoteExpired(row.createdAt)
+                return (
                 <li
                   key={row.signatureRequestId}
                   className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-700 bg-[#1a1a1a] p-3"
@@ -1731,16 +1735,27 @@ export default function ClientDetailPage() {
                   <div className="text-sm text-gray-200">
                     <p className="font-medium text-white">
                       {row.label} · {row.numero}
+                      {expired ? (
+                        <span className="ml-2 inline-block rounded bg-amber-900/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-200">
+                          Expirée
+                        </span>
+                      ) : null}
                     </p>
                     <p className="text-xs text-gray-400">
-                      En attente depuis le {new Date(row.createdAt).toLocaleDateString("fr-FR")}
+                      {expired ? "Émise le" : "En attente depuis le"}{" "}
+                      {new Date(row.createdAt).toLocaleDateString("fr-FR")}
                     </p>
-                    <p className="text-xs text-gray-400">
-                      {row.remindedAt
-                        ? `Relancé le ${new Date(row.remindedAt).toLocaleString("fr-FR")}`
-                        : "Pas encore relancé"}
-                    </p>
+                    {expired ? (
+                      <p className="mt-1 text-xs text-amber-200">{QUOTE_EXPIRED_ERROR}</p>
+                    ) : (
+                      <p className="text-xs text-gray-400">
+                        {row.remindedAt
+                          ? `Relancé le ${new Date(row.remindedAt).toLocaleString("fr-FR")}`
+                          : "Pas encore relancé"}
+                      </p>
+                    )}
                   </div>
+                  {expired ? null : (
                   <div className="flex flex-wrap gap-2">
                     {row.signatureLink ? (
                       <button
@@ -1760,8 +1775,10 @@ export default function ClientDetailPage() {
                       {signatureBusyId === row.signatureRequestId ? "Envoi…" : "Relancer la signature"}
                     </button>
                   </div>
+                  )}
                 </li>
-              ))}
+                )
+              })}
             </ul>
           )}
         </section>
@@ -2047,18 +2064,22 @@ export default function ClientDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {documents.map((d) => (
+                  {documents.map((d) => {
+                    const quoteExpired =
+                      (d.type === "devis" || d.type === "devis_do") && isDisplayedQuoteExpired(d.createdAt)
+                    return (
                     <tr key={d.id} className="border-b border-gray-700/50">
                       <td className="p-4">{typeLabels[d.type] || d.type}</td>
                       <td className="p-4 font-mono">{d.numero}</td>
                       <td className="p-4">
                         <span className={`px-2 py-1 rounded text-xs ${
+                          quoteExpired ? "bg-amber-900/50 text-amber-200" :
                           d.status === "valide" ? "bg-green-900/50 text-green-300" :
                           d.status === "suspendu" ? "bg-red-900/50 text-red-300" :
                           d.status === "resilie" ? "bg-gray-700 text-gray-200" :
                           "bg-blue-900/50 text-sky-200"
                         }`}>
-                          {frenchStatusLabel(d.status)}
+                          {quoteExpired ? "Expiré" : frenchStatusLabel(d.status)}
                         </span>
                       </td>
                       <td className="p-4">{new Date(d.createdAt).toLocaleDateString("fr-FR")}</td>
@@ -2166,7 +2187,8 @@ export default function ClientDetailPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             )}

@@ -8,6 +8,7 @@ import { readResponseJson } from "@/lib/read-response-json"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import { getInsuranceProductLabel, isInsurancePlatformProductType } from "@/lib/insurance-product"
 import { frenchStatusLabel } from "@/lib/status-labels"
+import { isDisplayedQuoteExpired } from "@/lib/quote-validity"
 import { Toast } from "@/components/Toast"
 
 type DashboardContract = {
@@ -568,7 +569,9 @@ export default function GestionRectificationPage() {
             {filteredSignatures.length === 0 ? (
               <p className="text-sm text-gray-400">Aucune signature en attente.</p>
             ) : (
-              filteredSignatures.map((s) => (
+              filteredSignatures.map((s) => {
+                const expired = isDisplayedQuoteExpired(s.createdAt)
+                return (
                 <div key={s.signatureRequestId} className="rounded-lg border border-gray-700 bg-[#1f1f1f] p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -576,6 +579,7 @@ export default function GestionRectificationPage() {
                       <p className="text-xs text-gray-400">
                         {s.contractNumero} · {s.signatureFlow === "custom_pdf" ? (s.signatureFlowLabel || "custom_pdf") : "décennale"} ·
                         {" "}{s.user?.email || "utilisateur introuvable"} · âge {s.ageHours}h
+                        {expired ? <span className="text-amber-200"> · Expirée</span> : null}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -613,6 +617,7 @@ export default function GestionRectificationPage() {
                       >
                         {cancellingSignatureId === s.signatureRequestId ? "Annulation..." : "Annuler"}
                       </button>
+                      {expired ? null : (
                       <button
                         type="button"
                         disabled={repairingSignatureId === s.signatureRequestId}
@@ -657,10 +662,12 @@ export default function GestionRectificationPage() {
                         >
                           {repairingSignatureId === s.signatureRequestId ? "Réparation..." : "Réparer"}
                         </button>
+                      )}
                     </div>
                   </div>
                 </div>
-              ))
+                )
+              })
             )}
           </div>
         </section>

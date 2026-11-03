@@ -1,3 +1,5 @@
+import { isDisplayedQuoteExpired } from "@/lib/quote-validity"
+
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
 }
@@ -70,6 +72,7 @@ export type ClientSignaturePending = {
   createdAt: string
   signatureLink: string
   remindedAt: string | null
+  expired: boolean
 }
 
 export type SignatureReminderLog = {
@@ -120,6 +123,7 @@ export function describeClientSignature(input: {
   pending: { signatureRequestId: string; contractNumero: string; contractData: string; createdAt: Date | string }[]
   siteUrl?: string
   reminderLogs?: SignatureReminderLog[]
+  now?: Date
 }): ClientSignatureState {
   const contracts: ClientSignatureContract[] = []
   for (const document of input.documents) {
@@ -154,6 +158,7 @@ export function describeClientSignature(input: {
         ? signatureReminderPayload(row, "", input.siteUrl).signatureLink
         : "",
       remindedAt: remindedAtByRequest.get(row.signatureRequestId) ?? null,
+      expired: isDisplayedQuoteExpired(createdAt, input.now),
     })
   }
   return {

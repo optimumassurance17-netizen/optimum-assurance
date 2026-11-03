@@ -14,6 +14,7 @@ import { DDA_AUDIT_ACTIONS } from "@/lib/dda-labels"
 import { latestSignatureReminderByRequest } from "@/lib/signature-reminder"
 import { collapseDecennaleContractDuplicates } from "@/lib/decennale-contract-replacement"
 import { readDoLeadCompanyName, selectDoDevisDashboardActions, sortRequestsByArrival } from "@/lib/devis-do-lead"
+import { isDisplayedQuoteExpired } from "@/lib/quote-validity"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -671,7 +672,8 @@ export async function GET() {
     const pendingSignatures = pendingSignaturesRaw.map((p) => {
       let signatureFlow: "custom_pdf" | "decennale" = "decennale"
       let signatureFlowLabel: string | undefined
-      const ageHours = Math.max(0, Math.floor((Date.now() - p.createdAt.getTime()) / (60 * 60 * 1000)))
+      const ageHours = Math.max(0, Math.floor((now.getTime() - p.createdAt.getTime()) / (60 * 60 * 1000)))
+      const expired = isDisplayedQuoteExpired(p.createdAt, now)
       try {
         const j = JSON.parse(p.contractData || "{}") as Record<string, unknown>
         if (j.customUploadedDevisFlow === true) {
@@ -693,7 +695,8 @@ export async function GET() {
         signatureFlowLabel,
         ageHours,
         remindedAt: remindedAtByRequest.get(p.signatureRequestId) ?? null,
-        repairEligible: ageHours >= 24,
+        expired,
+        repairEligible: ageHours >= 24 && !expired,
       }
     })
     const sepaSubscriptionsRows = sepaSubscriptions.map((s) => ({
@@ -914,6 +917,7 @@ export async function GET() {
     const dashboardActions: DashboardAction[] = []
 
     for (const p of pendingSignaturesRaw) {
+      if (isDisplayedQuoteExpired(p.createdAt, now)) continue
       const ageMs = now.getTime() - p.createdAt.getTime()
       if (ageMs < reminder24hMs) continue
       const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
@@ -946,6 +950,7 @@ export async function GET() {
 
     for (const d of devisLeads) {
       if (d.rappelSentAt) continue
+      if (isDisplayedQuoteExpired(d.createdAt, now)) continue
       const ageMs = now.getTime() - d.createdAt.getTime()
       if (ageMs < reminder24hMs) continue
       const ageHours = Math.floor(ageMs / (60 * 60 * 1000))
