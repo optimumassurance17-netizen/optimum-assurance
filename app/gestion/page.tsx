@@ -19,6 +19,27 @@ function gestionOutilIdFromHash(hash: string): string | null {
   return GESTION_OUTIL_IDS.has(id) ? id : null
 }
 
+const GESTION_LISTE_IDS = new Set([
+  "clients",
+  "leads-decennale",
+  "brouillons-devis",
+  "signatures-attente",
+  "paiements",
+  "attestations",
+  "contrats",
+  "etudes-do",
+  "rc-fabriquant-leads",
+  "assurance-titre-leads",
+  "demandes-devis-do",
+])
+
+function gestionListeIdFromHash(hash: string): string | null {
+  const id = hash.replace(/^#/, "")
+  if (!id || GESTION_OUTIL_IDS.has(id)) return null
+  if (GESTION_LISTE_IDS.has(id) || id.startsWith("demande-do-")) return id
+  return null
+}
+
 function mapTypeOuvrageToConstruction(typeOuvrage?: string): string {
   const map: Record<string, string> = {
     maison_individuelle: "Maison unifamiliale",
@@ -623,6 +644,8 @@ export default function GestionPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [ficheSearchQuery, setFicheSearchQuery] = useState("")
   const [outilsOuverts, setOutilsOuverts] = useState(false)
+  const [listesOuvertes, setListesOuvertes] = useState(false)
+  const [listeScroll, setListeScroll] = useState<{ id: string; n: number } | null>(null)
   const [outilScroll, setOutilScroll] = useState<{ id: string; n: number } | null>(null)
   const [docTypeFilter, setDocTypeFilter] = useState<string>("all")
   const [actionsFilter, setActionsFilter] = useState<"all" | "high" | "overdue72h">("all")
@@ -738,6 +761,19 @@ export default function GestionPage() {
     }
   }, [])
 
+  const ouvrirListe = useCallback((id: string) => {
+    setListesOuvertes(true)
+    setListeScroll((prev) => ({ id, n: (prev?.n ?? 0) + 1 }))
+  }, [])
+
+  const onListAnchor = useCallback(
+    (id: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
+      event.preventDefault()
+      ouvrirListe(id)
+    },
+    [ouvrirListe]
+  )
+
   const revenirAuTravail = useCallback(() => {
     setOutilsOuverts(false)
     setOutilScroll(null)
@@ -760,11 +796,27 @@ export default function GestionPage() {
   }, [outilScroll, outilsOuverts, loading])
 
   useEffect(() => {
+    if (!listeScroll || !listesOuvertes) return
+    const id = listeScroll.id
+    const timer = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "auto", block: "start" })
+      setListeScroll(null)
+    }, 60)
+    return () => window.clearTimeout(timer)
+  }, [listeScroll, listesOuvertes])
+
+  useEffect(() => {
     const openFromLocation = () => {
       const id = gestionOutilIdFromHash(window.location.hash)
-      if (!id) return
-      setOutilsOuverts(true)
-      setOutilScroll((prev) => ({ id, n: (prev?.n ?? 0) + 1 }))
+      if (id) {
+        setOutilsOuverts(true)
+        setOutilScroll((prev) => ({ id, n: (prev?.n ?? 0) + 1 }))
+        return
+      }
+      const listeId = gestionListeIdFromHash(window.location.hash)
+      if (!listeId) return
+      setListesOuvertes(true)
+      setListeScroll((prev) => ({ id: listeId, n: (prev?.n ?? 0) + 1 }))
     }
     openFromLocation()
     window.addEventListener("hashchange", openFromLocation)
@@ -2314,7 +2366,11 @@ export default function GestionPage() {
                     type="search"
                     placeholder="Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant, devis DO)..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setSearchQuery(value)
+                      if (value.trim()) setListesOuvertes(true)
+                    }}
                     className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-[29rem]"
                   />
                   {searchQuery.trim() ? (
@@ -2367,14 +2423,33 @@ export default function GestionPage() {
                   Actions du jour
                 </a>
               ) : null}
+              <button
+                type="button"
+                aria-pressed={listesOuvertes}
+                onClick={() => {
+                  if (listesOuvertes) {
+                    setListesOuvertes(false)
+                    window.setTimeout(() => {
+                      document.getElementById("actions-du-jour")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    }, 60)
+                    return
+                  }
+                  ouvrirListe("clients")
+                }}
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2563eb] text-white border border-[#1d4ed8] hover:bg-[#1d4ed8]"
+              >
+                {listesOuvertes ? "Masquer les listes" : "Listes"}
+              </button>
               <a
                 href="#clients"
+                onClick={onListAnchor("clients")}
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
               >
                 Clients
               </a>
               <a
                 href="#signatures-attente"
+                onClick={onListAnchor("signatures-attente")}
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
               >
                 Signatures
@@ -2382,6 +2457,7 @@ export default function GestionPage() {
               {(data.devisDoLeads?.length ?? 0) > 0 && (
                 <a
                   href={`#${DO_DEVIS_LEADS_SECTION_ID}`}
+                  onClick={onListAnchor(DO_DEVIS_LEADS_SECTION_ID)}
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
                 >
                   Demandes DO
@@ -2389,18 +2465,21 @@ export default function GestionPage() {
               )}
               <a
                 href="#paiements"
+                onClick={onListAnchor("paiements")}
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
               >
                 Paiements
               </a>
               <a
                 href="#attestations"
+                onClick={onListAnchor("attestations")}
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
               >
                 Attestations
               </a>
               <a
                 href="#contrats"
+                onClick={onListAnchor("contrats")}
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
               >
                 Contrats
@@ -2414,6 +2493,7 @@ export default function GestionPage() {
               {(data.devisLeads?.length ?? 0) > 0 && (
                 <a
                   href="#leads-decennale"
+                  onClick={onListAnchor("leads-decennale")}
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
                 >
                   Leads déc.
@@ -2422,6 +2502,7 @@ export default function GestionPage() {
               {(data.devisDrafts?.length ?? 0) > 0 && (
                 <a
                   href="#brouillons-devis"
+                  onClick={onListAnchor("brouillons-devis")}
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
                 >
                   Brouillons
@@ -2430,6 +2511,7 @@ export default function GestionPage() {
               {data.devisEtudeLeads && data.devisEtudeLeads.length > 0 && (
                 <a
                   href="#etudes-do"
+                  onClick={onListAnchor("etudes-do")}
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
                 >
                   Études
@@ -2438,6 +2520,7 @@ export default function GestionPage() {
               {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
                 <a
                   href="#rc-fabriquant-leads"
+                  onClick={onListAnchor("rc-fabriquant-leads")}
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
                 >
                   RC Fab
@@ -2446,6 +2529,7 @@ export default function GestionPage() {
               {data.devisAssuranceTitreLeads && data.devisAssuranceTitreLeads.length > 0 && (
                 <a
                   href="#assurance-titre-leads"
+                  onClick={onListAnchor("assurance-titre-leads")}
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
                 >
                   Assurance titre
@@ -2556,7 +2640,7 @@ export default function GestionPage() {
               </p>
               <p className="text-xs text-amber-200/80 border border-amber-900/40 rounded-lg px-3 py-2 bg-amber-950/20">
                 Une seule demande de signature à la fois par client. Si l&apos;envoi est refusé, vérifiez la section{" "}
-                <a href="#signatures-attente" className="text-amber-100 underline hover:no-underline">
+                <a href="#signatures-attente" onClick={onListAnchor("signatures-attente")} className="text-amber-100 underline hover:no-underline">
                   Signatures en attente
                 </a>{" "}
                 ou la fiche client avant de renvoyer.
@@ -2807,7 +2891,7 @@ export default function GestionPage() {
             <section id="stats-gestion" className="grid grid-cols-2 md:grid-cols-6 gap-4 scroll-mt-24">
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
                 <p className="text-gray-200 text-sm">Clients</p>
-                <Link href="#clients" className="text-2xl font-bold text-white hover:text-[#2563eb] block">
+                <Link href="#clients" onClick={onListAnchor("clients")} className="text-2xl font-bold text-white hover:text-[#2563eb] block">
                   {filteredUsers.length}
                 </Link>
               </div>
@@ -2856,6 +2940,7 @@ export default function GestionPage() {
                   <p className="text-gray-200 text-sm">Assurance titre</p>
                   <Link
                     href="#assurance-titre-leads"
+                    onClick={onListAnchor("assurance-titre-leads")}
                     className="text-2xl font-bold text-violet-300 hover:text-violet-200 block"
                   >
                     {data.devisAssuranceTitreLeads?.length ?? 0}
@@ -3446,6 +3531,7 @@ export default function GestionPage() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <a
                     href="#paiements"
+                    onClick={onListAnchor("paiements")}
                     className="text-xs px-2.5 py-1.5 rounded border border-indigo-700/70 text-indigo-100 hover:bg-indigo-900/30"
                   >
                     Ouvrir le suivi paiements
@@ -3619,13 +3705,10 @@ export default function GestionPage() {
                           <a
                             href={a.href}
                             onClick={(event) => {
-                              if (a.kind !== "do_devis_pending" || !a.href.startsWith("#")) return
+                              if (!a.href.startsWith("#")) return
                               event.preventDefault()
-                              const rowId = a.href.slice(1)
-                              setSearchQuery("")
-                              window.setTimeout(() => {
-                                document.getElementById(rowId)?.scrollIntoView({ behavior: "smooth", block: "start" })
-                              }, 50)
+                              if (a.kind === "do_devis_pending") setSearchQuery("")
+                              ouvrirListe(a.href.slice(1))
                             }}
                             className="block min-w-0 flex-1 hover:text-[#2563eb] transition-colors"
                           >
@@ -3768,6 +3851,8 @@ export default function GestionPage() {
           />
         )}
 
+        {listesOuvertes ? (
+        <>
         {/* Liste clients - accès fiche détaillée */}
         {data && (
           <section id="clients" className="scroll-mt-24">
@@ -4670,6 +4755,8 @@ export default function GestionPage() {
             </div>
           </section>
         )}
+        </>
+        ) : null}
 
         {outilsOuverts ? (
         <>
@@ -5266,6 +5353,8 @@ export default function GestionPage() {
         </>
         ) : null}
 
+        {listesOuvertes ? (
+        <>
         {/* Demandes devis DO en attente */}
         {data.devisRcFabriquantLeads && data.devisRcFabriquantLeads.length > 0 && (
           <section id="rc-fabriquant-leads" className="scroll-mt-24">
@@ -5772,6 +5861,8 @@ export default function GestionPage() {
             )}
           </section>
         )}
+        </>
+        ) : null}
 
         {outilsOuverts ? (
         <section id="creer-avenant" className="scroll-mt-24">
@@ -5863,6 +5954,8 @@ export default function GestionPage() {
         </section>
         ) : null}
 
+        {listesOuvertes ? (
+        <>
         {/* Liste des avenants - historique par client */}
         <section>
           <h2 className="text-lg font-semibold text-white mb-4">Historique des avenants</h2>
@@ -5981,6 +6074,8 @@ export default function GestionPage() {
             </div>
           </section>
         )}
+        </>
+        ) : null}
       </div>
 
       {/* Modal modification contrat / avenant — données alignées sur le JSON contrat / PDF */}

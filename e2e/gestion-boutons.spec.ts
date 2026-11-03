@@ -264,6 +264,7 @@ test.describe("Gestion — boutons d'action", () => {
     await actions.getByRole("link", { name: /Lead devis décennale/ }).click()
     await expect(page.locator("#leads-decennale")).toBeInViewport()
     await page.evaluate(() => window.scrollTo(0, 0))
+    await expect.poll(async () => page.evaluate(() => window.scrollY)).toBe(0)
     await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toHaveCount(0)
     await expect(page.getByRole("heading", { name: "Créer un avenant" })).toHaveCount(0)
 
@@ -687,6 +688,8 @@ test.describe("Gestion — boutons d'action", () => {
     })
 
     await page.goto("/gestion")
+    await expect(page.getByRole("heading", { name: "Actions du jour (automatique)" })).toBeVisible()
+    await expect(page.locator("#clients")).toHaveCount(0)
     await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Clients" }).click()
     const clients = page.locator("#clients")
     await expect(clients).toBeInViewport()
