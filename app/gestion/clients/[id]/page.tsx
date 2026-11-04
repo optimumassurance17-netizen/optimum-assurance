@@ -15,7 +15,12 @@ import { documentRequestActivityLabel } from "@/lib/document-request"
 import { labelGedDocument } from "@/lib/user-document-types"
 import { DO_DEVIS_LEADS_SECTION_ID, doDevisLeadRowId } from "@/lib/devis-do-lead"
 import { describePendingDoQuote } from "@/lib/do-quote-pending"
-import { getInsuranceProductLabel } from "@/lib/insurance-product"
+import {
+  getInsuranceProductLabel,
+  insuranceProductHasBundledQuotePolicy,
+  insuranceProductHasFic,
+  insuranceProductHasSchedule,
+} from "@/lib/insurance-product"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import {
   canValidateDoPaymentManually,
@@ -315,6 +320,30 @@ const typeLabels: Record<string, string> = {
   facture_decennale: "Facture acquittée décennale",
 }
 
+function contractPdfLinks(contract: { id: string; productType: string; status?: string }): { href: string; label: string }[] {
+  const links: { href: string; label: string }[] = []
+  if (insuranceProductHasBundledQuotePolicy(contract.productType)) {
+    links.push({ href: `/api/contracts/${contract.id}/pdf/quote`, label: "PDF devis + CP" })
+  } else {
+    links.push({ href: `/api/contracts/${contract.id}/pdf/quote`, label: "PDF devis" })
+    links.push({ href: `/api/contracts/${contract.id}/pdf/policy`, label: "PDF CP" })
+  }
+  if (
+    insuranceProductHasSchedule(contract.productType) &&
+    (contract.status === CONTRACT_STATUS.approved || contract.status === CONTRACT_STATUS.active)
+  ) {
+    links.push({ href: `/api/contracts/${contract.id}/pdf/schedule`, label: "Échéancier" })
+  }
+  if (insuranceProductHasFic(contract.productType)) {
+    links.push({ href: `/api/contracts/${contract.id}/pdf/fic`, label: "FIC" })
+  }
+  if (contract.status === CONTRACT_STATUS.active) {
+    links.push({ href: `/api/contracts/${contract.id}/pdf/certificate`, label: "Attestation" })
+    links.push({ href: `/api/contracts/${contract.id}/pdf/invoice`, label: "Facture" })
+  }
+  return links
+}
+
 function toDevisAutonomyForm(
   config: ClientData["devisAutonomy"] | null | undefined
 ): DevisAutonomyForm {
@@ -452,6 +481,16 @@ export default function ClientDetailPage() {
 
     fetchData()
   }, [clientId, status, router])
+
+  useEffect(() => {
+    if (status !== "authenticated" || loading || !data) return
+    const id = window.location.hash.replace(/^#/, "")
+    if (!id) return
+    const timer = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "auto", block: "start" })
+    }, 80)
+    return () => window.clearTimeout(timer)
+  }, [status, loading, data])
 
   if (status === "loading" || loading) {
     return (
@@ -970,6 +1009,11 @@ export default function ClientDetailPage() {
             <a href="#documents-client" className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:text-white">
               Documents
             </a>
+            {insuranceContracts.length > 0 ? (
+              <a href="#assurances-client" className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:text-white">
+                Assurances
+              </a>
+            ) : null}
             <a href="#echeances-client" className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:text-white">
               Échéances
             </a>
@@ -1871,7 +1915,7 @@ export default function ClientDetailPage() {
         </section>
 
         {insuranceContracts.length > 0 ? (
-          <section>
+          <section id="assurances-client" className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-4">Assurances</h2>
             <div className="bg-[#252525] rounded-xl overflow-hidden border border-gray-700">
               <table className="w-full text-sm">
@@ -1921,24 +1965,42 @@ export default function ClientDetailPage() {
                             insuranceContractId={contract.id}
                             onResult={rememberDocumentRequest}
                           />
+                          {contractPdfLinks(contract).map((link) => (
+                            <a
+                              key={link.href}
+                              href={link.href}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs font-medium text-sky-300 hover:text-sky-200"
+                            >
+                              {link.label}
+                            </a>
+                          ))}
                           {contract.productType === "do" && contract.status === CONTRACT_STATUS.pending_validation ? (
                             <button
                               type="button"
                               className="text-xs font-medium text-green-300 hover:text-green-200"
                               onClick={async () => {
-                                const res = await fetch("/api/contracts/validate", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ contractId: contract.id, approve: true }),
-                                })
-                                const body = await readResponseJson<{ error?: string }>(res)
-                                if (!res.ok) {
-                                  setToast({ message: body.error || "Impossible d'approuver le contrat.", type: "error" })
-                                  return
+                                try {
+                                  const res = await fetch("/api/contracts/validate", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ contractId: contract.id, approve: true }),
+                                  })
+                                  const body = await readResponseJson<{ error?: string }>(res)
+                                  if (!res.ok) {
+                                    setToast({ message: body.error || "Impossible d'approuver le contrat.", type: "error" })
+                                    return
+                                  }
+                                  const reload = await fetch(`/api/gestion/clients/${clientId}`, { cache: "no-store" })
+                                  if (reload.ok) setData(await readResponseJson<ClientData>(reload))
+                                  setToast({ message: "Contrat approuvé. Vous pouvez valider le paiement.", type: "success" })
+                                } catch (error) {
+                                  setToast({
+                                    message: error instanceof Error ? error.message : "Impossible d'approuver le contrat.",
+                                    type: "error",
+                                  })
                                 }
-                                const reload = await fetch(`/api/gestion/clients/${clientId}`, { cache: "no-store" })
-                                if (reload.ok) setData(await readResponseJson<ClientData>(reload))
-                                setToast({ message: "Contrat approuvé. Vous pouvez valider le paiement.", type: "success" })
                               }}
                             >
                               Approuver

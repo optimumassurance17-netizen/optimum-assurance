@@ -135,7 +135,7 @@ export function ClientQuickSearch({
       return
     }
     if (contracts[0]?.userId) {
-      router.push(`/gestion/clients/${contracts[0].userId}`)
+      router.push(`/gestion/clients/${contracts[0].userId}#assurances-client`)
       return
     }
     if (devisDoLeads[0]?.href.startsWith("/gestion#")) {
@@ -208,7 +208,7 @@ export function ClientQuickSearch({
                       <div className="flex flex-wrap items-center gap-3">
                         {contract.userId ? (
                           <Link
-                            href={`/gestion/clients/${contract.userId}`}
+                            href={`/gestion/clients/${contract.userId}#assurances-client`}
                             className="text-xs font-medium text-[#93c5fd] hover:text-white"
                           >
                             Ouvrir la fiche
@@ -219,22 +219,26 @@ export function ClientQuickSearch({
                             type="button"
                             className="text-xs font-medium text-green-300 hover:text-green-200"
                             onClick={async () => {
-                              const res = await fetch("/api/contracts/validate", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ contractId: contract.id, approve: true }),
-                              })
-                              const body = await readResponseJson<{ error?: string }>(res)
-                              if (!res.ok) {
-                                setNotice(body.error || "Impossible d'approuver le contrat.")
-                                return
-                              }
-                              setContracts((current) =>
-                                current.map((row) =>
-                                  row.id === contract.id ? { ...row, status: CONTRACT_STATUS.approved } : row
+                              try {
+                                const res = await fetch("/api/contracts/validate", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ contractId: contract.id, approve: true }),
+                                })
+                                const body = await readResponseJson<{ error?: string }>(res)
+                                if (!res.ok) {
+                                  setNotice(body.error || "Impossible d'approuver le contrat.")
+                                  return
+                                }
+                                setContracts((current) =>
+                                  current.map((row) =>
+                                    row.id === contract.id ? { ...row, status: CONTRACT_STATUS.approved } : row
+                                  )
                                 )
-                              )
-                              setNotice(`Contrat ${contract.contractNumber} approuvé. Vous pouvez valider le paiement.`)
+                                setNotice(`Contrat ${contract.contractNumber} approuvé. Vous pouvez valider le paiement.`)
+                              } catch (error) {
+                                setNotice(error instanceof Error ? error.message : "Impossible d'approuver le contrat.")
+                              }
                             }}
                           >
                             Approuver

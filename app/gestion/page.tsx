@@ -40,7 +40,16 @@ const GESTION_LISTE_IDS = new Set([
 function gestionListeIdFromHash(hash: string): string | null {
   const id = hash.replace(/^#/, "")
   if (!id || GESTION_OUTIL_IDS.has(id)) return null
-  if (GESTION_LISTE_IDS.has(id) || id.startsWith("demande-do-")) return id
+  if (
+    GESTION_LISTE_IDS.has(id) ||
+    id.startsWith("demande-do-") ||
+    id.startsWith("lead-decennale-") ||
+    id.startsWith("lead-etude-") ||
+    id.startsWith("lead-rc-") ||
+    id.startsWith("lead-titre-")
+  ) {
+    return id
+  }
   return null
 }
 
@@ -490,6 +499,7 @@ interface DashboardData {
     href: string
     ageHours: number
     leadId?: string
+    focusQuery?: string
     remediation?: {
       kind: "dda"
       toEmail: string
@@ -663,6 +673,7 @@ export default function GestionPage() {
   const [ficheSearchQuery, setFicheSearchQuery] = useState("")
   const [outilsOuverts, setOutilsOuverts] = useState(false)
   const [listeScroll, setListeScroll] = useState<{ id: string; n: number } | null>(null)
+  const [actionListFocus, setActionListFocus] = useState<{ id: string; query: string | null; n: number } | null>(null)
   const [outilScroll, setOutilScroll] = useState<{ id: string; n: number } | null>(null)
   const [docTypeFilter, setDocTypeFilter] = useState<string>("all")
   const [actionsFilter, setActionsFilter] = useState<"all" | "high" | "overdue72h">("all")
@@ -822,6 +833,17 @@ export default function GestionPage() {
     }, 60)
     return () => window.clearTimeout(timer)
   }, [listeScroll])
+
+  useEffect(() => {
+    if (!actionListFocus) return
+    if (actionListFocus.query !== null && searchQuery !== actionListFocus.query) return
+    const id = actionListFocus.id
+    const timer = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "auto", block: "start" })
+      setActionListFocus(null)
+    }, 80)
+    return () => window.clearTimeout(timer)
+  }, [actionListFocus, searchQuery])
 
   useEffect(() => {
     const openFromLocation = () => {
@@ -1590,6 +1612,87 @@ export default function GestionPage() {
       return true
     })
   }, [data, searchQuery, rcFabFilter])
+  const visibleRcFabriquantLeads = useMemo(
+    () => takeDashboardRows(filteredRcFabriquantLeads, listsNarrowed),
+    [filteredRcFabriquantLeads, listsNarrowed]
+  )
+  const filteredDevisLeads = useMemo(() => {
+    const list = data?.devisLeads ?? []
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return list
+    const digits = searchQuery.replace(/\s/g, "").toLowerCase()
+    return list.filter((lead) => {
+      if (lead.email.toLowerCase().includes(query)) return true
+      if ((lead.raisonSociale || "").toLowerCase().includes(query)) return true
+      if ((lead.siret || "").replace(/\s/g, "").toLowerCase().includes(digits)) return true
+      return false
+    })
+  }, [data?.devisLeads, searchQuery])
+  const visibleDevisLeads = useMemo(
+    () => takeDashboardRows(filteredDevisLeads, listsNarrowed),
+    [filteredDevisLeads, listsNarrowed]
+  )
+  const filteredDevisDrafts = useMemo(() => {
+    const list = data?.devisDrafts ?? []
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return list
+    return list.filter(
+      (draft) => draft.email.toLowerCase().includes(query) || draft.produit.toLowerCase().includes(query)
+    )
+  }, [data?.devisDrafts, searchQuery])
+  const visibleDevisDrafts = useMemo(
+    () => takeDashboardRows(filteredDevisDrafts, listsNarrowed),
+    [filteredDevisDrafts, listsNarrowed]
+  )
+  const filteredEtudeLeads = useMemo(() => {
+    const list = data?.devisEtudeLeads ?? []
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return list
+    const digits = searchQuery.replace(/\s/g, "").toLowerCase()
+    return list.filter((lead) => {
+      if (lead.email.toLowerCase().includes(query)) return true
+      if ((lead.raisonSociale || "").toLowerCase().includes(query)) return true
+      if ((lead.siret || "").replace(/\s/g, "").toLowerCase().includes(digits)) return true
+      return false
+    })
+  }, [data?.devisEtudeLeads, searchQuery])
+  const visibleEtudeLeads = useMemo(
+    () => takeDashboardRows(filteredEtudeLeads, listsNarrowed),
+    [filteredEtudeLeads, listsNarrowed]
+  )
+  const filteredTitreLeads = useMemo(() => {
+    const list = data?.devisAssuranceTitreLeads ?? []
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return list
+    return list.filter((lead) => {
+      if (lead.email.toLowerCase().includes(query)) return true
+      if ((lead.notesInternes || "").toLowerCase().includes(query)) return true
+      if ((lead.matchedUser?.email || "").toLowerCase().includes(query)) return true
+      if ((lead.matchedUser?.raisonSociale || "").toLowerCase().includes(query)) return true
+      const parsed = parseAssuranceTitreLeadData(lead.data || "{}")
+      return [parsed.nomComplet, parsed.raisonSociale, parsed.villeBien, parsed.typeBienLabel, parsed.typeOperationLabel]
+        .some((value) => (value || "").toLowerCase().includes(query))
+    })
+  }, [data?.devisAssuranceTitreLeads, searchQuery])
+  const visibleTitreLeads = useMemo(
+    () => takeDashboardRows(filteredTitreLeads, listsNarrowed),
+    [filteredTitreLeads, listsNarrowed]
+  )
+  const visiblePendingSignatures = useMemo(
+    () => takeDashboardRows(filteredPendingSignatures, listsNarrowed),
+    [filteredPendingSignatures, listsNarrowed]
+  )
+  const filteredAvenants = useMemo(() => {
+    if (!data) return []
+    return filterBySearch(
+      data.documents.filter((document) => document.type === "avenant"),
+      searchQuery
+    ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  }, [data, searchQuery])
+  const visibleAvenants = useMemo(
+    () => takeDashboardRows(filteredAvenants, listsNarrowed),
+    [filteredAvenants, listsNarrowed]
+  )
 
   const pilotageV2 = useMemo(() => {
     if (!data) return null
@@ -4036,8 +4139,19 @@ export default function GestionPage() {
                             onClick={(event) => {
                               if (!a.href.startsWith("#")) return
                               event.preventDefault()
-                              if (a.kind === "do_devis_pending") setSearchQuery("")
-                              ouvrirListe(a.href.slice(1))
+                              const query =
+                                typeof a.focusQuery === "string"
+                                  ? a.focusQuery
+                                  : a.kind === "do_devis_pending"
+                                    ? ""
+                                    : null
+                              if (query !== null) setSearchQuery(query)
+                              if (a.href.startsWith("#lead-rc-")) setRcFabFilter("all")
+                              setActionListFocus((prev) => ({
+                                id: a.href.slice(1),
+                                query,
+                                n: (prev?.n ?? 0) + 1,
+                              }))
                             }}
                             className="block min-w-0 flex-1 hover:text-[#2563eb] transition-colors"
                           >
@@ -4261,7 +4375,17 @@ export default function GestionPage() {
                             <div className="flex flex-wrap items-center gap-2">
                               <a
                                 href={`#${row.listId}`}
-                                onClick={onListAnchor(row.listId)}
+                                onClick={(event) => {
+                                  event.preventDefault()
+                                  const query = row.email.trim()
+                                  if (query) setSearchQuery(query)
+                                  if (row.listId.startsWith("lead-rc-")) setRcFabFilter("all")
+                                  setActionListFocus((prev) => ({
+                                    id: row.listId,
+                                    query: query || null,
+                                    n: (prev?.n ?? 0) + 1,
+                                  }))
+                                }}
                                 className="text-[#2563eb] hover:text-[#1d4ed8] text-sm min-h-[44px] inline-flex items-center"
                               >
                                 Voir
@@ -4387,6 +4511,7 @@ export default function GestionPage() {
         {data && (data.devisLeads?.length ?? 0) > 0 && (
           <section id="leads-decennale" className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-4">Leads devis décennale (tarificateur)</h2>
+            <DashboardListNote shown={visibleDevisLeads.length} total={filteredDevisLeads.length} subject="leads" />
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[640px]">
                 <thead>
@@ -4400,10 +4525,14 @@ export default function GestionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.devisLeads!.map((l) => {
+                  {filteredDevisLeads.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-4 text-gray-200">Aucun lead pour cette recherche.</td>
+                    </tr>
+                  ) : visibleDevisLeads.map((l) => {
                     const matchingUser = data.users.find((u) => u.email.toLowerCase() === l.email.toLowerCase())
                     return (
-                      <tr key={l.id} className="border-b border-gray-700/50">
+                      <tr id={`lead-decennale-${l.id}`} key={l.id} className="scroll-mt-24 border-b border-gray-700/50">
                         <td className="p-3 sm:p-4 whitespace-nowrap">{new Date(l.createdAt).toLocaleString("fr-FR")}</td>
                         <td className="p-3 sm:p-4">{l.email}</td>
                         <td className="p-3 sm:p-4 hidden md:table-cell">{l.raisonSociale || "—"}</td>
@@ -4448,6 +4577,7 @@ export default function GestionPage() {
         {data && (data.devisDrafts?.length ?? 0) > 0 && (
           <section id="brouillons-devis" className="scroll-mt-24">
             <h2 className="text-lg font-semibold text-white mb-4">Brouillons devis (liens de reprise)</h2>
+            <DashboardListNote shown={visibleDevisDrafts.length} total={filteredDevisDrafts.length} subject="brouillons" />
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[560px]">
                 <thead>
@@ -4460,7 +4590,11 @@ export default function GestionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.devisDrafts!.map((d) => {
+                  {filteredDevisDrafts.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-4 text-gray-200">Aucun brouillon pour cette recherche.</td>
+                    </tr>
+                  ) : visibleDevisDrafts.map((d) => {
                     const resumeHref = `/devis/resume/${d.token}`
                     const expired = new Date(d.expiresAt) < new Date()
                     return (
@@ -4546,6 +4680,11 @@ export default function GestionPage() {
                 Réparables (24h+)
               </button>
             </div>
+            <DashboardListNote
+              shown={visiblePendingSignatures.length}
+              total={filteredPendingSignatures.length}
+              subject="signatures"
+            />
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[720px]">
                 <thead>
@@ -4571,7 +4710,7 @@ export default function GestionPage() {
                       </td>
                     </tr>
                   ) : (
-                    filteredPendingSignatures.map((s) => {
+                    visiblePendingSignatures.map((s) => {
                       const flow = s.signatureFlow ?? "decennale"
                       const expired = isDisplayedQuoteExpired(s.createdAt)
                       return (
@@ -4711,7 +4850,7 @@ export default function GestionPage() {
                                   }}
                                   className="text-amber-300 hover:text-amber-200 text-sm disabled:opacity-40 whitespace-nowrap text-left"
                                 >
-                                  {repairingSignatureId === s.signatureRequestId ? "…" : "Réparer"}
+                                  {repairingSignatureId === s.signatureRequestId ? "…" : "Rappeler"}
                                 </button>
                               )}
                             </div>
@@ -5223,6 +5362,7 @@ export default function GestionPage() {
             <p className="text-sm text-gray-200 mb-4">
               Dossiers sinistres (&gt;1 sinistre) ou <strong className="text-gray-200">activité non listée</strong> (/etude/domaine). Faire une remise pour envoyer une proposition avec prime personnalisée.
             </p>
+            <DashboardListNote shown={visibleEtudeLeads.length} total={filteredEtudeLeads.length} subject="études" />
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0 mb-10">
               <table className="w-full text-sm min-w-[400px]">
                 <thead>
@@ -5235,7 +5375,11 @@ export default function GestionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.devisEtudeLeads.map((lead) => {
+                  {filteredEtudeLeads.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-4 text-gray-200">Aucune étude pour cette recherche.</td>
+                    </tr>
+                  ) : visibleEtudeLeads.map((lead) => {
                     let parsed: {
                       type?: string
                       chiffreAffaires?: number
@@ -5255,7 +5399,7 @@ export default function GestionPage() {
                       ? (parsed.descriptionActivite ?? "").slice(0, 80) + ((parsed.descriptionActivite?.length ?? 0) > 80 ? "…" : "")
                       : `CA ${parsed.chiffreAffaires?.toLocaleString("fr-FR") ?? "—"} € · ${parsed.sinistres ?? 0} sinistre(s)`
                     return (
-                      <tr key={lead.id} className="border-b border-gray-700/50">
+                      <tr id={`lead-etude-${lead.id}`} key={lead.id} className="scroll-mt-24 border-b border-gray-700/50">
                         <td className="p-3 sm:p-4">
                           {lead.email}
                           {estDomaine && (
@@ -5949,6 +6093,11 @@ export default function GestionPage() {
               prospect — tout passe par votre action. Vous pouvez créer l’espace client puis lancer un dossier étude natif
               (devis + contrat + attestation selon paiement) directement depuis cette table.
             </p>
+            <DashboardListNote
+              shown={visibleRcFabriquantLeads.length}
+              total={filteredRcFabriquantLeads.length}
+              subject="demandes"
+            />
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[720px]">
                 <thead>
@@ -5970,7 +6119,7 @@ export default function GestionPage() {
                       </td>
                     </tr>
                   ) : (
-                    filteredRcFabriquantLeads.map((d) => {
+                    visibleRcFabriquantLeads.map((d) => {
                     const leadData = parseRcFabLeadData(d.data || "{}")
                     const rs = leadData.raisonSociale || ""
                     const act = leadData.activiteFabrication || ""
@@ -5988,7 +6137,7 @@ export default function GestionPage() {
                     const leadAgeHours = typeof d.slaHours === "number" ? d.slaHours : null
                     const leadSla = leadAgeHours != null ? getSlaBadge(leadAgeHours) : null
                     return (
-                      <tr key={d.id} className="border-b border-gray-700/50 align-top">
+                      <tr id={`lead-rc-${d.id}`} key={d.id} className="scroll-mt-24 border-b border-gray-700/50 align-top">
                         <td className="p-3 sm:p-4">{d.email}</td>
                         <td className="p-3 sm:p-4">{rs || "—"}</td>
                         <td className="p-3 sm:p-4 hidden lg:table-cell max-w-[220px]">
@@ -6214,6 +6363,7 @@ export default function GestionPage() {
               module « Devis PDF personnalisé » pour envoyer une proposition digitale à signer, puis encaisser le paiement
               dans l&apos;espace client.
             </p>
+            <DashboardListNote shown={visibleTitreLeads.length} total={filteredTitreLeads.length} subject="demandes" />
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[760px]">
                 <thead>
@@ -6227,14 +6377,18 @@ export default function GestionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.devisAssuranceTitreLeads.map((d) => {
+                  {filteredTitreLeads.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-4 text-gray-200">Aucune demande pour cette recherche.</td>
+                    </tr>
+                  ) : visibleTitreLeads.map((d) => {
                     const leadData = parseAssuranceTitreLeadData(d.data || "{}")
                     const matchedUser =
                       d.matchedUser ??
                       data.users.find((u) => u.email.toLowerCase() === d.email.toLowerCase()) ??
                       null
                     return (
-                      <tr key={d.id} className="border-b border-gray-700/50 align-top">
+                      <tr id={`lead-titre-${d.id}`} key={d.id} className="scroll-mt-24 border-b border-gray-700/50 align-top">
                         <td className="p-3 sm:p-4">{d.email}</td>
                         <td className="p-3 sm:p-4">
                           <p className="text-gray-100">{leadData.nomComplet || "—"}</p>
@@ -6367,7 +6521,7 @@ export default function GestionPage() {
                           {matchingUser ? (
                             <span className="text-green-400">✓ Compte existant</span>
                           ) : (
-                            <span className="text-sky-400">Créer le compte</span>
+                            <span className="text-gray-400">Pas de fiche</span>
                           )}
                         </td>
                         <td className="p-3 sm:p-4">
@@ -6503,6 +6657,7 @@ export default function GestionPage() {
         {/* Liste des avenants - historique par client */}
         <section>
           <h2 className="text-lg font-semibold text-white mb-4">Historique des avenants</h2>
+          <DashboardListNote shown={visibleAvenants.length} total={filteredAvenants.length} subject="avenants" />
           <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
             <table className="w-full text-sm min-w-[400px]">
               <thead>
@@ -6515,12 +6670,10 @@ export default function GestionPage() {
                 </tr>
               </thead>
               <tbody>
-                {filterBySearch(data.documents.filter((d) => d.type === "avenant"), searchQuery).length === 0 ? (
-                  <tr><td colSpan={5} className="p-4 text-gray-200">Aucun avenant</td></tr>
+                {filteredAvenants.length === 0 ? (
+                  <tr><td colSpan={5} className="p-4 text-gray-200">{searchQuery.trim() ? "Aucun avenant pour cette recherche." : "Aucun avenant"}</td></tr>
                 ) : (
-                  filterBySearch(data.documents.filter((d) => d.type === "avenant"), searchQuery)
-                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                    .map((d) => {
+                  visibleAvenants.map((d) => {
                       let avenantData: { contractNumero?: string } = {}
                       if (d.data) {
                         try {

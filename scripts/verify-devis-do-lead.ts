@@ -188,6 +188,21 @@ assert(alert.includes("return DEFAULT_PUBLIC_CONTACT_EMAIL"), "sans adresse pers
 assert(route.includes("gestionLeadId: lead.id"), "la demande enregistrée transmet son identifiant à l'alerte")
 assert(!route.includes("user.create"), "enregistrer un devis DO ne crée pas de fiche")
 
+assert(dashboard.includes("ficheSectionHref"), "la fiche s'ouvre sur la section de l'action")
+assert(dashboard.includes('"#signature-contrat"'), "une signature en attente ouvre le bloc signature")
+assert(dashboard.includes('"#assurances-client"'), "un contrat non payé ouvre les assurances de la fiche")
+assert(dashboard.includes("#lead-decennale-"), "un lead décennale ouvre sa ligne")
+assert(dashboard.includes("#lead-rc-"), "un lead RC ouvre sa ligne")
+assert(!dashboard.includes("ficheClientHref"), "l'action ne coupe plus l'ancre de la fiche")
+assert(page.includes("focusQuery"), "l'action de liste filtre la recherche sur le client")
+assert(page.includes("id={`lead-decennale-${l.id}`}"), "la ligne décennale a une ancre")
+const inbox = readFileSync(new URL("../lib/new-devis-inbox.ts", import.meta.url), "utf8")
+assert(inbox.includes("lead-decennale-${lead.id}"), "Voir ouvre la ligne décennale, pas seulement le bloc")
+assert(inbox.includes("lead-rc-${lead.id}"), "Voir ouvre la ligne RC")
+assert(inbox.includes("lead-etude-${lead.id}"), "Voir ouvre la ligne étude")
+assert(inbox.includes("lead-titre-${lead.id}"), "Voir ouvre la ligne assurance titre")
+assert(quickSearch.includes("#assurances-client"), "la recherche de contrat ouvre les assurances")
+
 assert(dashboard.includes("selectDoDevisDashboardActions"), "le tableau de bord prépare les actions devis DO")
 assert(
   dashboard.includes("[...doDevisActionsVisible, ...dashboardActionsVisible]"),

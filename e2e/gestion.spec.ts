@@ -1453,7 +1453,7 @@ test.describe("Gestion CRM — nouvelles demandes", () => {
     await expect(rows.nth(0)).toContainText("Décennale")
     await expect(rows.nth(0)).toContainText("Atelier Recent")
     await expect(rows.nth(0).getByRole("link", { name: "Client" })).toHaveAttribute("href", "/gestion/clients/client_recent")
-    await expect(rows.nth(0).getByRole("link", { name: "Voir" })).toHaveAttribute("href", "#leads-decennale")
+    await expect(rows.nth(0).getByRole("link", { name: "Voir" })).toHaveAttribute("href", "#lead-decennale-lead_recent")
     await expect(rows.nth(1)).toContainText("RC fabriquant")
     await expect(rows.nth(1)).toContainText("Atelier RC")
     await expect(rows.nth(2)).toContainText("Dommage ouvrage")
@@ -1469,5 +1469,55 @@ test.describe("Gestion CRM — nouvelles demandes", () => {
     await expect(section.locator("tr", { hasText: "Atelier RC" })).toBeVisible()
     await expect(section.locator("tr", { hasText: "Atelier Recent" })).toHaveCount(0)
     await expect(section.locator("tr", { hasText: "Chantier DO" })).toHaveCount(0)
+  })
+
+  test("Voir retrouve la demande récente masquée par l'aperçu de 25 lignes", async ({ page }) => {
+    await mockGestionAuth(page)
+    const devisLeads = Array.from({ length: 26 }, (_, index) => {
+      const day = String(index + 1).padStart(2, "0")
+      return {
+        id: `lead_${day}`,
+        email: `lead-${day}@example.com`,
+        raisonSociale: `Atelier ${day}`,
+        siret: "",
+        primeAnnuelle: 1000,
+        rappelSentAt: null,
+        createdAt: `2026-10-${day}T08:00:00.000Z`,
+        slaHours: index,
+      }
+    })
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          users: [],
+          documents: [],
+          payments: [],
+          devisLeads,
+          devisDoLeads: [],
+          devisRcFabriquantLeads: [],
+          devisEtudeLeads: [],
+          devisAssuranceTitreLeads: [],
+          devisDrafts: [],
+          pendingSignatures: [],
+          insuranceContracts: [],
+          dashboardActions: [],
+          dashboardActionsSummary: { total: 0, high: 0, medium: 0, overdue72h: 0, dismissedToday: 0 },
+        }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Nouvelles demandes" }).click()
+    const inbox = page.locator("#nouvelles-demandes")
+    await expect(inbox.locator("tr", { hasText: "Atelier 26" })).toBeVisible()
+    await expect(page.locator("#leads-decennale")).not.toContainText("Atelier 26")
+
+    await inbox.locator("tr", { hasText: "Atelier 26" }).getByRole("link", { name: "Voir" }).click()
+    const leads = page.locator("#leads-decennale")
+    await expect(leads.locator("#lead-decennale-lead_26")).toBeInViewport()
+    await expect(leads).toContainText("Atelier 26")
+    await expect(leads).not.toContainText("Atelier 01")
   })
 })

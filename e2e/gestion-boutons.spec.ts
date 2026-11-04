@@ -9,7 +9,38 @@ const MOCK_ADMIN_SESSION = {
   expires: "2099-01-01T00:00:00.000Z",
 }
 
+type DashboardActionFixture = {
+  id: string
+  kind: string
+  priority: string
+  title: string
+  description: string
+  href: string
+  ageHours: number
+  focusQuery?: string
+}
+
 function buildDashboard() {
+  const dashboardActions: DashboardActionFixture[] = [
+    {
+      id: "ctr-contract_do_1",
+      kind: "approved_unpaid_contract",
+      priority: "high",
+      title: "Contrat approuvé non payé",
+      description: "DO-2026-001 (do) — 30h",
+      href: "/gestion/clients/client_do_1#assurances-client",
+      ageHours: 30,
+    },
+    {
+      id: "lead-dec-lead_dec_1",
+      kind: "decennale_lead_followup",
+      priority: "medium",
+      title: "Lead devis décennale à relancer",
+      description: "lead-sans-compte@example.com — 30h",
+      href: "#leads-decennale",
+      ageHours: 30,
+    },
+  ]
   return {
     users: [
       {
@@ -85,26 +116,7 @@ function buildDashboard() {
         lifecyclePayments: [],
       },
     ],
-    dashboardActions: [
-      {
-        id: "ctr-contract_do_1",
-        kind: "approved_unpaid_contract",
-        priority: "high",
-        title: "Contrat approuvé non payé",
-        description: "DO-2026-001 (do) — 30h",
-        href: "/gestion/clients/client_do_1",
-        ageHours: 30,
-      },
-      {
-        id: "lead-dec-lead_dec_1",
-        kind: "decennale_lead_followup",
-        priority: "medium",
-        title: "Lead devis décennale à relancer",
-        description: "lead-sans-compte@example.com — 30h",
-        href: "#leads-decennale",
-        ageHours: 30,
-      },
-    ],
+    dashboardActions,
     dashboardActionsSummary: {
       total: 2,
       high: 1,
@@ -144,6 +156,16 @@ function buildClient() {
     dda: { consents: [], events: [] },
     canGenerateDecennaleAttestation: true,
     echeances: [],
+    insuranceContracts: [] as {
+      id: string
+      contractNumber: string
+      productType: string
+      status: string
+      premium: number
+      paidAt: string | null
+      hasCertificate: boolean
+      clientName: string
+    }[],
   }
 }
 
@@ -258,7 +280,7 @@ test.describe("Gestion — boutons d'action", () => {
     const actions = page.locator("#actions-du-jour")
     await expect(actions.getByRole("link", { name: /Contrat approuvé non payé/ })).toHaveAttribute(
       "href",
-      "/gestion/clients/client_do_1"
+      "/gestion/clients/client_do_1#assurances-client"
     )
     await expect(actions.getByText("Ouvre la fiche client")).toBeVisible()
     await actions.getByRole("link", { name: /Lead devis décennale/ }).click()
@@ -342,6 +364,18 @@ test.describe("Gestion — boutons d'action", () => {
       body.user.id = "client_do_1"
       body.user.email = "client-do@example.com"
       body.user.raisonSociale = "Client DO"
+      body.insuranceContracts = [
+        {
+          id: "contract_do_1",
+          contractNumber: "DO-2026-001",
+          productType: "do",
+          status: "approved",
+          premium: 2400,
+          paidAt: null,
+          hasCertificate: false,
+          clientName: "Client DO",
+        },
+      ]
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -349,13 +383,55 @@ test.describe("Gestion — boutons d'action", () => {
       })
     })
     await page.locator("#actions-du-jour").getByRole("link", { name: /Contrat approuvé non payé/ }).click()
-    await expect(page).toHaveURL(/\/gestion\/clients\/client_do_1/)
+    await expect(page).toHaveURL(/\/gestion\/clients\/client_do_1#assurances-client/)
+    await expect(page.locator("#assurances-client")).toBeInViewport()
+    await expect(page.locator("#assurances-client").getByRole("link", { name: "PDF devis + CP" })).toBeVisible()
     await expect(page.getByRole("heading", { name: "Fiche client" })).toBeVisible()
     await expect(page.getByText("Client DO", { exact: true })).toBeVisible()
     await page.getByRole("button", { name: "Modifier les coordonnées" }).click()
     await expect(
       page.locator("label", { hasText: /^Raison sociale$/ }).locator("xpath=following-sibling::input")
     ).toHaveValue("Client DO")
+  })
+
+  test("Une action de lead ouvre la ligne et masque les autres", async ({ page }) => {
+    await mockAdmin(page)
+    const dashboard = buildDashboard()
+    dashboard.devisLeads.push({
+      id: "lead_dec_2",
+      email: "autre-lead@example.com",
+      raisonSociale: "Autre Lead",
+      siret: "11111111111111",
+      primeAnnuelle: 800,
+      rappelSentAt: null,
+      createdAt: "2026-06-08T08:00:00.000Z",
+      slaHours: 40,
+    })
+    dashboard.dashboardActions = [
+      {
+        id: "lead-dec-lead_dec_2",
+        kind: "decennale_lead_followup",
+        priority: "medium",
+        title: "Lead devis décennale à relancer",
+        description: "autre-lead@example.com — 40h",
+        href: "#lead-decennale-lead_dec_2",
+        focusQuery: "autre-lead@example.com",
+        ageHours: 40,
+      },
+    ]
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(dashboard),
+      })
+    })
+
+    await page.goto("/gestion")
+    await page.locator("#actions-du-jour").getByRole("link", { name: /Lead devis décennale/ }).click()
+    await expect(page.locator("#lead-decennale-lead_dec_2")).toBeInViewport()
+    await expect(page.locator("#leads-decennale")).toContainText("Autre Lead")
+    await expect(page.locator("#leads-decennale")).not.toContainText("Lead Sans Compte")
   })
 
   test("Sur mobile, la gestion s'ouvre sur le travail du jour", async ({ page }) => {
@@ -542,7 +618,7 @@ test.describe("Gestion — boutons d'action", () => {
     await expect(result).toBeVisible()
     await expect(result.getByRole("link", { name: "Ouvrir la fiche" })).toHaveAttribute(
       "href",
-      "/gestion/clients/client_gokse"
+      "/gestion/clients/client_gokse#assurances-client"
     )
     await expect(result.getByRole("button", { name: "Valider le paiement" })).toBeVisible()
   })

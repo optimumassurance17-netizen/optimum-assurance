@@ -118,7 +118,7 @@ export function selectNewDevisInbox(
       clientLabel: labelFrom(lead.raisonSociale, email),
       email,
       createdAt: lead.createdAt,
-      listId: "leads-decennale",
+      listId: `lead-decennale-${lead.id}`,
       clientUserId: user?.id ?? null,
     })
   }
@@ -156,7 +156,7 @@ export function selectNewDevisInbox(
       clientLabel: labelFrom(lead.matchedUser?.raisonSociale, readNamedField(lead.data), email),
       email,
       createdAt: lead.createdAt,
-      listId: "rc-fabriquant-leads",
+      listId: `lead-rc-${lead.id}`,
       clientUserId: user?.id ?? null,
     })
   }
@@ -172,7 +172,7 @@ export function selectNewDevisInbox(
       clientLabel: labelFrom(lead.raisonSociale, email),
       email,
       createdAt: lead.createdAt,
-      listId: "etudes-do",
+      listId: `lead-etude-${lead.id}`,
       clientUserId: user?.id ?? null,
     })
   }
@@ -188,7 +188,7 @@ export function selectNewDevisInbox(
       clientLabel: labelFrom(lead.matchedUser?.raisonSociale, readNamedField(lead.data), email),
       email,
       createdAt: lead.createdAt,
-      listId: "assurance-titre-leads",
+      listId: `lead-titre-${lead.id}`,
       clientUserId: user?.id ?? null,
     })
   }
