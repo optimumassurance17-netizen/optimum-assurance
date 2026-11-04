@@ -28,6 +28,7 @@ const GESTION_LISTE_IDS = new Set([
   "paiements",
   "attestations",
   "factures-en-retard",
+  "nouvelles-demandes",
   "devis-emis",
   "contrats",
   "etudes-do",
@@ -113,6 +114,7 @@ import {
 } from "@/lib/assurance-titre-types"
 import { describeClientPayment, pendingCardEcheanceId } from "@/lib/client-echeances"
 import { isDisplayedQuoteExpired } from "@/lib/quote-validity"
+import { selectNewDevisInbox } from "@/lib/new-devis-inbox"
 
 function getRcFabLeadDraft(
   d: { id: string; statut?: string; notesInternes?: string | null },
@@ -1434,6 +1436,32 @@ export default function GestionPage() {
     () => takeDashboardRows(filteredLateInvoices, listsNarrowed),
     [filteredLateInvoices, listsNarrowed]
   )
+  const newDevisInbox = useMemo(
+    () =>
+      selectNewDevisInbox({
+        users: data?.users ?? [],
+        devisLeads: data?.devisLeads ?? [],
+        devisDoLeads: data?.devisDoLeads ?? [],
+        devisRcLeads: data?.devisRcFabriquantLeads ?? [],
+        devisEtudeLeads: data?.devisEtudeLeads ?? [],
+        devisTitreLeads: data?.devisAssuranceTitreLeads ?? [],
+      }),
+    [data]
+  )
+  const filteredNewDevisInbox = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return newDevisInbox
+    return newDevisInbox.filter(
+      (row) =>
+        row.clientLabel.toLowerCase().includes(query) ||
+        row.email.toLowerCase().includes(query) ||
+        row.product.toLowerCase().includes(query)
+    )
+  }, [newDevisInbox, searchQuery])
+  const visibleNewDevisInbox = useMemo(
+    () => takeDashboardRows(filteredNewDevisInbox, listsNarrowed),
+    [filteredNewDevisInbox, listsNarrowed]
+  )
   const expiredIssuedQuotes = issuedQuotes.filter((d) => isDisplayedQuoteExpired(d.createdAt)).length
 
   const dashboardUserLookup = useMemo(() => {
@@ -2576,6 +2604,15 @@ export default function GestionPage() {
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#4a2c08] text-amber-100 border border-amber-700/70 hover:bg-[#5c3710]"
                 >
                   Factures en retard
+                </a>
+              )}
+              {newDevisInbox.length > 0 && (
+                <a
+                  href="#nouvelles-demandes"
+                  onClick={onListAnchor("nouvelles-demandes")}
+                  className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
+                >
+                  Nouvelles demandes
                 </a>
               )}
               <a
@@ -4166,6 +4203,73 @@ export default function GestionPage() {
                             >
                               Client
                             </Link>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {newDevisInbox.length > 0 && (
+          <section id="nouvelles-demandes" className="scroll-mt-24">
+            <h2 className="text-lg font-semibold text-white mb-2">Nouvelles demandes</h2>
+            <p className="text-sm text-gray-200 mb-3">
+              {newDevisInbox.length === 1
+                ? "1 demande de devis est à traiter."
+                : `${newDevisInbox.length.toLocaleString("fr-FR")} demandes de devis sont à traiter.`}
+            </p>
+            <DashboardListNote shown={visibleNewDevisInbox.length} total={filteredNewDevisInbox.length} subject="demandes" />
+            <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full text-sm min-w-[400px]">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 sm:p-4 font-medium">Produit</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Client</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Date</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredNewDevisInbox.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="p-4 text-gray-200">Aucune demande pour cette recherche.</td>
+                    </tr>
+                  ) : (
+                    visibleNewDevisInbox.map((row) => {
+                      const created = new Date(row.createdAt)
+                      const createdLabel = Number.isNaN(created.getTime()) ? "—" : created.toLocaleDateString("fr-FR")
+                      return (
+                        <tr key={row.key} className="border-b border-gray-700/50">
+                          <td className="p-3 sm:p-4">{row.product}</td>
+                          <td className="p-3 sm:p-4">
+                            <span className="text-gray-100">{row.clientLabel}</span>
+                            {row.clientLabel.trim().toLowerCase() !== row.email.trim().toLowerCase() ? (
+                              <span className="mt-1 block text-xs text-gray-400">{row.email}</span>
+                            ) : null}
+                          </td>
+                          <td className="p-3 sm:p-4">{createdLabel}</td>
+                          <td className="p-3 sm:p-4">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <a
+                                href={`#${row.listId}`}
+                                onClick={onListAnchor(row.listId)}
+                                className="text-[#2563eb] hover:text-[#1d4ed8] text-sm min-h-[44px] inline-flex items-center"
+                              >
+                                Voir
+                              </a>
+                              {row.clientUserId ? (
+                                <Link
+                                  href={`/gestion/clients/${row.clientUserId}`}
+                                  className="text-gray-200 hover:text-white text-sm min-h-[44px] inline-flex items-center"
+                                >
+                                  Client
+                                </Link>
+                              ) : null}
+                            </div>
                           </td>
                         </tr>
                       )

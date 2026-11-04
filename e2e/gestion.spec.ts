@@ -1166,6 +1166,7 @@ test.describe("Gestion CRM — devis émis", () => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto("/gestion")
     await expect(page.getByRole("link", { name: "Factures en retard" })).toHaveCount(0)
+    await expect(page.getByRole("link", { name: "Nouvelles demandes" })).toHaveCount(0)
     await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Devis émis" }).click()
 
     const section = page.locator("#devis-emis")
@@ -1351,5 +1352,122 @@ test.describe("Gestion CRM — factures en retard", () => {
     await page.getByPlaceholder(/Rechercher/).fill("Atelier Récent")
     await expect(section.locator("tr", { hasText: "Atelier Récent" })).toBeVisible()
     await expect(section.locator("tr", { hasText: "Atelier RC" })).toHaveCount(0)
+  })
+})
+
+test.describe("Gestion CRM — nouvelles demandes", () => {
+  test("Les demandes de devis à traiter sont regroupées, la plus récente en premier", async ({ page }) => {
+    await mockGestionAuth(page)
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          users: [
+            {
+              id: "client_recent",
+              email: "recent@example.com",
+              raisonSociale: "Atelier Recent",
+              siret: "22222222222222",
+              createdAt: "2026-11-01T08:00:00.000Z",
+            },
+          ],
+          documents: [],
+          payments: [],
+          devisLeads: [
+            {
+              id: "lead_recent",
+              email: "recent@example.com",
+              raisonSociale: "Atelier Recent",
+              siret: "22222222222222",
+              primeAnnuelle: 900,
+              rappelSentAt: null,
+              createdAt: "2026-11-04T15:00:00.000Z",
+            },
+            {
+              id: "lead_expire",
+              email: "expire@example.com",
+              raisonSociale: "Atelier Expire",
+              siret: "11111111111111",
+              primeAnnuelle: 400,
+              rappelSentAt: null,
+              createdAt: "2026-01-01T08:00:00.000Z",
+            },
+          ],
+          devisDoLeads: [
+            {
+              id: "do_lead_01",
+              email: "chantier@example.com",
+              data: JSON.stringify({ raisonSociale: "Chantier DO" }),
+              coutTotal: 120000,
+              createdAt: "2026-11-03T10:00:00.000Z",
+            },
+          ],
+          devisRcFabriquantLeads: [
+            {
+              id: "rc_lead_01",
+              email: "rc@example.com",
+              data: JSON.stringify({ raisonSociale: "Atelier RC" }),
+              statut: "a_traiter",
+              notesInternes: null,
+              primeProposee: null,
+              propositionEnvoyeeAt: null,
+              createdAt: "2026-11-04T10:00:00.000Z",
+              updatedAt: "2026-11-04T10:00:00.000Z",
+              userId: null,
+            },
+            {
+              id: "rc_lead_refuse",
+              email: "refuse@example.com",
+              data: JSON.stringify({ raisonSociale: "Atelier Refusé" }),
+              statut: "refuse",
+              notesInternes: null,
+              primeProposee: null,
+              propositionEnvoyeeAt: null,
+              createdAt: "2026-11-04T16:00:00.000Z",
+              updatedAt: "2026-11-04T16:00:00.000Z",
+              userId: null,
+            },
+          ],
+          devisEtudeLeads: [],
+          devisAssuranceTitreLeads: [],
+          devisDrafts: [],
+          pendingSignatures: [],
+          insuranceContracts: [],
+          dashboardActions: [],
+          dashboardActionsSummary: { total: 0, high: 0, medium: 0, overdue72h: 0, dismissedToday: 0 },
+        }),
+      })
+    })
+
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto("/gestion")
+    await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toHaveCount(0)
+    await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Nouvelles demandes" }).click()
+
+    const section = page.locator("#nouvelles-demandes")
+    await expect(section.getByRole("heading", { name: "Nouvelles demandes" })).toBeVisible()
+    await expect(section.getByText("3 demandes de devis sont à traiter.")).toBeVisible()
+    const rows = section.locator("tbody tr")
+    await expect(rows).toHaveCount(3)
+    await expect(rows.nth(0)).toContainText("Décennale")
+    await expect(rows.nth(0)).toContainText("Atelier Recent")
+    await expect(rows.nth(0).getByRole("link", { name: "Client" })).toHaveAttribute("href", "/gestion/clients/client_recent")
+    await expect(rows.nth(0).getByRole("link", { name: "Voir" })).toHaveAttribute("href", "#leads-decennale")
+    await expect(rows.nth(1)).toContainText("RC fabriquant")
+    await expect(rows.nth(1)).toContainText("Atelier RC")
+    await expect(rows.nth(2)).toContainText("Dommage ouvrage")
+    await expect(rows.nth(2)).toContainText("Chantier DO")
+    await expect(rows.nth(2).getByRole("link", { name: "Voir" })).toHaveAttribute("href", "#demande-do-do_lead_01")
+    await expect(section.getByText("Atelier Expire")).toHaveCount(0)
+    await expect(section.getByText("Atelier Refusé")).toHaveCount(0)
+
+    await rows.nth(2).getByRole("link", { name: "Voir" }).click()
+    await expect(page.locator("#demande-do-do_lead_01")).toBeVisible()
+
+    await page.getByPlaceholder(/Rechercher/).fill("Atelier RC")
+    await expect(section.locator("tr", { hasText: "Atelier RC" })).toBeVisible()
+    await expect(section.locator("tr", { hasText: "Atelier Recent" })).toHaveCount(0)
+    await expect(section.locator("tr", { hasText: "Chantier DO" })).toHaveCount(0)
   })
 })
