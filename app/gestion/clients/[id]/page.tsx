@@ -21,6 +21,7 @@ import {
   insuranceProductHasFic,
   insuranceProductHasSchedule,
 } from "@/lib/insurance-product"
+import { echeanceDomId } from "@/lib/client-echeances"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import {
   canValidateDoPaymentManually,
@@ -2600,7 +2601,7 @@ export default function ClientDetailPage() {
                 </thead>
                 <tbody>
                   {echeances.map((echeance) => (
-                    <tr key={echeance.id} className="border-b border-gray-700/50">
+                    <tr id={echeanceDomId(echeance.id)} key={echeance.id} className="scroll-mt-24 border-b border-gray-700/50">
                       <td className="p-4 text-white">
                         <div>{echeance.label}</div>
                         {echeance.sepaFailure ? (

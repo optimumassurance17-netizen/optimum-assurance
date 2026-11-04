@@ -1346,12 +1346,82 @@ test.describe("Gestion CRM — factures en retard", () => {
     await expect(rows.nth(0)).toContainText("450")
     await expect(rows.nth(0).getByText("En retard", { exact: true })).toBeVisible()
     await expect(rows.nth(0).getByText("Lien expiré")).toBeVisible()
-    await expect(rows.nth(0).getByRole("link", { name: "Client" })).toHaveAttribute("href", "/gestion/clients/user_late")
+    await expect(rows.nth(0).getByRole("link", { name: "Échéance" })).toHaveAttribute(
+      "href",
+      "/gestion/clients/user_late#echeance-ech_1"
+    )
     await expect(rows.nth(1)).toContainText("Atelier Récent")
 
     await page.getByPlaceholder(/Rechercher/).fill("Atelier Récent")
     await expect(section.locator("tr", { hasText: "Atelier Récent" })).toBeVisible()
     await expect(section.locator("tr", { hasText: "Atelier RC" })).toHaveCount(0)
+  })
+
+  test("Une facture en retard ouvre la ligne d'échéance à régler", async ({ page }) => {
+    await mockGestionAuth(page)
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          users: [],
+          documents: [],
+          payments: [],
+          devisLeads: [],
+          devisDrafts: [],
+          pendingSignatures: [],
+          insuranceContracts: [],
+          dashboardActions: [],
+          dashboardActionsSummary: { total: 0, high: 0, medium: 0, overdue72h: 0, dismissedToday: 0 },
+          echeancesASuivre: [
+            {
+              userId: "user_late",
+              clientLabel: "Atelier RC",
+              echeanceId: "decennale:2",
+              label: "Échéance 2",
+              amount: 450,
+              dueDate: "2026-10-01T12:00:00.000Z",
+              cardLinkStatus: "expired",
+            },
+          ],
+        }),
+      })
+    })
+    await page.route("**/api/gestion/clients/user_late", async (route) => {
+      if (route.request().method() !== "GET") {
+        await route.fallback()
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...buildGestionClientData({
+            user: { id: "user_late", email: "rc@example.com", raisonSociale: "Atelier RC" },
+          }),
+          echeances: [
+            {
+              id: "decennale:2",
+              label: "Échéance 2",
+              amount: 450,
+              dueDate: "2026-10-01T12:00:00.000Z",
+              paid: false,
+              paidAt: null,
+              cardLinkStatus: "expired",
+            },
+          ],
+        }),
+      })
+    })
+
+    await page.setViewportSize({ width: 1280, height: 700 })
+    await page.goto("/gestion")
+    await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Factures en retard" }).click()
+    await page.locator("#factures-en-retard").getByRole("link", { name: "Échéance" }).click()
+    await expect(page).toHaveURL(/\/gestion\/clients\/user_late#echeance-decennale-2/)
+    await expect(page.locator("#echeance-decennale-2")).toBeInViewport()
+    await expect(page.getByRole("button", { name: "Règlement par carte bancaire" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Virement reçu" })).toBeVisible()
   })
 })
 

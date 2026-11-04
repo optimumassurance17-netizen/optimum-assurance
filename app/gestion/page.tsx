@@ -121,7 +121,7 @@ import {
   ASSURANCE_TITRE_BIEN_LABELS,
   ASSURANCE_TITRE_OPERATION_LABELS,
 } from "@/lib/assurance-titre-types"
-import { describeClientPayment, pendingCardEcheanceId } from "@/lib/client-echeances"
+import { describeClientPayment, echeanceFicheHref, pendingCardEcheanceId } from "@/lib/client-echeances"
 import { isDisplayedQuoteExpired } from "@/lib/quote-validity"
 import { selectNewDevisInbox } from "@/lib/new-devis-inbox"
 
@@ -3901,10 +3901,10 @@ export default function GestionPage() {
                               </p>
                               <div className="mt-1.5">
                                 <Link
-                                  href={`/gestion/clients/${row.userId}`}
+                                  href={echeanceFicheHref(row.userId, row.echeanceId)}
                                   className="text-[11px] px-2 py-1 rounded border border-gray-600 text-gray-100 hover:border-indigo-500/80"
                                 >
-                                  Fiche client
+                                  Échéance
                                 </Link>
                               </div>
                             </div>
@@ -4317,10 +4317,10 @@ export default function GestionPage() {
                           </td>
                           <td className="p-3 sm:p-4">
                             <Link
-                              href={`/gestion/clients/${row.userId}`}
+                              href={echeanceFicheHref(row.userId, row.echeanceId)}
                               className="text-[#2563eb] hover:text-[#1d4ed8] text-sm min-h-[44px] inline-flex items-center"
                             >
-                              Client
+                              Échéance
                             </Link>
                           </td>
                         </tr>

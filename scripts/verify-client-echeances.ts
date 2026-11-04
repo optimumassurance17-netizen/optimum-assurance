@@ -27,6 +27,8 @@ import {
   attachSepaNotices,
   clientEcheanceStatusLabel,
   collapseSettledCardLinkPayments,
+  echeanceDomId,
+  echeanceFicheHref,
 } from "../lib/client-echeances"
 import { adminActivityClientHref, adminActivityLabel } from "../lib/admin-activity-label"
 
@@ -550,5 +552,14 @@ assert(sepaCron.includes("decennaleInstallmentReminder"), "le prélèvement SEPA
 assert(sepaCron.includes("onSepaTrimestrePaid"), "une échéance déjà payée avance le calendrier au lieu d'être redébitée")
 assert(impayeRoute.includes("echeance?.paid"), "la relance impayé ne part pas si l'attestation est réglée")
 assert(contractReminder.includes("contract.paidAt"), "le rappel contrat ignore un dossier déjà payé")
+
+assert(echeanceDomId("decennale:2") === "echeance-decennale-2", "l'ancre d'échéance retire les deux-points")
+assert(
+  echeanceFicheHref("user_late", "decennale:2") === "/gestion/clients/user_late#echeance-decennale-2",
+  "une facture en retard ouvre l'échéance sur la fiche"
+)
+assert(echeanceFicheHref("  ", "decennale:2") === "/gestion#factures-en-retard", "sans fiche, on reste sur la liste")
+assert(fiche.includes("id={echeanceDomId(echeance.id)}"), "la ligne d'échéance a l'ancre ouverte depuis la gestion")
+assert(gestionPage.includes("echeanceFicheHref"), "la liste des factures en retard ouvre l'échéance")
 
 console.log("Échéances fiche client : OK")

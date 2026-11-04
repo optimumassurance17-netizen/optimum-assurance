@@ -691,6 +691,22 @@ export function attachSepaNotices<T extends { id: string }>(
   })
 }
 
+/** Ancre HTML stable : un identifiant d'échéance contient des « : ». */
+export function echeanceDomId(echeanceId: string): string {
+  const safe = echeanceId
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+  return safe ? `echeance-${safe}` : "echeances-client"
+}
+
+export function echeanceFicheHref(userId: string, echeanceId: string): string {
+  const id = userId.trim()
+  if (!id) return "/gestion#factures-en-retard"
+  return `/gestion/clients/${id}#${echeanceDomId(echeanceId)}`
+}
+
 export function clientEcheanceStatusLabel(
   row: { paid: boolean; dueDate: string | null; cardLinkStatus: "none" | "open" | "expired" },
   now = new Date()
