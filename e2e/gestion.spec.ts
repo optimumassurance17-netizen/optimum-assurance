@@ -1165,6 +1165,7 @@ test.describe("Gestion CRM — devis émis", () => {
 
     await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto("/gestion")
+    await expect(page.getByRole("link", { name: "Factures en retard" })).toHaveCount(0)
     await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Devis émis" }).click()
 
     const section = page.locator("#devis-emis")
@@ -1285,5 +1286,70 @@ test.describe("Gestion CRM — parcours admin (optionnel)", () => {
     await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toHaveCount(0)
     await page.getByRole("button", { name: "Graphiques et créations" }).click()
     await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toBeVisible()
+  })
+})
+
+test.describe("Gestion CRM — factures en retard", () => {
+  test("La liste du jour montre les échéances dépassées sans ouvrir les graphiques", async ({ page }) => {
+    await mockGestionAuth(page)
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          users: [],
+          documents: [],
+          payments: [],
+          devisLeads: [],
+          devisDrafts: [],
+          pendingSignatures: [],
+          insuranceContracts: [],
+          dashboardActions: [],
+          dashboardActionsSummary: { total: 0, high: 0, medium: 0, overdue72h: 0, dismissedToday: 0 },
+          echeancesASuivre: [
+            {
+              userId: "user_recent",
+              clientLabel: "Atelier Récent",
+              echeanceId: "ech_2",
+              label: "Échéance 3",
+              amount: 120,
+              dueDate: "2026-10-20T12:00:00.000Z",
+              cardLinkStatus: "none",
+            },
+            {
+              userId: "user_late",
+              clientLabel: "Atelier RC",
+              echeanceId: "ech_1",
+              label: "Échéance 2",
+              amount: 450,
+              dueDate: "2026-10-01T12:00:00.000Z",
+              cardLinkStatus: "expired",
+            },
+          ],
+        }),
+      })
+    })
+
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto("/gestion")
+    await expect(page.getByRole("heading", { name: /Devis PDF personnalisé/ })).toHaveCount(0)
+    await page.getByRole("navigation", { name: "Accès rapide sections gestion" }).getByRole("link", { name: "Factures en retard" }).click()
+
+    const section = page.locator("#factures-en-retard")
+    await expect(section.getByRole("heading", { name: "Factures en retard" })).toBeVisible()
+    await expect(section.getByText("2 échéances sont dépassées et ne sont pas payées.")).toBeVisible()
+    const rows = section.locator("tbody tr")
+    await expect(rows).toHaveCount(2)
+    await expect(rows.nth(0)).toContainText("Atelier RC")
+    await expect(rows.nth(0)).toContainText("Échéance 2")
+    await expect(rows.nth(0)).toContainText("450")
+    await expect(rows.nth(0).getByText("En retard", { exact: true })).toBeVisible()
+    await expect(rows.nth(0).getByText("Lien expiré")).toBeVisible()
+    await expect(rows.nth(0).getByRole("link", { name: "Client" })).toHaveAttribute("href", "/gestion/clients/user_late")
+    await expect(rows.nth(1)).toContainText("Atelier Récent")
+
+    await page.getByPlaceholder(/Rechercher/).fill("Atelier Récent")
+    await expect(section.locator("tr", { hasText: "Atelier Récent" })).toBeVisible()
+    await expect(section.locator("tr", { hasText: "Atelier RC" })).toHaveCount(0)
   })
 })

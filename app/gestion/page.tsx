@@ -27,6 +27,7 @@ const GESTION_LISTE_IDS = new Set([
   "signatures-attente",
   "paiements",
   "attestations",
+  "factures-en-retard",
   "devis-emis",
   "contrats",
   "etudes-do",
@@ -1414,6 +1415,25 @@ export default function GestionPage() {
     () => takeDashboardRows(filteredIssuedQuotes, listsNarrowed),
     [filteredIssuedQuotes, listsNarrowed]
   )
+  const lateInvoices = useMemo(() => {
+    const rows = data?.echeancesASuivre ?? []
+    return [...rows].sort((a, b) => {
+      const aTime = Date.parse(a.dueDate)
+      const bTime = Date.parse(b.dueDate)
+      return (Number.isNaN(aTime) ? 0 : aTime) - (Number.isNaN(bTime) ? 0 : bTime)
+    })
+  }, [data])
+  const filteredLateInvoices = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return lateInvoices
+    return lateInvoices.filter(
+      (row) => row.clientLabel.toLowerCase().includes(query) || row.label.toLowerCase().includes(query)
+    )
+  }, [lateInvoices, searchQuery])
+  const visibleLateInvoices = useMemo(
+    () => takeDashboardRows(filteredLateInvoices, listsNarrowed),
+    [filteredLateInvoices, listsNarrowed]
+  )
   const expiredIssuedQuotes = issuedQuotes.filter((d) => isDisplayedQuoteExpired(d.createdAt)).length
 
   const dashboardUserLookup = useMemo(() => {
@@ -2549,6 +2569,15 @@ export default function GestionPage() {
                   Actions du jour
                 </a>
               ) : null}
+              {lateInvoices.length > 0 && (
+                <a
+                  href="#factures-en-retard"
+                  onClick={onListAnchor("factures-en-retard")}
+                  className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#4a2c08] text-amber-100 border border-amber-700/70 hover:bg-[#5c3710]"
+                >
+                  Factures en retard
+                </a>
+              )}
               <a
                 href="#clients"
                 onClick={onListAnchor("clients")}
@@ -4085,6 +4114,67 @@ export default function GestionPage() {
               </section>
             ) : null}
           </>
+        )}
+
+        {lateInvoices.length > 0 && (
+          <section id="factures-en-retard" className="scroll-mt-24">
+            <h2 className="text-lg font-semibold text-white mb-2">Factures en retard</h2>
+            <p className="text-sm text-gray-200 mb-3">
+              {lateInvoices.length === 1
+                ? "1 échéance est dépassée et n'est pas payée."
+                : `${lateInvoices.length.toLocaleString("fr-FR")} échéances sont dépassées et ne sont pas payées.`}
+            </p>
+            <DashboardListNote shown={visibleLateInvoices.length} total={filteredLateInvoices.length} subject="factures" />
+            <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full text-sm min-w-[400px]">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 sm:p-4 font-medium">Client</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Échéance</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Montant</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Date</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredLateInvoices.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-4 text-gray-200">Aucune facture pour cette recherche.</td>
+                    </tr>
+                  ) : (
+                    visibleLateInvoices.map((row) => {
+                      const due = new Date(row.dueDate)
+                      const dueLabel = Number.isNaN(due.getTime()) ? "—" : due.toLocaleDateString("fr-FR")
+                      return (
+                        <tr key={`${row.userId}:${row.echeanceId}`} className="border-b border-gray-700/50">
+                          <td className="p-3 sm:p-4">{row.clientLabel}</td>
+                          <td className="p-3 sm:p-4">
+                            <span className="text-gray-100">{row.label}</span>
+                            {row.cardLinkStatus === "expired" ? (
+                              <span className="mt-1 block text-xs text-amber-200">Lien expiré</span>
+                            ) : null}
+                          </td>
+                          <td className="p-3 sm:p-4">{row.amount.toLocaleString("fr-FR")} €</td>
+                          <td className="p-3 sm:p-4">
+                            <span className="px-2 py-1 rounded text-xs bg-amber-900/50 text-amber-200">En retard</span>
+                            <span className="mt-1 block text-gray-200">{dueLabel}</span>
+                          </td>
+                          <td className="p-3 sm:p-4">
+                            <Link
+                              href={`/gestion/clients/${row.userId}`}
+                              className="text-[#2563eb] hover:text-[#1d4ed8] text-sm min-h-[44px] inline-flex items-center"
+                            >
+                              Client
+                            </Link>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
         )}
 
         {data && Array.isArray(data.insuranceContracts) && (
