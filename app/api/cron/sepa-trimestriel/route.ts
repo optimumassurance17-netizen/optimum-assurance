@@ -8,6 +8,8 @@ import {
 } from "@/lib/mollie-sepa"
 import { primeTrimestrielle } from "@/lib/premium"
 import { prisma } from "@/lib/prisma"
+import { loadClientEcheances } from "@/lib/client-echeance-service"
+import { decennaleInstallmentReminder, nextSepaInstallmentNumber } from "@/lib/client-echeances"
 import { readPendingChargeLock } from "@/lib/gestion-card-link"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 
@@ -116,6 +118,13 @@ export async function GET(request: NextRequest) {
             where: { id: sub.id },
             data: { status: "active", lastError: null },
           })
+        }
+
+        const echeanceRows = await loadClientEcheances(sub.userId)
+        const reminder = decennaleInstallmentReminder(echeanceRows, nextSepaInstallmentNumber(sub))
+        if (!reminder.send && reminder.reason === "paid") {
+          await onSepaTrimestrePaid(sub.id)
+          continue
         }
 
         const amount = primeTrimestrielle(sub.primeAnnuelle)

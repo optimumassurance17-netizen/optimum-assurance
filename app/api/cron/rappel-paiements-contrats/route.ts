@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         },
         lifecyclePayments: {
           orderBy: { createdAt: "desc" },
-          take: 1,
+          take: 8,
           select: {
             id: true,
             amount: true,
@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
     let skippedAlreadyReminded = 0
     let skippedAlreadyAlerted = 0
     let skippedUnsubscribed = 0
+    let skippedAlreadyPaid = 0
     const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
     const paymentIds = candidates.map((c) => c.lifecyclePayments[0]?.id).filter(Boolean) as string[]
     const contractIds = candidates.map((c) => c.id)
@@ -99,6 +100,11 @@ export async function GET(request: NextRequest) {
       }
       if (await isReminderUnsubscribed(normalizedEmail, "payment_reminder")) {
         skippedUnsubscribed++
+        continue
+      }
+
+      if (contract.paidAt || contract.lifecyclePayments.some((payment) => (payment.status || "").toLowerCase() === "paid")) {
+        skippedAlreadyPaid++
         continue
       }
 
@@ -213,6 +219,7 @@ export async function GET(request: NextRequest) {
       skippedAlreadyReminded,
       skippedAlreadyAlerted,
       skippedUnsubscribed,
+      skippedAlreadyPaid,
     })
   } catch (error) {
     console.error("[cron rappel-paiements-contrats]", error)

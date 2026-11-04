@@ -5,6 +5,8 @@ import { isAdmin } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { EMAIL_TEMPLATES, emailNotSentBody, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
+import { findClientEcheance } from "@/lib/client-echeances"
+import { loadClientEcheances } from "@/lib/client-echeance-service"
 
 function parseDocumentData(value: string): { raisonSociale?: string } {
   try {
@@ -40,6 +42,11 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         { error: "Attestation décennale suspendue introuvable (le DO n’est pas concerné par l’impayé)." },
         { status: 404 }
       )
+    }
+
+    const echeance = findClientEcheance(await loadClientEcheances(document.userId), `attestation:${document.id}`)
+    if (echeance?.paid) {
+      return NextResponse.json({ ok: true, alreadyPaid: true, emailSent: false })
     }
 
     const data = parseDocumentData(document.data)

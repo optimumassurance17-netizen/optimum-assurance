@@ -4,8 +4,8 @@ import { assertCronAuthorized } from "@/lib/cron-auth"
 import { EMAIL_TEMPLATES, sendEmail } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
-import { primeTrimestrielle } from "@/lib/premium"
 import { loadClientEcheances } from "@/lib/client-echeance-service"
+import { decennaleInstallmentReminder, nextSepaInstallmentNumber } from "@/lib/client-echeances"
 import { renderFactureEcheancePdf } from "@/lib/facture-echeance-pdf"
 import {
   calendarDaysUntil,
@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         userId: true,
-        primeAnnuelle: true,
+        firstTrimesterPaidAt: true,
+        trimestresSepaPayes: true,
         nextSepaDue: true,
         user: {
           select: {
@@ -79,6 +80,7 @@ export async function GET(request: NextRequest) {
     let skippedNoEmail = 0
     let skippedUnsubscribed = 0
     let skippedNoAmount = 0
+    let skippedAlreadyPaid = 0
     let pdfFailed = 0
     let emailFailed = 0
 
@@ -101,15 +103,15 @@ export async function GET(request: NextRequest) {
         continue
       }
 
-      const amount = primeTrimestrielle(subscription.primeAnnuelle)
-      if (!(amount > 0)) {
-        skippedNoAmount++
+      const rows = await loadClientEcheances(subscription.userId)
+      const decision = decennaleInstallmentReminder(rows, nextSepaInstallmentNumber(subscription))
+      if (!decision.send) {
+        if (decision.reason === "paid") skippedAlreadyPaid++
+        else skippedNoAmount++
         continue
       }
-
-      const rows = await loadClientEcheances(subscription.userId)
-      const nextUnpaid = rows.find((row) => row.kind === "decennale" && !row.paid)
-      const label = nextUnpaid?.label?.trim() || "échéance trimestrielle"
+      const amount = decision.amount
+      const label = decision.label
       const daysUntil = calendarDaysUntil(due, now) ?? 10
       const echeanceLe = formatEcheanceDay(due)
       const numero = factureEcheanceNumero(subscription.id, due)
@@ -192,6 +194,7 @@ export async function GET(request: NextRequest) {
       skippedNoEmail,
       skippedUnsubscribed,
       skippedNoAmount,
+      skippedAlreadyPaid,
       pdfFailed,
       emailFailed,
       lateInvoices,

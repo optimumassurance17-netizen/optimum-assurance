@@ -1965,8 +1965,13 @@ export default function GestionPage() {
         error?: string
         emailSent?: boolean
         warning?: string
+        alreadyPaid?: boolean
       }
       if (!res.ok) throw new Error(body.error || "")
+      if (body.alreadyPaid) {
+        setToast({ message: "Cette échéance est déjà réglée. Aucun email n'a été envoyé.", type: "warning" })
+        return
+      }
       if (body.emailSent === false) {
         setToast({ message: body.warning || "Email non envoyé.", type: "warning" })
         return

@@ -371,6 +371,35 @@ export function nextUnpaidEcheance<T extends { paid: boolean }>(rows: T[]): T | 
   return rows.find((row) => !row.paid) ?? null
 }
 
+/** Prochaine échéance décennale que le prélèvement SEPA va chercher. */
+export function nextSepaInstallmentNumber(input: {
+  firstTrimesterPaidAt: Date | string | null
+  trimestresSepaPayes: number
+}): number {
+  const first = input.firstTrimesterPaidAt ? 1 : 0
+  const sepaPaid = Math.max(0, Math.floor(input.trimestresSepaPayes))
+  return first + sepaPaid + 1
+}
+
+export type DecennaleInstallmentReminder =
+  | { send: true; label: string; amount: number }
+  | { send: false; reason: "paid" | "missing" }
+
+/** Une échéance déjà réglée ne doit plus déclencher de relance ni un second prélèvement. */
+export function decennaleInstallmentReminder(
+  rows: Pick<ClientEcheance, "kind" | "paid" | "installmentNumber" | "label" | "amount">[],
+  installmentNumber: number
+): DecennaleInstallmentReminder {
+  const row = rows.find((item) => item.kind === "decennale" && item.installmentNumber === installmentNumber)
+  if (!row) return { send: false, reason: "missing" }
+  if (row.paid || !(row.amount > 0)) return { send: false, reason: "paid" }
+  return {
+    send: true,
+    label: row.label.trim() || "échéance trimestrielle",
+    amount: row.amount,
+  }
+}
+
 /** Identifiant d'échéance d'un lien carte encore payable, sinon null. Un lien dont les 7 jours sont passés ne compte plus. */
 export function pendingCardEcheanceId(
   payment: {

@@ -12,6 +12,8 @@ import {
   installmentFromPaymentMetadata,
   mollieCardLinkIsClosed,
   molliePaymentIsOpen,
+  decennaleInstallmentReminder,
+  nextSepaInstallmentNumber,
   nextUnpaidEcheance,
   normalizeVirementReference,
   pendingCardEcheanceId,
@@ -516,5 +518,37 @@ const gestionPage = readFileSync(new URL("../app/gestion/page.tsx", import.meta.
 assert(gestionPage.includes("describeClientPayment"), "le suivi gestion distingue un virement d'un lien carte")
 assert(gestionPage.includes("Signé, activation en attente"), "le recouvrement nomme un contrat signé non activé")
 assert(clientPayments.includes("collapseSettledCardLinkPayments"), "l'historique client retire le doublon de paiement carte")
+
+assert(
+  nextSepaInstallmentNumber({ firstTrimesterPaidAt: new Date("2026-01-01"), trimestresSepaPayes: 0 }) === 2,
+  "le premier prélèvement vise l'échéance 2"
+)
+const paidSecond = decennaleInstallmentReminder(
+  [
+    { kind: "decennale", paid: true, installmentNumber: 2, label: "Échéance 2", amount: 450 },
+    { kind: "decennale", paid: false, installmentNumber: 3, label: "Échéance 3", amount: 450 },
+  ],
+  2
+)
+assert(!paidSecond.send, "une échéance déjà payée n'est pas relancée")
+const openThird = decennaleInstallmentReminder(
+  [
+    { kind: "decennale", paid: true, installmentNumber: 2, label: "Échéance 2", amount: 450 },
+    { kind: "decennale", paid: false, installmentNumber: 3, label: "Échéance 3", amount: 450 },
+  ],
+  3
+)
+assert(openThird.send && openThird.label === "Échéance 3", "l'échéance suivante impayée peut encore être relancée")
+
+const reminderRoute = readFileSync(new URL("../app/api/cron/relance-echeance-10-jours/route.ts", import.meta.url), "utf8")
+const sepaCron = readFileSync(new URL("../app/api/cron/sepa-trimestriel/route.ts", import.meta.url), "utf8")
+const impayeRoute = readFileSync(new URL("../app/api/gestion/documents/[id]/resend-impaye-email/route.ts", import.meta.url), "utf8")
+const contractReminder = readFileSync(new URL("../app/api/cron/rappel-paiements-contrats/route.ts", import.meta.url), "utf8")
+assert(reminderRoute.includes("decennaleInstallmentReminder"), "la relance à 10 jours vérifie le paiement")
+assert(reminderRoute.includes("skippedAlreadyPaid"), "une échéance payée est comptée à part")
+assert(sepaCron.includes("decennaleInstallmentReminder"), "le prélèvement SEPA vérifie le paiement")
+assert(sepaCron.includes("onSepaTrimestrePaid"), "une échéance déjà payée avance le calendrier au lieu d'être redébitée")
+assert(impayeRoute.includes("echeance?.paid"), "la relance impayé ne part pas si l'attestation est réglée")
+assert(contractReminder.includes("contract.paidAt"), "le rappel contrat ignore un dossier déjà payé")
 
 console.log("Échéances fiche client : OK")
