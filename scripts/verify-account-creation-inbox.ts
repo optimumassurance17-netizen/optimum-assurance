@@ -29,9 +29,14 @@ assert(!operations.includes("sendEmail"), "les crons n'envoient plus de mail int
 assert(access.includes("sendAccountCreationMailCopy"), "le mail d'accès créé est copié sur info@")
 assert(register.includes("sendAccountCreationMailCopy"), "le mail de bienvenue est copié sur info@")
 assert(
-  devis.includes("return [DEFAULT_PUBLIC_CONTACT_EMAIL]"),
-  "toutes les alertes internes partent sur info@"
+  devis.includes("return [getOwnerAlertEmail()]"),
+  "l'alerte interne part sur une seule adresse"
 )
+assert(
+  devis.includes("return DEFAULT_PUBLIC_CONTACT_EMAIL"),
+  "sans adresse personnelle, l'alerte reste sur info@"
+)
+assert(devis.includes("void params"), "l'enregistrement d'un questionnaire n'envoie plus d'alerte")
 assert(
   email.includes("const replyTo = DEFAULT_PUBLIC_CONTACT_EMAIL"),
   "toute réponse revient sur info@"

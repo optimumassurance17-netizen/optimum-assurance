@@ -33,7 +33,7 @@ const OPTIONAL_NOTES = [
   ["NEXT_PUBLIC_PHONE", "Affichage site"],
   ["NEXT_PUBLIC_WHATSAPP", "Affichage site"],
   ["MOLLIE_PUBLIC_BASE_URL", "Souvent inutile si NEXT_PUBLIC_APP_URL suffit"],
-  ["DEVIS_ALERT_EMAILS", "Alertes internes nouvelles demandes de devis (sinon ADMIN_EMAILS / CONTACT_EMAIL)"],
+  ["DEVIS_ALERT_EMAILS", "Une seule adresse pour la création de devis et les factures en retard (sinon info@optimum-assurance.eu)"],
 ]
 
 function parseVercelJson(stdout) {

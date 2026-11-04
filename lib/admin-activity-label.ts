@@ -3,6 +3,7 @@ import { documentRequestActivityLabel } from "@/lib/document-request"
 
 const ACTION_LABELS: Record<string, string> = {
   cron_echeance_reminder_10d_sent: "Relance d'échéance envoyée 10 jours avant",
+  cron_facture_en_retard_alert_sent: "Alerte factures en retard",
   echeance_refus_sepa_prevenu: "Client prévenu du refus de prélèvement",
   echeance_lien_carte: "Lien carte envoyé",
   echeance_virement_externe: "Virement externe validé",

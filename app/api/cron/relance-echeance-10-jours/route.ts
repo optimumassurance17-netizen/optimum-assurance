@@ -16,6 +16,7 @@ import {
   formatEcheanceDay,
   parisCalendarDay,
 } from "@/lib/echeance-reminder"
+import { sendLateInvoiceOwnerAlert } from "@/lib/late-invoice-alert"
 
 const REMINDER_ACTION = "cron_echeance_reminder_10d_sent"
 
@@ -175,6 +176,13 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    let lateInvoices = { sent: false, count: 0 }
+    try {
+      lateInvoices = await sendLateInvoiceOwnerAlert(now)
+    } catch (error) {
+      console.error("[cron relance-echeance-10-jours] facture en retard", error)
+    }
+
     return NextResponse.json({
       ok: true,
       scanned: subscriptions.length,
@@ -186,6 +194,7 @@ export async function GET(request: NextRequest) {
       skippedNoAmount,
       pdfFailed,
       emailFailed,
+      lateInvoices,
     })
   } catch (error) {
     console.error("[cron relance-echeance-10-jours]", error)

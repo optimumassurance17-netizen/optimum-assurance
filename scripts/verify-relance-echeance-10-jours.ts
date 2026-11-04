@@ -6,6 +6,7 @@ import {
   factureEcheanceNumero,
   parisCalendarDay,
 } from "../lib/echeance-reminder"
+import { lateInvoiceAlertMessage } from "../lib/late-invoice-alert-copy"
 import { renderFactureEcheancePdf } from "../lib/facture-echeance-pdf"
 
 function atParisNoon(day: string): Date {
@@ -25,6 +26,24 @@ assert.equal(echeanceReminderIsDue(inSevenDays, today), true)
 assert.equal(echeanceReminderIsDue(inElevenDays, today), false)
 assert.equal(echeanceReminderIsDue(inSixDays, today), false)
 assert.equal(factureEcheanceNumero("csub_12345678", inTenDays), "FAC-ECH-20261101-12345678")
+
+const late = lateInvoiceAlertMessage(
+  [
+    {
+      userId: "user_1",
+      clientLabel: "Atelier RC",
+      label: "Échéance 2",
+      amount: 450,
+      dueDate: "2026-10-01T00:00:00.000Z",
+    },
+  ],
+  "https://www.optimum-assurance.fr"
+)
+assert.equal(late.subject, "[Optimum] 1 facture en retard")
+assert.match(late.text, /Atelier RC/)
+assert.match(late.text, /450/)
+assert.match(late.text, /\/gestion\/clients\/user_1/)
+assert.doesNotMatch(late.text, /espace-client/)
 
 async function main() {
   const pdf = await renderFactureEcheancePdf({
@@ -46,6 +65,10 @@ main()
     assert.equal(route.includes("requireManualReminderDispatch"), false)
     assert.ok(route.includes("renderFactureEcheancePdf"), "le cron joint la facture")
     assert.ok(route.includes("relanceEcheanceDixJours"), "le cron envoie l'email d'échéance")
+    assert.ok(route.includes("sendLateInvoiceOwnerAlert"), "le cron prévient aussi des factures en retard")
+    const lateAlert = readFileSync("lib/late-invoice-alert.ts", "utf8")
+    assert.ok(lateAlert.includes("getOwnerAlertEmail"), "la facture en retard part sur une seule adresse")
+    assert.equal(lateAlert.includes("to: email"), false)
     assert.ok(route.includes('status: { in: ["active", "pending_mandate"] }'), "seuls les prélèvements actifs sont relancés")
     assert.ok(vercel.includes("/api/cron/relance-echeance-10-jours"), "le cron est planifié")
     assert.ok(email.includes("relanceEcheanceDixJours"), "le modèle d'email existe")

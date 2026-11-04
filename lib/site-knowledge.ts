@@ -46,7 +46,7 @@ export const SITE_KNOWLEDGE = `
 ## Parcours dommage ouvrage (DO)
 1. **/devis-dommage-ouvrage** — Questionnaire en **5 étapes** (souscripteur, opération, ouvrage et coûts, terrain et technique, garanties). Brouillon enregistré localement dans le navigateur.
 2. Envoi → demande enregistrée, email avec le lien **/souscription-dommage-ouvrage**.
-3. **Compte connecté** : la souscription se reprend sur **/souscription-dommage-ouvrage** (même email, même si le navigateur a perdu le brouillon). Le questionnaire **/espace-client/questionnaire-do-etude** complète le dossier (alerte e-mail équipe à chaque enregistrement, si Resend + destinataires configurés).
+3. **Compte connecté** : la souscription se reprend sur **/souscription-dommage-ouvrage** (même email, même si le navigateur a perdu le brouillon). Le questionnaire **/espace-client/questionnaire-do-etude** complète le dossier.
 4. Contrat plateforme : **paiement par virement unique Mollie** du montant indiqué (prime entière, pas de trimestrialisation). Un particulier sans SIRET peut suivre ce virement. Un dossier à risque reste en étude, puis le même virement unique s’ouvre dans l’espace client après acceptation. Pièces (permis, DOC, plans…) en **GED**.
 5. **Attestation** après **réception des fonds**.
 

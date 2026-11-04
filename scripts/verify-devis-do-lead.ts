@@ -183,7 +183,8 @@ const quickSearch = readFileSync(new URL("../components/gestion/ClientQuickSearc
 assert(alert.includes("doDevisLeadGestionUrl"), "l'alerte construit le lien de gestion")
 assert(alert.includes('params.type === "dommage_ouvrage"'), "le lien de gestion est réservé au devis DO")
 assert(alert.includes("Ouvrir la demande dans la gestion"), "l'alerte affiche le lien vers la demande")
-assert(alert.includes("return [DEFAULT_PUBLIC_CONTACT_EMAIL]"), "l'alerte reste sur info@")
+assert(alert.includes("return [getOwnerAlertEmail()]"), "l'alerte part sur une seule adresse")
+assert(alert.includes("return DEFAULT_PUBLIC_CONTACT_EMAIL"), "sans adresse personnelle, l'alerte reste sur info@")
 assert(route.includes("gestionLeadId: lead.id"), "la demande enregistrée transmet son identifiant à l'alerte")
 assert(!route.includes("user.create"), "enregistrer un devis DO ne crée pas de fiche")
 
