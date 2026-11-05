@@ -923,7 +923,7 @@ test.describe("Gestion — boutons d'action", () => {
 
   test("Créer le compte d'une demande DO ouvre le devis déjà rempli", async ({ page }) => {
     await mockAdmin(page)
-    const dashboard = buildDashboard() as ReturnType<typeof buildDashboard> & {
+    const dashboard = buildDashboard() as Omit<ReturnType<typeof buildDashboard>, "devisDoLeads"> & {
       devisDoLeads: Array<{
         id: string
         email: string
