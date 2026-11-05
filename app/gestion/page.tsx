@@ -2050,16 +2050,31 @@ export default function GestionPage() {
   }, [status, router, dashboardLoadKey])
 
   const editDocLoadId = useRef<string | null>(null)
+  const handledEditDocId = useRef<string | null>(null)
+  const routerRef = useRef(router)
+  routerRef.current = router
 
   /** Ouvre le modal d'édition si l'URL contient ?editDoc= (lien depuis /gestion/documents/[id]). */
   useEffect(() => {
     if (!data || typeof window === "undefined") return
     const editDocId = new URLSearchParams(window.location.search).get("editDoc")?.trim()
     if (!editDocId) return
+    const forgetEditDocParam = () => {
+      const url = new URL(window.location.href)
+      if (!url.searchParams.has("editDoc")) return
+      url.searchParams.delete("editDoc")
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
+      routerRef.current.replace(`${url.pathname}${url.search}${url.hash}`, { scroll: false })
+    }
+    if (handledEditDocId.current === editDocId) {
+      forgetEditDocParam()
+      return
+    }
     const listed = (data.documents ?? []).find((document) => document.id === editDocId)
     if (listed && (listed.type === "contrat" || listed.type === "avenant")) {
+      handledEditDocId.current = editDocId
       openEditModal(listed)
-      router.replace("/gestion", { scroll: false })
+      forgetEditDocParam()
       return
     }
     if (editDocLoadId.current === editDocId) return
@@ -2078,27 +2093,30 @@ export default function GestionPage() {
         if (cancelled) return
         const type = body.type
         if (!res.ok || (type !== "contrat" && type !== "avenant") || !body.id || !body.numero) {
+          handledEditDocId.current = editDocId
           setToast({
             message: body.error || "Ce document ne peut pas être modifié depuis le tableau.",
             type: "error",
           })
-          router.replace("/gestion", { scroll: false })
+          forgetEditDocParam()
           return
         }
+        handledEditDocId.current = editDocId
         openEditModal({
           id: body.id,
           type,
           numero: body.numero,
           data: typeof body.data === "string" ? body.data : JSON.stringify(body.data ?? {}),
         })
-        router.replace("/gestion", { scroll: false })
+        forgetEditDocParam()
       } catch (error) {
         if (cancelled) return
+        handledEditDocId.current = editDocId
         setToast({
           message: error instanceof Error ? error.message : "Modification impossible.",
           type: "error",
         })
-        router.replace("/gestion", { scroll: false })
+        forgetEditDocParam()
       }
     }
     void loadMissingDocument()
@@ -2106,7 +2124,7 @@ export default function GestionPage() {
       cancelled = true
       if (editDocLoadId.current === editDocId) editDocLoadId.current = null
     }
-  }, [data, router, openEditModal])
+  }, [data, openEditModal])
 
   const handleResendImpayeEmail = async (docId: string) => {
     try {
