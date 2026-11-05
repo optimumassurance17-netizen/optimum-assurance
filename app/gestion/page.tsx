@@ -594,6 +594,29 @@ function takeDashboardRows<T>(rows: T[], narrowed: boolean): T[] {
   return rows.slice(0, narrowed ? DASHBOARD_ROW_SEARCH_CAP : DASHBOARD_ROW_PREVIEW)
 }
 
+const CLIENT_PICKER_LIMIT = 300
+
+function clientPickerOptions<
+  T extends { id: string; email: string; raisonSociale: string | null; siret: string | null },
+>(users: T[] | undefined, filter: string, selectedId: string): T[] {
+  if (!users) return []
+  const query = filter.trim().toLowerCase()
+  let list = [...users]
+  if (query) {
+    list = list.filter(
+      (user) =>
+        user.email.toLowerCase().includes(query) ||
+        (user.raisonSociale || "").toLowerCase().includes(query) ||
+        (user.siret || "").toLowerCase().includes(query)
+    )
+  }
+  list.sort((a, b) => a.email.localeCompare(b.email, "fr"))
+  const sliced = list.slice(0, CLIENT_PICKER_LIMIT)
+  const selected = users.find((user) => user.id === selectedId)
+  if (selected && !sliced.some((user) => user.id === selected.id)) return [selected, ...sliced]
+  return sliced
+}
+
 function DashboardListNote({
   shown,
   total,
@@ -657,6 +680,11 @@ export default function GestionPage() {
   const [devisDecActivitePick, setDevisDecActivitePick] = useState("")
   const [devisDecActiviteSearch, setDevisDecActiviteSearch] = useState("")
   const [devisDecUserFilter, setDevisDecUserFilter] = useState("")
+  const [devisDoUserFilter, setDevisDoUserFilter] = useState("")
+  const [avenantUserFilter, setAvenantUserFilter] = useState("")
+  const [avenantClientContracts, setAvenantClientContracts] = useState<{ id: string; numero: string }[]>([])
+  const [avenantContractsLoading, setAvenantContractsLoading] = useState(false)
+  const [avenantContractsError, setAvenantContractsError] = useState<string | null>(null)
   const [devisDecSubmitting, setDevisDecSubmitting] = useState(false)
   const [newClientForm, setNewClientForm] = useState({
     email: "",
@@ -988,6 +1016,8 @@ export default function GestionPage() {
 
   const selectClientForDevis = (userId: string, telephone?: string) => {
     setDevisDecUserFilter("")
+    setDevisDoUserFilter("")
+    setAvenantUserFilter("")
     setCustomDevisUserFilter("")
     setDevisDecForm((current) => ({ ...current, userId }))
     setDevisDoForm((current) => ({
@@ -995,6 +1025,7 @@ export default function GestionPage() {
       userId,
       telephone: telephone?.trim() || current.telephone,
     }))
+    setAvenantForm((current) => ({ ...current, userId, contractNumero: "" }))
     setCustomDevisUserId(userId)
   }
 
@@ -1062,25 +1093,10 @@ export default function GestionPage() {
     }
   }
 
-  const customDevisUserOptions = useMemo(() => {
-    const users = data?.users
-    if (!users) return []
-    const q = customDevisUserFilter.trim().toLowerCase()
-    let list = [...users]
-    if (q) {
-      list = list.filter(
-        (u) =>
-          u.email.toLowerCase().includes(q) ||
-          (u.raisonSociale || "").toLowerCase().includes(q) ||
-          (u.siret || "").toLowerCase().includes(q)
-      )
-    }
-    list.sort((a, b) => a.email.localeCompare(b.email))
-    const sliced = list.slice(0, 300)
-    const selected = users.find((user) => user.id === customDevisUserId)
-    if (selected && !sliced.some((user) => user.id === selected.id)) return [selected, ...sliced]
-    return sliced
-  }, [data?.users, customDevisUserFilter, customDevisUserId])
+  const customDevisUserOptions = useMemo(
+    () => clientPickerOptions(data?.users, customDevisUserFilter, customDevisUserId),
+    [data?.users, customDevisUserFilter, customDevisUserId]
+  )
 
   const prefillCustomDevisForProduct = useCallback(
     (params: {
@@ -1164,25 +1180,18 @@ export default function GestionPage() {
   )
   const rcContratIndicative = rcContratDemande ? rcFabPrimeIndicativeTtc(rcContratDemande) : null
 
-  const devisDecUserOptions = useMemo(() => {
-    const users = data?.users
-    if (!users) return []
-    const q = devisDecUserFilter.trim().toLowerCase()
-    let list = [...users]
-    if (q) {
-      list = list.filter(
-        (u) =>
-          u.email.toLowerCase().includes(q) ||
-          (u.raisonSociale || "").toLowerCase().includes(q) ||
-          (u.siret || "").toLowerCase().includes(q)
-      )
-    }
-    list.sort((a, b) => a.email.localeCompare(b.email))
-    const sliced = list.slice(0, 300)
-    const selected = users.find((user) => user.id === devisDecForm.userId)
-    if (selected && !sliced.some((user) => user.id === selected.id)) return [selected, ...sliced]
-    return sliced
-  }, [data?.users, devisDecUserFilter, devisDecForm.userId])
+  const devisDecUserOptions = useMemo(
+    () => clientPickerOptions(data?.users, devisDecUserFilter, devisDecForm.userId),
+    [data?.users, devisDecUserFilter, devisDecForm.userId]
+  )
+  const devisDoUserOptions = useMemo(
+    () => clientPickerOptions(data?.users, devisDoUserFilter, devisDoForm.userId),
+    [data?.users, devisDoUserFilter, devisDoForm.userId]
+  )
+  const avenantUserOptions = useMemo(
+    () => clientPickerOptions(data?.users, avenantUserFilter, avenantForm.userId),
+    [data?.users, avenantUserFilter, avenantForm.userId]
+  )
 
   const devisDecActiviteOptions = useMemo(() => {
     const q = devisDecActiviteSearch.trim().toLowerCase()
@@ -1400,6 +1409,71 @@ export default function GestionPage() {
   }, [data, docTypeFilter])
 
   const contrats = useMemo(() => (data ? data.documents.filter((d) => d.type === "contrat") : []), [data])
+
+  useEffect(() => {
+    const userId = avenantForm.userId.trim()
+    if (!userId) {
+      setAvenantClientContracts([])
+      setAvenantContractsError(null)
+      setAvenantContractsLoading(false)
+      return
+    }
+    let cancelled = false
+    setAvenantContractsLoading(true)
+    setAvenantContractsError(null)
+    const loadClientContracts = async () => {
+      try {
+        const res = await fetch(`/api/gestion/clients/${encodeURIComponent(userId)}`, { cache: "no-store" })
+        const body = await readResponseJson<{
+          documents?: { id?: string; type?: string; numero?: string }[]
+          error?: string
+        }>(res)
+        if (cancelled) return
+        if (!res.ok) {
+          throw new Error(body.error || "Impossible de charger les contrats de cette fiche.")
+        }
+        setAvenantClientContracts(
+          (body.documents ?? []).flatMap((document) =>
+            document.type === "contrat" && document.id && document.numero
+              ? [{ id: document.id, numero: document.numero }]
+              : []
+          )
+        )
+      } catch (error) {
+        if (cancelled) return
+        setAvenantClientContracts([])
+        setAvenantContractsError(
+          error instanceof Error ? error.message : "Impossible de charger les contrats de cette fiche."
+        )
+      } finally {
+        if (!cancelled) setAvenantContractsLoading(false)
+      }
+    }
+    void loadClientContracts()
+    return () => {
+      cancelled = true
+    }
+  }, [avenantForm.userId])
+
+  const avenantContractChoices = useMemo(() => {
+    const merged = new Map<string, { id: string; numero: string }>()
+    for (const contract of contrats) {
+      if (contract.userId !== avenantForm.userId || !contract.numero) continue
+      merged.set(contract.numero, { id: contract.id, numero: contract.numero })
+    }
+    for (const contract of avenantClientContracts) {
+      merged.set(contract.numero, contract)
+    }
+    return [...merged.values()].sort((a, b) => a.numero.localeCompare(b.numero, "fr"))
+  }, [avenantClientContracts, avenantForm.userId, contrats])
+
+  useEffect(() => {
+    if (!avenantForm.contractNumero || avenantContractsLoading) return
+    if (avenantContractChoices.some((contract) => contract.numero === avenantForm.contractNumero)) return
+    setAvenantForm((current) =>
+      current.contractNumero === avenantForm.contractNumero ? { ...current, contractNumero: "" } : current
+    )
+  }, [avenantContractChoices, avenantContractsLoading, avenantForm.contractNumero])
   const issuedQuotes = useMemo(() => {
     if (!data) return []
     return data.documents
@@ -5718,22 +5792,30 @@ export default function GestionPage() {
                 </select>
               </div>
             )}
-            <div>
-              <label className="block text-sm font-medium text-gray-200 mb-1">Client (doit avoir un compte)</label>
+            <div className="space-y-2">
+              <label htmlFor="devis-do-client-filtre" className="block text-sm font-medium text-gray-200">
+                Filtrer les clients
+              </label>
+              <input
+                id="devis-do-client-filtre"
+                type="search"
+                value={devisDoUserFilter}
+                onChange={(e) => setDevisDoUserFilter(e.target.value)}
+                placeholder="Email, raison sociale, SIRET…"
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+              />
+              <label htmlFor="devis-do-client" className="block text-sm font-medium text-gray-200">
+                Client (doit avoir un compte)
+              </label>
               <select
+                id="devis-do-client"
                 value={devisDoForm.userId}
                 onChange={(e) => setDevisDoForm((f) => ({ ...f, userId: e.target.value }))}
                 className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
                 required
               >
                 <option value="">Sélectionner...</option>
-                {(devisDoForm.userId &&
-                !filterUsersBySearch(data.users, searchQuery).some((user) => user.id === devisDoForm.userId)
-                  ? data.users.filter((user) => user.id === devisDoForm.userId)
-                  : []
-                )
-                  .concat(filterUsersBySearch(data.users, searchQuery))
-                  .map((u) => (
+                {devisDoUserOptions.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.raisonSociale || u.email} ({u.email})
                   </option>
@@ -6567,17 +6649,37 @@ export default function GestionPage() {
         {outilsOuverts ? (
         <section id="creer-avenant" className="scroll-mt-24">
           <h2 className="text-lg font-semibold text-white mb-4">Créer un avenant</h2>
+          <p className="text-sm text-gray-200 mb-4 max-w-2xl">
+            La recherche du tableau ne change pas cette liste. Une fois le client choisi, ses contrats
+            sont repris depuis sa fiche, y compris ceux qui ne sont plus affichés dans le tableau.
+          </p>
           <form onSubmit={handleCreateAvenant} className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 max-w-xl">
-            <div>
-              <label className="block text-sm font-medium text-gray-200 mb-1">Client (userId)</label>
+            <div className="space-y-2">
+              <label htmlFor="avenant-client-filtre" className="block text-sm font-medium text-gray-200">
+                Filtrer les clients
+              </label>
+              <input
+                id="avenant-client-filtre"
+                type="search"
+                value={avenantUserFilter}
+                onChange={(e) => setAvenantUserFilter(e.target.value)}
+                placeholder="Email, raison sociale, SIRET…"
+                className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+              />
+              <label htmlFor="avenant-client" className="block text-sm font-medium text-gray-200">
+                Client
+              </label>
               <select
+                id="avenant-client"
                 value={avenantForm.userId}
-                onChange={(e) => setAvenantForm((f) => ({ ...f, userId: e.target.value }))}
+                onChange={(e) =>
+                  setAvenantForm((f) => ({ ...f, userId: e.target.value, contractNumero: "" }))
+                }
                 className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
                 required
               >
                 <option value="">Sélectionner...</option>
-                {filterUsersBySearch(data.users, searchQuery).map((u) => (
+                {avenantUserOptions.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.raisonSociale || u.email} ({u.email})
                   </option>
@@ -6585,18 +6687,33 @@ export default function GestionPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-1">N° contrat</label>
+              <label htmlFor="avenant-contrat" className="block text-sm font-medium text-gray-200 mb-1">
+                N° contrat
+              </label>
               <select
+                id="avenant-contrat"
                 value={avenantForm.contractNumero}
                 onChange={(e) => setAvenantForm((f) => ({ ...f, contractNumero: e.target.value }))}
                 className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
                 required
+                disabled={!avenantForm.userId}
               >
-                <option value="">Sélectionner...</option>
-                {contrats.filter((c) => !avenantForm.userId || c.userId === avenantForm.userId).map((c) => (
+                <option value="">
+                  {avenantForm.userId ? "Sélectionner..." : "Choisissez d'abord un client"}
+                </option>
+                {avenantContractChoices.map((c) => (
                   <option key={c.id} value={c.numero}>{c.numero}</option>
                 ))}
               </select>
+              {avenantForm.userId && avenantContractsLoading ? (
+                <p className="mt-2 text-xs text-gray-400">Chargement des contrats de la fiche…</p>
+              ) : null}
+              {avenantContractsError ? (
+                <p className="mt-2 text-xs text-amber-200">{avenantContractsError}</p>
+              ) : null}
+              {avenantForm.userId && !avenantContractsLoading && !avenantContractsError && avenantContractChoices.length === 0 ? (
+                <p className="mt-2 text-xs text-gray-400">Aucun contrat sur cette fiche.</p>
+              ) : null}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
