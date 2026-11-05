@@ -3,6 +3,7 @@ import {
   DO_DEVIS_LEADS_SECTION_ID,
   doDevisLeadGestionUrl,
   doDevisLeadRowId,
+  leadIdFromDoDevisRowHash,
   doLeadMatchesSearch,
   readDoLeadChantier,
   readDoLeadCompanyName,
@@ -68,6 +69,20 @@ assert(
   visibleDoDevisLeads(waitingLeads, known, "deja").some((item) => item.email === "deja@example.com"),
   "la recherche retrouve une demande déjà rattachée à une fiche"
 )
+assert(
+  visibleDoDevisLeads(
+    [
+      { id: "lead_do_deja01", email: "deja@example.com", raisonSociale: "Déjà client" },
+      { id: "lead_do_prospect", email: "prospect@example.com", raisonSociale: "SCA Démo" },
+    ],
+    known,
+    "",
+    "lead_do_deja01"
+  ).some((item) => item.id === "lead_do_deja01"),
+  "le lien direct réaffiche la demande même si la fiche existe"
+)
+assert(leadIdFromDoDevisRowHash("#demande-do-lead_do_deja01") === "lead_do_deja01", "le hash de ligne donne l'identifiant")
+assert(leadIdFromDoDevisRowHash("#demandes-devis-do") === null, "le hash du bloc ne désigne pas une ligne")
 const orderedWaiting = visibleDoDevisLeads(
   [
     { email: "recent@example.com", createdAt: "2026-10-02T00:00:00.000Z" },
@@ -213,6 +228,8 @@ assert(!dashboard.includes("create-from-lead"), "ouvrir le tableau de bord ne cr
 
 assert(page.includes("Société"), "le tableau affiche la société")
 assert(page.includes("visibleDoDevisLeads"), "la recherche de la page inclut les demandes DO")
+assert(page.includes("leadIdFromDoDevisRowHash"), "la page ouvre la ligne désignée par le lien")
+assert(page.includes("openedDoLeadId"), "la ligne ouverte reste visible malgré la fiche")
 assert(page.includes("DO_DEVIS_LEADS_SECTION_ID"), "le bloc des demandes a une ancre")
 assert(page.includes('handleCreateLeadAccount(d.id, "dommage_ouvrage")'), "la fiche se crée encore par le bouton")
 assert(page.includes("do_devis_pending"), "l'action du jour ouvre la ligne sans créer de compte")

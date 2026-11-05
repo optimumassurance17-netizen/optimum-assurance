@@ -110,6 +110,7 @@ import { frenchStatusLabel } from "@/lib/status-labels"
 import {
   DO_DEVIS_LEADS_SECTION_ID,
   doDevisLeadRowId,
+  leadIdFromDoDevisRowHash,
   readDoLeadChantier,
   readDoLeadCompanyName,
   visibleDoDevisLeads,
@@ -710,6 +711,7 @@ export default function GestionPage() {
   const [newClientSubmitting, setNewClientSubmitting] = useState(false)
   const [newClientNotice, setNewClientNotice] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [openedDoLeadId, setOpenedDoLeadId] = useState<string | null>(null)
   const [ficheSearchQuery, setFicheSearchQuery] = useState("")
   const [outilsOuverts, setOutilsOuverts] = useState(false)
   const [listeScroll, setListeScroll] = useState<{ id: string; n: number } | null>(null)
@@ -869,14 +871,19 @@ export default function GestionPage() {
   }, [outilScroll, outilsOuverts, loading])
 
   useEffect(() => {
-    if (!listeScroll) return
+    if (!listeScroll || loading) return
     const id = listeScroll.id
     const timer = window.setTimeout(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: "auto", block: "start" })
+      const target = document.getElementById(id)
+      if (!target) {
+        setListeScroll(null)
+        return
+      }
+      target.scrollIntoView({ behavior: "auto", block: "start" })
       setListeScroll(null)
     }, 60)
     return () => window.clearTimeout(timer)
-  }, [listeScroll])
+  }, [listeScroll, loading, data])
 
   useEffect(() => {
     if (!actionListFocus) return
@@ -891,6 +898,7 @@ export default function GestionPage() {
 
   useEffect(() => {
     const openFromLocation = () => {
+      setOpenedDoLeadId(leadIdFromDoDevisRowHash(window.location.hash))
       const id = gestionOutilIdFromHash(window.location.hash)
       if (id) {
         setOutilsOuverts(true)
@@ -1710,8 +1718,8 @@ export default function GestionPage() {
     const knownEmails = new Set(
       (data?.users ?? []).map((user) => user.email.trim().toLowerCase()).filter(Boolean)
     )
-    return visibleDoDevisLeads(list, knownEmails, searchQuery)
-  }, [data, searchQuery])
+    return visibleDoDevisLeads(list, knownEmails, searchQuery, openedDoLeadId)
+  }, [data, searchQuery, openedDoLeadId])
 
   const filteredRcFabriquantLeads = useMemo(() => {
     const list = data?.devisRcFabriquantLeads ?? []

@@ -76,6 +76,15 @@ export function doDevisLeadRowId(leadId: string): string {
   return `demande-do-${id}`
 }
 
+/** Identifiant de demande porté par `#demande-do-…`. Un hash de section ne désigne aucune ligne. */
+export function leadIdFromDoDevisRowHash(hash: string): string | null {
+  const id = hash.trim().replace(/^#/, "")
+  const prefix = "demande-do-"
+  if (!id.startsWith(prefix)) return null
+  const leadId = id.slice(prefix.length)
+  return LEAD_ID_PATTERN.test(leadId) ? leadId : null
+}
+
 export function doDevisLeadGestionUrl(siteUrl: string, leadId?: string | null): string {
   const base = siteUrl.replace(/\/$/, "")
   return `${base}/gestion#${doDevisLeadRowId(leadId ?? "")}`
@@ -105,13 +114,18 @@ export function doLeadMatchesSearch(lead: DoLeadSearchFields, query: string): bo
   return queryDigits.length >= 4 && phoneDigits.includes(queryDigits)
 }
 
-/** Sans recherche : seulement les demandes sans fiche. Avec recherche : toutes les demandes qui correspondent. L'ordre est celui d'arrivée. */
-export function visibleDoDevisLeads<T extends DoLeadSearchFields & { createdAt?: Date | string | null }>(
+/** Sans recherche : seulement les demandes sans fiche, plus la ligne ouverte par un lien direct. Avec recherche : toutes les demandes qui correspondent. L'ordre est celui d'arrivée. */
+export function visibleDoDevisLeads<
+  T extends DoLeadSearchFields & { id?: string; createdAt?: Date | string | null },
+>(
   leads: T[],
   knownEmails: ReadonlySet<string>,
-  query: string
+  query: string,
+  pinnedLeadId?: string | null
 ): T[] {
+  const pinned = pinnedLeadId?.trim() || ""
   const visible = leads.filter((lead) => {
+    if (pinned && lead.id === pinned) return doLeadMatchesSearch(lead, query)
     if (!doLeadMatchesSearch(lead, query)) return false
     if (query.trim()) return true
     const email = lead.email.trim().toLowerCase()

@@ -986,4 +986,64 @@ test.describe("Gestion — boutons d'action", () => {
     await expect(page.locator("#demandes-devis-do")).toContainText("Aucune demande en attente.")
     await expect(page).toHaveURL(/#devis-do-manuel$/)
   })
+
+  test("Le lien d'une demande DO avec fiche ouvre la ligne", async ({ page }) => {
+    await mockAdmin(page)
+    const dashboard = buildDashboard() as Omit<ReturnType<typeof buildDashboard>, "devisDoLeads"> & {
+      devisDoLeads: Array<{
+        id: string
+        email: string
+        coutTotal: number
+        createdAt: string
+        raisonSociale: string
+        data: string
+      }>
+    }
+    dashboard.users.push({
+      id: "user_do_bureau",
+      email: "bureau@example.com",
+      raisonSociale: "Bureau Seine",
+      siret: "55208131700034",
+      createdAt: "2026-11-01T08:00:00.000Z",
+    })
+    dashboard.devisDoLeads = [
+      {
+        id: "lead_do_bureau",
+        email: "bureau@example.com",
+        coutTotal: 250000,
+        createdAt: "2026-11-01T08:00:00.000Z",
+        raisonSociale: "Bureau Seine",
+        data: JSON.stringify({
+          raisonSociale: "Bureau Seine",
+          typeOuvrage: "immeuble_bureaux",
+          adresseConstruction: "8 quai de la Seine",
+          codePostalConstruction: "75019",
+          villeConstruction: "Paris",
+        }),
+      },
+    ]
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(dashboard),
+      })
+    })
+
+    await page.goto("/gestion")
+    await expect(page.locator("#demandes-devis-do")).toContainText("Aucune demande en attente.")
+    await expect(page.locator("#demande-do-lead_do_bureau")).toHaveCount(0)
+
+    await page.goto("/gestion#demande-do-lead_do_bureau")
+    const row = page.locator("#demande-do-lead_do_bureau")
+    await expect(row).toBeVisible()
+    await expect(row).toContainText("Compte existant")
+    await expect(row.getByRole("button", { name: "Préparer le devis" })).toBeEnabled()
+    await row.getByRole("button", { name: "Préparer le devis" }).click()
+    await expect(page.locator("#devis-do-manuel #devis-do-client")).toHaveValue("user_do_bureau")
+    await expect(page.locator("#devis-do-type")).toHaveValue("Immeuble de bureaux")
+    await expect(page.locator("#devis-do-manuel").getByPlaceholder("Adresse complète du chantier")).toHaveValue(
+      /8 quai de la Seine/
+    )
+  })
 })
