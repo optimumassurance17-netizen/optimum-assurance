@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 
 const GESTION_OUTIL_IDS = new Set([
   "nouveau-client",
@@ -14,6 +14,17 @@ const GESTION_OUTIL_IDS = new Set([
   "rc-fabriquant-contrat",
   "creer-avenant",
 ])
+
+/** Retire ?editDoc= sans relancer la navigation Next.js, qui réécrit l'adresse. */
+function forgetEditDocParam() {
+  if (typeof window === "undefined") return
+  const url = new URL(window.location.href)
+  if (!url.searchParams.has("editDoc")) return
+  url.searchParams.delete("editDoc")
+  const state = window.history.state as { __NA?: boolean; _N?: boolean } | null
+  if (!state?.__NA && !state?._N) return
+  window.history.replaceState(state, "", `${url.pathname}${url.search}${url.hash}`)
+}
 
 function gestionOutilIdFromHash(hash: string): string | null {
   const id = hash.replace(/^#/, "")
@@ -2051,21 +2062,12 @@ export default function GestionPage() {
 
   const editDocLoadId = useRef<string | null>(null)
   const handledEditDocId = useRef<string | null>(null)
-  const routerRef = useRef(router)
-  routerRef.current = router
 
   /** Ouvre le modal d'édition si l'URL contient ?editDoc= (lien depuis /gestion/documents/[id]). */
   useEffect(() => {
     if (!data || typeof window === "undefined") return
     const editDocId = new URLSearchParams(window.location.search).get("editDoc")?.trim()
     if (!editDocId) return
-    const forgetEditDocParam = () => {
-      const url = new URL(window.location.href)
-      if (!url.searchParams.has("editDoc")) return
-      url.searchParams.delete("editDoc")
-      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`)
-      routerRef.current.replace(`${url.pathname}${url.search}${url.hash}`, { scroll: false })
-    }
     if (handledEditDocId.current === editDocId) {
       forgetEditDocParam()
       return
@@ -2125,6 +2127,11 @@ export default function GestionPage() {
       if (editDocLoadId.current === editDocId) editDocLoadId.current = null
     }
   }, [data, openEditModal])
+
+  useLayoutEffect(() => {
+    if (!editModal) return
+    forgetEditDocParam()
+  }, [editModal])
 
   const handleResendImpayeEmail = async (docId: string) => {
     try {

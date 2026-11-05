@@ -1637,5 +1637,8 @@ test.describe("Gestion CRM — modification d'un contrat", () => {
       dialog.locator("label", { hasText: /^Raison sociale$/ }).locator("xpath=following-sibling::input")
     ).toHaveValue("Atelier Ancien")
     await expect(page).toHaveURL(/\/gestion$/)
+    await page.waitForTimeout(1500)
+    await expect(page).toHaveURL(/\/gestion$/)
+    await expect(dialog).toBeVisible()
   })
 })
