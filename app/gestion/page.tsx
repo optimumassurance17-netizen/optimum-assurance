@@ -2049,15 +2049,62 @@ export default function GestionPage() {
     }
   }, [status, router, dashboardLoadKey])
 
-  /** Ouvre le modal d'édition si l'URL contient ?editDoc= (lien depuis /gestion/documents/[id]) */
+  const editDocLoadId = useRef<string | null>(null)
+
+  /** Ouvre le modal d'édition si l'URL contient ?editDoc= (lien depuis /gestion/documents/[id]). */
   useEffect(() => {
     if (!data || typeof window === "undefined") return
-    const editDocId = new URLSearchParams(window.location.search).get("editDoc")
+    const editDocId = new URLSearchParams(window.location.search).get("editDoc")?.trim()
     if (!editDocId) return
-    const doc = data.documents.find((d) => d.id === editDocId)
-    if (doc && (doc.type === "contrat" || doc.type === "avenant")) {
-      openEditModal(doc)
+    const listed = (data.documents ?? []).find((document) => document.id === editDocId)
+    if (listed && (listed.type === "contrat" || listed.type === "avenant")) {
+      openEditModal(listed)
       router.replace("/gestion", { scroll: false })
+      return
+    }
+    if (editDocLoadId.current === editDocId) return
+    editDocLoadId.current = editDocId
+    let cancelled = false
+    const loadMissingDocument = async () => {
+      try {
+        const res = await fetch(`/api/gestion/documents/${encodeURIComponent(editDocId)}`)
+        const body = await readResponseJson<{
+          id?: string
+          type?: string
+          numero?: string
+          data?: unknown
+          error?: string
+        }>(res)
+        if (cancelled) return
+        const type = body.type
+        if (!res.ok || (type !== "contrat" && type !== "avenant") || !body.id || !body.numero) {
+          setToast({
+            message: body.error || "Ce document ne peut pas être modifié depuis le tableau.",
+            type: "error",
+          })
+          router.replace("/gestion", { scroll: false })
+          return
+        }
+        openEditModal({
+          id: body.id,
+          type,
+          numero: body.numero,
+          data: typeof body.data === "string" ? body.data : JSON.stringify(body.data ?? {}),
+        })
+        router.replace("/gestion", { scroll: false })
+      } catch (error) {
+        if (cancelled) return
+        setToast({
+          message: error instanceof Error ? error.message : "Modification impossible.",
+          type: "error",
+        })
+        router.replace("/gestion", { scroll: false })
+      }
+    }
+    void loadMissingDocument()
+    return () => {
+      cancelled = true
+      if (editDocLoadId.current === editDocId) editDocLoadId.current = null
     }
   }, [data, router, openEditModal])
 

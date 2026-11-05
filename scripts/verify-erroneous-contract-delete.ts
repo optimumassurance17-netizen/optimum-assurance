@@ -110,6 +110,10 @@ assert(platform.includes("EditDoDecennaleContractButton"), "les contrats platefo
 assert(fiche.includes("EditDoDecennaleContractButton"), "la fiche modifie le DO et la décennale")
 assert(fiche.includes("/gestion?editDoc="), "la fiche ouvre la modification du contrat signé")
 assert(dashboard.includes(">Modifier<") || dashboard.includes("Modifier\n"), "le contrat signé reste modifiable")
+assert(
+  dashboard.includes("/api/gestion/documents/${encodeURIComponent(editDocId)}"),
+  "un contrat absent du tableau s'ouvre quand même"
+)
 
 const older = new Date("2026-01-01T00:00:00.000Z")
 const newer = new Date("2026-06-01T00:00:00.000Z")

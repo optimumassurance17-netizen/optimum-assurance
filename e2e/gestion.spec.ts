@@ -1591,3 +1591,51 @@ test.describe("Gestion CRM — nouvelles demandes", () => {
     await expect(leads).not.toContainText("Atelier 01")
   })
 })
+
+test.describe("Gestion CRM — modification d'un contrat", () => {
+  test("Un contrat absent du tableau s'ouvre quand même", async ({ page }) => {
+    await mockGestionAuth(page)
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          users: [],
+          documents: [],
+          payments: [],
+          devisLeads: [],
+          devisDrafts: [],
+          pendingSignatures: [],
+          insuranceContracts: [],
+          dashboardActions: [],
+          dashboardActionsSummary: { total: 0, high: 0, medium: 0, overdue72h: 0, dismissedToday: 0 },
+        }),
+      })
+    })
+    await page.route("**/api/gestion/documents/doc_ancien", async (route) => {
+      if (route.request().method() !== "GET") {
+        await route.fallback()
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "doc_ancien",
+          type: "contrat",
+          numero: "CTR-ANCIEN",
+          data: { raisonSociale: "Atelier Ancien", email: "ancien@example.com" },
+        }),
+      })
+    })
+
+    await page.goto("/gestion?editDoc=doc_ancien")
+    const dialog = page.getByRole("dialog", { name: /Modifier le contrat/ })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByText("CTR-ANCIEN")).toBeVisible()
+    await expect(
+      dialog.locator("label", { hasText: /^Raison sociale$/ }).locator("xpath=following-sibling::input")
+    ).toHaveValue("Atelier Ancien")
+    await expect(page).toHaveURL(/\/gestion$/)
+  })
+})
