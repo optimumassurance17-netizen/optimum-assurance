@@ -831,6 +831,7 @@ test.describe("Gestion — boutons d'action", () => {
     expect(payload).not.toHaveProperty("role")
     await expect(page.locator("#devis-decennale-manuel select").first()).toHaveValue("client_new_1")
     await expect(page.locator("#devis-do-manuel select[required]")).toHaveValue("client_new_1")
+    await expect(page.locator("#avenant-client")).toHaveValue("client_new_1")
     await expect(page.locator("#devis-do-manuel input[type='tel']")).toHaveValue("0612345678")
     await expect(page.locator("#devis-pdf-personnalise select").first()).toHaveValue("client_new_1")
   })
@@ -869,5 +870,54 @@ test.describe("Gestion — boutons d'action", () => {
     await expect(form.getByRole("status")).toContainText("mot de passe n'a pas été changé")
     await expect(page.locator("#devis-decennale-manuel select").first()).toHaveValue("client_do_1")
     await expect(page.locator("#devis-do-manuel select[required]")).toHaveValue("client_do_1")
+    await expect(page.locator("#avenant-client")).toHaveValue("client_do_1")
+  })
+
+  test("La recherche du tableau laisse choisir le client et un contrat ancien", async ({ page }) => {
+    await mockAdmin(page)
+    const dashboard = buildDashboard()
+    dashboard.users.push({
+      id: "client_ancien",
+      email: "ancien@example.com",
+      raisonSociale: "Ancien Client",
+      siret: "55208131700034",
+      createdAt: "2024-01-01T08:00:00.000Z",
+    })
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(dashboard),
+      })
+    })
+    await page.route("**/api/gestion/clients/client_ancien", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          documents: [{ id: "ctr_ancien", type: "contrat", numero: "CTR-ANCIEN" }],
+        }),
+      })
+    })
+
+    await page.goto("/gestion")
+    await page
+      .getByPlaceholder("Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant, devis DO)...")
+      .fill("ZZ-SANS-CLIENT")
+    await page.getByRole("button", { name: "Graphiques et créations" }).click()
+
+    const avenant = page.locator("#creer-avenant")
+    await expect(avenant.locator("#avenant-client")).toContainText("ancien@example.com")
+    await expect(avenant.locator("#avenant-client")).toContainText("client-do@example.com")
+    await expect(page.locator("#devis-do-client")).toContainText("ancien@example.com")
+    await expect(page.locator("#devis-do-client")).toContainText("client-do@example.com")
+
+    await avenant.locator("#avenant-client-filtre").fill("ancien")
+    await expect(avenant.locator("#avenant-client")).toContainText("ancien@example.com")
+    await expect(avenant.locator("#avenant-client")).not.toContainText("client-do@example.com")
+
+    await avenant.locator("#avenant-client").selectOption("client_ancien")
+    await expect(avenant.locator("#avenant-contrat")).toContainText("CTR-ANCIEN")
+    await expect(avenant.getByText("Aucun contrat sur cette fiche.")).toHaveCount(0)
   })
 })
