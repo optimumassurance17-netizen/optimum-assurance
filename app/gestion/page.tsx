@@ -73,6 +73,7 @@ function mapTypeOuvrageToConstruction(typeOuvrage?: string): string {
     immeuble_bureaux: "Immeuble de bureaux",
     etablissement_soins_sportif_culturel: "Établissement de soins, sportif ou culturel",
     batiment_industriel: "Bâtiment industriel",
+    autre: "Autres",
   }
   return typeOuvrage ? (map[typeOuvrage] ?? "Construction neuve") : ""
 }
@@ -826,7 +827,11 @@ export default function GestionPage() {
     setOutilScroll((prev) => ({ id, n: (prev?.n ?? 0) + 1 }))
     const nextHash = `#${id}`
     if (window.location.hash !== nextHash) {
-      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${nextHash}`)
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${window.location.pathname}${window.location.search}${nextHash}`
+      )
     }
   }, [])
 
@@ -901,10 +906,11 @@ export default function GestionPage() {
     return () => window.removeEventListener("hashchange", openFromLocation)
   }, [])
 
-  const prefillDevisDoFromLead = (leadId: string) => {
-    const lead = data?.devisDoLeads?.find((item) => item.id === leadId)
+  const prefillDevisDoFromLead = (leadId: string, snapshot?: DashboardData | null) => {
+    const source = snapshot ?? data
+    const lead = source?.devisDoLeads?.find((item) => item.id === leadId)
     if (!lead) return
-    const matchingUser = data?.users.find((user) => user.email.toLowerCase() === lead.email.toLowerCase())
+    const matchingUser = source?.users.find((user) => user.email.toLowerCase() === lead.email.toLowerCase())
     if (!matchingUser) {
       setToast({
         message: "Créez d'abord la fiche client. Le formulaire DO reste bloqué sans fiche.",
@@ -967,25 +973,44 @@ export default function GestionPage() {
       })
       const json = await readResponseJson<LeadAccountCreationResponse>(res)
       if (!res.ok) throw new Error(json.error || "Erreur création compte")
-      if (json.id && json.email) {
+      setToast({
+        message: getLeadAccountSuccessMessage(json),
+        type: json.warning || json.emailSent === false ? "warning" : "success",
+      })
+      const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
+      let snapshot = data
+      if (dashRes.ok) snapshot = await readResponseJson<DashboardData>(dashRes)
+      if (json.id && json.email && snapshot) {
+        const email = json.email
+        const known = snapshot.users.some(
+          (user) => user.id === json.id || user.email.toLowerCase() === email.toLowerCase()
+        )
+        if (!known) {
+          snapshot = {
+            ...snapshot,
+            users: [
+              {
+                id: json.id,
+                email,
+                raisonSociale: json.raisonSociale ?? null,
+                siret: null,
+                createdAt: new Date().toISOString(),
+              },
+              ...snapshot.users,
+            ],
+          }
+        }
+      }
+      if (snapshot && snapshot !== data) setData(snapshot)
+      else if (json.id && json.email) {
         upsertUserLocally({
           id: json.id,
           email: json.email,
           raisonSociale: json.raisonSociale ?? null,
         })
       }
-      setToast({
-        message: getLeadAccountSuccessMessage(json),
-        type: json.warning || json.emailSent === false ? "warning" : "success",
-      })
-      const dashRes = await fetch("/api/gestion/dashboard", { credentials: "include" })
-      if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
-      if (json.id && json.email) {
-        upsertUserLocally({
-          id: json.id,
-          email: json.email,
-          raisonSociale: json.raisonSociale ?? null,
-        })
+      if (leadType === "dommage_ouvrage") {
+        prefillDevisDoFromLead(leadId, snapshot)
       }
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : "Erreur création compte", type: "error" })
@@ -5955,8 +5980,11 @@ export default function GestionPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-1">Type de construction</label>
+                <label className="block text-sm font-medium text-gray-200 mb-1" htmlFor="devis-do-type">
+                  Type de construction
+                </label>
                 <select
+                  id="devis-do-type"
                   value={devisDoForm.typeConstruction}
                   onChange={(e) => setDevisDoForm((f) => ({ ...f, typeConstruction: e.target.value }))}
                   className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
@@ -5965,6 +5993,10 @@ export default function GestionPage() {
                   <option value="Maison unifamiliale">Maison unifamiliale</option>
                   <option value="Maison jumelée">Maison jumelée</option>
                   <option value="Immeuble logements">Immeuble logements</option>
+                  <option value="Immeuble de bureaux">Immeuble de bureaux</option>
+                  <option value="Établissement de soins, sportif ou culturel">Établissement de soins, sportif ou culturel</option>
+                  <option value="Bâtiment industriel">Bâtiment industriel</option>
+                  <option value="Autres">Autres</option>
                   <option value="Construction neuve">Construction neuve</option>
                   <option value="Extension">Extension</option>
                   <option value="Rénovation">Rénovation</option>

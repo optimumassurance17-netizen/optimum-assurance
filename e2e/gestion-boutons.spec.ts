@@ -920,4 +920,70 @@ test.describe("Gestion — boutons d'action", () => {
     await expect(avenant.locator("#avenant-contrat")).toContainText("CTR-ANCIEN")
     await expect(avenant.getByText("Aucun contrat sur cette fiche.")).toHaveCount(0)
   })
+
+  test("Créer le compte d'une demande DO ouvre le devis déjà rempli", async ({ page }) => {
+    await mockAdmin(page)
+    const dashboard = buildDashboard() as ReturnType<typeof buildDashboard> & {
+      devisDoLeads: Array<{
+        id: string
+        email: string
+        coutTotal: number
+        createdAt: string
+        raisonSociale: string
+        data: string
+      }>
+    }
+    dashboard.devisDoLeads = [
+      {
+        id: "lead_do_bureau",
+        email: "bureau@example.com",
+        coutTotal: 250000,
+        createdAt: "2026-11-01T08:00:00.000Z",
+        raisonSociale: "Bureau Seine",
+        data: JSON.stringify({
+          raisonSociale: "Bureau Seine",
+          typeOuvrage: "immeuble_bureaux",
+          adresseConstruction: "8 quai de la Seine",
+          codePostalConstruction: "75019",
+          villeConstruction: "Paris",
+          telephone: "0611111111",
+          destinationConstruction: "location",
+        }),
+      },
+    ]
+    await page.route("**/api/gestion/dashboard", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(dashboard),
+      })
+    })
+    await page.route("**/api/gestion/users/create-from-lead", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "user_do_bureau",
+          email: "bureau@example.com",
+          raisonSociale: "Bureau Seine",
+          accessMode: "created",
+          emailSent: true,
+        }),
+      })
+    })
+
+    await page.goto("/gestion")
+    const row = page.locator("#demande-do-lead_do_bureau")
+    await expect(row.getByRole("button", { name: "Préparer le devis" })).toBeDisabled()
+    await row.getByRole("button", { name: "Créer le compte" }).click()
+
+    await expect(page.getByText("Compte créé pour bureau@example.com")).toBeVisible()
+    const form = page.locator("#devis-do-manuel")
+    await expect(form).toBeVisible()
+    await expect(form.locator("#devis-do-client")).toHaveValue("user_do_bureau")
+    await expect(form.locator("#devis-do-type")).toHaveValue("Immeuble de bureaux")
+    await expect(form.getByPlaceholder("Adresse complète du chantier")).toHaveValue(/8 quai de la Seine/)
+    await expect(page.locator("#demandes-devis-do")).toContainText("Aucune demande en attente.")
+    await expect(page).toHaveURL(/#devis-do-manuel$/)
+  })
 })
