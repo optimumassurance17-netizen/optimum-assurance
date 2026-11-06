@@ -80,6 +80,9 @@ jobs:
       - name: Vérification reprise du passé décennale
         run: npm run test:reprise-passe
 
+      - name: Vérification ajout d'activité client
+        run: npm run test:ajout-activite
+
       - name: Prisma generate + Next build
         run: npm run build
 

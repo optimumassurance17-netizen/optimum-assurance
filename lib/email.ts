@@ -612,6 +612,24 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nVos coordonnées ont été mises à jour. Votre attestation décennale ${numero} a été modifiée en conséquence.\n\nConsultez votre attestation à jour : ${documentUrl}\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Vos coordonnées ont été mises à jour. Votre attestation décennale <strong>${numero}</strong> a été modifiée en conséquence.</p><p><a href="${documentUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Voir mon attestation</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
+  ajoutActiviteDecennale: (
+    raisonSociale: string,
+    activite: string,
+    primeAnnuelle: number,
+    regularisation: number
+  ) => {
+    const prime = primeAnnuelle.toLocaleString("fr-FR")
+    const due = regularisation.toLocaleString("fr-FR")
+    const suite =
+      regularisation > 0
+        ? `La régularisation due est de ${due} €. Elle est reportée sur votre prochaine échéance. Votre nouvelle cotisation annuelle est de ${prime} €. Les échéances à venir suivent cette cotisation.`
+        : `Votre cotisation annuelle reste de ${prime} €. Aucune régularisation n'est due.`
+    return {
+      subject: `Activité ajoutée : ${activite} - Optimum Assurance`,
+      text: `Bonjour ${raisonSociale},\n\nL'activité « ${activite} » a été ajoutée à votre assurance décennale.\n\n${suite}\n\nConsultez votre espace client :\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
+      html: `<p>Bonjour ${raisonSociale},</p><p>L'activité <strong>${activite}</strong> a été ajoutée à votre assurance décennale.</p><p>${suite}</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+    }
+  },
   reprisePasseDecennale: (raisonSociale: string, dateReprise: string, numero: string, documentUrl: string) => ({
     subject: `Reprise du passé au ${dateReprise} - Optimum Assurance`,
     text: `Bonjour ${raisonSociale},\n\n${reprisePasseClientText(dateReprise, numero)}\n\nConsultez l'attestation modifiée :\n${documentUrl}\n\nCordialement,\nOptimum Assurance`,

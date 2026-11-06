@@ -62,6 +62,7 @@ const ACTION_LABELS: Record<string, string> = {
   gestion_contract_deleted_after_error: "Contrat supprimé après erreur",
   gestion_contract_updated: "Contrat modifié",
   reprise_passe_autorisee: "Reprise du passé autorisée",
+  client_activite_ajoutee: "Activité ajoutée par le client",
 }
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {

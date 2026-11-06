@@ -25,6 +25,7 @@ import { DemandesDocumentClient } from "@/components/espace-client/DemandesDocum
 import { SupprimerDevisButton } from "@/components/espace-client/SupprimerDevisButton"
 import { isClientDeletableQuoteDocument } from "@/lib/client-quote-delete"
 import { frenchStatusLabel } from "@/lib/status-labels"
+import { AjoutActiviteClient } from "@/components/espace-client/AjoutActiviteClient"
 
 interface DocumentItem {
   id: string
@@ -1022,6 +1023,8 @@ export default function EspaceClientPage() {
             </div>
           </div>
         )}
+
+        {!loading && status === "authenticated" ? <AjoutActiviteClient /> : null}
 
         {/* Onglet Profil */}
         {activeTab === "profil" && !loading && status === "authenticated" && (
