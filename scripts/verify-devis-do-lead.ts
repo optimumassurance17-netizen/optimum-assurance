@@ -3,6 +3,7 @@ import {
   DO_DEVIS_LEADS_SECTION_ID,
   doDevisLeadGestionUrl,
   doDevisLeadRowId,
+  leadHasIssuedDoQuote,
   leadIdFromDoDevisRowHash,
   doLeadMatchesSearch,
   readDoLeadChantier,
@@ -63,8 +64,14 @@ const waitingLeads = [
 const known = new Set(["deja@example.com"])
 assert(
   visibleDoDevisLeads(waitingLeads, known, "").length === 1,
-  "sans recherche, une demande avec fiche quitte la liste d'attente"
+  "sans recherche, l'inbox laisse de côté une demande qui a déjà une fiche"
 )
+assert(
+  visibleDoDevisLeads(waitingLeads, known, "", null, true).length === 2,
+  "la liste complète garde la demande qui a déjà une fiche"
+)
+assert(leadHasIssuedDoQuote("Deja@example.com", new Set(["deja@example.com"])), "un devis émis se reconnaît à l'e-mail")
+assert(!leadHasIssuedDoQuote("prospect@example.com", new Set(["deja@example.com"])), "sans devis, pas de voyant")
 assert(
   visibleDoDevisLeads(waitingLeads, known, "deja").some((item) => item.email === "deja@example.com"),
   "la recherche retrouve une demande déjà rattachée à une fiche"
@@ -235,7 +242,17 @@ assert(page.includes('handleCreateLeadAccount(d.id, "dommage_ouvrage")'), "la fi
 assert(page.includes("do_devis_pending"), "l'action du jour ouvre la ligne sans créer de compte")
 assert(page.includes("Préparer le devis"), "la ligne prépare le devis déjà présent")
 assert(page.includes("prefillDevisDoFromLead"), "le préremplissage réutilise le formulaire de contrat")
-assert(page.includes("Aucune demande en attente."), "une demande avec fiche sort de la liste d'attente")
+assert(page.includes("openedDoLeadId, true"), "la liste complète garde les demandes qui ont une fiche")
+assert(page.includes("Devis émis"), "le voyant vert nomme le devis déjà émis")
+assert(page.includes("Aucune demande."), "une liste vide le dit")
+assert(dashboard.includes("fetchDoQuotedEmails"), "le tableau repère les e-mails qui ont déjà un devis")
+assert(dashboard.includes("hasDevis: leadHasIssuedDoQuote"), "chaque demande indique si le devis est émis")
+const doLeadQuery = dashboard.slice(
+  dashboard.indexOf("devisDommageOuvrageLead.findMany"),
+  dashboard.indexOf("devisDommageOuvrageLead.findMany") + 220
+)
+assert(doLeadQuery.includes("DASH_LIST_LIMIT"), "toutes les demandes DO sont lues, dans la limite du tableau")
+assert(!doLeadQuery.includes("take: 50"), "les demandes DO ne sont plus coupées à 50")
 assert(page.includes(">Chantier<"), "le tableau affiche le chantier")
 assert(
   page.includes('handleCreateLeadAccount(a.leadId ?? "", "dommage_ouvrage")'),

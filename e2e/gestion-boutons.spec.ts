@@ -983,7 +983,7 @@ test.describe("Gestion — boutons d'action", () => {
     await expect(form.locator("#devis-do-client")).toHaveValue("user_do_bureau")
     await expect(form.locator("#devis-do-type")).toHaveValue("Immeuble de bureaux")
     await expect(form.getByPlaceholder("Adresse complète du chantier")).toHaveValue(/8 quai de la Seine/)
-    await expect(page.locator("#demandes-devis-do")).toContainText("Aucune demande en attente.")
+    await expect(page.locator("#demande-do-lead_do_bureau")).toBeVisible()
     await expect(page).toHaveURL(/#devis-do-manuel$/)
   })
 
@@ -997,6 +997,7 @@ test.describe("Gestion — boutons d'action", () => {
         createdAt: string
         raisonSociale: string
         data: string
+        hasDevis?: boolean
       }>
     }
     dashboard.users.push({
@@ -1013,6 +1014,7 @@ test.describe("Gestion — boutons d'action", () => {
         coutTotal: 250000,
         createdAt: "2026-11-01T08:00:00.000Z",
         raisonSociale: "Bureau Seine",
+        hasDevis: false,
         data: JSON.stringify({
           raisonSociale: "Bureau Seine",
           typeOuvrage: "immeuble_bureaux",
@@ -1020,6 +1022,15 @@ test.describe("Gestion — boutons d'action", () => {
           codePostalConstruction: "75019",
           villeConstruction: "Paris",
         }),
+      },
+      {
+        id: "lead_do_devisok",
+        email: "devis-ok@example.com",
+        coutTotal: 180000,
+        createdAt: "2026-10-01T08:00:00.000Z",
+        raisonSociale: "Atelier Déjà Devis",
+        hasDevis: true,
+        data: JSON.stringify({ raisonSociale: "Atelier Déjà Devis" }),
       },
     ]
     await page.route("**/api/gestion/dashboard", async (route) => {
@@ -1031,8 +1042,10 @@ test.describe("Gestion — boutons d'action", () => {
     })
 
     await page.goto("/gestion")
-    await expect(page.locator("#demandes-devis-do")).toContainText("Aucune demande en attente.")
-    await expect(page.locator("#demande-do-lead_do_bureau")).toHaveCount(0)
+    const quoted = page.locator("#demande-do-lead_do_devisok")
+    await expect(quoted).toBeVisible()
+    await expect(quoted.getByText("Devis émis")).toBeVisible()
+    await expect(page.locator("#demande-do-lead_do_bureau").getByText("Devis émis")).toHaveCount(0)
 
     await page.goto("/gestion#demande-do-lead_do_bureau")
     const row = page.locator("#demande-do-lead_do_bureau")

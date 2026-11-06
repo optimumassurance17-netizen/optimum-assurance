@@ -186,9 +186,15 @@ async function findInsuranceContractMatches(rawQuery: string) {
 async function findDoDevisLeadMatches(rawQuery: string) {
   try {
     const leads = await prisma.devisDommageOuvrageLead.findMany({
+      where: {
+        OR: [
+          { email: { contains: rawQuery, mode: "insensitive" } },
+          { data: { contains: rawQuery, mode: "insensitive" } },
+        ],
+      },
       select: { id: true, email: true, data: true, createdAt: true },
       orderBy: { createdAt: "desc" },
-      take: 50,
+      take: 40,
     })
     return sortRequestsByArrival(
       leads

@@ -307,6 +307,7 @@ interface DashboardData {
     coutTotal: number | null
     createdAt: string
     raisonSociale?: string | null
+    hasDevis?: boolean
   }[]
   devisRcFabriquantLeads?: {
     id: string
@@ -1718,7 +1719,7 @@ export default function GestionPage() {
     const knownEmails = new Set(
       (data?.users ?? []).map((user) => user.email.trim().toLowerCase()).filter(Boolean)
     )
-    return visibleDoDevisLeads(list, knownEmails, searchQuery, openedDoLeadId)
+    return visibleDoDevisLeads(list, knownEmails, searchQuery, openedDoLeadId, true).slice().reverse()
   }, [data, searchQuery, openedDoLeadId])
 
   const filteredRcFabriquantLeads = useMemo(() => {
@@ -6665,12 +6666,15 @@ export default function GestionPage() {
 
         {data.devisDoLeads && data.devisDoLeads.length > 0 && (
           <section id={DO_DEVIS_LEADS_SECTION_ID} className="scroll-mt-24">
-            <h2 className="text-lg font-semibold text-white mb-4">Demandes devis dommage ouvrage (en attente)</h2>
+            <h2 className="text-lg font-semibold text-white mb-2">Demandes devis dommage ouvrage</h2>
+            <p className="text-sm text-gray-300 mb-4">
+              Toutes les demandes reçues. Le voyant vert signale qu&apos;un devis est déjà émis pour cet e-mail.
+            </p>
             {visibleDevisDoLeads.length === 0 ? (
               <p className="text-sm text-gray-300">
                 {searchQuery.trim()
                   ? "Aucune demande ne correspond à la recherche."
-                  : "Aucune demande en attente."}
+                  : "Aucune demande."}
               </p>
             ) : (
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
@@ -6695,7 +6699,19 @@ export default function GestionPage() {
                     const contactLine = [chantier.ville, chantier.telephone].filter(Boolean).join(" · ")
                     return (
                       <tr id={doDevisLeadRowId(d.id)} key={d.id} className="scroll-mt-24 border-b border-gray-700/50">
-                        <td className="p-3 sm:p-4">{company || "—"}</td>
+                        <td className="p-3 sm:p-4">
+                          <div className="flex items-center gap-2">
+                            {d.hasDevis ? (
+                              <span
+                                className="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-green-400"
+                                title="Devis émis"
+                                aria-label="Devis émis"
+                              />
+                            ) : null}
+                            <span>{company || "—"}</span>
+                          </div>
+                          {d.hasDevis ? <div className="mt-1 text-xs text-green-400">Devis émis</div> : null}
+                        </td>
                         <td className="p-3 sm:p-4">
                           <div>{chantierLine || "—"}</div>
                           {contactLine ? <div className="text-xs text-gray-300 mt-1">{contactLine}</div> : null}

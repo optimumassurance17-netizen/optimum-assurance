@@ -114,20 +114,26 @@ export function doLeadMatchesSearch(lead: DoLeadSearchFields, query: string): bo
   return queryDigits.length >= 4 && phoneDigits.includes(queryDigits)
 }
 
-/** Sans recherche : seulement les demandes sans fiche, plus la ligne ouverte par un lien direct. Avec recherche : toutes les demandes qui correspondent. L'ordre est celui d'arrivée. */
+export function leadHasIssuedDoQuote(email: string, quotedEmails: ReadonlySet<string>): boolean {
+  const normalized = email.trim().toLowerCase()
+  return Boolean(normalized) && quotedEmails.has(normalized)
+}
+
+/** Sans recherche : seulement les demandes sans fiche, plus la ligne ouverte par un lien direct. Avec recherche, ou pour la liste complète : toutes les demandes qui correspondent. L'ordre est celui d'arrivée. */
 export function visibleDoDevisLeads<
   T extends DoLeadSearchFields & { id?: string; createdAt?: Date | string | null },
 >(
   leads: T[],
   knownEmails: ReadonlySet<string>,
   query: string,
-  pinnedLeadId?: string | null
+  pinnedLeadId?: string | null,
+  includeWithFiche = false
 ): T[] {
   const pinned = pinnedLeadId?.trim() || ""
   const visible = leads.filter((lead) => {
     if (pinned && lead.id === pinned) return doLeadMatchesSearch(lead, query)
     if (!doLeadMatchesSearch(lead, query)) return false
-    if (query.trim()) return true
+    if (query.trim() || includeWithFiche) return true
     const email = lead.email.trim().toLowerCase()
     return Boolean(email) && !knownEmails.has(email)
   })

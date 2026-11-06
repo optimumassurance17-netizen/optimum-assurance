@@ -13,7 +13,12 @@ import { adminActivityClientHref, adminActivityLabel } from "@/lib/admin-activit
 import { DDA_AUDIT_ACTIONS } from "@/lib/dda-labels"
 import { latestSignatureReminderByRequest } from "@/lib/signature-reminder"
 import { collapseDecennaleContractDuplicates } from "@/lib/decennale-contract-replacement"
-import { readDoLeadCompanyName, selectDoDevisDashboardActions, sortRequestsByArrival } from "@/lib/devis-do-lead"
+import {
+  leadHasIssuedDoQuote,
+  readDoLeadCompanyName,
+  selectDoDevisDashboardActions,
+  sortRequestsByArrival,
+} from "@/lib/devis-do-lead"
 import { isDisplayedQuoteExpired } from "@/lib/quote-validity"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
@@ -314,6 +319,42 @@ async function fetchUsersDoQuestionnaireRowsSafe() {
   }
 }
 
+/** E-mails pour lesquels un devis dommage ouvrage est déjà émis (document ou contrat). */
+async function fetchDoQuotedEmails(): Promise<Set<string>> {
+  try {
+    const [documents, contracts] = await Promise.all([
+      prisma.document.findMany({
+        where: { type: "devis_do" },
+        select: { user: { select: { email: true } } },
+        take: DASH_LIST_LIMIT,
+      }),
+      prisma.insuranceContract.findMany({
+        where: { productType: "do" },
+        select: { user: { select: { email: true } } },
+        take: DASH_LIST_LIMIT,
+      }),
+    ])
+    const emails = new Set<string>()
+    for (const row of documents) {
+      const email = row.user?.email?.trim().toLowerCase()
+      if (email) emails.add(email)
+    }
+    for (const row of contracts) {
+      const email = row.user?.email?.trim().toLowerCase()
+      if (email) emails.add(email)
+    }
+    return emails
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === "P2021" || error.code === "P2022")
+    ) {
+      return new Set()
+    }
+    throw error
+  }
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -378,7 +419,7 @@ export async function GET() {
       }),
       prisma.devisDommageOuvrageLead.findMany({
         orderBy: { createdAt: "desc" },
-        take: 50,
+        take: DASH_LIST_LIMIT,
       }),
       fetchDevisRcFabriquantLeadsSafe(),
       withSchemaDriftFallback(
@@ -1154,6 +1195,7 @@ export async function GET() {
     const conversionFunnel = buildConversionFunnel(conversionLogs)
 
     const echeancesASuivre = await loadEcheancesASuivre()
+    const quotedEmails = await fetchDoQuotedEmails()
 
     const devisLeadsWithSla = devisLeads.map((lead) => {
       const slaHours = Math.max(0, Math.floor((Date.now() - lead.createdAt.getTime()) / (60 * 60 * 1000)))
@@ -1176,6 +1218,7 @@ export async function GET() {
         devisDoLeads.map((lead) => ({
           ...lead,
           raisonSociale: readDoLeadCompanyName(lead.data),
+          hasDevis: leadHasIssuedDoQuote(lead.email, quotedEmails),
         }))
       ),
       devisRcFabriquantLeads: sortRequestsByArrival(devisRcFabriquantLeadsWithUser),
