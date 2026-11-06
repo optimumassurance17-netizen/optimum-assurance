@@ -14,6 +14,8 @@ import { isClientQuoteEditionLocked, isContractCoverageLocked } from "@/lib/devi
 import { isStoredClientQuoteType } from "@/lib/client-quote-delete"
 import { isQuoteExpired, QUOTE_EXPIRED_ERROR } from "@/lib/quote-validity"
 import { SupprimerDevisButton } from "@/components/espace-client/SupprimerDevisButton"
+import { ReprisePasseExplication } from "@/components/espace-client/ReprisePasseExplication"
+import { documentShowsReprisePasse, reprisePasseDateLabel } from "@/lib/decennale-reprise-passe"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
 const DevisDoTemplate = dynamic(() => import("@/components/documents/DevisDoTemplate").then((m) => m.DevisDoTemplate), { ssr: false })
@@ -458,6 +460,10 @@ export default function DocumentPage() {
             )}
           </div>
         </div>
+
+        {documentShowsReprisePasse(document.type, document.data) ? (
+          <ReprisePasseExplication dateReprise={reprisePasseDateLabel(document.data)} />
+        ) : null}
 
         {canEditDocument && (
           <section className="mb-6 print:hidden rounded-2xl border border-[#d4d4d4] bg-[#f5f5f5] p-5">

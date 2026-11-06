@@ -12,6 +12,7 @@ import { buildReminderUnsubscribeUrl, type ReminderUnsubscribeType } from "@/lib
 import { DEFAULT_PUBLIC_CONTACT_EMAIL } from "@/lib/public-contact-email"
 import { DO_DOSSIER_VALIDE_MESSAGE } from "@/lib/do-dossier-valide"
 import { QUOTE_VALIDITY_DAYS } from "@/lib/quote-validity"
+import { REPRISE_PASSE_CLIENT_ETAPES, reprisePasseClientText } from "@/lib/decennale-reprise-passe"
 
 /**
  * Émission et réponses : info@optimum-assurance.eu.
@@ -611,10 +612,10 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nVos coordonnées ont été mises à jour. Votre attestation décennale ${numero} a été modifiée en conséquence.\n\nConsultez votre attestation à jour : ${documentUrl}\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Vos coordonnées ont été mises à jour. Votre attestation décennale <strong>${numero}</strong> a été modifiée en conséquence.</p><p><a href="${documentUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Voir mon attestation</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
-  reprisePasseDecennale: (raisonSociale: string, dateReprise: string, numero: string) => ({
+  reprisePasseDecennale: (raisonSociale: string, dateReprise: string, numero: string, documentUrl: string) => ({
     subject: `Reprise du passé au ${dateReprise} - Optimum Assurance`,
-    text: `Bonjour ${raisonSociale},\n\nLa reprise du passé de votre assurance décennale est autorisée à compter du ${dateReprise}.\n\nVotre attestation ${numero} porte cette date de reprise. L'attestation sur l'honneur de non-sinistralité est disponible dans votre espace client.\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour ${raisonSociale},</p><p>La reprise du passé de votre assurance décennale est autorisée à compter du <strong>${dateReprise}</strong>.</p><p>Votre attestation <strong>${numero}</strong> porte cette date de reprise. L'attestation sur l'honneur de non-sinistralité est disponible dans votre espace client.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+    text: `Bonjour ${raisonSociale},\n\n${reprisePasseClientText(dateReprise, numero)}\n\nConsultez l'attestation modifiée :\n${documentUrl}\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${raisonSociale},</p><p>Votre assurance décennale a été modifiée. La reprise du passé est autorisée au <strong>${dateReprise}</strong>.</p><ol>${REPRISE_PASSE_CLIENT_ETAPES.map((etape) => `<li style="margin:0 0 8px">${etape}</li>`).join("")}</ol><p>Votre attestation <strong>${numero}</strong> porte cette date de reprise.</p><p><a href="${documentUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Voir mon attestation modifiée</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
   attestationDecennaleDisponible: (raisonSociale: string, numero: string) => ({
     subject: `Votre attestation décennale ${numero} est disponible - Optimum Assurance`,

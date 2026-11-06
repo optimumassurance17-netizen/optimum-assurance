@@ -71,6 +71,38 @@ export function validateReprisePasseDate(
   return { ok: true, dateReprise }
 }
 
+export const REPRISE_PASSE_CLIENT_TITRE =
+  "Modification de votre assurance décennale : reprise du passé"
+
+export const REPRISE_PASSE_CLIENT_ETAPES = [
+  "La date de début de votre assurance est reculée. Cette nouvelle date s'appelle la date de reprise du passé. Elle est inscrite sur votre attestation d'assurance et ne peut pas remonter de plus de 3 mois.",
+  "Cette modification n'est possible que si vous n'avez déclaré aucun sinistre. Vous le confirmez par une attestation sur l'honneur de non-sinistralité, conservée dans votre espace client. Une déclaration inexacte peut remettre en cause la garantie.",
+  "Transmettez uniquement l'attestation d'assurance modifiée. C'est elle qui indique la date de reprise. L'attestation sur l'honneur reste dans votre dossier et ne remplace pas l'attestation d'assurance.",
+] as const
+
+export function reprisePasseClientText(dateReprise: string, numero: string): string {
+  return [
+    `Votre assurance décennale a été modifiée. La reprise du passé est autorisée au ${dateReprise}.`,
+    ...REPRISE_PASSE_CLIENT_ETAPES,
+    `Votre attestation ${numero} porte cette date de reprise.`,
+  ].join("\n\n")
+}
+
+export function documentShowsReprisePasse(type: string, data: Record<string, unknown>): boolean {
+  if (type === "attestation" || type === "contrat") return data.reprisePasse === true
+  if (type === "attestation_non_sinistralite") return data.motif === "reprise_passe"
+  return false
+}
+
+export function reprisePasseDateLabel(data: Record<string, unknown>): string {
+  const iso = typeof data.dateReprisePasse === "string" ? data.dateReprisePasse.trim() : ""
+  if (ISO_DATE.test(iso)) return isoToFrenchDate(iso)
+  const debut = typeof data.dateDebut === "string" ? data.dateDebut.trim() : ""
+  if (ISO_DATE.test(debut)) return isoToFrenchDate(debut)
+  const effet = typeof data.dateEffet === "string" ? data.dateEffet.trim() : ""
+  return ISO_DATE.test(effet) ? isoToFrenchDate(effet) : effet
+}
+
 export function repriseInstant(isoDate: string): Date {
   const match = ISO_DATE.exec(isoDate)
   if (!match) throw new Error("date de reprise illisible")

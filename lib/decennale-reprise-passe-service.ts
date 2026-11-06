@@ -15,6 +15,7 @@ import {
   repriseInstant,
   validateReprisePasseDate,
 } from "@/lib/decennale-reprise-passe"
+import { SITE_URL } from "@/lib/site-url"
 
 type CreatedDocument = {
   id: string
@@ -324,7 +325,12 @@ export async function authorizeDecennaleReprisePasse(input: {
     })
   }
 
-  const template = EMAIL_TEMPLATES.reprisePasseDecennale(identity.raisonSociale, dateRepriseLabel, attestation.numero)
+  const template = EMAIL_TEMPLATES.reprisePasseDecennale(
+    identity.raisonSociale,
+    dateRepriseLabel,
+    attestation.numero,
+    `${SITE_URL}/espace-client/documents/${attestation.id}`
+  )
   const emailSent = await sendEmail({
     to: user.email,
     subject: template.subject,
