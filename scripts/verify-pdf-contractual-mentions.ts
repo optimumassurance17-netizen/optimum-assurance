@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 // @ts-expect-error - pdf-parse n'expose pas de types fiables dans cet environnement
 import pdfParse from "pdf-parse"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
+import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateDecennaleQuote } from "@/lib/pdf/decennale/generateQuote"
 import { generateDecennaleQuotePolicyBundle } from "@/lib/pdf/decennale/generateQuotePolicyBundle"
 import { generateDOQuotePolicyBundle } from "@/lib/pdf/do/generateQuotePolicyBundle"
@@ -242,13 +243,27 @@ async function main(): Promise<void> {
   const assuranceTitrePolicyText = await extractPdfText(assuranceTitrePolicyPdf)
   const assuranceTitreCertificateText = await extractPdfText(assuranceTitreCertificatePdf)
 
+  assert.equal(
+    sanitizeForPdfLib("Structure et gros œuvre"),
+    "Structure et gros œuvre",
+    "le œ de œuvre est conservé pour l'impression PDF"
+  )
+  assert.equal(sanitizeForPdfLib("maîtrise d'œuvre"), "maîtrise d'œuvre")
+  assert.equal(sanitizeForPdfLib("sous-œuvre"), "sous-œuvre")
+
   assert.match(decQuoteText, /Validité du devis : 60 jours/, "le devis décennale est valable 60 jours")
+  assert.match(decQuoteText, /Définition :/, "l'annexe d'activités écrit Définition")
+  assert.match(decQuoteText, /Exclusions spécifiques/, "l'annexe d'activités écrit spécifiques")
+  assert.doesNotMatch(decQuoteText, /Definition :|Exclusions specifiques/)
   assert.match(decQuoteText, /valable 60 jours/, "l'annexe du devis décennale reprend les 60 jours")
   assert.doesNotMatch(decQuoteText, /\[object Object\]/, "le devis décennale imprime le texte du devoir de conseil")
   assert.match(decQuoteText, /a été établi/, "le devis décennale reprend la phrase du devoir de conseil")
   assertMentions(decQuoteText, "devis décennale", DEVOIR_CONSEIL_ONLY)
   assertMentions(decText, "devis+conditions particulières décennale", DECENNALE_MENTIONS)
   assertMentions(doText, "devis+conditions particulières dommage-ouvrage", DO_QUOTE_MENTIONS)
+  assert.match(doText, /gros\s+œuvre/, "le devis dommage ouvrage imprime gros œuvre")
+  assert.match(decText, /œuvre/, "le devis décennale imprime œuvre")
+  assert.doesNotMatch(`${doText}\n${decText}`, /gros uvre|d'uvre/)
   assertMentions(rcFabText, "conditions RC Fabriquant", RC_FAB_MENTIONS)
   assertMentions(rcFabFicText, "FIC RC Fabriquant", RC_FAB_MENTIONS)
   assertMentions(
