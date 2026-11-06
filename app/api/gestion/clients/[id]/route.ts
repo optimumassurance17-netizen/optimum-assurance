@@ -34,6 +34,7 @@ import {
   isPerDocumentDevisEditionType,
 } from "@/lib/devis-edition"
 import { SITE_URL } from "@/lib/site-url"
+import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 
 function parseLogDetails(raw: string | null | undefined): Record<string, unknown> | null {
   if (!raw?.trim()) return null
@@ -217,6 +218,7 @@ export async function GET(
         allowDevisEdition: false,
         allowForcedActivities: false,
         forcedActivities: [],
+        clientAutonome: false,
         note: null,
         updatedAt: null,
         updatedBy: null,
@@ -647,9 +649,12 @@ export async function PATCH(
     }
 
     if (hasAutonomyUpdate && autonomyRaw) {
+      const currentAutonomy = await getClientDevisAutonomyConfig(id)
       const allowDevisEdition = Boolean(autonomyRaw.allowDevisEdition)
       const forcedActivities = normalizeForcedActivitiesInput(autonomyRaw.forcedActivities)
       const allowForcedActivities = Boolean(autonomyRaw.allowForcedActivities) && forcedActivities.length > 0
+      const clientAutonome =
+        "clientAutonome" in autonomyRaw ? Boolean(autonomyRaw.clientAutonome) : currentAutonomy.clientAutonome
       const noteValue =
         typeof autonomyRaw.note === "string" && autonomyRaw.note.trim().length > 0
           ? autonomyRaw.note.trim()
@@ -664,15 +669,36 @@ export async function PATCH(
           allowDevisEdition,
           allowForcedActivities,
           forcedActivities: allowForcedActivities ? forcedActivities : [],
+          clientAutonome,
+          clientAutonomeChange:
+            clientAutonome === currentAutonomy.clientAutonome
+              ? "unchanged"
+              : clientAutonome
+                ? "granted"
+                : "revoked",
           note: noteValue,
         },
       })
+
+      if (clientAutonome && !currentAutonomy.clientAutonome && updated.email) {
+        const template = EMAIL_TEMPLATES.clientAutonomeAutorise(
+          updated.raisonSociale || updated.email,
+          `${SITE_URL}/espace-client`
+        )
+        await sendEmail({
+          to: updated.email,
+          subject: template.subject,
+          text: template.text,
+          html: template.html,
+        })
+      }
     }
 
     const devisAutonomy = await withSchemaDriftFallback(() => getClientDevisAutonomyConfig(id), {
       allowDevisEdition: false,
       allowForcedActivities: false,
       forcedActivities: [],
+      clientAutonome: false,
       note: null,
       updatedAt: null,
       updatedBy: null,

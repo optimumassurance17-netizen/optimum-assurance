@@ -81,5 +81,9 @@ const page = readFileSync(new URL("../app/espace-client/page.tsx", import.meta.u
 const route = readFileSync(new URL("../app/api/client/ajout-activite/route.ts", import.meta.url), "utf8")
 assert(page.includes("AjoutActiviteClient"), "l'espace client propose l'ajout")
 assert(route.includes("ajouterActiviteClient"), "l'ajout passe par le service client")
+const fiche = readFileSync(new URL("../app/gestion/clients/[id]/page.tsx", import.meta.url), "utf8")
+const service = readFileSync(new URL("../lib/decennale-ajout-activite-service.ts", import.meta.url), "utf8")
+assert(fiche.includes("Autoriser le client autonome"), "la fiche autorise le client autonome")
+assert(service.includes("clientAutonome"), "l'ajout exige un client autonome")
 
 console.log("Ajout d'activité avec régularisation : OK")

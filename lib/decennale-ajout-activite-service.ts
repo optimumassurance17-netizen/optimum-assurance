@@ -3,6 +3,7 @@ import { getNextNumero } from "@/lib/documents"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { isDecennaleContractData, parseJsonObject } from "@/lib/decennale-contract-data"
+import { getClientDevisAutonomyConfig } from "@/lib/client-devis-autonomy"
 import { parseActivitiesJson } from "@/lib/insurance-contract-activities"
 import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
@@ -90,6 +91,13 @@ export async function lireAjoutActiviteClient(userId: string): Promise<
     }
   | { available: false; message: string }
 > {
+  const autonomy = await getClientDevisAutonomyConfig(userId)
+  if (!autonomy.clientAutonome) {
+    return {
+      available: false,
+      message: "L'ajout d'activité n'est pas autorisé. Le compte n'est pas client autonome.",
+    }
+  }
   const [document, platform] = await Promise.all([
     loadDecennaleContract(userId),
     prisma.insuranceContract.findFirst({
@@ -161,6 +169,14 @@ export async function ajouterActiviteClient(input: {
     }),
   ])
   if (!user) return { ok: false, status: 404, error: "Client introuvable." }
+  const autonomy = await getClientDevisAutonomyConfig(input.userId)
+  if (!autonomy.clientAutonome) {
+    return {
+      ok: false,
+      status: 403,
+      error: "L'ajout d'activité n'est pas autorisé. Le compte n'est pas client autonome.",
+    }
+  }
   if (!document && !platform) {
     return { ok: false, status: 404, error: "Aucun contrat décennale ne permet d'ajouter une activité." }
   }

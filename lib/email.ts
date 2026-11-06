@@ -612,6 +612,11 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nVos coordonnées ont été mises à jour. Votre attestation décennale ${numero} a été modifiée en conséquence.\n\nConsultez votre attestation à jour : ${documentUrl}\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Vos coordonnées ont été mises à jour. Votre attestation décennale <strong>${numero}</strong> a été modifiée en conséquence.</p><p><a href="${documentUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Voir mon attestation</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
+  clientAutonomeAutorise: (raisonSociale: string, espaceUrl: string) => ({
+    subject: "Votre espace client autonome - Optimum Assurance",
+    text: `Bonjour ${raisonSociale},\n\nVotre compte est autorisé en client autonome.\n\nVous pouvez ajouter une activité à votre assurance décennale depuis votre espace. Si l'activité augmente la cotisation, la différence sur les échéances déjà payées est régularisée.\n\n${espaceUrl}\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${raisonSociale},</p><p>Votre compte est autorisé en <strong>client autonome</strong>.</p><p>Vous pouvez ajouter une activité à votre assurance décennale depuis votre espace. Si l'activité augmente la cotisation, la différence sur les échéances déjà payées est régularisée.</p><p><a href="${espaceUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+  }),
   ajoutActiviteDecennale: (
     raisonSociale: string,
     activite: string,

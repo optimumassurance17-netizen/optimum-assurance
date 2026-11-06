@@ -63,6 +63,7 @@ const ACTION_LABELS: Record<string, string> = {
   gestion_contract_updated: "Contrat modifié",
   reprise_passe_autorisee: "Reprise du passé autorisée",
   client_activite_ajoutee: "Activité ajoutée par le client",
+  client_devis_autonomy_updated: "Autonomie du client mise à jour",
 }
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
@@ -124,6 +125,16 @@ export function documentChangeActivityLabel(action: string, details: string | nu
   const numero = textDetail(parsed, "documentNumero") || textDetail(parsed, "numero")
   const typeLabel = DOCUMENT_TYPE_LABELS[typeRaw] || ""
   const identity = [typeLabel, numero].filter(Boolean).join(" ")
+  if (action === "client_devis_autonomy_updated") {
+    if (
+      parsed?.clientAutonomeChange === "granted" ||
+      (parsed?.clientAutonome === true && parsed.clientAutonomeChange == null)
+    ) {
+      return "Client autonome autorisé"
+    }
+    if (parsed?.clientAutonomeChange === "revoked") return "Autorisation de client autonome retirée"
+    return "Autonomie du client mise à jour"
+  }
   if (action === "client_document_update") {
     return identity ? `Modification client : ${identity}` : "Document modifié par le client"
   }
@@ -175,7 +186,8 @@ export function describeClientActivity(
             ? documentDevisEditionActivityLabel(log.details)
             : log.action === "devis_do_pending_updated"
               ? pendingDoQuoteActivityLabel(log.details)
-              : log.action === "client_document_update" ||
+              : log.action === "client_devis_autonomy_updated" ||
+                  log.action === "client_document_update" ||
                   log.action === "document_update" ||
                   log.action === "document_create" ||
                   log.action === "client_quote_deleted" ||

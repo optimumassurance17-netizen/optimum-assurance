@@ -7,6 +7,8 @@ export type ClientDevisAutonomyConfig = {
   allowDevisEdition: boolean
   allowForcedActivities: boolean
   forcedActivities: string[]
+  /** Le client peut ajouter une activité décennale, avec régularisation. */
+  clientAutonome: boolean
   note: string | null
   updatedAt: string | null
   updatedBy: string | null
@@ -62,6 +64,7 @@ export function parseClientDevisAutonomyConfigFromDetails(details: Record<string
   allowDevisEdition: boolean
   allowForcedActivities: boolean
   forcedActivities: string[]
+  clientAutonome: boolean
   note: string | null
 } {
   const forcedActivities = normalizeForcedActivitiesInput(details.forcedActivities)
@@ -78,6 +81,7 @@ export function parseClientDevisAutonomyConfigFromDetails(details: Record<string
     allowDevisEdition,
     allowForcedActivities,
     forcedActivities: allowForcedActivities ? forcedActivities : [],
+    clientAutonome: normalizeBoolean(details.clientAutonome, false),
     note: normalizeString(details.note),
   }
 }
@@ -104,6 +108,7 @@ export async function getClientDevisAutonomyConfig(
       allowDevisEdition: false,
       allowForcedActivities: false,
       forcedActivities: [],
+      clientAutonome: false,
       note: null,
       updatedAt: null,
       updatedBy: null,

@@ -66,6 +66,7 @@ type DevisAutonomyForm = {
   allowForcedActivities: boolean
   forcedActivitiesText: string
   note: string
+  clientAutonome: boolean
 }
 
 type QuestionnaireProfilePrefill = ProfileForm & {
@@ -279,6 +280,7 @@ interface ClientData {
     allowDevisEdition: boolean
     allowForcedActivities: boolean
     forcedActivities: string[]
+    clientAutonome: boolean
     note: string | null
     updatedAt: string | null
     updatedBy: string | null
@@ -352,6 +354,7 @@ function toDevisAutonomyForm(
   return {
     allowDevisEdition: config?.allowDevisEdition === true,
     allowForcedActivities: config?.allowForcedActivities === true,
+    clientAutonome: config?.clientAutonome === true,
     forcedActivitiesText: Array.isArray(config?.forcedActivities)
       ? config!.forcedActivities.join("\n")
       : "",
@@ -415,6 +418,7 @@ export default function ClientDetailPage() {
     allowForcedActivities: false,
     forcedActivitiesText: "",
     note: "",
+    clientAutonome: false,
   })
   const [attestationGenerating, setAttestationGenerating] = useState(false)
   const [repriseModal, setRepriseModal] = useState(false)
@@ -984,6 +988,63 @@ export default function ClientDetailPage() {
               </button>
               <button
                 type="button"
+                disabled={devisAutonomySaving}
+                title="Autorise le client à ajouter une activité décennale, avec régularisation"
+                onClick={async () => {
+                  const next = !devisAutonomyForm.clientAutonome
+                  setDevisAutonomySaving(true)
+                  try {
+                    const res = await fetch(`/api/gestion/clients/${clientId}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        devisAutonomy: {
+                          allowDevisEdition: devisAutonomyForm.allowDevisEdition,
+                          allowForcedActivities: devisAutonomyForm.allowForcedActivities,
+                          forcedActivities: devisAutonomyForm.forcedActivitiesText,
+                          clientAutonome: next,
+                          note: devisAutonomyForm.note,
+                        },
+                      }),
+                    })
+                    const json = await readResponseJson<{
+                      error?: string
+                      devisAutonomy?: ClientData["devisAutonomy"]
+                    }>(res)
+                    if (!res.ok || !json.devisAutonomy) {
+                      throw new Error(json.error || "Impossible d'enregistrer le client autonome.")
+                    }
+                    setData((prev) => (prev ? { ...prev, devisAutonomy: json.devisAutonomy } : prev))
+                    setDevisAutonomyForm(toDevisAutonomyForm(json.devisAutonomy))
+                    setToast({
+                      message: next
+                        ? "Client autonome autorisé. Il peut ajouter une activité avec régularisation."
+                        : "Autorisation de client autonome retirée.",
+                      type: "success",
+                    })
+                  } catch (err) {
+                    setToast({
+                      message: err instanceof Error ? err.message : "Impossible d'enregistrer le client autonome.",
+                      type: "error",
+                    })
+                  } finally {
+                    setDevisAutonomySaving(false)
+                  }
+                }}
+                className={`rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50 ${
+                  devisAutonomyForm.clientAutonome
+                    ? "border-emerald-600/70 bg-emerald-950/40 text-emerald-200 hover:bg-emerald-900/50"
+                    : "border-gray-600 bg-[#1a1a1a] text-gray-100 hover:border-[#2563eb]"
+                }`}
+              >
+                {devisAutonomySaving
+                  ? "Enregistrement..."
+                  : devisAutonomyForm.clientAutonome
+                    ? "Client autonome autorisé"
+                    : "Autoriser le client autonome"}
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   document.getElementById("demande-document")?.scrollIntoView({ behavior: "smooth", block: "start" })
                 }}
@@ -1421,6 +1482,7 @@ export default function ClientDetailPage() {
                         allowDevisEdition: devisAutonomyForm.allowDevisEdition,
                         allowForcedActivities: devisAutonomyForm.allowForcedActivities,
                         forcedActivities: devisAutonomyForm.forcedActivitiesText,
+                        clientAutonome: devisAutonomyForm.clientAutonome,
                         note: devisAutonomyForm.note,
                       },
                     }
@@ -2125,6 +2187,7 @@ export default function ClientDetailPage() {
                             allowDevisEdition: false,
                             allowForcedActivities: devisAutonomyForm.allowForcedActivities,
                             forcedActivities: devisAutonomyForm.forcedActivitiesText,
+                            clientAutonome: devisAutonomyForm.clientAutonome,
                             note: devisAutonomyForm.note,
                           },
                         }),
