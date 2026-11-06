@@ -77,6 +77,9 @@ jobs:
       - name: Vérification libellés de statut
         run: npm run test:status-labels
 
+      - name: Vérification reprise du passé décennale
+        run: npm run test:reprise-passe
+
       - name: Prisma generate + Next build
         run: npm run build
 

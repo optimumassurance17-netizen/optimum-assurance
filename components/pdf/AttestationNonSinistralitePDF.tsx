@@ -77,27 +77,41 @@ export function AttestationNonSinistralitePDF({
           <Text style={styles.subtitle}>Assurance décennale professionnelle</Text>
         </View>
 
-        <Text style={styles.h2}>ATTESTATION DE NON SINISTRALITÉ</Text>
+        <Text style={styles.h2}>
+          {data.motif === "reprise_passe"
+            ? "ATTESTATION SUR L'HONNEUR DE NON-SINISTRALITÉ"
+            : "ATTESTATION DE NON SINISTRALITÉ"}
+        </Text>
         <Text style={styles.h2sub}>Responsabilité Civile Décennale</Text>
         <Text style={styles.numero}>N° {numero}</Text>
 
         <View style={styles.section}>
-          <Text style={styles.p}>
-            La société {COMPANY_BRAND} atteste que :
-          </Text>
-          <Text style={[styles.p, { fontFamily: "Helvetica-Bold" }]}>
-            {data.raisonSociale}
-          </Text>
-          <Text style={styles.p}>SIRET : {data.siret}</Text>
-          {(data.adresse || data.codePostal || data.ville) && (
+          {data.motif === "reprise_passe" ? (
             <Text style={styles.p}>
-              {[data.adresse, data.codePostal, data.ville].filter(Boolean).join(" ")}
+              Je soussigné, représentant de {data.raisonSociale} (SIRET : {data.siret}), déclare
+              sur l&apos;honneur n&apos;avoir déclaré aucun sinistre au titre de l&apos;assurance
+              responsabilité civile décennale du {dateDebutFr} au {dateFinFr}.
             </Text>
+          ) : (
+            <>
+              <Text style={styles.p}>
+                La société {COMPANY_BRAND} atteste que :
+              </Text>
+              <Text style={[styles.p, { fontFamily: "Helvetica-Bold" }]}>
+                {data.raisonSociale}
+              </Text>
+              <Text style={styles.p}>SIRET : {data.siret}</Text>
+              {(data.adresse || data.codePostal || data.ville) && (
+                <Text style={styles.p}>
+                  {[data.adresse, data.codePostal, data.ville].filter(Boolean).join(" ")}
+                </Text>
+              )}
+              <Text style={styles.p}>
+                n&apos;a déclaré aucun sinistre au titre de l&apos;assurance responsabilité
+                civile décennale sur la période du {dateDebutFr} au {dateFinFr}.
+              </Text>
+            </>
           )}
-          <Text style={styles.p}>
-            n&apos;a déclaré aucun sinistre au titre de l&apos;assurance responsabilité
-            civile décennale sur la période du {dateDebutFr} au {dateFinFr}.
-          </Text>
           {data.motif === "jamais_assure" && (
             <Text style={[styles.p, { fontSize: 9, color: "#333333" }]}>
               Cette attestation est délivrée à la demande de l&apos;assuré, qui
@@ -107,18 +121,25 @@ export function AttestationNonSinistralitePDF({
           )}
           {data.motif === "reprise_passe" && (
             <Text style={[styles.p, { fontSize: 9, color: "#333333" }]}>
-              Cette attestation concerne la période de reprise du passé (3 mois
-              rétroactifs) prévue au contrat.
+              Date de reprise du passé : {dateDebutFr}. Cette déclaration couvre la
+              reprise du passé, au plus 3 mois avant l&apos;autorisation.
             </Text>
           )}
         </View>
 
-        <Text style={styles.footer}>
-          Fait à Paris, le {new Date().toLocaleDateString("fr-FR")}
-        </Text>
-        <Text style={[styles.footer, { marginTop: 8 }]}>
-          Pour {COMPANY_BRAND} — Assureur : {INSURER_NAME}
-        </Text>
+        {data.motif === "reprise_passe" ? (
+          <>
+            <Text style={styles.footer}>Fait le {new Date().toLocaleDateString("fr-FR")}</Text>
+            <Text style={[styles.footer, { marginTop: 8 }]}>Le déclarant : {data.raisonSociale}</Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.footer}>Fait à Paris, le {new Date().toLocaleDateString("fr-FR")}</Text>
+            <Text style={[styles.footer, { marginTop: 8 }]}>
+              Pour {COMPANY_BRAND} — Assureur : {INSURER_NAME}
+            </Text>
+          </>
+        )}
       </Page>
     </Document>
   )

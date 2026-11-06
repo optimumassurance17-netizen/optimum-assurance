@@ -36,7 +36,9 @@ export function AttestationNonSinistraliteTemplate({
       <DocumentBrandHeader tagline="Assurance décennale professionnelle" className="border-b-2 border-[#2563eb] pb-4 mb-8" />
 
       <h2 className="text-xl font-semibold mb-2 text-center">
-        ATTESTATION DE NON SINISTRALITÉ
+        {data.motif === "reprise_passe"
+          ? "ATTESTATION SUR L'HONNEUR DE NON-SINISTRALITÉ"
+          : "ATTESTATION DE NON SINISTRALITÉ"}
       </h2>
       <p className="text-center font-semibold mb-8 text-[#2563eb]">
         Responsabilité Civile Décennale
@@ -45,22 +47,37 @@ export function AttestationNonSinistraliteTemplate({
       <p className="text-center mb-8">N° {numero}</p>
 
       <div className="border-2 border-[#E5E0D8] p-6 rounded-xl mb-8">
-        <p className="mb-4">
-          La société <strong>{COMPANY_BRAND}</strong> atteste que :
-        </p>
-        <p className="mb-2 font-semibold">{data.raisonSociale}</p>
-        <p className="mb-2">SIRET : {data.siret}</p>
-        {data.adresse && <p className="mb-2">{data.adresse}</p>}
-        {(data.codePostal || data.ville) && (
+        {data.motif === "reprise_passe" ? (
           <p className="mb-4">
-            {data.codePostal} {data.ville}
+            Je soussigné, représentant de <strong>{data.raisonSociale}</strong>
+            {data.siret ? <> (SIRET : {data.siret})</> : null}
+            {data.adresse || data.codePostal || data.ville
+              ? <>, { [data.adresse, data.codePostal, data.ville].filter(Boolean).join(" ") }</>
+              : null}
+            , déclare sur l&apos;honneur n&apos;avoir déclaré <strong>aucun sinistre</strong> au
+            titre de l&apos;assurance responsabilité civile décennale du{" "}
+            <strong>{dateDebutFr}</strong> au <strong>{dateFinFr}</strong>.
           </p>
+        ) : (
+          <>
+            <p className="mb-4">
+              La société <strong>{COMPANY_BRAND}</strong> atteste que :
+            </p>
+            <p className="mb-2 font-semibold">{data.raisonSociale}</p>
+            <p className="mb-2">SIRET : {data.siret}</p>
+            {data.adresse && <p className="mb-2">{data.adresse}</p>}
+            {(data.codePostal || data.ville) && (
+              <p className="mb-4">
+                {data.codePostal} {data.ville}
+              </p>
+            )}
+            <p className="mb-4">
+              n&apos;a déclaré <strong>aucun sinistre</strong> au titre de
+              l&apos;assurance responsabilité civile décennale sur la période du{" "}
+              <strong>{dateDebutFr}</strong> au <strong>{dateFinFr}</strong>.
+            </p>
+          </>
         )}
-        <p className="mb-4">
-          n&apos;a déclaré <strong>aucun sinistre</strong> au titre de
-          l&apos;assurance responsabilité civile décennale sur la période du{" "}
-          <strong>{dateDebutFr}</strong> au <strong>{dateFinFr}</strong>.
-        </p>
         {data.motif === "jamais_assure" && (
           <p className="text-sm text-[#171717]">
             Cette attestation est délivrée à la demande de l&apos;assuré, qui n&apos;avait
@@ -70,19 +87,28 @@ export function AttestationNonSinistraliteTemplate({
         )}
         {data.motif === "reprise_passe" && (
           <p className="text-sm text-[#171717]">
-            Cette attestation concerne la période de reprise du passé (3 mois
-            rétroactifs) prévue au contrat.
+            Date de reprise du passé : <strong>{dateDebutFr}</strong>. Cette déclaration
+            couvre la reprise du passé, au plus 3 mois avant l&apos;autorisation.
           </p>
         )}
       </div>
 
       <p className="text-sm mb-4">
-        Cette attestation constate seulement les sinistres déclarés à Optimum Courtage pour la période indiquée. Elle ne prouve pas l&apos;absence de responsabilité, ni l&apos;absence de sinistre déclaré à un autre assureur. Elle ne vaut pas attestation d&apos;assurance au sens de l&apos;article L.241-1 du Code des assurances. Une déclaration inexacte relève des articles L.113-8 et L.113-9. La reprise de chantiers déjà ouverts n&apos;est acquise que si le contrat l&apos;accepte expressément.
+        {data.motif === "reprise_passe"
+          ? "Cette déclaration sur l'honneur est conservée au dossier. Elle ne prouve pas l'absence de responsabilité, ni l'absence de sinistre déclaré à un autre assureur. Elle ne vaut pas attestation d'assurance au sens de l'article L.241-1 du Code des assurances. Une déclaration inexacte relève des articles L.113-8 et L.113-9."
+          : "Cette attestation constate seulement les sinistres déclarés à Optimum Courtage pour la période indiquée. Elle ne prouve pas l'absence de responsabilité, ni l'absence de sinistre déclaré à un autre assureur. Elle ne vaut pas attestation d'assurance au sens de l'article L.241-1 du Code des assurances. Une déclaration inexacte relève des articles L.113-8 et L.113-9. La reprise de chantiers déjà ouverts n'est acquise que si le contrat l'accepte expressément."}
       </p>
-      <p className="text-sm">
-        Fait à Cholet, le {new Date().toLocaleDateString("fr-FR")}
-      </p>
-      <p className="text-sm mt-4">Pour {COMPANY_BRAND}</p>
+      {data.motif === "reprise_passe" ? (
+        <>
+          <p className="text-sm">Fait le {new Date().toLocaleDateString("fr-FR")}</p>
+          <p className="text-sm mt-4">Le déclarant : {data.raisonSociale}</p>
+        </>
+      ) : (
+        <>
+          <p className="text-sm">Fait à Cholet, le {new Date().toLocaleDateString("fr-FR")}</p>
+          <p className="text-sm mt-4">Pour {COMPANY_BRAND}</p>
+        </>
+      )}
     </div>
   )
 }

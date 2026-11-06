@@ -218,6 +218,7 @@ export function AttestationPDFPage({
     primeAnnuelle?: number
     dateEffet?: string
     dateEcheance?: string
+    reprisePasse?: boolean
     verificationUrl?: string
     verificationQrDataUri?: string
   }
@@ -252,6 +253,9 @@ export function AttestationPDFPage({
           </Text>
         )}
         <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold" }]}>{DECENNALE_SOUS_TRAITANCE_ATTESTATION}</Text>
+        {d.reprisePasse && d.dateEffet ? (
+          <Text style={pdfTheme.p}>Date de reprise du passé : {d.dateEffet}</Text>
+        ) : null}
         <Text style={pdfTheme.p}>
           Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}
         </Text>
@@ -613,12 +617,17 @@ export function AttestationNonSinistralitePDFPage({
   return (
     <Page size="A4" style={pdfTheme.page}>
       <PdfBrandHeader tagline="Assurance décennale professionnelle" />
-      <Text style={pdfTheme.h2Center}>ATTESTATION DE NON SINISTRALITÉ</Text>
+      <Text style={pdfTheme.h2Center}>
+        {d.motif === "reprise_passe"
+          ? "ATTESTATION SUR L'HONNEUR DE NON-SINISTRALITÉ"
+          : "ATTESTATION DE NON SINISTRALITÉ"}
+      </Text>
       <Text style={pdfTheme.subtitleCenter}>N° {numero}</Text>
       <View style={pdfTheme.attestCard}>
         <Text style={pdfTheme.p}>
-          La société Optimum Assurance atteste que {d.raisonSociale ?? "—"} (SIRET : {d.siret ?? "—"}) n&apos;a déclaré
-          aucun sinistre sur la période du {formatDate(d.dateDebut ?? "")} au {formatDate(d.dateFin ?? "")}.
+          {d.motif === "reprise_passe"
+            ? `Je soussigné, représentant de ${d.raisonSociale ?? "—"} (SIRET : ${d.siret ?? "—"}), déclare sur l'honneur n'avoir déclaré aucun sinistre du ${formatDate(d.dateDebut ?? "")} au ${formatDate(d.dateFin ?? "")}. Date de reprise du passé : ${formatDate(d.dateDebut ?? "")}.`
+            : `La société Optimum Assurance atteste que ${d.raisonSociale ?? "—"} (SIRET : ${d.siret ?? "—"}) n'a déclaré aucun sinistre sur la période du ${formatDate(d.dateDebut ?? "")} au ${formatDate(d.dateFin ?? "")}.`}
         </Text>
         <Text style={pdfTheme.p}>
           Cette attestation constate seulement les sinistres déclarés à Optimum Courtage. Elle ne prouve pas

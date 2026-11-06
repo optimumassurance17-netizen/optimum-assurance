@@ -15,6 +15,7 @@ import { documentRequestActivityLabel } from "@/lib/document-request"
 import { labelGedDocument } from "@/lib/user-document-types"
 import { DO_DEVIS_LEADS_SECTION_ID, doDevisLeadRowId } from "@/lib/devis-do-lead"
 import { describePendingDoQuote } from "@/lib/do-quote-pending"
+import { isoToFrenchDate, reprisePasseWindow } from "@/lib/decennale-reprise-passe"
 import {
   getInsuranceProductLabel,
   insuranceProductHasBundledQuotePolicy,
@@ -416,6 +417,10 @@ export default function ClientDetailPage() {
     note: "",
   })
   const [attestationGenerating, setAttestationGenerating] = useState(false)
+  const [repriseModal, setRepriseModal] = useState(false)
+  const [repriseDate, setRepriseDate] = useState("")
+  const [repriseLoading, setRepriseLoading] = useState(false)
+  const [repriseError, setRepriseError] = useState<string | null>(null)
   const [suspendingQrId, setSuspendingQrId] = useState<string | null>(null)
   const [signatureBusyId, setSignatureBusyId] = useState<string | null>(null)
   const [clientAccessLoading, setClientAccessLoading] = useState(false)
@@ -955,6 +960,27 @@ export default function ClientDetailPage() {
                   : canGenerateDecennaleAttestation
                     ? "Générer attestation décennale"
                     : "Aucun contrat décennale"}
+              </button>
+              <button
+                type="button"
+                disabled={repriseLoading || !canGenerateDecennaleAttestation || sinistres.length > 0}
+                title={
+                  sinistres.length > 0
+                    ? "La reprise du passé n'est pas disponible : un sinistre est déjà déclaré."
+                    : canGenerateDecennaleAttestation
+                      ? "Autoriser une reprise jusqu'à 3 mois en arrière"
+                      : "Aucun contrat décennale trouvé pour ce client."
+                }
+                onClick={() => {
+                  if (!canGenerateDecennaleAttestation || sinistres.length > 0) return
+                  const windowDates = reprisePasseWindow()
+                  setRepriseDate(windowDates.latest)
+                  setRepriseError(null)
+                  setRepriseModal(true)
+                }}
+                className="rounded-lg border border-violet-700/70 bg-violet-950/40 px-3 py-2 text-sm font-medium text-violet-200 hover:bg-violet-900/50 disabled:opacity-50"
+              >
+                Autoriser la reprise du passé
               </button>
               <button
                 type="button"
@@ -2769,6 +2795,119 @@ export default function ClientDetailPage() {
           )}
         </section>
       </div>
+
+      {repriseModal && data && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60" onClick={() => setRepriseModal(false)}>
+          <div
+            className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="reprise-passe-title"
+          >
+            <h3 id="reprise-passe-title" className="text-lg font-semibold text-white mb-2">
+              Reprise du passé — assurance décennale
+            </h3>
+            <p className="text-sm text-gray-200 mb-4">
+              La date peut remonter jusqu&apos;au {isoToFrenchDate(reprisePasseWindow().earliest)}. L&apos;attestation
+              décennale commence à cette date. Une attestation sur l&apos;honneur de non-sinistralité est créée pour
+              la période reprise.
+            </p>
+            <form
+              onSubmit={async (event) => {
+                event.preventDefault()
+                setRepriseLoading(true)
+                setRepriseError(null)
+                try {
+                  const res = await fetch(`/api/gestion/clients/${clientId}/reprise-passe`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ dateReprise: repriseDate }),
+                  })
+                  const json = await readResponseJson<{
+                    ok?: boolean
+                    error?: string
+                    warning?: string
+                    emailSent?: boolean
+                    dateRepriseLabel?: string
+                    attestation?: {
+                      id: string
+                      type: string
+                      numero: string
+                      status: string
+                      createdAt: string
+                    }
+                    honneur?: {
+                      id: string
+                      type: string
+                      numero: string
+                      status: string
+                      createdAt: string
+                    }
+                  }>(res)
+                  if (!res.ok || !json.ok || !json.attestation || !json.honneur) {
+                    throw new Error(json.error || "Impossible d'autoriser la reprise du passé.")
+                  }
+                  const incoming = [json.attestation, json.honneur]
+                  const incomingIds = new Set(incoming.map((document) => document.id))
+                  setData((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          documents: [
+                            ...incoming,
+                            ...prev.documents.filter((document) => !incomingIds.has(document.id)),
+                          ],
+                        }
+                      : prev
+                  )
+                  setRepriseModal(false)
+                  setToast({
+                    message: json.warning
+                      ? `${json.warning} Attestation ${json.attestation.numero} au ${json.dateRepriseLabel}.`
+                      : `Reprise autorisée au ${json.dateRepriseLabel}. Attestation ${json.attestation.numero} et déclaration sur l'honneur ${json.honneur.numero}.`,
+                    type: json.emailSent === false ? "warning" : "success",
+                  })
+                } catch (err) {
+                  setRepriseError(err instanceof Error ? err.message : "Erreur lors de la reprise du passé.")
+                } finally {
+                  setRepriseLoading(false)
+                }
+              }}
+            >
+              <label htmlFor="date-reprise-passe" className="block text-sm font-medium text-gray-200 mb-2">
+                Date de reprise
+              </label>
+              <input
+                id="date-reprise-passe"
+                type="date"
+                required
+                min={reprisePasseWindow().earliest}
+                max={reprisePasseWindow().latest}
+                value={repriseDate}
+                onChange={(event) => setRepriseDate(event.target.value)}
+                className="w-full rounded-lg border border-gray-600 bg-[#1a1a1a] px-3 py-2 text-white"
+              />
+              {repriseError ? <p className="mt-3 text-sm text-red-300">{repriseError}</p> : null}
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRepriseModal(false)}
+                  className="rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={repriseLoading || !repriseDate}
+                  className="rounded-lg bg-violet-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  {repriseLoading ? "Autorisation..." : "Autoriser et générer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {sinistreModal && data && (
         <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60" onClick={() => setSinistreModal(false)}>

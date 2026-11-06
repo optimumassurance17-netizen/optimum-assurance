@@ -24,6 +24,8 @@ interface AttestationTemplateProps {
     primeAnnuelle: number
     dateEffet: string
     dateEcheance: string
+    reprisePasse?: boolean
+    dateReprisePasse?: string
     franchise?: number
     plafond?: number
     chiffreAffaires?: number
@@ -85,6 +87,9 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
           </>
         )}
         <p className="mb-2 font-semibold">{DECENNALE_SOUS_TRAITANCE_ATTESTATION}</p>
+        {data.reprisePasse && data.dateEffet ? (
+          <p className="mb-2">Date de reprise du passé : <strong>{data.dateEffet}</strong></p>
+        ) : null}
         <p className="mb-2">Période de validité : du <strong>{data.dateEffet}</strong> au <strong>{data.dateEcheance}</strong></p>
         <p className="mb-2 text-sm text-[#171717]">Renouvelable automatiquement du 01/01 au 31/12 des années suivantes.</p>
         <p>Prime annuelle : {data.primeAnnuelle.toLocaleString("fr-FR")} € TTC</p>

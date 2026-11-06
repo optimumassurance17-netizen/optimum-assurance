@@ -15,6 +15,7 @@ import {
   parseActivitiesJson,
   parseExclusionsJson,
 } from "@/lib/insurance-contract-activities"
+import { isoToFrenchDate } from "@/lib/decennale-reprise-passe"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -190,8 +191,13 @@ export async function POST(
       franchise: montants.franchise,
       plafond: montants.plafond ?? undefined,
       dateEffet:
+        (/^\d{4}-\d{2}-\d{2}$/.test(asCleanString(contractData.dateReprisePasse))
+          ? isoToFrenchDate(asCleanString(contractData.dateReprisePasse))
+          : "") ||
         asCleanString(contractData.dateEffet) ||
         formatDateFr(latestDecennaleContract?.validFrom),
+      reprisePasse: contractData.reprisePasse === true,
+      dateReprisePasse: asCleanString(contractData.dateReprisePasse) || undefined,
       dateEcheance:
         asCleanString(contractData.dateEcheance) ||
         formatDateFr(latestDecennaleContract?.validUntil),
