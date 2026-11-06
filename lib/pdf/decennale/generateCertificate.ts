@@ -11,7 +11,7 @@ import { drawAttestationQrRow, embedVerificationQr } from "../shared/qrCode"
 import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
-import { decennaleCadreCompletLines } from "@/lib/conditions-particulieres"
+import { DECENNALE_SOUS_TRAITANCE_ATTESTATION, decennaleCadreCompletLines } from "@/lib/conditions-particulieres"
 import { drawClausesPaginated } from "../shared/drawClauses"
 import { appendDecennaleActivityDetailsAnnex } from "./activityDetailsAnnex"
 
@@ -136,6 +136,17 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     )
     y -= 4
   }
+  y -= 6
+  y = drawWrappedText(
+    page,
+    DECENNALE_SOUS_TRAITANCE_ATTESTATION,
+    PDF_PAGE.marginX,
+    y,
+    PDF_PAGE.contentWidth,
+    fontBold,
+    10,
+    13
+  )
   y -= 10
   if (optimizedExclusions.length > 0) {
     y = drawWrappedText(

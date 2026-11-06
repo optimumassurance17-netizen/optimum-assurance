@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 // @ts-expect-error - pdf-parse n'expose pas de types fiables dans cet environnement
 import pdfParse from "pdf-parse"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
+import { generateDecennaleCertificate } from "@/lib/pdf/decennale/generateCertificate"
 import { generateDecennaleQuote } from "@/lib/pdf/decennale/generateQuote"
 import { generateDecennaleQuotePolicyBundle } from "@/lib/pdf/decennale/generateQuotePolicyBundle"
 import { generateDOQuotePolicyBundle } from "@/lib/pdf/do/generateQuotePolicyBundle"
@@ -223,8 +224,14 @@ async function main(): Promise<void> {
   assert.match(exclusionLines, /installations électriques/)
   assert.match(exclusionLines, /désordres d'étanchéité/)
   assert.match(exclusionLines, /photovoltaïques/)
-  const decQuotePdf = await generateDecennaleQuote(sampleDecennaleData())
-  const decQuotePolicyPdf = await generateDecennaleQuotePolicyBundle(sampleDecennaleData(), "proposition")
+  const decennaleSample = sampleDecennaleData()
+  const decQuotePdf = await generateDecennaleQuote(decennaleSample)
+  const decCertificatePdf = await generateDecennaleCertificate({
+    ...decennaleSample,
+    paymentConfirmed: true,
+    insurerValidated: true,
+  })
+  const decQuotePolicyPdf = await generateDecennaleQuotePolicyBundle(decennaleSample, "proposition")
   const doQuotePolicyPdf = await generateDOQuotePolicyBundle(sampleDoData(), "proposition")
   const rcFabPolicyPdf = await renderContractPdf(sampleRcFabContract(), "policy")
   const rcFabFicPdf = await renderContractPdf(sampleRcFabContract(), "fic")
@@ -235,6 +242,7 @@ async function main(): Promise<void> {
   )
 
   const decQuoteText = await extractPdfText(decQuotePdf)
+  const decCertificateText = await extractPdfText(decCertificatePdf)
   const decText = await extractPdfText(decQuotePolicyPdf)
   const doText = await extractPdfText(doQuotePolicyPdf)
   const rcFabText = await extractPdfText(rcFabPolicyPdf)
@@ -248,6 +256,16 @@ async function main(): Promise<void> {
   assert.match(decQuoteText, /a été établi/, "le devis décennale reprend la phrase du devoir de conseil")
   assertMentions(decQuoteText, "devis décennale", DEVOIR_CONSEIL_ONLY)
   assertMentions(decText, "devis+conditions particulières décennale", DECENNALE_MENTIONS)
+  assert.match(
+    decCertificateText,
+    /Sous-traitance autorisée à hauteur de 30\s*% du chiffre d'affaires/,
+    "l'attestation décennale autorise la sous-traitance à 30 % du chiffre d'affaires"
+  )
+  assert.match(
+    decText,
+    /Sous-traitance autorisée à hauteur de 30\s*% du chiffre d'affaires/,
+    "les conditions particulières décennale reprennent la sous-traitance à 30 %"
+  )
   assertMentions(doText, "devis+conditions particulières dommage-ouvrage", DO_QUOTE_MENTIONS)
   assertMentions(rcFabText, "conditions RC Fabriquant", RC_FAB_MENTIONS)
   assertMentions(rcFabFicText, "FIC RC Fabriquant", RC_FAB_MENTIONS)

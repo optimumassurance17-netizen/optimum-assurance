@@ -8,7 +8,7 @@ import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 import { ActivityDetailsBlock } from "@/components/documents/ActivityDetailsBlock"
 import { DecennaleGarantiesTable } from "@/components/documents/DecennaleGarantiesTable"
 import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
-import { decennaleCadreCompletLines } from "@/lib/conditions-particulieres"
+import { DECENNALE_SOUS_TRAITANCE_ATTESTATION, decennaleCadreCompletLines } from "@/lib/conditions-particulieres"
 import { COMPANY_BRAND } from "@/lib/legal-branding"
 
 interface AttestationTemplateProps {
@@ -84,6 +84,7 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
             </ul>
           </>
         )}
+        <p className="mb-2 font-semibold">{DECENNALE_SOUS_TRAITANCE_ATTESTATION}</p>
         <p className="mb-2">Période de validité : du <strong>{data.dateEffet}</strong> au <strong>{data.dateEcheance}</strong></p>
         <p className="mb-2 text-sm text-[#171717]">Renouvelable automatiquement du 01/01 au 31/12 des années suivantes.</p>
         <p>Prime annuelle : {data.primeAnnuelle.toLocaleString("fr-FR")} € TTC</p>

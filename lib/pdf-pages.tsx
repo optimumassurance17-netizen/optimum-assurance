@@ -10,7 +10,7 @@ import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
-import { decennaleCadreCompletLines, doCadreCompletLines, doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
+import { DECENNALE_SOUS_TRAITANCE_ATTESTATION, decennaleCadreCompletLines, doCadreCompletLines, doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
 import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
 
 function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
@@ -251,6 +251,7 @@ export function AttestationPDFPage({
             Ne sont pas couverts : {optimizedExclusions.join(" ; ")}
           </Text>
         )}
+        <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold" }]}>{DECENNALE_SOUS_TRAITANCE_ATTESTATION}</Text>
         <Text style={pdfTheme.p}>
           Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}
         </Text>
@@ -337,6 +338,7 @@ export function AttestationNominativePDFPage({
           est garantie au titre de l&apos;assurance responsabilité civile décennale pour les activités :{" "}
           {d.activites?.join(", ") ?? "—"}
         </Text>
+        <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold" }]}>{DECENNALE_SOUS_TRAITANCE_ATTESTATION}</Text>
         <Text style={pdfTheme.p}>
           Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}
         </Text>
