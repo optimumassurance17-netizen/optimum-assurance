@@ -101,7 +101,8 @@ export default function GestionDocumentPage() {
   }
 
   const quoteExpired =
-    document.type === "devis" && Boolean(document.createdAt && isQuoteExpired(document.createdAt))
+    (document.type === "devis" || document.type === "devis_do") &&
+    Boolean(document.createdAt && isQuoteExpired(document.createdAt))
 
   return (
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
@@ -111,7 +112,7 @@ export default function GestionDocumentPage() {
             ← Fiche client
           </Link>
           <div className="flex flex-wrap gap-3 items-center justify-end">
-            {document.type === "devis" && quoteExpired && (
+            {quoteExpired && (
               <p className="text-sm text-amber-300">{QUOTE_EXPIRED_ERROR}</p>
             )}
             {document.type === "devis" && !quoteExpired && (

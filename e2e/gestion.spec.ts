@@ -1197,6 +1197,53 @@ test.describe("Gestion CRM — devis émis", () => {
     await expect(page.locator("#contrats").getByText("Aucun contrat")).toBeVisible()
   })
 
+  test("La page d'un devis dommage ouvrage expiré le signale", async ({ page }) => {
+    await mockGestionAuth(page)
+    await page.route("**/api/gestion/documents/do_expire", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "do_expire",
+          type: "devis_do",
+          numero: "DO-EXPIRE",
+          userId: "client_1",
+          createdAt: "2026-01-01T08:00:00.000Z",
+          allowDevisEdition: false,
+          data: { raisonSociale: "Atelier DO", primeAnnuelle: 1200 },
+        }),
+      })
+    })
+    await page.route("**/api/gestion/documents/do_recent", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "do_recent",
+          type: "devis_do",
+          numero: "DO-RECENT",
+          userId: "client_1",
+          createdAt: "2026-11-01T08:00:00.000Z",
+          allowDevisEdition: false,
+          data: { raisonSociale: "Atelier DO", primeAnnuelle: 1200 },
+        }),
+      })
+    })
+
+    await page.goto("/gestion/documents/do_expire")
+    await expect(
+      page.getByText("Ce devis a expiré. Une proposition est valable 60 jours à compter de son émission.")
+    ).toBeVisible()
+    await expect(page.getByRole("button", { name: "Envoyer pour signature" })).toHaveCount(0)
+    await expect(page.getByText("DO-EXPIRE")).toBeVisible()
+
+    await page.goto("/gestion/documents/do_recent")
+    await expect(
+      page.getByText("Ce devis a expiré. Une proposition est valable 60 jours à compter de son émission.")
+    ).toHaveCount(0)
+    await expect(page.getByText("DO-RECENT")).toBeVisible()
+  })
+
   test("La liste des devis émis s'arrête à 25 lignes et la recherche retrouve la suivante", async ({ page }) => {
     await mockGestionAuth(page)
     const documents = [
