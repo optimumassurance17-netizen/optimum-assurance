@@ -28,7 +28,7 @@ function text(value: unknown): string {
   return typeof value === "string" ? foldSearchText(value) : ""
 }
 
-/** Même email et même chantier : une seule demande DO. */
+/** Même e-mail et même chantier : une seule demande DO. */
 export function doDevisMatchKey(input: {
   email: string
   data: unknown
@@ -45,7 +45,7 @@ export function doDevisMatchKey(input: {
   return `${email}|same`
 }
 
-/** Même email et même SIRET, sinon même société. */
+/** Même e-mail et même SIRET, sinon même société. */
 export function decennaleDevisMatchKey(input: {
   email: string
   siret?: string | null
@@ -59,7 +59,7 @@ export function decennaleDevisMatchKey(input: {
   return `${email}|same`
 }
 
-/** Même email et même SIRET. */
+/** Même e-mail et même SIRET. */
 export function rcDevisMatchKey(input: { email: string; siret?: string | null; data?: unknown }): string {
   const email = normalizeIntakeEmail(input.email)
   const record = asRecord(input.data)
@@ -68,7 +68,7 @@ export function rcDevisMatchKey(input: { email: string; siret?: string | null; d
   return `${email}|same`
 }
 
-/** Même email et même sujet d'étude. */
+/** Même e-mail et même sujet d'étude. */
 export function etudeDevisMatchKey(input: { email: string; data: unknown }): string {
   const email = normalizeIntakeEmail(input.email)
   const record = asRecord(input.data) ?? {}
@@ -80,7 +80,7 @@ export function etudeDevisMatchKey(input: { email: string; data: unknown }): str
   return `${email}|${type}|${description || activities || "same"}`
 }
 
-/** Même email, même opération et même adresse du bien. */
+/** Même e-mail, même opération et même adresse du bien. */
 export function titreDevisMatchKey(input: { email: string; data: unknown }): string {
   const email = normalizeIntakeEmail(input.email)
   const record = asRecord(input.data) ?? {}

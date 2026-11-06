@@ -63,7 +63,7 @@ test.describe("Parcours opérationnels décennale et dommage ouvrage", () => {
       await route.fulfill({
         status: 400,
         contentType: "application/json",
-        body: JSON.stringify({ error: "Un compte existe déjà avec cet email" }),
+        body: JSON.stringify({ error: "Un compte existe déjà avec cet e-mail" }),
       })
     })
 
@@ -116,7 +116,7 @@ test.describe("Parcours opérationnels décennale et dommage ouvrage", () => {
     await submitButton.click()
 
     await expect(page.getByRole("heading", { name: "Demande envoyée" })).toBeVisible()
-    await expect(page.getByText("Un compte existe déjà avec cet email")).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText("Un compte existe déjà avec cet e-mail")).toBeVisible({ timeout: 15000 })
     await expect(page.getByRole("link", { name: "Finaliser la souscription en ligne" })).toBeVisible()
 
     await page.getByRole("link", { name: "Finaliser la souscription en ligne" }).click()

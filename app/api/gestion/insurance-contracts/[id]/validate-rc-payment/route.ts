@@ -102,10 +102,10 @@ export async function POST(
         html: template.html,
       })
       if (!emailSent) {
-        warning = "Virement validé. L'email de confirmation n'a pas été envoyé."
+        warning = "Virement validé. L'e-mail de confirmation n'a pas été envoyé."
       }
     } else if (!result.idempotent && !email) {
-      warning = "Virement validé. Aucun email client n'est lié à ce contrat."
+      warning = "Virement validé. Aucun e-mail client n'est lié à ce contrat."
     } else if (result.certificateReady === false) {
       warning =
         "Virement déjà enregistré. L'attestation n'a pas pu être générée : relancez « Générer l'attestation »."

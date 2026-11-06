@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { LINKABLE_ASSETS, LINKPILOT_BACKLINK_STATUSES, LINKPILOT_BACKLINK_TYPES } from "@/lib/linkpilot/constants"
+import { LINKABLE_ASSETS, LINKPILOT_BACKLINK_STATUSES, LINKPILOT_BACKLINK_TYPES, linkPilotBacklinkTypeLabel, linkPilotStatusLabel } from "@/lib/linkpilot/constants"
 import { StatusBadge } from "@/components/admin/seo/StatusBadge"
 
 type BacklinkRow = {
@@ -52,7 +52,7 @@ export function BacklinksTable() {
       const response = await fetchJson<{ items: BacklinkRow[] }>("/api/admin/seo/linkpilot/backlinks")
       setItems(response.items ?? [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur de chargement backlinks")
+      setError(err instanceof Error ? err.message : "Erreur de chargement des liens")
     } finally {
       setLoading(false)
     }
@@ -80,7 +80,7 @@ export function BacklinksTable() {
       })
       await load()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Création backlink impossible")
+      setError(err instanceof Error ? err.message : "Création du lien impossible")
     }
   }
 
@@ -111,7 +111,7 @@ export function BacklinksTable() {
   }
 
   async function deleteBacklink(row: BacklinkRow) {
-    const confirmed = window.confirm(`Supprimer le backlink ${row.source_url} ?`)
+    const confirmed = window.confirm(`Supprimer le lien ${row.source_url} ?`)
     if (!confirmed) return
     try {
       await fetchJson(`/api/admin/seo/linkpilot/backlinks/${row.id}`, { method: "DELETE" })
@@ -128,17 +128,17 @@ export function BacklinksTable() {
           onClick={() => setAdding((value) => !value)}
           className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
         >
-          {adding ? "Fermer" : "Ajouter backlink"}
+          {adding ? "Fermer" : "Ajouter un lien"}
         </button>
       </div>
 
       {adding ? (
         <form onSubmit={createBacklink} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-3 text-sm font-bold text-slate-900">Nouveau backlink acquis</h3>
+          <h3 className="mb-3 text-sm font-bold text-slate-900">Nouveau lien acquis</h3>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
             <input
               required
-              placeholder="Source URL"
+              placeholder="URL source"
               value={form.source_url}
               onChange={(event) => setForm((prev) => ({ ...prev, source_url: event.target.value }))}
               className="rounded-xl border border-slate-300 px-3 py-2 text-sm lg:col-span-2"
@@ -166,13 +166,13 @@ export function BacklinksTable() {
             >
               {LINKPILOT_BACKLINK_TYPES.map((type) => (
                 <option key={type} value={type}>
-                  {type}
+                  {linkPilotBacklinkTypeLabel(type)}
                 </option>
               ))}
             </select>
           </div>
           <button className="mt-3 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-            Enregistrer backlink
+            Enregistrer le lien
           </button>
         </form>
       ) : null}
@@ -181,20 +181,20 @@ export function BacklinksTable() {
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         {loading ? (
-          <p className="p-4 text-sm text-slate-500">Chargement backlinks…</p>
+          <p className="p-4 text-sm text-slate-500">Chargement des liens…</p>
         ) : items.length === 0 ? (
-          <p className="p-4 text-sm text-slate-500">Aucun backlink acquis.</p>
+          <p className="p-4 text-sm text-slate-500">Aucun lien acquis.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-left">
                   <th className="px-3 py-2">Source</th>
-                  <th className="px-3 py-2">Target</th>
-                  <th className="px-3 py-2">Anchor</th>
+                  <th className="px-3 py-2">Cible</th>
+                  <th className="px-3 py-2">Ancre</th>
                   <th className="px-3 py-2">Type</th>
                   <th className="px-3 py-2">Statut</th>
-                  <th className="px-3 py-2">Dernier check</th>
+                  <th className="px-3 py-2">Dernière vérification</th>
                   <th className="px-3 py-2">Actions</th>
                 </tr>
               </thead>
@@ -208,7 +208,7 @@ export function BacklinksTable() {
                     </td>
                     <td className="px-3 py-2 text-xs">{row.target_url}</td>
                     <td className="px-3 py-2 text-xs">{row.anchor_text ?? "—"}</td>
-                    <td className="px-3 py-2 text-xs">{row.link_type}</td>
+                    <td className="px-3 py-2 text-xs">{linkPilotBacklinkTypeLabel(row.link_type)}</td>
                     <td className="px-3 py-2">
                       <StatusBadge status={row.status} />
                     </td>
@@ -230,7 +230,7 @@ export function BacklinksTable() {
                         >
                           {LINKPILOT_BACKLINK_STATUSES.map((status) => (
                             <option key={status} value={status}>
-                              {status}
+                              {linkPilotStatusLabel(status)}
                             </option>
                           ))}
                         </select>

@@ -26,12 +26,12 @@ export async function sendPendingSignatureReminder(input: {
   })
   const email = user?.email?.trim().toLowerCase() || ""
   if (!user || !email) {
-    return { ok: false, error: "Aucun email client pour envoyer le rappel de signature.", status: 404 }
+    return { ok: false, error: "Aucun e-mail client pour envoyer le rappel de signature.", status: 404 }
   }
   if (await isReminderUnsubscribed(email, "signature")) {
     return {
       ok: false,
-      error: "Ce client s'est désinscrit des rappels de signature. L'email n'a pas été envoyé.",
+      error: "Ce client s'est désinscrit des rappels de signature. L'e-mail n'a pas été envoyé.",
       status: 409,
     }
   }

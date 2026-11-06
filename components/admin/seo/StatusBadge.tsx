@@ -1,5 +1,6 @@
 "use client"
 
+import { linkPilotStatusLabel } from "@/lib/linkpilot/constants"
 import { cn } from "@/optimum-geo-intelligence/lib/utils"
 
 type Status =
@@ -52,7 +53,7 @@ export function StatusBadge({ status }: { status: string }) {
   const tone = STATUS_TONE[key] ?? "bg-slate-100 text-slate-800"
   return (
     <span className={cn("inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold", tone)}>
-      {status}
+      {linkPilotStatusLabel(status)}
     </span>
   )
 }

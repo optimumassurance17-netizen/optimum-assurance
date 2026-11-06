@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     if (!email || !isPlausibleEmail(email) || !password || password.length < 8) {
       return NextResponse.json(
-        { error: "Email valide requis et mot de passe minimum 8 caractères" },
+        { error: "E-mail valide requis et mot de passe minimum 8 caractères" },
         { status: 400 }
       )
     }
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     })
     if (existing) {
       return NextResponse.json(
-        { error: "Un compte existe déjà avec cet email" },
+        { error: "Un compte existe déjà avec cet e-mail" },
         { status: 400 }
       )
     }
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       })
     }
     if (!welcomeEmailSent) {
-      console.warn("[auth/register] Email bienvenue non envoyé", { userId: user.id, email: user.email })
+      console.warn("[auth/register] E-mail bienvenue non envoyé", { userId: user.id, email: user.email })
     }
 
     void sendAccountCreationSummaryAlert({
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return NextResponse.json(
-        { error: "Un compte existe déjà avec cet email" },
+        { error: "Un compte existe déjà avec cet e-mail" },
         { status: 400 }
       )
     }

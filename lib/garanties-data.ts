@@ -55,6 +55,6 @@ export const faqDevis = [
   },
   {
     q: "Combien de temps pour l'attestation ?",
-    r: "Après validation du paiement, contrôle du dossier et acceptation du risque. Votre attestation est ensuite disponible dans l'espace client avec un QR code de vérification.",
+    r: "Après validation du paiement, contrôle du dossier et acceptation du risque. Votre attestation est ensuite disponible dans l'espace client avec un code QR de vérification.",
   },
 ] as const

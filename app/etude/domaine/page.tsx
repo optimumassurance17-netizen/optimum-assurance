@@ -23,7 +23,7 @@ export default function EtudeDomainePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim() || !email.includes("@")) {
-      setError("Veuillez entrer une adresse email valide.")
+      setError("Veuillez entrer une adresse e-mail valide.")
       return
     }
     if (descriptionActivite.trim().length < MIN_DESCRIPTION) {
@@ -87,7 +87,7 @@ export default function EtudeDomainePage() {
               raisonSociale={raisonSociale}
               siret={siret}
               telephone={telephone}
-              intro="Le compte est créé automatiquement avec cet e-mail. Le mot de passe arrive par email."
+              intro="Le compte est créé automatiquement avec cet e-mail. Le mot de passe arrive par e-mail."
             />
           </div>
         </div>
@@ -150,7 +150,7 @@ export default function EtudeDomainePage() {
 
             <div>
               <label htmlFor="email-domaine" className="block text-sm font-medium text-black mb-2">
-                Email professionnel <span className="text-[#2563eb]">*</span>
+                E-mail professionnel <span className="text-[#2563eb]">*</span>
               </label>
               <input
                 id="email-domaine"

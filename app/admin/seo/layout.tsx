@@ -7,10 +7,10 @@ import { isAdmin } from "@/lib/admin"
 import { cn } from "@/optimum-geo-intelligence/lib/utils"
 
 const SEO_NAV = [
-  { href: "/admin/seo/linkpilot", label: "LinkPilot" },
+  { href: "/admin/seo/linkpilot", label: "Suivi des liens" },
   { href: "/admin/seo/prospects", label: "Prospects" },
   { href: "/admin/seo/campaigns", label: "Campagnes" },
-  { href: "/admin/seo/backlinks", label: "Backlinks" },
+  { href: "/admin/seo/backlinks", label: "Liens entrants" },
   { href: "/admin/seo/toxic-links", label: "Liens toxiques" },
 ]
 
@@ -44,7 +44,7 @@ export default async function AdminSeoLayout({
             href="/admin"
             className="ml-auto rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
           >
-            ← Admin contrats
+            ← Contrats
           </Link>
         </div>
         {children}

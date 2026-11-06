@@ -133,9 +133,9 @@ export default async function DashboardContentPage() {
                 <Tr>
                   <Th>Type</Th>
                   <Th>Titre</Th>
-                  <Th>Path</Th>
-                  <Th>Keyword</Th>
-                  <Th>Status</Th>
+                  <Th>Chemin</Th>
+                  <Th>Mot-clé</Th>
+                  <Th>Statut</Th>
                   <Th>Date</Th>
                 </Tr>
               </Thead>

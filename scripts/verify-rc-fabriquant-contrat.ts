@@ -162,7 +162,7 @@ assert.match(page, /id="rc-contrat-demande"/)
 assert.match(page, /Générer le contrat/)
 assert.match(page, /Préparer le contrat/)
 assert.match(page, /\/api\/gestion\/rc-fabriquant-lead\/generer-contrat/)
-assert.match(page, /Aucun email, aucune signature et aucun paiement/)
+assert.match(page, /Aucun e-mail, aucune signature et aucun paiement/)
 
 console.log("verify-rc-fabriquant-contrat: ok")
 }

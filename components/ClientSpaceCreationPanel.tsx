@@ -92,7 +92,7 @@ export function ClientSpaceCreationPanel({
       <h3 className="mt-2 text-xl font-bold text-slate-900">Ouverture de votre espace client</h3>
       <p className="mt-2 text-sm leading-relaxed text-slate-600">
         {intro ||
-          "Le compte est créé automatiquement avec l’adresse de la demande. Le mot de passe arrive par email."}
+          "Le compte est créé automatiquement avec l’adresse de la demande. Le mot de passe arrive par e-mail."}
       </p>
 
       {sameSession ? (
@@ -124,7 +124,7 @@ export function ClientSpaceCreationPanel({
           ) : null}
           {phase === "created" && temporaryPassword ? (
             <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
-              <p>L&apos;email n&apos;est pas parti. Conservez ce mot de passe temporaire :</p>
+              <p>L&apos;e-mail n&apos;est pas parti. Conservez ce mot de passe temporaire :</p>
               <p className="mt-2 font-mono font-semibold">{temporaryPassword}</p>
               <Link
                 href={redirectTo}

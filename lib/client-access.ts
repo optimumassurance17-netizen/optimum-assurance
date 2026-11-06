@@ -82,8 +82,8 @@ export async function sendClientAccessEmail(params: {
     mode === "created"
       ? "Pensez à changer votre mot de passe dès la première connexion."
       : "Merci de changer votre mot de passe dès la première connexion."
-  const text = `Bonjour,\n\n${intro}\n\nEmail : ${params.email}\nMot de passe temporaire : ${params.tempPassword}\n\nConnexion : ${SITE_URL}/connexion\n${outro}\n\nCordialement,\nOptimum Assurance`
-  const html = `<p>Bonjour,</p><p>${intro}</p><p><strong>Email :</strong> ${params.email}<br><strong>Mot de passe temporaire :</strong> ${params.tempPassword}</p><p><a href="${SITE_URL}/connexion" style="color:#2563eb;font-weight:bold">Se connecter à mon espace client</a></p><p>${outro}</p><p>Cordialement,<br>Optimum Assurance</p>`
+  const text = `Bonjour,\n\n${intro}\n\nE-mail : ${params.email}\nMot de passe temporaire : ${params.tempPassword}\n\nConnexion : ${SITE_URL}/connexion\n${outro}\n\nCordialement,\nOptimum Assurance`
+  const html = `<p>Bonjour,</p><p>${intro}</p><p><strong>E-mail :</strong> ${params.email}<br><strong>Mot de passe temporaire :</strong> ${params.tempPassword}</p><p><a href="${SITE_URL}/connexion" style="color:#2563eb;font-weight:bold">Se connecter à mon espace client</a></p><p>${outro}</p><p>Cordialement,<br>Optimum Assurance</p>`
 
   try {
     const sent = await sendEmail({

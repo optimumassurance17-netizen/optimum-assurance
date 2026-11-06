@@ -44,11 +44,11 @@ export async function syncUserFromDocumentMergedData(
     if (key === "email") {
       const s = strFromData(raw)
       if (s === null) {
-        return { ok: false, error: "L'email dans le contrat ne peut pas être vide pour synchroniser la fiche", status: 400 }
+        return { ok: false, error: "L'e-mail dans le contrat ne peut pas être vide pour synchroniser la fiche", status: 400 }
       }
       const lower = s.toLowerCase()
       if (!EMAIL_RE.test(lower)) {
-        return { ok: false, error: "Email invalide dans les données contrat", status: 400 }
+        return { ok: false, error: "E-mail invalide dans les données contrat", status: 400 }
       }
       update.email = lower
     } else {
@@ -68,7 +68,7 @@ export async function syncUserFromDocumentMergedData(
   if (update.email !== undefined && update.email !== current.email) {
     const taken = await prisma.user.findUnique({ where: { email: update.email }, select: { id: true } })
     if (taken && taken.id !== userId) {
-      return { ok: false, error: "Cet email est déjà utilisé par un autre compte (synchronisation impossible)", status: 409 }
+      return { ok: false, error: "Cet e-mail est déjà utilisé par un autre compte (synchronisation impossible)", status: 409 }
     }
   }
 

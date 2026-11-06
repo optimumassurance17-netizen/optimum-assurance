@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     const ville = textField(payload.ville, 100) || null
 
     if (!email || !EMAIL_RE.test(email)) {
-      return NextResponse.json({ error: "Email client invalide" }, { status: 400 })
+      return NextResponse.json({ error: "E-mail client invalide" }, { status: 400 })
     }
     if (!raisonSociale) {
       return NextResponse.json({ error: "La raison sociale est requise" }, { status: 400 })
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
           email: existing.email,
           raisonSociale: existing.raisonSociale,
           error:
-            "Un compte client existe déjà pour cet email. Le mot de passe n'a pas été changé. Choisissez ce client dans le devis.",
+            "Un compte client existe déjà pour cet e-mail. Le mot de passe n'a pas été changé. Choisissez ce client dans le devis.",
         },
         { status: 409 }
       )
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
         emailSent: false,
         temporaryPassword: tempPassword,
         warning:
-          "Compte client créé, mais l'email d'accès n'est pas parti. Copiez le mot de passe temporaire et transmettez-le au client.",
+          "Compte client créé, mais l'e-mail d'accès n'est pas parti. Copiez le mot de passe temporaire et transmettez-le au client.",
       })
     }
 
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Un compte client existe déjà pour cet email. Le mot de passe n'a pas été changé. Choisissez ce client dans le devis.",
+            "Un compte client existe déjà pour cet e-mail. Le mot de passe n'a pas été changé. Choisissez ce client dans le devis.",
         },
         { status: 409 }
       )

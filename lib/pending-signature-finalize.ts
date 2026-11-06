@@ -217,7 +217,7 @@ export async function applyPendingFinalize(
                   : undefined,
               coverageDurationYears: Number(raw.coverageDurationYears),
               productLabel:
-                typeof raw.produitLabel === "string" ? raw.produitLabel : "Assurance titre — proposition digitale",
+                typeof raw.produitLabel === "string" ? raw.produitLabel : "Assurance titre — proposition numérique",
             })
       const dossierConfig = buildAssuranceTitreContractConfig({
         referenceContrat: contractNumber,

@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
   const client = new OpenAI({ apiKey })
   const prompt = [
-    "Rédige un email d’outreach backlink en français, professionnel, humain, non spammy.",
+    "Rédige un e-mail d’outreach backlink en français, professionnel, humain, non spammy.",
     `Site prospect: ${input.domain}`,
     `URL prospect: ${input.url}`,
     `Catégorie: ${input.category}`,

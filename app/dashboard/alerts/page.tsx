@@ -59,7 +59,7 @@ export default async function DashboardAlertsPage() {
                   <Th>Titre</Th>
                   <Th>Message</Th>
                   <Th>Sévérité</Th>
-                  <Th>Status</Th>
+                  <Th>Statut</Th>
                   <Th>Date</Th>
                 </Tr>
               </Thead>

@@ -54,7 +54,7 @@ async function createOnce(email: string, input: AutoClientAccountInput): Promise
     return {
       ok: false,
       reason: "error",
-      message: "Le compte est créé, mais la connexion automatique a échoué. Utilisez le mot de passe reçu par email.",
+      message: "Le compte est créé, mais la connexion automatique a échoué. Utilisez le mot de passe reçu par e-mail.",
     }
   }
 
@@ -67,7 +67,7 @@ async function createOnce(email: string, input: AutoClientAccountInput): Promise
     return {
       ok: false,
       reason: "error",
-      message: "Le compte est créé. Le mot de passe est dans votre email, la connexion automatique a échoué.",
+      message: "Le compte est créé. Le mot de passe est dans votre e-mail, la connexion automatique a échoué.",
     }
   }
 
@@ -79,7 +79,7 @@ async function createOnce(email: string, input: AutoClientAccountInput): Promise
   }
 }
 
-/** Un seul appel par email, même si l'écran se recharge deux fois. */
+/** Un seul appel par e-mail, même si l'écran se recharge deux fois. */
 export function createClientAccountAutomatically(input: AutoClientAccountInput): Promise<AutoClientAccountResult> {
   const email = input.email.trim().toLowerCase()
   const current = pending.get(email)

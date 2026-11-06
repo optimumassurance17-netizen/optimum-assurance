@@ -107,7 +107,7 @@ export function ModifierDevisButton({
   const save = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!form.email.trim()) {
-      setError("L'email du devis est requis.")
+      setError("L'e-mail du devis est requis.")
       return
     }
     setSaving(true)
@@ -170,7 +170,7 @@ export function ModifierDevisButton({
               <h3 className="text-lg font-semibold text-white">Modifier le devis {numero}</h3>
               <p className="mt-1 text-xs text-gray-300">
                 La modification met à jour le devis déjà présent sur cette fiche.
-                L&apos;email et l&apos;adresse restent sur ce devis et ne changent pas le compte de connexion.
+                L&apos;e-mail et l&apos;adresse restent sur ce devis et ne changent pas le compte de connexion.
               </p>
             </div>
             {loading ? <p className="text-sm text-gray-300">Chargement du devis…</p> : null}
@@ -191,7 +191,7 @@ export function ModifierDevisButton({
               <input
                 value={form.email}
                 onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-                placeholder="Email"
+                placeholder="E-mail"
                 className="rounded-lg border border-gray-600 bg-[#1a1a1a] px-3 py-2 text-sm text-white"
               />
               <input

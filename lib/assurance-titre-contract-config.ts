@@ -248,7 +248,7 @@ export function buildAssuranceTitreContractConfig(input: {
     modeEtude: true,
     productType: "assurance_titre",
     referenceContrat: sanitizeText(input.referenceContrat, 120) || "TITRE",
-    productLabel: sanitizeText(input.productLabel, 120) || "Assurance titre — proposition digitale",
+    productLabel: sanitizeText(input.productLabel, 120) || "Assurance titre — proposition numérique",
     periodicite: "annuel",
     installmentsPerYear: 1,
     monthsStep: 12,

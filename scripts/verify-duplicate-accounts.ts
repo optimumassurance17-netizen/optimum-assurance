@@ -39,17 +39,17 @@ const accounts = [
 const groups = buildDuplicateGroups(accounts)
 const emailGroup = groups.find((group) => group.kind === "email")
 const siretGroup = groups.find((group) => group.kind === "siret")
-assert(emailGroup?.keepId === "old", "le doublon d'email conserve la fiche la plus ancienne")
-assert(emailGroup?.members.map((member) => member.id).join(",") === "old,new", "les emails sont regroupés sans tenir compte de la casse")
+assert(emailGroup?.keepId === "old", "le doublon d'e-mail conserve la fiche la plus ancienne")
+assert(emailGroup?.members.map((member) => member.id).join(",") === "old,new", "les e-mails sont regroupés sans tenir compte de la casse")
 assert(siretGroup?.keepId === "siret-old", "le doublon de SIRET conserve la fiche la plus ancienne")
-assert(siretGroup?.members.some((member) => member.id === "new"), "le même SIRET rapproche des emails différents")
+assert(siretGroup?.members.some((member) => member.id === "new"), "le même SIRET rapproche des e-mails différents")
 assert(!groups.some((group) => group.members.some((member) => member.id === "alone") && group.members.length === 1), "un compte isolé n'est pas un doublon")
 
 const identical = buildDuplicateGroups([
   { id: "a", email: "a@example.fr", raisonSociale: null, siret: "11111111111111", createdAt: "2026-01-02T00:00:00.000Z" },
   { id: "b", email: "A@example.fr", raisonSociale: null, siret: "11111111111111", createdAt: "2026-01-01T00:00:00.000Z" },
 ])
-assert(identical.length === 1 && identical[0]?.kind === "email", "un même groupe email et SIRET n'est listé qu'une fois")
+assert(identical.length === 1 && identical[0]?.kind === "email", "un même groupe d'e-mails et SIRET n'est listé qu'une fois")
 assert(
   selectionBelongsToOneGroup(groups, "old", ["new"]) && !selectionBelongsToOneGroup(groups, "old", ["alone"]),
   "seules les fiches du même doublon peuvent être fusionnées"

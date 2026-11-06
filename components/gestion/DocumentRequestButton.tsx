@@ -69,7 +69,7 @@ export function DocumentRequestButton({
         throw new Error(json.error || "Impossible d'envoyer la demande.")
       }
       if (json.emailSent === false) {
-        const warning = json.warning || "Email non envoyé. La demande n'est pas partie."
+        const warning = json.warning || "E-mail non envoyé. La demande n'est pas partie."
         setError(warning)
         onResult?.({ type: "warning", message: warning })
         return

@@ -23,7 +23,7 @@ assert(alert.includes("to: ACCOUNT_CREATION_INBOX"), "la copie du mail de créat
 assert(alert.includes("Alerte automatique désactivée"), "l'alerte nouveau compte est désactivée")
 assert(alert.includes("export async function sendAccountCreationMailCopy"), "la copie du mail de création existe")
 assert(login.includes("Alerte automatique désactivée"), "l'alerte de connexion est désactivée")
-assert(!login.includes("sendEmail"), "l'alerte de connexion n'envoie plus d'email")
+assert(!login.includes("sendEmail"), "l'alerte de connexion n'envoie plus d'e-mail")
 assert(operations.includes("Alerte automatique désactivée"), "l'alerte interne des crons est désactivée")
 assert(!operations.includes("sendEmail"), "les crons n'envoient plus de mail interne")
 assert(access.includes("sendAccountCreationMailCopy"), "le mail d'accès créé est copié sur info@")

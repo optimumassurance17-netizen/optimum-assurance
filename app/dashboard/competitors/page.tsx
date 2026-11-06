@@ -50,9 +50,9 @@ export default async function DashboardCompetitorsPage() {
                 <Tr>
                   <Th>Concurrent</Th>
                   <Th>URL</Th>
-                  <Th>Title</Th>
-                  <Th>SEO Score</Th>
-                  <Th>Delta</Th>
+                  <Th>Titre</Th>
+                  <Th>Score SEO</Th>
+                  <Th>Écart</Th>
                   <Th>Date</Th>
                 </Tr>
               </Thead>

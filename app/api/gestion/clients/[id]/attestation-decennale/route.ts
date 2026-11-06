@@ -253,7 +253,7 @@ export async function POST(
         ? {}
         : {
             warning:
-              "Attestation créée, mais email non envoyé (vérifiez RESEND_API_KEY / EMAIL_FROM).",
+              "Attestation créée, mais e-mail non envoyé (vérifiez RESEND_API_KEY / EMAIL_FROM).",
           }),
       document,
     })

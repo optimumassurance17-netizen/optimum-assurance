@@ -74,7 +74,7 @@ export async function POST(
     const email = document.user.email?.trim()
     if (!email) {
       return NextResponse.json(
-        { error: "Email requis pour le paiement par virement (Mollie envoie les instructions)" },
+        { error: "E-mail requis pour le paiement par virement (Mollie envoie les instructions)" },
         { status: 400 }
       )
     }

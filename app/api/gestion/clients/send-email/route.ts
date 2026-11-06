@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "L’email de cette fiche est le même que votre compte administrateur. Les messages iraient vers vous, pas vers un client distinct. Corrigez l’email sur la fiche ou ouvrez la bonne fiche client.",
+            "L’e-mail de cette fiche est le même que votre compte administrateur. Les messages iraient vers vous, pas vers un client distinct. Corrigez l’e-mail sur la fiche ou ouvrez la bonne fiche client.",
         },
         { status: 400 }
       )
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, sentTo: user.email.trim() })
   } catch (error) {
-    console.error("Erreur envoi email:", error)
+    console.error("Erreur envoi de l'e-mail:", error)
     return NextResponse.json({ error: "Erreur" }, { status: 500 })
   }
 }

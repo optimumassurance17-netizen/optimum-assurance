@@ -624,7 +624,7 @@ export default function GestionRectificationPage() {
                           onClick={async () => {
                             if (
                               !window.confirm(
-                                "Envoyer un rappel de signature par email au client ? Le lien déjà ouvert est renvoyé."
+                                "Envoyer un rappel de signature par e-mail au client ? Le lien déjà ouvert est renvoyé."
                               )
                             ) {
                               return

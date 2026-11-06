@@ -41,12 +41,12 @@ export function runSignatureQualityGates(payload: SignatureQualityGatePayload): 
   }
 
   if (payload.flow === "custom_pdf") {
-    if (!hasText(payload.email)) issues.push("email client manquant")
+    if (!hasText(payload.email)) issues.push("e-mail client manquant")
     if (payload.hasPdfFile !== true) issues.push("PDF manquant")
   }
 
   if (payload.flow === "decennale") {
-    if (!hasText(payload.email)) issues.push("email client manquant")
+    if (!hasText(payload.email)) issues.push("e-mail client manquant")
     if (!hasText(payload.address)) issues.push("adresse client manquante")
     if (!hasText(payload.legalRepresentative)) issues.push("représentant légal manquant")
     const siret = hasText(payload.siret) ? payload.siret.replace(/\s/g, "") : ""

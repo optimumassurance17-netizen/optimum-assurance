@@ -59,7 +59,7 @@ export async function POST(
         emailSent: false,
         temporaryPassword: tempPassword,
         warning:
-          "Mot de passe temporaire généré, mais email non envoyé. Copiez-le et transmettez-le manuellement au client.",
+          "Mot de passe temporaire généré, mais e-mail non envoyé. Copiez-le et transmettez-le manuellement au client.",
       })
     }
 

@@ -273,7 +273,7 @@ export function FormulaireAssuranceTitreEspaceClient() {
             <input className={inputClass} value={c.siret} onChange={(e) => setContact({ siret: e.target.value })} />
           </div>
           <div>
-            <label className={labelClass}>Email</label>
+            <label className={labelClass}>E-mail</label>
             <input className={inputClass} type="email" value={c.email} onChange={(e) => setContact({ email: e.target.value })} />
           </div>
           <div>
@@ -427,7 +427,7 @@ export function FormulaireAssuranceTitreEspaceClient() {
             <input className={inputClass} value={p.notaireNom} onChange={(e) => setParties({ notaireNom: e.target.value })} />
           </div>
           <div>
-            <label className={labelClass}>Email du notaire</label>
+            <label className={labelClass}>E-mail du notaire</label>
             <input className={inputClass} type="email" value={p.notaireEmail} onChange={(e) => setParties({ notaireEmail: e.target.value })} />
           </div>
           <div>
@@ -567,7 +567,7 @@ export function FormulaireAssuranceTitreEspaceClient() {
               onChange={(e) => setValidation({ acceptationSuiviDigital: e.target.checked })}
               className="mt-1 rounded border-slate-300"
             />
-            <span>J’accepte le suivi du dossier et les échanges documentaires via l’espace client et l’email.</span>
+            <span>J’accepte le suivi du dossier et les échanges documentaires via l’espace client et l’e-mail.</span>
           </label>
         </div>
       </section>

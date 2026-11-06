@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
               },
             })
 
-            // Pièce jointe : facture acquittée en PDF (envoyée plus bas avec l'email)
+            // Pièce jointe : facture acquittée en PDF (envoyée plus bas avec l'e-mail)
             try {
               const pdfEl = React.createElement(Document, {}, React.createElement(FactureDoPDFPage, { numero: numeroFacture, data: factureData }))
               // eslint-disable-next-line @typescript-eslint/no-explicit-any -- renderToBuffer attend un Document react-pdf

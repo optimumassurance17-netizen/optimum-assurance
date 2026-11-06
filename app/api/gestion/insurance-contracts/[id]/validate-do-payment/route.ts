@@ -67,10 +67,10 @@ export async function POST(
         html: template.html,
       })
       if (!emailSent) {
-        warning = "Paiement validé. L'email de confirmation n'a pas été envoyé."
+        warning = "Paiement validé. L'e-mail de confirmation n'a pas été envoyé."
       }
     } else if (!result.idempotent && !email) {
-      warning = "Paiement validé. Aucun email client n'est lié à ce contrat."
+      warning = "Paiement validé. Aucun e-mail client n'est lié à ce contrat."
     } else if (result.idempotent && result.certificateReady === false) {
       warning =
         "Paiement déjà enregistré. L'attestation n'a pas pu être générée : relancez « Valider le paiement »."

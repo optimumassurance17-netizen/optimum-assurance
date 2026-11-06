@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { LINKABLE_ASSETS, LINKPILOT_CATEGORIES, LINKPILOT_STATUSES } from "@/lib/linkpilot/constants"
+import { LINKABLE_ASSETS, LINKPILOT_CATEGORIES, LINKPILOT_STATUSES, linkPilotCategoryLabel, linkPilotStatusLabel } from "@/lib/linkpilot/constants"
 import { ScoreBadge } from "@/components/admin/seo/ScoreBadge"
 import { StatusBadge } from "@/components/admin/seo/StatusBadge"
 
@@ -162,7 +162,7 @@ export function ProspectsTable() {
 
   async function createDraftEmail(prospect: Prospect) {
     if (!prospect.contact_email) {
-      setError(`Le prospect ${prospect.domain} n'a pas d'email de contact.`)
+      setError(`Le prospect ${prospect.domain} n'a pas d'e-mail de contact.`)
       return
     }
     try {
@@ -213,7 +213,7 @@ export function ProspectsTable() {
   }
 
   async function convertToBacklink(prospect: Prospect) {
-    const confirmed = window.confirm(`Confirmer la conversion du prospect ${prospect.domain} en backlink acquis ?`)
+    const confirmed = window.confirm(`Confirmer la conversion du prospect ${prospect.domain} en lien acquis ?`)
     if (!confirmed) return
     try {
       await fetchJson(`/api/admin/seo/linkpilot/prospects/${prospect.id}`, {
@@ -269,7 +269,7 @@ export function ProspectsTable() {
               <option value="">Tous</option>
               {LINKPILOT_STATUSES.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {linkPilotStatusLabel(status)}
                 </option>
               ))}
             </select>
@@ -284,7 +284,7 @@ export function ProspectsTable() {
               <option value="">Toutes</option>
               {LINKPILOT_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
-                  {category}
+                  {linkPilotCategoryLabel(category)}
                 </option>
               ))}
             </select>
@@ -323,27 +323,27 @@ export function ProspectsTable() {
         <form onSubmit={createProspect} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h3 className="mb-3 text-sm font-bold text-slate-900">Nouveau prospect</h3>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-            <input required placeholder="Domain" value={form.domain} onChange={(e) => setForm((prev) => ({ ...prev, domain: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+            <input required placeholder="Domaine" value={form.domain} onChange={(e) => setForm((prev) => ({ ...prev, domain: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
             <input required placeholder="URL" value={form.url} onChange={(e) => setForm((prev) => ({ ...prev, url: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
-            <input placeholder="Contact email" value={form.contact_email ?? ""} onChange={(e) => setForm((prev) => ({ ...prev, contact_email: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
-            <input placeholder="Contact name" value={form.contact_name ?? ""} onChange={(e) => setForm((prev) => ({ ...prev, contact_name: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+            <input placeholder="E-mail du contact" value={form.contact_email ?? ""} onChange={(e) => setForm((prev) => ({ ...prev, contact_email: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+            <input placeholder="Nom du contact" value={form.contact_name ?? ""} onChange={(e) => setForm((prev) => ({ ...prev, contact_name: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
             <select value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value as (typeof LINKPILOT_CATEGORIES)[number] }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm">
               {LINKPILOT_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
-                  {category}
+                  {linkPilotCategoryLabel(category)}
                 </option>
               ))}
             </select>
-            <input placeholder="Niche" value={form.niche ?? ""} onChange={(e) => setForm((prev) => ({ ...prev, niche: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
-            <input placeholder="Country" value={form.country} onChange={(e) => setForm((prev) => ({ ...prev, country: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
-            <input type="number" min={0} max={100} placeholder="DA" value={form.domain_authority} onChange={(e) => setForm((prev) => ({ ...prev, domain_authority: Number(e.target.value) || 0 }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+            <input placeholder="Thématique" value={form.niche ?? ""} onChange={(e) => setForm((prev) => ({ ...prev, niche: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+            <input placeholder="Pays" value={form.country} onChange={(e) => setForm((prev) => ({ ...prev, country: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+            <input type="number" min={0} max={100} placeholder="Autorité" value={form.domain_authority} onChange={(e) => setForm((prev) => ({ ...prev, domain_authority: Number(e.target.value) || 0 }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
             <input type="number" min={0} placeholder="Trafic estimé" value={form.estimated_traffic} onChange={(e) => setForm((prev) => ({ ...prev, estimated_traffic: Number(e.target.value) || 0 }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
-            <input type="number" min={0} max={100} placeholder="Spam score" value={form.spam_score} onChange={(e) => setForm((prev) => ({ ...prev, spam_score: Number(e.target.value) || 0 }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
+            <input type="number" min={0} max={100} placeholder="Score de spam" value={form.spam_score} onChange={(e) => setForm((prev) => ({ ...prev, spam_score: Number(e.target.value) || 0 }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm" />
             <input placeholder="Notes" value={form.notes ?? ""} onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))} className="rounded-xl border border-slate-300 px-3 py-2 text-sm md:col-span-2 lg:col-span-2" />
           </div>
           <div className="mt-3">
             <button className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-              Enregistrer prospect
+              Enregistrer le prospect
             </button>
           </div>
         </form>
@@ -353,7 +353,7 @@ export function ProspectsTable() {
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         {loading ? (
-          <p className="p-4 text-sm text-slate-500">Chargement prospects…</p>
+          <p className="p-4 text-sm text-slate-500">Chargement des prospects…</p>
         ) : items.length === 0 ? (
           <p className="p-4 text-sm text-slate-500">Aucun prospect trouvé.</p>
         ) : (
@@ -364,10 +364,10 @@ export function ProspectsTable() {
                   <th className="px-3 py-2">Domaine</th>
                   <th className="px-3 py-2">Contact</th>
                   <th className="px-3 py-2">Catégorie</th>
-                  <th className="px-3 py-2">DA</th>
-                  <th className="px-3 py-2">Spam</th>
-                  <th className="px-3 py-2">Relevance</th>
-                  <th className="px-3 py-2">Backlink</th>
+                  <th className="px-3 py-2">Autorité</th>
+                  <th className="px-3 py-2">Indésirable</th>
+                  <th className="px-3 py-2">Pertinence</th>
+                  <th className="px-3 py-2">Lien</th>
                   <th className="px-3 py-2">Statut</th>
                   <th className="px-3 py-2">Actions</th>
                 </tr>
@@ -385,7 +385,7 @@ export function ProspectsTable() {
                       <p>{prospect.contact_name ?? "—"}</p>
                       <p>{prospect.contact_email ?? "—"}</p>
                     </td>
-                    <td className="px-3 py-2 text-xs text-slate-700">{prospect.category}</td>
+                    <td className="px-3 py-2 text-xs text-slate-700">{linkPilotCategoryLabel(prospect.category)}</td>
                     <td className="px-3 py-2 text-xs">{prospect.domain_authority}</td>
                     <td className="px-3 py-2 text-xs">{prospect.spam_score}</td>
                     <td className="px-3 py-2">
@@ -403,13 +403,13 @@ export function ProspectsTable() {
                           onClick={() => void scoreWithAi(prospect)}
                           className="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-50"
                         >
-                          Scorer avec IA
+                          Noter avec l&apos;IA
                         </button>
                         <button
                           onClick={() => void createDraftEmail(prospect)}
                           className="rounded-lg border border-indigo-300 px-2 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-50"
                         >
-                          Créer brouillon email
+                          Créer un brouillon d&apos;e-mail
                         </button>
                         <button
                           onClick={() => void markContacted(prospect.id)}
@@ -421,7 +421,7 @@ export function ProspectsTable() {
                           onClick={() => void convertToBacklink(prospect)}
                           className="rounded-lg border border-emerald-300 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
                         >
-                          Convertir en backlink
+                          Convertir en lien
                         </button>
                         <button
                           onClick={() => void removeProspect(prospect)}

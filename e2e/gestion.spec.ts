@@ -248,7 +248,7 @@ test.describe("Gestion CRM — création compte lead", () => {
     await expect(page.getByRole("link", { name: /Compte existant/ })).toBeVisible()
   })
 
-  test("Lead décennale : compte créé même si l'email d'accès échoue", async ({ page }) => {
+  test("Lead décennale : compte créé même si l'e-mail d'accès échoue", async ({ page }) => {
     await mockGestionAuth(page)
 
     await page.route("**/api/gestion/dashboard", async (route) => {
@@ -271,7 +271,7 @@ test.describe("Gestion CRM — création compte lead", () => {
           emailSent: false,
           temporaryPassword: "TempPass123",
           warning:
-            "Compte créé, mais email d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client.",
+            "Compte créé, mais e-mail d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client.",
         }),
       })
     })
@@ -281,14 +281,14 @@ test.describe("Gestion CRM — création compte lead", () => {
 
     await expect(
       page.getByRole("status").getByText(
-        "Compte créé, mais email d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client. Mot de passe temporaire : TempPass123"
+        "Compte créé, mais e-mail d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client. Mot de passe temporaire : TempPass123"
       )
     ).toBeVisible()
-    await expect(page.getByRole("alert").filter({ hasText: "Compte créé, mais email d'accès non envoyé" })).toHaveCount(0)
+    await expect(page.getByRole("alert").filter({ hasText: "Compte créé, mais e-mail d'accès non envoyé" })).toHaveCount(0)
     await expect(page.getByRole("link", { name: /Compte existant/ })).toBeVisible()
   })
 
-  test("Fiche client : renvoi accès affiche le mot de passe si l'email échoue", async ({ page }) => {
+  test("Fiche client : renvoi accès affiche le mot de passe si l'e-mail échoue", async ({ page }) => {
     await mockGestionAuth(page)
 
     await page.route("**/api/gestion/clients/client_1", async (route) => {
@@ -309,7 +309,7 @@ test.describe("Gestion CRM — création compte lead", () => {
           emailSent: false,
           temporaryPassword: "ManualPass789",
           warning:
-            "Mot de passe temporaire généré, mais email non envoyé. Copiez-le et transmettez-le manuellement au client.",
+            "Mot de passe temporaire généré, mais e-mail non envoyé. Copiez-le et transmettez-le manuellement au client.",
         }),
       })
     })
@@ -319,11 +319,11 @@ test.describe("Gestion CRM — création compte lead", () => {
 
     await expect(
       page.getByRole("status").getByText(
-        "Mot de passe temporaire généré, mais email non envoyé. Copiez-le et transmettez-le manuellement au client. Mot de passe temporaire : ManualPass789"
+        "Mot de passe temporaire généré, mais e-mail non envoyé. Copiez-le et transmettez-le manuellement au client. Mot de passe temporaire : ManualPass789"
       )
     ).toBeVisible()
     await expect(
-      page.getByRole("alert").filter({ hasText: "Mot de passe temporaire généré, mais email non envoyé" })
+      page.getByRole("alert").filter({ hasText: "Mot de passe temporaire généré, mais e-mail non envoyé" })
     ).toHaveCount(0)
   })
 })
@@ -405,7 +405,7 @@ test.describe("Gestion CRM — contrats plateforme", () => {
         body: JSON.stringify({
           ok: true,
           emailSent: false,
-          warning: "Email non envoyé (Resend ou domaine expéditeur). Aucun message n'est parti.",
+          warning: "E-mail non envoyé (Resend ou domaine expéditeur). Aucun message n'est parti.",
         }),
       })
     })
@@ -414,10 +414,10 @@ test.describe("Gestion CRM — contrats plateforme", () => {
     await page.getByRole("button", { name: "Demander documents DO" }).click()
 
     await expect(
-      page.getByRole("status").getByText("Email non envoyé (Resend ou domaine expéditeur). Aucun message n'est parti.")
+      page.getByRole("status").getByText("E-mail non envoyé (Resend ou domaine expéditeur). Aucun message n'est parti.")
     ).toBeVisible()
     await expect(
-      page.getByRole("alert").filter({ hasText: "Email non envoyé (Resend ou domaine expéditeur)" })
+      page.getByRole("alert").filter({ hasText: "E-mail non envoyé (Resend ou domaine expéditeur)" })
     ).toHaveCount(0)
   })
 
@@ -458,7 +458,7 @@ test.describe("Gestion CRM — contrats plateforme", () => {
     await page.getByPlaceholder("ex. 2400 (annuel TTC)").fill("1200")
     await page.getByRole("button", { name: "Envoyer l’invitation de signature" }).click()
 
-    await expect(page.getByRole("heading", { name: "Gestion CRM" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Espace de gestion" })).toBeVisible()
     await expect(page.getByRole("button", { name: "Réessayer" })).toHaveCount(0)
     await expect(page.getByRole("alert").filter({ hasText: "Signature électronique non configurée." })).toBeVisible()
   })
@@ -806,7 +806,7 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
     await expect(page.getByText("insurance_contract")).toHaveCount(0)
   })
 
-  test("Fiche client : envoi email appelle l'endpoint gestion", async ({ page }) => {
+  test("Fiche client : envoi de l'e-mail appelle l'endpoint gestion", async ({ page }) => {
     await mockGestionAuth(page)
 
     await page.route("**/api/gestion/clients/client_1", async (route) => {
@@ -828,8 +828,8 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
     })
 
     await page.goto("/gestion/clients/client_1")
-    await page.getByRole("button", { name: "Envoyer un email" }).click()
-    await page.getByPlaceholder("Objet de l'email").fill("Information dossier")
+    await page.getByRole("button", { name: "Envoyer un e-mail" }).click()
+    await page.getByPlaceholder("Objet de l'e-mail").fill("Information dossier")
     await page.getByPlaceholder("Votre message...").fill("Bonjour, merci pour votre retour.")
     await page.getByRole("button", { name: "Envoyer", exact: true }).click()
 
@@ -838,7 +838,7 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
       subject: "Information dossier",
       body: "Bonjour, merci pour votre retour.",
     })
-    await expect(page.getByText("Email envoyé à client@example.com")).toBeVisible()
+    await expect(page.getByText("E-mail envoyé à client@example.com")).toBeVisible()
   })
 
   test("Fiche client : suppression appelle l'endpoint avec confirmation email", async ({ page }) => {
@@ -865,7 +865,7 @@ test.describe("Gestion CRM — fiche client actions sensibles", () => {
 
     await page.goto("/gestion/clients/client_1")
     await page.getByRole("button", { name: "Supprimer la fiche et l’espace client" }).click()
-    await page.getByPlaceholder("Email du client").fill("client@example.com")
+    await page.getByPlaceholder("E-mail du client").fill("client@example.com")
     await page.getByRole("button", { name: "Supprimer définitivement" }).click()
 
     await expect(page).toHaveURL(/\/gestion$/)
@@ -981,7 +981,7 @@ test.describe("Gestion CRM — Sirene", () => {
 
     await expect(page).toHaveURL(/\/gestion\/clients\/client_2/)
     await page.getByRole("button", { name: "Modifier les coordonnées" }).click()
-    const emailInput = page.locator("label").filter({ hasText: /^Email \(connexion\)$/ }).first().locator("xpath=..").locator("input")
+    const emailInput = page.locator("label").filter({ hasText: /^E-mail \(connexion\)$/ }).first().locator("xpath=..").locator("input")
     const raisonInput = page.locator("label").filter({ hasText: /^Raison sociale$/ }).first().locator("xpath=..").locator("input")
     await expect(emailInput).toHaveValue("autre@example.com")
     await expect(raisonInput).toHaveValue("Beta Conseil")
@@ -1265,7 +1265,7 @@ test.describe("Gestion CRM — parcours admin (optionnel)", () => {
   test.beforeEach(() => {
     test.skip(
       !hasE2EAdminCreds,
-      "Définir E2E_ADMIN_EMAIL et E2E_ADMIN_PASSWORD : compte existant en base, même email dans ADMIN_EMAILS."
+      "Définir E2E_ADMIN_EMAIL et E2E_ADMIN_PASSWORD : compte existant en base, même e-mail dans ADMIN_EMAILS."
     )
   })
 
@@ -1274,13 +1274,13 @@ test.describe("Gestion CRM — parcours admin (optionnel)", () => {
     await page.goto("/connexion?callbackUrl=/gestion")
     await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible({ timeout: 15000 })
 
-    await page.getByLabel("Email").fill(e2eAdminEmail!)
+    await page.getByLabel("E-mail").fill(e2eAdminEmail!)
     await page.getByLabel("Mot de passe", { exact: false }).fill(e2eAdminPassword!)
     await page.getByRole("button", { name: "Se connecter" }).click()
 
     await expect(page).toHaveURL(/\/gestion/, { timeout: 20000 })
     await expect(page.locator("main.gestion-app")).toBeVisible()
-    await expect(page.getByRole("heading", { name: "Gestion CRM" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Espace de gestion" })).toBeVisible()
 
     await expect(page.getByRole("navigation", { name: "Accès rapide sections gestion" })).toBeVisible()
     await expect(page.getByLabel("Recherche fiche client")).toBeVisible()

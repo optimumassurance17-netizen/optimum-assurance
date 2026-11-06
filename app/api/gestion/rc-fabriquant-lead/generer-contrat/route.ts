@@ -31,7 +31,7 @@ function toFrDate(input: Date): string {
 
 /**
  * Produit le devis, la FIC et le contrat à partir de la demande client.
- * Aucun email, aucune signature et aucun paiement.
+ * Aucun e-mail, aucune signature et aucun paiement.
  */
 export async function POST(request: NextRequest) {
   try {

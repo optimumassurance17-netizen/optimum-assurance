@@ -48,7 +48,7 @@ function ConnexionForm() {
       })
 
       if (result?.error) {
-        setError("Email ou mot de passe incorrect")
+        setError("E-mail ou mot de passe incorrect")
         setLoading(false)
         return
       }
@@ -80,7 +80,7 @@ function ConnexionForm() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="connexion-email" className="block mb-2 font-medium text-black">
-              Email
+              E-mail
             </label>
             <input
               id="connexion-email"

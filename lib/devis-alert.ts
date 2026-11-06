@@ -56,7 +56,7 @@ export async function sendNewDevisRequestAlert(params: {
   const textBody = [
     `Nouvelle demande de devis (${label}).`,
     "",
-    `Email du prospect : ${clientEmail}`,
+    `E-mail du prospect : ${clientEmail}`,
     "",
     ...params.lines,
     "",
@@ -75,7 +75,7 @@ export async function sendNewDevisRequestAlert(params: {
     : ""
   const owner = getOwnerAlertEmail()
   const html = `<p style="font-weight:600;font-size:16px;margin:0 0 14px;color:#0f172a;">Nouvelle demande de devis — ${escapeHtmlForEmail(label)}</p>
-<p style="margin:0 0 12px;"><strong>Email du prospect :</strong> <a href="mailto:${escapeHtmlForEmail(clientEmail)}" style="color:#2563eb;">${escapeHtmlForEmail(clientEmail)}</a></p>
+<p style="margin:0 0 12px;"><strong>E-mail du prospect :</strong> <a href="mailto:${escapeHtmlForEmail(clientEmail)}" style="color:#2563eb;">${escapeHtmlForEmail(clientEmail)}</a></p>
 ${htmlLines}
 ${gestionHtml}
 <p style="margin-top:18px;font-size:12px;color:#64748b;">Alerte reçue sur ${escapeHtmlForEmail(owner)}. L'adresse du prospect est indiquée ci-dessus.</p>`.trim()

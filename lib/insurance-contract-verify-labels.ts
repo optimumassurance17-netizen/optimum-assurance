@@ -9,7 +9,7 @@ export type VerifyPaymentRow = {
 }
 
 /**
- * Libellés lisibles pour la page publique /verify (QR code) — sans jargon technique.
+ * Libellés lisibles pour la page publique /verify (code QR) — sans jargon technique.
  */
 export function getVerifyPaymentRow(ic: InsuranceContract, isGarantieActive: boolean): VerifyPaymentRow {
   if (ic.status === CONTRACT_STATUS.rejected) {

@@ -57,7 +57,7 @@ const SEARCH_DEBOUNCE_MS = 180
 
 export function ClientQuickSearch({
   label,
-  placeholder = "Nom, email ou SIRET…",
+  placeholder = "Nom, e-mail ou SIRET…",
   helperText,
   className = "",
   query: queryProp,

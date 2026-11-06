@@ -104,7 +104,7 @@ function getStepValidationError(
       if (isBlank(data.codePostal)) return "Renseignez le code postal du maître d'ouvrage."
       if (isBlank(data.ville)) return "Renseignez la ville du maître d'ouvrage."
       if (isBlank(data.telephone)) return "Renseignez un téléphone de contact."
-      if (!isValidEmail(data.email)) return "Renseignez une adresse email valide."
+      if (!isValidEmail(data.email)) return "Renseignez une adresse e-mail valide."
       return null
     case 2:
       if (isBlank(data.adresseConstruction)) return "Renseignez l'adresse précise du chantier."
@@ -317,7 +317,7 @@ export function FormulaireDevisDommageOuvrage() {
         <h2 className="text-xl font-bold text-black mb-4">Demande envoyée</h2>
         <p className="text-black mb-4">
           {eligibleOnlineDo
-            ? "Votre demande est enregistrée. Prochaine étape : finaliser la souscription en ligne avec cette adresse email, puis régler par un virement unique Mollie. Le montant ci-dessous est celui du virement. Le même lien est dans l'email d'estimation."
+            ? "Votre demande est enregistrée. Prochaine étape : finaliser la souscription en ligne avec cette adresse e-mail, puis régler par un virement unique Mollie. Le montant ci-dessous est celui du virement. Le même lien est dans l'e-mail d'estimation."
             : "Votre demande de devis dommage ouvrage a bien été enregistrée. Notre équipe vous transmettra le prix définitif sous 24 h après étude de votre dossier."}
         </p>
         <div className="bg-[#dbeafe] border border-[#E8D5CF] rounded-xl p-4 mb-6">
@@ -367,8 +367,8 @@ export function FormulaireDevisDommageOuvrage() {
             redirectTo={eligibleOnlineDo ? "/souscription-dommage-ouvrage" : "/espace-client"}
             intro={
               eligibleOnlineDo
-                ? "Le compte est créé automatiquement avec cette adresse. Le mot de passe arrive par email, puis la souscription continue."
-                : "Le compte est créé automatiquement avec cette adresse. Le mot de passe arrive par email, pour déposer les pièces."
+                ? "Le compte est créé automatiquement avec cette adresse. Le mot de passe arrive par e-mail, puis la souscription continue."
+                : "Le compte est créé automatiquement avec cette adresse. Le mot de passe arrive par e-mail, pour déposer les pièces."
             }
           />
         ) : null}
@@ -583,7 +583,7 @@ export function FormulaireDevisDommageOuvrage() {
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Email *</label>
+                  <label className={labelClass}>E-mail *</label>
                   <input
                     type="email"
                     value={data.email || ""}

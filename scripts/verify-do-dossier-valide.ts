@@ -19,8 +19,8 @@ assert(
 )
 
 const email = readFileSync("lib/email.ts", "utf8")
-assert(email.includes("dossierDoValide"), "l'email de paiement peut porter le message DO")
-assert(email.includes("DO_DOSSIER_VALIDE_MESSAGE"), "l'email reprend le message du dossier validé")
+assert(email.includes("dossierDoValide"), "l'e-mail de paiement peut porter le message DO")
+assert(email.includes("DO_DOSSIER_VALIDE_MESSAGE"), "l'e-mail reprend le message du dossier validé")
 
 const request = readFileSync("app/api/gestion/insurance-contracts/[id]/request-payment/route.ts", "utf8")
 assert(

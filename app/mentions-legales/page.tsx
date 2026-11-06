@@ -38,7 +38,7 @@ export default function MentionsLegalesPage() {
               <strong>49300 Cholet – France</strong>
             </p>
             <p>
-              Email :{" "}
+              E-mail :{" "}
               <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#2563eb] hover:underline font-medium">
                 {CONTACT_EMAIL}
               </a>

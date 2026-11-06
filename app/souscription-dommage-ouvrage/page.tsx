@@ -169,7 +169,7 @@ export default function SouscriptionDommageOuvragePage() {
           <h1 className="text-2xl font-semibold mb-3 text-black">Souscription introuvable</h1>
           <p className="text-[#171717] mb-6">
             Aucune demande dommage ouvrage exploitable n&apos;est associée à ce compte. Déposez la demande avec
-            la même adresse email pour reprendre la souscription.
+            la même adresse e-mail pour reprendre la souscription.
           </p>
           <Link
             href="/devis-dommage-ouvrage"

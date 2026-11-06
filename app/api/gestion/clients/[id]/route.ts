@@ -593,15 +593,15 @@ export async function PATCH(
     if ("email" in payload) {
       const raw = String(payload.email ?? "").trim().toLowerCase()
       if (!raw) {
-        return NextResponse.json({ error: "L'email ne peut pas être vide" }, { status: 400 })
+        return NextResponse.json({ error: "L'e-mail ne peut pas être vide" }, { status: 400 })
       }
       if (!EMAIL_RE.test(raw)) {
-        return NextResponse.json({ error: "Format d'email invalide" }, { status: 400 })
+        return NextResponse.json({ error: "Format d'e-mail invalide" }, { status: 400 })
       }
       if (raw !== current.email) {
         const taken = await prisma.user.findUnique({ where: { email: raw }, select: { id: true } })
         if (taken) {
-          return NextResponse.json({ error: "Cet email est déjà utilisé par un autre compte" }, { status: 409 })
+          return NextResponse.json({ error: "Cet e-mail est déjà utilisé par un autre compte" }, { status: 409 })
         }
       }
       data.email = raw
@@ -688,7 +688,7 @@ export async function PATCH(
 /**
  * DELETE — Supprime le compte client, son espace (documents plateforme, paiements, GED, SEPA en base)
  * et les brouillons de signature liés. Les contrats assurance plateforme restent en base avec userId null.
- * Body : { confirmEmail: string } doit correspondre à l’email du client (insensible à la casse).
+ * Body : { confirmEmail: string } doit correspondre à l’e-mail du client (insensible à la casse).
  */
 export async function DELETE(
   request: NextRequest,
@@ -725,7 +725,7 @@ export async function DELETE(
     }
     if (confirmEmail !== target.email.toLowerCase()) {
       return NextResponse.json(
-        { error: "Saisissez l'email exact du client pour confirmer la suppression." },
+        { error: "Saisissez l'e-mail exact du client pour confirmer la suppression." },
         { status: 400 }
       )
     }

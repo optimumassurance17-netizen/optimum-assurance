@@ -18,7 +18,7 @@ import {
 import { doDevisMatchKey, findFirstMatchingKey, normalizeIntakeEmail } from "@/lib/devis-intake"
 
 /**
- * Enregistre une demande de devis dommage ouvrage et envoie une estimation PDF par email si possible.
+ * Enregistre une demande de devis dommage ouvrage et envoie une estimation PDF par e-mail si possible.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     if (!email || !data) {
       return NextResponse.json(
-        { error: "Email et données du questionnaire requis" },
+        { error: "E-mail et données du questionnaire requis" },
         { status: 400 }
       )
     }

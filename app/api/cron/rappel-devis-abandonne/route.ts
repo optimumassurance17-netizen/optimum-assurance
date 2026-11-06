@@ -7,7 +7,7 @@ import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 
 /**
  * Cron : rappel devis abandonné 24-48h après envoi
- * Envoie un email aux leads qui n'ont pas souscrit
+ * Envoie un e-mail aux leads qui n'ont pas souscrit
  * Sécurisé par CRON_SECRET (voir `lib/cron-auth.ts`)
  */
 export async function GET(request: NextRequest) {

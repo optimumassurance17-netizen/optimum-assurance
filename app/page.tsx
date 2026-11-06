@@ -383,7 +383,7 @@ export default function Home() {
               <span className="text-2xl mb-2 block">⚡</span>
               <h3 className="font-semibold text-slate-900 mb-2">Attestation après validation</h3>
               <p className="text-[#171717] text-sm leading-relaxed">
-                Après paiement, contrôle du dossier et acceptation du risque — disponible avec QR code de vérification.
+                Après paiement, contrôle du dossier et acceptation du risque — disponible avec code QR de vérification.
               </p>
             </div>
             <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5] shadow-sm hover:shadow-md hover:border-[#d4d4d4] transition-all">
@@ -675,7 +675,7 @@ export default function Home() {
               <p className="text-sm text-[#171717]">Toulouse</p>
             </div>
             <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5] shadow-sm hover:shadow-md transition-all">
-              <p className="text-[#171717] text-sm italic mb-4 leading-relaxed">&quot;BET structure : 600 €/an contre 900 € ailleurs. Le QR code sur l&apos;attestation rassure mes clients.&quot;</p>
+              <p className="text-[#171717] text-sm italic mb-4 leading-relaxed">&quot;BET structure : 600 €/an contre 900 € ailleurs. Le code QR sur l&apos;attestation rassure mes clients.&quot;</p>
               <p className="font-semibold text-slate-900">M. D., Bureau d&apos;études</p>
               <p className="text-sm text-[#171717]">Paris</p>
             </div>

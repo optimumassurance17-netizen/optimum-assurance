@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       }
       if (!document.user?.email?.trim()) {
         return NextResponse.json(
-          { error: "Aucun email client sur cette assurance. La demande n'a pas été envoyée." },
+          { error: "Aucun e-mail client sur cette assurance. La demande n'a pas été envoyée." },
           { status: 400 }
         )
       }
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     const clientEmail = recipient.email.trim()
     if (!clientEmail) {
       return NextResponse.json(
-        { error: "Aucun email client. La demande n'a pas été envoyée." },
+        { error: "Aucun e-mail client. La demande n'a pas été envoyée." },
         { status: 400 }
       )
     }
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "L'email de cette fiche est le même que votre compte administrateur. La demande n'a pas été envoyée.",
+            "L'e-mail de cette fiche est le même que votre compte administrateur. La demande n'a pas été envoyée.",
         },
         { status: 400 }
       )

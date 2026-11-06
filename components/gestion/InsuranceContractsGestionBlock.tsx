@@ -359,7 +359,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                                   if (!res.ok) throw new Error(j.error || "Erreur envoi devis DO")
                                   if (j.emailSent === false) {
                                     setToast({
-                                      message: j.warning || "Email non envoyé.",
+                                      message: j.warning || "E-mail non envoyé.",
                                       type: "warning",
                                     })
                                     return
@@ -392,7 +392,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                                   if (!res.ok) throw new Error(j.error || "Erreur demande documents DO")
                                   if (j.emailSent === false) {
                                     setToast({
-                                      message: j.warning || "Email non envoyé.",
+                                      message: j.warning || "E-mail non envoyé.",
                                       type: "warning",
                                     })
                                     return
@@ -432,7 +432,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                                 if (!res.ok) throw new Error(j.error || "Erreur demande paiement")
                                 if (j.emailSent === false) {
                                   setToast({
-                                    message: j.warning || "Email non envoyé.",
+                                    message: j.warning || "E-mail non envoyé.",
                                     type: "warning",
                                   })
                                   return

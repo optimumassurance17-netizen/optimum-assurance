@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
     const devisReference = textField(source, "devisReference").slice(0, 120)
     const produitLabel =
       textField(source, "produitLabel").slice(0, 120) ||
-      (productType === "assurance_titre" ? "Assurance titre — proposition digitale" : "RC Fabriquant — proposition")
+      (productType === "assurance_titre" ? "Assurance titre — proposition numérique" : "RC Fabriquant — proposition")
     const afterSignNextPath = normalizeNextPath(textField(source, "afterSignNextPath") || null)
 
     const file = source instanceof FormData ? source.get("pdf") : null

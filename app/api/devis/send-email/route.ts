@@ -28,7 +28,7 @@ type DecennaleDraftPayload = {
 }
 
 /**
- * Envoie le devis par email avec lien de reprise
+ * Envoie le devis par e-mail avec lien de reprise
  * Sauvegarde le brouillon et enregistre le lead
  */
 export async function POST(request: NextRequest) {
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const devis = asJsonObject<DecennaleDraftPayload>(body.devis)
 
     if (!email || Object.keys(devis).length === 0) {
-      return NextResponse.json({ error: "Email et devis requis" }, { status: 400 })
+      return NextResponse.json({ error: "E-mail et devis requis" }, { status: 400 })
     }
 
     const tarif = devis.tarif
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
 
     if (!sent) {
       return NextResponse.json(
-        { error: "Envoi d'email non configuré (RESEND_API_KEY)" },
+        { error: "Envoi d'e-mail non configuré (RESEND_API_KEY)" },
         { status: 503 }
       )
     }
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (error) {
-    console.error("Erreur envoi email devis:", error)
+    console.error("Erreur envoi de l'e-mail devis:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Erreur lors de l'envoi" },
       { status: 500 }

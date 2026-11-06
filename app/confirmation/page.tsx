@@ -343,11 +343,11 @@ export default function ConfirmationPage() {
                     <>
                       Votre premier trimestre a bien été réglé par carte bancaire. Les échéances suivantes seront
                       prélevées par <strong>SEPA trimestriel</strong> sur l’IBAN du mandat, avec{" "}
-                      <strong>reconduction automatique annuelle</strong>. Vous recevrez votre attestation par email dans
+                      <strong>reconduction automatique annuelle</strong>. Vous recevrez votre attestation par e-mail dans
                       les prochaines minutes.
                     </>
                   )
-                : "Votre assurance décennale a été souscrite avec succès. Vous recevrez votre attestation par email dans les prochaines minutes."}
+                : "Votre assurance décennale a été souscrite avec succès. Vous recevrez votre attestation par e-mail dans les prochaines minutes."}
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
               <Link
@@ -394,18 +394,18 @@ export default function ConfirmationPage() {
               {isInsuranceContractFlow ? (
                 <>
                   Votre dossier concerne le <strong>contrat plateforme</strong> (virement Mollie). Les fonds sont en cours de
-                  réception. Votre contrat sera activé automatiquement après encaissement ; vous serez informé par email.
+                  réception. Votre contrat sera activé automatiquement après encaissement ; vous serez informé par e-mail.
                 </>
               ) : isDevisDoFlow ? (
                 <>
                   Vous avez choisi un <strong>paiement par virement bancaire</strong> (Mollie). Effectuez le
                   virement selon les coordonnées et la référence indiquées sur la page Mollie ou reçues par
                   email. Votre attestation dommage ouvrage sera disponible après <strong>réception des fonds</strong>
-                  sur le compte Mollie. Vous recevrez un email de confirmation à ce moment-là.
+                  sur le compte Mollie. Vous recevrez un e-mail de confirmation à ce moment-là.
                 </>
               ) : (
                 <>
-                  Votre paiement est en cours de traitement. Vous recevrez une confirmation par email une fois
+                  Votre paiement est en cours de traitement. Vous recevrez une confirmation par e-mail une fois
                   celui-ci finalisé.
                 </>
               )}

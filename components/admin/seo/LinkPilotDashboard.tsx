@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { ScoreBadge } from "@/components/admin/seo/ScoreBadge"
 import { StatusBadge } from "@/components/admin/seo/StatusBadge"
+import { linkPilotCategoryLabel } from "@/lib/linkpilot/constants"
 
 type Prospect = {
   id: string
@@ -52,10 +53,10 @@ export function LinkPilotDashboard() {
         setToxicDomains(toxicRes.items ?? [])
       } catch (err) {
         if (!alive) return
-        const message = err instanceof Error ? err.message : "Impossible de charger LinkPilot"
+        const message = err instanceof Error ? err.message : "Impossible de charger le suivi des liens"
         setError(
           message.includes("fetch failed")
-            ? "LinkPilot n'arrive pas à joindre Supabase. Réessayez dans un instant."
+            ? "Le suivi des liens n'arrive pas à joindre le stockage. Réessayez dans un instant."
             : message
         )
       } finally {
@@ -78,7 +79,7 @@ export function LinkPilotDashboard() {
   }, [prospects])
 
   if (loading) {
-    return <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">Chargement LinkPilot AI…</p>
+    return <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">Chargement du suivi des liens…</p>
   }
   if (error) {
     return <p className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">{error}</p>
@@ -92,7 +93,7 @@ export function LinkPilotDashboard() {
           <p className="mt-2 text-3xl font-bold text-slate-900">{prospects.length}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Backlinks obtenus</p>
+          <p className="text-sm text-slate-500">Liens obtenus</p>
           <p className="mt-2 text-3xl font-bold text-slate-900">{backlinks.length}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -104,7 +105,7 @@ export function LinkPilotDashboard() {
           <p className="mt-2 text-3xl font-bold text-slate-900">{toxicDomains.length}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Score SEO moyen prospects</p>
+          <p className="text-sm text-slate-500">Score moyen des prospects</p>
           <div className="mt-2">
             <ScoreBadge score={averageSeoScore} />
           </div>
@@ -118,10 +119,10 @@ export function LinkPilotDashboard() {
             Ajouter prospect
           </Link>
           <Link href="/admin/seo/prospects?action=generate-email" className="rounded-xl border border-slate-300 px-4 py-2 text-center text-sm font-semibold text-slate-900 hover:bg-slate-50">
-            Générer email IA
+            Générer un e-mail
           </Link>
           <Link href="/admin/seo/campaigns?action=create" className="rounded-xl border border-slate-300 px-4 py-2 text-center text-sm font-semibold text-slate-900 hover:bg-slate-50">
-            Créer campagne
+            Créer une campagne
           </Link>
           <Link href="/admin/seo/toxic-links?action=add" className="rounded-xl border border-red-300 px-4 py-2 text-center text-sm font-semibold text-red-700 hover:bg-red-50">
             Ajouter domaine toxique
@@ -149,7 +150,7 @@ export function LinkPilotDashboard() {
                 {prospects.slice(0, 8).map((prospect) => (
                   <tr key={prospect.id} className="border-b border-slate-100">
                     <td className="px-3 py-2 font-medium text-slate-900">{prospect.domain}</td>
-                    <td className="px-3 py-2 text-slate-700">{prospect.category}</td>
+                    <td className="px-3 py-2 text-slate-700">{linkPilotCategoryLabel(prospect.category)}</td>
                     <td className="px-3 py-2">
                       <ScoreBadge score={prospect.backlink_score} />
                     </td>

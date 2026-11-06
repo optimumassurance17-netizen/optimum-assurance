@@ -40,14 +40,14 @@ export default function MotDePasseOubliePage() {
           Mot de passe oublié
         </h1>
         <p className="text-[#171717] mb-8">
-          Entrez votre email. Si un compte existe, vous recevrez un lien pour réinitialiser votre mot de passe.
+          Entrez votre e-mail. Si un compte existe, vous recevrez un lien pour réinitialiser votre mot de passe.
         </p>
 
         {sent ? (
           <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-xl">
-            <p className="font-medium text-emerald-800 mb-2">Email envoyé</p>
+            <p className="font-medium text-emerald-800 mb-2">E-mail envoyé</p>
             <p className="text-sm text-emerald-700">
-              Si un compte existe pour {email}, vous recevrez un lien par email. Vérifiez vos spams.
+              Si un compte existe pour {email}, vous recevrez un lien par e-mail. Vérifiez vos spams.
             </p>
             <Link href="/connexion" className="inline-block mt-4 text-[#2563eb] font-medium hover:underline">
               Retour à la connexion
@@ -56,7 +56,7 @@ export default function MotDePasseOubliePage() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block mb-2 font-medium text-[#0a0a0a]">Email</label>
+              <label className="block mb-2 font-medium text-[#0a0a0a]">E-mail</label>
               <input
                 type="email"
                 value={email}
