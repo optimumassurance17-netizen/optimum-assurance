@@ -65,7 +65,7 @@ assert(button.includes("Générer l'attestation"), "l'attestation peut être rel
 assert(gestion.includes("ValidateRcPaymentButton"), "le tableau des contrats propose le virement")
 assert(fiche.includes("ValidateRcPaymentButton"), "la fiche client propose le virement")
 assert(search.includes("ValidateRcPaymentButton"), "la recherche propose le virement")
-assert(email.includes("confirmationPaiementRcManuel"), "l'email de virement RC existe")
+assert(email.includes("confirmationPaiementRcManuel"), "l'e-mail de virement RC existe")
 assert(service.includes("current.productType !== \"do\""), "le paiement manuel du dommage ouvrage reste séparé")
 assert(service.includes("upsertStoredContractPdf"), "la facture déjà présente est mise à jour")
 assert(!service.includes("contractStoredDocument.createMany"), "un second insert de facture n'est plus tenté")

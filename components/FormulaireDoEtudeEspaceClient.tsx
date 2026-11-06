@@ -221,7 +221,7 @@ export function FormulaireDoEtudeEspaceClient() {
             <input className={inputClass} value={s.telephone} onChange={(e) => setSous({ telephone: e.target.value })} type="tel" />
           </div>
           <div>
-            <label className={labelClass}>Email</label>
+            <label className={labelClass}>E-mail</label>
             <input className={inputClass} value={s.email} onChange={(e) => setSous({ email: e.target.value })} type="email" />
           </div>
         </div>

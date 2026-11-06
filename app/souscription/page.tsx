@@ -347,7 +347,7 @@ export default function SouscriptionPage() {
 
           <div>
             <label className="block mb-2 font-medium text-black">
-              Email *
+              E-mail *
             </label>
             <input
               type="email"

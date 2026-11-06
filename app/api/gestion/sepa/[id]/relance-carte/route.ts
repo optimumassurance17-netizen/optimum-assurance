@@ -39,7 +39,7 @@ export async function POST(
 
     const email = sub.user.email?.trim().toLowerCase()
     if (!email) {
-      return NextResponse.json({ error: "Aucun email client sur ce dossier." }, { status: 400 })
+      return NextResponse.json({ error: "Aucun e-mail client sur ce dossier." }, { status: 400 })
     }
 
     const next = (await loadClientEcheances(sub.userId)).find((row) => row.kind === "decennale" && !row.paid)

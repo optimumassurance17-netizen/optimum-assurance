@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "email invalide" }, { status: 400 })
     }
 
-    // En session connectee, l'email serveur prime pour eviter l'envoi vers une adresse arbitraire.
+    // En session connectee, l'e-mail serveur prime pour eviter l'envoi vers une adresse arbitraire.
     const recipientEmail = sessionEmail || submittedEmail || ""
     const needsSummary = trimOptional(body.needsSummary, MAX_SUMMARY_LENGTH)
     const recommendedProduct = trimOptional(body.recommendedProduct, MAX_RECOMMENDATION_LENGTH)
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
           html: tpl.html,
         })
       } catch (emailError) {
-        console.error("Erreur envoi email devoir conseil:", emailError)
+        console.error("Erreur envoi de l'e-mail devoir conseil:", emailError)
       }
     }
 

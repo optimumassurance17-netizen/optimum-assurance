@@ -106,7 +106,7 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
           <p>{[data.adresse, data.codePostal, data.ville].filter(Boolean).join(" — ")}</p>
         )}
         {data.telephone && <p>Téléphone : {data.telephone}</p>}
-        {data.email && <p>Email : {data.email}</p>}
+        {data.email && <p>E-mail : {data.email}</p>}
         {(data.representantLegal || data.civilite) && (
           <p>Identité du représentant légal : {[data.civilite, data.representantLegal].filter(Boolean).join(" ")}</p>
         )}

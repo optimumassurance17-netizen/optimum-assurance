@@ -275,7 +275,7 @@ test.describe("Gestion — boutons d'action", () => {
     })
 
     await page.goto("/gestion")
-    await expect(page.getByRole("heading", { name: "Gestion CRM" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Espace de gestion" })).toBeVisible()
     await expect(page.getByRole("heading", { name: "Actions du jour (automatique)" })).toBeVisible()
     const actions = page.locator("#actions-du-jour")
     await expect(actions.getByRole("link", { name: /Contrat approuvé non payé/ })).toHaveAttribute(
@@ -531,7 +531,7 @@ test.describe("Gestion — boutons d'action", () => {
       "Générer attestation décennale",
       "Demander un document",
       "Demander relevé sinistralité",
-      "Envoyer un email",
+      "Envoyer un e-mail",
     ]
     for (const name of names) {
       const button = toolbar.getByRole("button", { name })
@@ -558,11 +558,11 @@ test.describe("Gestion — boutons d'action", () => {
     await expect(page.getByText("Modèle: Demande relevé de sinistralité")).toBeVisible()
     await page.getByRole("button", { name: "Annuler" }).click()
 
-    await toolbar.getByRole("button", { name: "Envoyer un email" }).click()
-    await page.getByPlaceholder("Objet de l'email").fill("Relance dossier")
+    await toolbar.getByRole("button", { name: "Envoyer un e-mail" }).click()
+    await page.getByPlaceholder("Objet de l'e-mail").fill("Relance dossier")
     await page.getByPlaceholder("Votre message...").fill("Merci de revenir vers nous.")
     await page.getByRole("button", { name: "Envoyer", exact: true }).click()
-    await expect(page.getByText("Email envoyé à client@example.com")).toBeVisible()
+    await expect(page.getByText("E-mail envoyé à client@example.com")).toBeVisible()
 
     await page.getByRole("button", { name: "Modifier les coordonnées" }).click()
     await page.getByRole("button", { name: "Enregistrer la fiche" }).click()
@@ -659,7 +659,7 @@ test.describe("Gestion — boutons d'action", () => {
 
     try {
       await page.goto("/gestion")
-      await expect(page.getByRole("heading", { name: "Gestion CRM" })).toBeVisible()
+      await expect(page.getByRole("heading", { name: "Espace de gestion" })).toBeVisible()
       await expect(page.getByRole("status")).toHaveText("Chargement du travail du jour…")
       await expect(page.getByRole("button", { name: "Export clients" })).toHaveCount(0)
       const search = page.getByLabel("Recherche fiche client")
@@ -774,7 +774,7 @@ test.describe("Gestion — boutons d'action", () => {
     await expect(clients.getByText("client-30@example.com")).toHaveCount(0)
 
     await page
-      .getByPlaceholder("Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant, devis DO)...")
+      .getByPlaceholder("Rechercher (e-mail, raison sociale, SIRET, n° contrat, signature, RC Fabriquant, devis DO)...")
       .fill("client-30@")
     await expect(clients.getByText("client-30@example.com")).toBeVisible()
     await expect(clients.getByRole("link", { name: "Fiche client →" })).toHaveCount(1)
@@ -814,7 +814,7 @@ test.describe("Gestion — boutons d'action", () => {
     const form = page.locator("#nouveau-client")
     await expect(form.getByRole("heading", { name: "Nouveau client" })).toBeVisible()
     await expect(form.getByText("pas un administrateur")).toBeVisible()
-    await form.getByLabel("Email").fill("nouveau@example.com")
+    await form.getByLabel("E-mail").fill("nouveau@example.com")
     await form.getByLabel("Raison sociale").fill("Nouveau Client")
     await form.getByLabel("SIRET").fill("55208131700034")
     await form.getByLabel("Téléphone").fill("0612345678")
@@ -836,7 +836,7 @@ test.describe("Gestion — boutons d'action", () => {
     await expect(page.locator("#devis-pdf-personnalise select").first()).toHaveValue("client_new_1")
   })
 
-  test("Un email déjà connu ne change pas le mot de passe et reste choisi pour le devis", async ({ page }) => {
+  test("Un e-mail déjà connu ne change pas le mot de passe et reste choisi pour le devis", async ({ page }) => {
     await mockAdmin(page)
     await page.route("**/api/gestion/dashboard", async (route) => {
       await route.fulfill({
@@ -855,7 +855,7 @@ test.describe("Gestion — boutons d'action", () => {
           email: "client-do@example.com",
           raisonSociale: "Client DO",
           error:
-            "Un compte client existe déjà pour cet email. Le mot de passe n'a pas été changé. Choisissez ce client dans le devis.",
+            "Un compte client existe déjà pour cet e-mail. Le mot de passe n'a pas été changé. Choisissez ce client dans le devis.",
         }),
       })
     })
@@ -863,7 +863,7 @@ test.describe("Gestion — boutons d'action", () => {
     await page.goto("/gestion")
     await page.getByRole("button", { name: "Graphiques et créations" }).click()
     const form = page.locator("#nouveau-client")
-    await form.getByLabel("Email").fill("client-do@example.com")
+    await form.getByLabel("E-mail").fill("client-do@example.com")
     await form.getByLabel("Raison sociale").fill("Client DO")
     await form.getByRole("button", { name: "Créer le compte client" }).click()
 
@@ -902,7 +902,7 @@ test.describe("Gestion — boutons d'action", () => {
 
     await page.goto("/gestion")
     await page
-      .getByPlaceholder("Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant, devis DO)...")
+      .getByPlaceholder("Rechercher (e-mail, raison sociale, SIRET, n° contrat, signature, RC Fabriquant, devis DO)...")
       .fill("ZZ-SANS-CLIENT")
     await page.getByRole("button", { name: "Graphiques et créations" }).click()
 

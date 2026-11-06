@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
         ? {}
         : {
             warning:
-              "La déclaration est enregistrée. L'email de confirmation ou l'alerte interne n'a pas pu partir.",
+              "La déclaration est enregistrée. L'e-mail de confirmation ou l'alerte interne n'a pas pu partir.",
           }),
     })
   } catch (error) {

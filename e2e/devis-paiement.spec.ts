@@ -44,7 +44,7 @@ test.describe("Parcours devis → paiement → attestation", () => {
     await expect(remplirBtn).toBeVisible()
   })
 
-  test("Devis décennale : une session admin ne préremplit pas l'email client", async ({ page }) => {
+  test("Devis décennale : une session admin ne préremplit pas l'e-mail client", async ({ page }) => {
     await mockAdminSession(page)
     await page.route("**/api/client/profile", async (route) => {
       await route.fulfill({

@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const { raisonSociale, email } = body
 
     if (!email) {
-      return NextResponse.json({ error: "Email requis" }, { status: 400 })
+      return NextResponse.json({ error: "E-mail requis" }, { status: 400 })
     }
 
     const template = EMAIL_TEMPLATES.confirmationSouscription(
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok })
   } catch (error) {
-    console.error("Erreur envoi email confirmation:", error)
+    console.error("Erreur envoi de l'e-mail confirmation:", error)
     return NextResponse.json(
       { error: "Erreur lors de l'envoi" },
       { status: 500 }

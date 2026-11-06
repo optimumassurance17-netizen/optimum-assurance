@@ -233,7 +233,7 @@ assert(clientEcheance.includes("resolveOpenCardLink"), "l'espace client renvoie 
 const prevenirAt = adminEcheance.indexOf('action === "prevenir"')
 const refreshAt = adminEcheance.indexOf("await refreshPendingCardPayment")
 assert(prevenirAt > 0 && refreshAt > prevenirAt, "l'information de refus SEPA part avant toute lecture Mollie")
-assert(adminEcheance.includes("sendSepaFailureNotice"), "le refus SEPA prévient le client par email")
+assert(adminEcheance.includes("sendSepaFailureNotice"), "le refus SEPA prévient le client par e-mail")
 const reglerAt = adminEcheance.indexOf('if (action === "regler" || action === "virement")')
 const receiptAt = adminEcheance.indexOf("sendEcheancePaidReceipt", reglerAt)
 assert(reglerAt > 0 && receiptAt > reglerAt, "le règlement manuel et le virement envoient le reçu")
@@ -414,13 +414,13 @@ assert(!dashboard.includes("payments.create") && !dashboard.includes("paymentLin
 const fiche = readFileSync(new URL("../app/gestion/clients/[id]/page.tsx", import.meta.url), "utf8")
 assert(fiche.includes("virementReference") && fiche.includes("Lien expiré"), "la fiche saisit la référence et montre le lien expiré")
 assert(fiche.includes("Prévenu le"), "la fiche affiche la date du dernier avertissement")
-assert(fiche.includes("Suspendre le QR code"), "la fiche peut suspendre le QR code de l'attestation décennale")
-assert(fiche.includes("Remettre en service"), "la fiche peut remettre le QR code en service")
-assert(fiche.includes('status: "suspendu"') && fiche.includes('status: "valide"'), "la suspension et la remise passent par le statut lu par le QR code")
+assert(fiche.includes("Suspendre le code QR"), "la fiche peut suspendre le code QR de l'attestation décennale")
+assert(fiche.includes("Remettre en service"), "la fiche peut remettre le code QR en service")
+assert(fiche.includes('status: "suspendu"') && fiche.includes('status: "valide"'), "la suspension et la remise passent par le statut lu par le code QR")
 const attestationStatus = readFileSync(new URL("../app/api/gestion/documents/[id]/status/route.ts", import.meta.url), "utf8")
 assert(attestationStatus.includes('type: { in: ["attestation", "attestation_nominative"] }') || attestationStatus.includes("DECENNALE_ATTESTATION_TYPES"), "seule une attestation décennale peut être suspendue")
 const verificationPage = readFileSync(new URL("../app/v/[token]/page.tsx", import.meta.url), "utf8")
-assert(verificationPage.includes('document.status === "suspendu"'), "le QR code affiche l'attestation suspendue")
+assert(verificationPage.includes('document.status === "suspendu"'), "le code QR affiche l'attestation suspendue")
 assert(fiche.includes("pendingLabel"), "la fiche nomme le paiement en attente sans identifiant")
 assert(!fiche.includes("data.sepa.pendingPaymentId"), "la fiche n'affiche plus l'identifiant Mollie")
 assert(clientEcheance.includes("Le lien de paiement a expiré"), "l'espace client ne recrée pas un lien expiré")
@@ -448,7 +448,7 @@ const noticed = attachSepaNotices(
     },
   ]
 )
-assert(noticed[0]?.clientNotifiedAt === "2026-10-02T10:00:00.000Z", "la date Prévenu le est celle du dernier email parti")
+assert(noticed[0]?.clientNotifiedAt === "2026-10-02T10:00:00.000Z", "la date Prévenu le est celle du dernier e-mail parti")
 assert(noticed[1]?.clientNotifiedAt === null, "une autre échéance ne reprend pas l'avertissement")
 assert(
   clientEcheanceStatusLabel({ paid: true, dueDate: "2026-01-01T00:00:00.000Z", cardLinkStatus: "none" }) === "Réglé",

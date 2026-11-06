@@ -73,7 +73,7 @@ export default function Chatbot() {
         ...m,
         {
           role: "assistant",
-          content: "Une erreur est survenue. Contactez-nous par email : " + contactEmail,
+          content: "Une erreur est survenue. Contactez-nous par e-mail : " + contactEmail,
         },
       ])
     } finally {

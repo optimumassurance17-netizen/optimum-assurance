@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     if (!nom?.trim() || !email?.trim() || !message?.trim()) {
       return NextResponse.json(
-        { error: "Nom, email et message sont requis" },
+        { error: "Nom, e-mail et message sont requis" },
         { status: 400 }
       )
     }
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const text = `Nouveau message depuis le formulaire de contact :
 
 Nom : ${nomT}
-Email : ${emailT}
+E-mail : ${emailT}
 Sujet : ${sujetT}
 
 Message :
@@ -43,7 +43,7 @@ Notification automatique — formulaire optimum-assurance.fr`.trim()
     const html = `
 <p style="font-weight:600;font-size:16px;margin:0 0 18px;color:#0f172a;">Nouveau message — formulaire de contact</p>
 <p><strong>Nom :</strong> ${escapeHtmlForEmail(nomT)}</p>
-<p><strong>Email du visiteur :</strong> <a href="mailto:${escapeHtmlForEmail(emailT)}" style="color:#2563eb;">${escapeHtmlForEmail(emailT)}</a></p>
+<p><strong>E-mail du visiteur :</strong> <a href="mailto:${escapeHtmlForEmail(emailT)}" style="color:#2563eb;">${escapeHtmlForEmail(emailT)}</a></p>
 <p><strong>Sujet :</strong> ${escapeHtmlForEmail(sujetT)}</p>
 <p style="margin-top:18px;margin-bottom:8px;"><strong>Message</strong></p>
 <p style="margin:0;white-space:pre-wrap;background:#f8fafc;padding:14px 16px;border-radius:10px;border:1px solid #e2e8f0;color:#0f172a;">${escapeHtmlForEmail(messageT)}</p>

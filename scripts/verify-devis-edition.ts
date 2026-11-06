@@ -157,14 +157,14 @@ const quoteIdentity = overlayAccountIdentityOnDocument(
   { email: "chantier@example.com", raisonSociale: "Chantier SAS" },
   { email: "compte@example.com", raisonSociale: "Compte SAS" }
 )
-assert(quoteIdentity.email === "chantier@example.com", "le devis DO garde son email")
+assert(quoteIdentity.email === "chantier@example.com", "le devis DO garde son e-mail")
 assert(quoteIdentity.raisonSociale === "Chantier SAS", "le devis DO garde sa raison sociale")
 const contractIdentity = overlayAccountIdentityOnDocument(
   "contrat",
   { email: "ancien@example.com", raisonSociale: "Ancienne SAS" },
   { email: "compte@example.com", raisonSociale: "Compte SAS" }
 )
-assert(contractIdentity.email === "compte@example.com", "le contrat affiche l'email du compte")
+assert(contractIdentity.email === "compte@example.com", "le contrat affiche l'e-mail du compte")
 assert(contractIdentity.raisonSociale === "Compte SAS", "le contrat affiche la raison sociale du compte")
 
 const gestionRoute = read("../app/api/gestion/documents/[id]/route.ts")
@@ -183,8 +183,8 @@ const devisDoRoute = read("../app/api/gestion/clients/[id]/devis-do/route.ts")
 assert(gestionRoute.includes("documentSyncsAccountIdentity"), "la gestion n'aligne le compte que pour un contrat")
 assert(gestionRoute.includes("overlayAccountIdentityOnDocument"), "la gestion laisse l'identité du devis")
 assert(clientRoute.includes("documentSyncsAccountIdentity"), "l'espace client n'aligne le compte que pour un contrat")
-assert(!pdfRoute.includes("document.user.email"), "le PDF du devis garde l'email du document")
-assert(!exportRoute.includes("doc.user.email"), "l'export PDF garde l'email du devis")
+assert(!pdfRoute.includes("document.user.email"), "le PDF du devis garde l'e-mail du document")
+assert(!exportRoute.includes("doc.user.email"), "l'export PDF garde l'e-mail du devis")
 assert(gestionRoute.includes("isGestionEditableDocumentType"), "la gestion accepte le devis")
 assert(gestionRoute.includes("alignDoDevisStoredData"), "le devis DO aligne l'adresse et le montant")
 assert(!gestionRoute.includes("payments.create"), "modifier un devis ne crée pas de paiement")
@@ -225,7 +225,7 @@ assert(clientPage.includes("isClientQuoteEditionLocked"), "l'écran client ferme
 assert(clientPage.includes("isContractCoverageLocked"), "l'écran client débloque le contrat autorisé")
 assert(fiche.includes("Sans cette autorisation, le client ne peut pas modifier le devis."), "la fiche explique le verrou du devis")
 assert(button.includes("ne changent pas le compte de connexion"), "le devis prévient que le compte reste inchangé")
-assert(clientPage.includes("ne modifient pas l&apos;email de connexion"), "l'écran client prévient que le compte reste inchangé")
+assert(clientPage.includes("ne modifient pas l&apos;e-mail de connexion"), "l'écran client prévient que le compte reste inchangé")
 assert(button.includes("Modifier le devis"), "le bouton annonce la modification du devis")
 assert(button.includes("Enregistrer le devis"), "l'enregistrement met à jour le devis ouvert")
 assert(!button.includes("payments.create"), "le bouton ne crée pas de paiement")

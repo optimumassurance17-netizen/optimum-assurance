@@ -168,7 +168,7 @@ export function FormulaireRcFabriquant() {
         <p className="text-lg font-semibold text-emerald-900 mb-2">Demande envoyée</p>
         <p className="text-slate-700 text-sm mb-6">
           Nous avons bien reçu votre demande de devis RC Fabriquant. Un conseiller vous recontacte en général sous{" "}
-          <strong>24 à 48 h ouvrées</strong>. Un email de confirmation vient de vous être envoyé.
+          <strong>24 à 48 h ouvrées</strong>. Un e-mail de confirmation vient de vous être envoyé.
         </p>
         <Link href="/" className="text-blue-600 font-semibold hover:underline">
           Retour à l’accueil
@@ -178,7 +178,7 @@ export function FormulaireRcFabriquant() {
           raisonSociale={data.raisonSociale}
           siret={data.siret}
           telephone={data.telephone}
-          intro="Le compte est créé automatiquement avec l’e-mail de la demande. Le mot de passe arrive par email."
+          intro="Le compte est créé automatiquement avec l’e-mail de la demande. Le mot de passe arrive par e-mail."
         />
       </div>
     )

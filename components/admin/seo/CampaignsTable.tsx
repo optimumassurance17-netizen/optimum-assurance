@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { LINKABLE_ASSETS, LINKPILOT_CAMPAIGN_STATUSES, LINKPILOT_CATEGORIES } from "@/lib/linkpilot/constants"
+import { LINKABLE_ASSETS, LINKPILOT_CAMPAIGN_STATUSES, LINKPILOT_CATEGORIES, linkPilotCategoryLabel, linkPilotStatusLabel } from "@/lib/linkpilot/constants"
 import { StatusBadge } from "@/components/admin/seo/StatusBadge"
 
 type Campaign = {
@@ -163,7 +163,7 @@ export function CampaignsTable() {
             onClick={() => setCreating((value) => !value)}
             className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
           >
-            {creating ? "Fermer" : "Créer campagne"}
+            {creating ? "Fermer" : "Créer une campagne"}
           </button>
           <button
             onClick={() => void load()}
@@ -180,7 +180,7 @@ export function CampaignsTable() {
           <div className="grid gap-3 md:grid-cols-2">
             <input
               required
-              placeholder="Nom campagne"
+              placeholder="Nom de la campagne"
               value={form.name}
               onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
               className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
@@ -192,12 +192,12 @@ export function CampaignsTable() {
             >
               {LINKPILOT_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
-                  {category}
+                  {linkPilotCategoryLabel(category)}
                 </option>
               ))}
             </select>
             <input
-              placeholder="Email subject (optionnel)"
+              placeholder="Objet de l'e-mail (facultatif)"
               value={form.email_subject}
               onChange={(event) => setForm((prev) => ({ ...prev, email_subject: event.target.value }))}
               className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
@@ -209,19 +209,19 @@ export function CampaignsTable() {
             >
               {LINKPILOT_CAMPAIGN_STATUSES.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {linkPilotStatusLabel(status)}
                 </option>
               ))}
             </select>
             <textarea
-              placeholder="Corps email (optionnel)"
+              placeholder="Corps de l'e-mail (facultatif)"
               value={form.email_body}
               onChange={(event) => setForm((prev) => ({ ...prev, email_body: event.target.value }))}
               className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-sm md:col-span-2"
             />
           </div>
           <button className="mt-3 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-            Enregistrer campagne
+            Enregistrer la campagne
           </button>
         </form>
       ) : null}
@@ -242,7 +242,7 @@ export function CampaignsTable() {
                   <th className="px-3 py-2">Catégorie</th>
                   <th className="px-3 py-2">Prospects associés</th>
                   <th className="px-3 py-2">Statut</th>
-                  <th className="px-3 py-2">Email modèle</th>
+                  <th className="px-3 py-2">Modèle d&apos;e-mail</th>
                   <th className="px-3 py-2">Actions</th>
                 </tr>
               </thead>
@@ -253,7 +253,7 @@ export function CampaignsTable() {
                       <p className="font-semibold text-slate-900">{campaign.name}</p>
                       <p className="text-xs text-slate-500">{new Date(campaign.created_at).toLocaleString("fr-FR")}</p>
                     </td>
-                    <td className="px-3 py-2">{campaign.target_category ?? "toutes"}</td>
+                    <td className="px-3 py-2">{campaign.target_category ? linkPilotCategoryLabel(campaign.target_category) : "Toutes"}</td>
                     <td className="px-3 py-2">{prospectsCountByCategory(campaign.target_category)}</td>
                     <td className="px-3 py-2">
                       <StatusBadge status={campaign.status} />
@@ -270,7 +270,7 @@ export function CampaignsTable() {
                         >
                           {LINKPILOT_CAMPAIGN_STATUSES.map((status) => (
                             <option key={status} value={status}>
-                              {status}
+                              {linkPilotStatusLabel(status)}
                             </option>
                           ))}
                         </select>

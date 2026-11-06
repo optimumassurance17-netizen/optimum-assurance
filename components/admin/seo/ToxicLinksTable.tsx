@@ -75,7 +75,7 @@ export function ToxicLinksTable() {
         <div className="grid gap-3 md:grid-cols-4">
           <input
             required
-            placeholder="domain.tld"
+            placeholder="exemple.fr"
             value={form.domain}
             onChange={(event) => setForm((prev) => ({ ...prev, domain: event.target.value }))}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
@@ -114,7 +114,7 @@ export function ToxicLinksTable() {
                 <tr className="border-b border-slate-200 bg-slate-50 text-left">
                   <th className="px-3 py-2">Domaine</th>
                   <th className="px-3 py-2">Raison</th>
-                  <th className="px-3 py-2">Spam score</th>
+                  <th className="px-3 py-2">Score d&apos;indésirabilité</th>
                   <th className="px-3 py-2">Ajouté le</th>
                   <th className="px-3 py-2">Action</th>
                 </tr>

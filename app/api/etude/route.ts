@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const { email, raisonSociale, siret, data } = body
 
     if (!email || typeof email !== "string" || !email.includes("@")) {
-      return NextResponse.json({ error: "Email valide requis" }, { status: 400 })
+      return NextResponse.json({ error: "E-mail valide requis" }, { status: 400 })
     }
 
     const dataObj = typeof data === "object" && data !== null ? data : {}

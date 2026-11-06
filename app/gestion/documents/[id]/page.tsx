@@ -137,13 +137,13 @@ export default function GestionDocumentPage() {
                     if (!res.ok) throw new Error(json.error || "Erreur")
                     if (json.emailSent === false) {
                       setToast({
-                        message: json.warning || "Email non envoyé.",
+                        message: json.warning || "E-mail non envoyé.",
                         type: "warning",
                       })
                       return
                     }
                     setToast({
-                      message: `Contrat ${json.contractNumero ?? ""} — lien de signature envoyé à l’email du client.`,
+                      message: `Contrat ${json.contractNumero ?? ""} — lien de signature envoyé à l’e-mail du client.`,
                       type: "success",
                     })
                   } catch (e) {
@@ -205,7 +205,7 @@ export default function GestionDocumentPage() {
             >
               Imprimer / PDF
             </button>
-            <Link href="/gestion" className="text-gray-200 hover:text-white text-sm">Dashboard</Link>
+            <Link href="/gestion" className="text-gray-200 hover:text-white text-sm">Tableau de bord</Link>
           </div>
         </div>
       </header>

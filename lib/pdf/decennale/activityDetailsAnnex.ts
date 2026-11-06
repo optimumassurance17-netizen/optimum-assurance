@@ -35,7 +35,7 @@ function drawActivityDetailBlock(
   y -= 14
   y = drawWrappedText(
     page,
-    `Definition : ${detail.definition}`,
+    `Définition : ${detail.definition}`,
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,
@@ -46,7 +46,7 @@ function drawActivityDetailBlock(
   y -= 4
   y = drawWrappedText(
     page,
-    "Exclusions specifiques :",
+    "Exclusions spécifiques :",
     PDF_PAGE.marginX,
     y,
     PDF_PAGE.contentWidth,

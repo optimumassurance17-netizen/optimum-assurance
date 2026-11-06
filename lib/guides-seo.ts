@@ -197,7 +197,7 @@ export const GUIDES_SEO = [
       },
       {
         type: "p",
-        text: "Contactez-nous par email ou via l'assistant en ligne (bouton en bas à droite du site). Nos experts vous accompagnent pour constituer votre dossier : description des faits, photos, devis, factures, courriers du maître d'ouvrage.",
+        text: "Contactez-nous par e-mail ou via l'assistant en ligne (bouton en bas à droite du site). Nos experts vous accompagnent pour constituer votre dossier : description des faits, photos, devis, factures, courriers du maître d'ouvrage.",
       },
       {
         type: "h2",
@@ -213,7 +213,7 @@ export const GUIDES_SEO = [
       },
       {
         type: "p",
-        text: "Dès qu'un client, un maître d'ouvrage ou un assureur DO vous signale un désordre, conservez toutes les preuves disponibles : emails, courriers, photos, dates d'intervention, devis, factures et échanges avec les autres entreprises. Plus votre dossier est documenté, plus l'instruction du sinistre est fluide.",
+        text: "Dès qu'un client, un maître d'ouvrage ou un assureur DO vous signale un désordre, conservez toutes les preuves disponibles : e-mails, courriers, photos, dates d'intervention, devis, factures et échanges avec les autres entreprises. Plus votre dossier est documenté, plus l'instruction du sinistre est fluide.",
       },
       {
         type: "h2",
@@ -370,7 +370,7 @@ export const GUIDES_SEO = [
       },
       {
         type: "p",
-        text: "Après le devis, la signature du contrat et le paiement du premier trimestre, le dossier est contrôlé. L'attestation est mise à disposition dans l'espace client une fois le risque accepté. Le document comporte un QR code de vérification. Elle n'est pas délivrée tant que le paiement et le contrôle ne sont pas terminés.",
+        text: "Après le devis, la signature du contrat et le paiement du premier trimestre, le dossier est contrôlé. L'attestation est mise à disposition dans l'espace client une fois le risque accepté. Le document comporte un code QR de vérification. Elle n'est pas délivrée tant que le paiement et le contrôle ne sont pas terminés.",
       },
     ],
   },
@@ -538,7 +538,7 @@ export const GUIDES_SEO = [
       },
       {
         type: "p",
-        text: "La demande se lance sur le formulaire dommage ouvrage, puis la souscription se poursuit en ligne avec le même email. Le règlement est un virement unique du montant indiqué. Les pièces se déposent dans l'espace client. Le questionnaire d'étude reprend l'opération, l'ouvrage, les coûts et les éléments techniques.",
+        text: "La demande se lance sur le formulaire dommage ouvrage, puis la souscription se poursuit en ligne avec le même e-mail. Le règlement est un virement unique du montant indiqué. Les pièces se déposent dans l'espace client. Le questionnaire d'étude reprend l'opération, l'ouvrage, les coûts et les éléments techniques.",
       },
     ],
   },

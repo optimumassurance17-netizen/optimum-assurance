@@ -31,7 +31,7 @@ const index = (table: string) => deleteNames.indexOf(table)
 assert(index("ResiliationLog") < index("Document"), "le journal de résiliation part avant le document")
 assert(index("ResiliationRequest") < index("Document"), "la demande de résiliation part avant le document")
 assert(index("Sinistre") < index("UserDocument"), "le sinistre part avant le fichier GED")
-assert(normalizeAccountEmail("  Jean@Example.FR ") === "jean@example.fr", "l'email de compte est normalisé")
+assert(normalizeAccountEmail("  Jean@Example.FR ") === "jean@example.fr", "l'e-mail de compte est normalisé")
 assert(normalizeAccountSiret("732 829 320 00074") === "73282932000074", "le SIRET est comparable sans espaces")
 assert(normalizeAccountSiret("123") === null, "un SIRET incomplet ne sert pas de clé")
 

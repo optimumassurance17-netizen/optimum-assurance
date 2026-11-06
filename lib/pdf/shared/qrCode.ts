@@ -49,7 +49,7 @@ export function drawAttestationQrRow(
 }
 
 /**
- * Embarque un QR code PNG (vérification) dans le document pdf-lib.
+ * Embarque un code QR PNG (vérification) dans le document pdf-lib.
  */
 export async function embedVerificationQr(pdfDoc: PDFDocument, verificationUrl: string) {
   try {

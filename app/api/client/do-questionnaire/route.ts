@@ -138,7 +138,7 @@ export async function PUT(request: Request) {
     }
     const emailClient = session.user.email?.trim()
     if (!emailClient) {
-      return NextResponse.json({ error: "Email de session manquant" }, { status: 400 })
+      return NextResponse.json({ error: "E-mail de session manquant" }, { status: 400 })
     }
 
     const avant = await prisma.user.findUnique({

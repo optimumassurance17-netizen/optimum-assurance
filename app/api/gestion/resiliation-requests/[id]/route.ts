@@ -105,7 +105,7 @@ export async function PATCH(
           status: "approved",
           emailSent: false,
           warning:
-            "Résiliation autorisée, mais email client non envoyé (RESEND_API_KEY / domaine expéditeur).",
+            "Résiliation autorisée, mais e-mail client non envoyé (RESEND_API_KEY / domaine expéditeur).",
         })
       }
     }

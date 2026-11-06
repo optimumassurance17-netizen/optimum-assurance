@@ -56,7 +56,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
 
     const email = document.user.email?.trim().toLowerCase()
     if (!email) {
-      return NextResponse.json({ error: "Aucun email client sur cette attestation." }, { status: 400 })
+      return NextResponse.json({ error: "Aucun e-mail client sur cette attestation." }, { status: 400 })
     }
 
     const amount = montantDuFromAttestation(document.data)

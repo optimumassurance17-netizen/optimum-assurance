@@ -263,7 +263,7 @@ export function FormulaireAssuranceTitre() {
             siret={normalizeSiret(data.siret)}
             telephone={data.telephone}
             redirectTo="/espace-client/assurance-titre"
-            intro="Le compte est créé automatiquement avec l’email de la demande. Le mot de passe arrive par email."
+            intro="Le compte est créé automatiquement avec l’e-mail de la demande. Le mot de passe arrive par e-mail."
           />
         </div>
       </div>

@@ -38,7 +38,7 @@ const otherAddress = doDevisMatchKey({
   data: { ...chantier, adresseConstruction: "12 rue de Lyon", villeConstruction: "Lyon", codePostalConstruction: "69001" },
   coutTotal: 180000,
 })
-assert(sameAddress === sameAddressStored, "le même email et la même adresse partagent une clé")
+assert(sameAddress === sameAddressStored, "le même e-mail et la même adresse partagent une clé")
 assert(sameAddress !== otherAddress, "une autre adresse de chantier ne reprend pas la même demande")
 
 const company = doDevisMatchKey({

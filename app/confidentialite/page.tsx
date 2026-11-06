@@ -14,7 +14,7 @@ export default function ConfidentialitePage() {
           </section>
           <section>
             <h2 className="text-xl font-semibold text-black">2. Données collectées</h2>
-            <p>Nous collectons : identité (raison sociale, SIRET, représentant légal), coordonnées (email, téléphone, adresse), informations relatives à votre activité (chiffre d&apos;affaires, sinistres, activités assurées), données de paiement (traitées par Mollie).</p>
+            <p>Nous collectons : identité (raison sociale, SIRET, représentant légal), coordonnées (e-mail, téléphone, adresse), informations relatives à votre activité (chiffre d&apos;affaires, sinistres, activités assurées), données de paiement (traitées par Mollie).</p>
           </section>
           <section>
             <h2 className="text-xl font-semibold text-black">3. Finalités</h2>

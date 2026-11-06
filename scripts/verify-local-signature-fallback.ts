@@ -107,7 +107,7 @@ async function main() {
   assert(gestion.includes("Rappeler"), "la relance de signature reste disponible depuis la gestion")
   assert(!gestion.includes("s.repairEligible ?"), "la réparation n'attend plus 24 heures")
   const repairRoute = readFileSync("app/api/gestion/signatures/repair/route.ts", "utf8")
-  assert(repairRoute.includes("sendPendingSignatureReminder"), "Réparer relance la signature par email")
+  assert(repairRoute.includes("sendPendingSignatureReminder"), "Réparer relance la signature par e-mail")
   assert(
     !repairRoute.includes("repairPendingSignature"),
     "Réparer n'interroge plus Supabase avant le rappel"

@@ -1,5 +1,5 @@
 /**
- * Structure d'envoi d'emails
+ * Structure d'envoi d'e-mails
  * Utilise Resend (RESEND_API_KEY) ou autre fournisseur
  */
 
@@ -77,7 +77,7 @@ export async function sendEmail(params: {
 }): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
-    console.warn("RESEND_API_KEY non configuré - email non envoyé")
+    console.warn("RESEND_API_KEY non configuré - e-mail non envoyé")
     return false
   }
 
@@ -147,9 +147,9 @@ export async function sendEmail(params: {
   return res.ok
 }
 
-/** Réponse HTTP 200 quand l'action gestion est valide mais que Resend n'a pas délivré l'email. */
+/** Réponse HTTP 200 quand l'action gestion est valide mais que Resend n'a pas délivré l'e-mail. */
 export const EMAIL_NOT_SENT_MESSAGE =
-  "Email non envoyé (Resend ou domaine expéditeur). Aucun message n'est parti."
+  "E-mail non envoyé (Resend ou domaine expéditeur). Aucun message n'est parti."
 
 export function emailNotSentBody() {
   return {
@@ -253,10 +253,10 @@ export const EMAIL_TEMPLATES = {
     return {
       subject: `Échéance du ${echeanceLe} — facture ${numeroFacture} - Optimum Assurance`,
       text:
-        `Bonjour ${raisonSociale},\n\nVotre ${label} de ${montant.toLocaleString("fr-FR")} € arrive à échéance ${when}.\n\nLa facture ${numeroFacture} est jointe à cet email. Le prélèvement automatique interviendra à cette date si votre mandat SEPA est actif.\n\nEspace client : ${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance` +
+        `Bonjour ${raisonSociale},\n\nVotre ${label} de ${montant.toLocaleString("fr-FR")} € arrive à échéance ${when}.\n\nLa facture ${numeroFacture} est jointe à cet e-mail. Le prélèvement automatique interviendra à cette date si votre mandat SEPA est actif.\n\nEspace client : ${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance` +
         reminderUnsubscribeTextFooter("paiement", recipientEmail),
       html:
-        `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre <strong>${escapeHtmlForEmail(label)}</strong> de <strong>${montant.toLocaleString("fr-FR")} €</strong> arrive à échéance ${escapeHtmlForEmail(when)}.</p><p>La facture <strong>${escapeHtmlForEmail(numeroFacture)}</strong> est jointe à cet email. Le prélèvement automatique interviendra à cette date si votre mandat SEPA est actif.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
+        `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Votre <strong>${escapeHtmlForEmail(label)}</strong> de <strong>${montant.toLocaleString("fr-FR")} €</strong> arrive à échéance ${escapeHtmlForEmail(when)}.</p><p>La facture <strong>${escapeHtmlForEmail(numeroFacture)}</strong> est jointe à cet e-mail. Le prélèvement automatique interviendra à cette date si votre mandat SEPA est actif.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>` +
         reminderUnsubscribeHtmlFooter("paiement", recipientEmail),
     }
   },
@@ -326,8 +326,8 @@ export const EMAIL_TEMPLATES = {
   }),
   motDePasseReinitialisation: (resetUrl: string) => ({
     subject: "Réinitialisation de votre mot de passe - Optimum Assurance",
-    text: `Bonjour,\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\nOuvrez ce lien (valable 1 heure) :\n${resetUrl}\n\nSi vous n'avez pas fait cette demande, ignorez cet email.\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour,</p><p>Vous avez demandé la réinitialisation de votre mot de passe.</p><p><a href="${resetUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Réinitialiser mon mot de passe</a></p><p style="font-size:13px;color:#64748b;margin-top:16px;">Ce lien expire dans <strong>1 heure</strong>. Si vous n'avez pas fait cette demande, ignorez cet email.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+    text: `Bonjour,\n\nVous avez demandé la réinitialisation de votre mot de passe.\n\nOuvrez ce lien (valable 1 heure) :\n${resetUrl}\n\nSi vous n'avez pas fait cette demande, ignorez cet e-mail.\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour,</p><p>Vous avez demandé la réinitialisation de votre mot de passe.</p><p><a href="${resetUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Réinitialiser mon mot de passe</a></p><p style="font-size:13px;color:#64748b;margin-top:16px;">Ce lien expire dans <strong>1 heure</strong>. Si vous n'avez pas fait cette demande, ignorez cet e-mail.</p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
   confirmationSouscription: (raisonSociale: string) => ({
     subject: "Souscription confirmée - Optimum Assurance",
@@ -448,8 +448,8 @@ export const EMAIL_TEMPLATES = {
       : ""
     return {
       subject: `Devoir de conseil confirmé — ${opts.produitLabel} - Optimum Assurance`,
-      text: `Bonjour ${raisonSociale},\n\nNous vous confirmons l'enregistrement de votre devoir de conseil pour votre dossier ${opts.produitLabel}.\n\nDate de confirmation : ${opts.acceptedAt}\n\nRappel du devoir de conseil :\n${opts.contenu}${needsText}${recommendationText}\n\nRéférences utiles :\n${linksText}\n\nConservez cet email avec vos documents contractuels.\n\nCordialement,\nOptimum Assurance`,
-      html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Nous vous confirmons l'enregistrement de votre <strong>devoir de conseil</strong> pour votre dossier <strong>${escapeHtmlForEmail(opts.produitLabel)}</strong>.</p><p><strong>Date de confirmation :</strong> ${escapeHtmlForEmail(opts.acceptedAt)}</p><p><strong>Rappel du devoir de conseil :</strong><br/>${escapeHtmlForEmail(opts.contenu)}</p>${needsHtml}${recommendationHtml}<p><strong>Références utiles :</strong></p><ul>${linksHtml}</ul><p style="font-size:13px;color:#64748b;">Conservez cet email avec vos documents contractuels.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+      text: `Bonjour ${raisonSociale},\n\nNous vous confirmons l'enregistrement de votre devoir de conseil pour votre dossier ${opts.produitLabel}.\n\nDate de confirmation : ${opts.acceptedAt}\n\nRappel du devoir de conseil :\n${opts.contenu}${needsText}${recommendationText}\n\nRéférences utiles :\n${linksText}\n\nConservez cet e-mail avec vos documents contractuels.\n\nCordialement,\nOptimum Assurance`,
+      html: `<p>Bonjour ${escapeHtmlForEmail(raisonSociale)},</p><p>Nous vous confirmons l'enregistrement de votre <strong>devoir de conseil</strong> pour votre dossier <strong>${escapeHtmlForEmail(opts.produitLabel)}</strong>.</p><p><strong>Date de confirmation :</strong> ${escapeHtmlForEmail(opts.acceptedAt)}</p><p><strong>Rappel du devoir de conseil :</strong><br/>${escapeHtmlForEmail(opts.contenu)}</p>${needsHtml}${recommendationHtml}<p><strong>Références utiles :</strong></p><ul>${linksHtml}</ul><p style="font-size:13px;color:#64748b;">Conservez cet e-mail avec vos documents contractuels.</p><p>Cordialement,<br>Optimum Assurance</p>`,
     }
   },
   pieceGedRefusee: (raisonSociale: string, documentLabel: string, reason: string) => ({
@@ -464,8 +464,8 @@ export const EMAIL_TEMPLATES = {
   }),
   confirmationPaiementDo: (raisonSociale: string, numero: string, montant: number) => ({
     subject: `Paiement confirmé - Devis dommage ouvrage ${numero} - Optimum Assurance`,
-    text: `Bonjour ${raisonSociale},\n\nVotre virement de ${montant.toLocaleString("fr-FR")} € (Mollie) pour le devis dommage ouvrage ${numero} a bien été enregistré.\n\nVotre attestation DO et votre facture acquittée sont dans votre espace client. L'attestation comporte un QR code de vérification. Validité 10 ans, non résiliable.\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour ${raisonSociale},</p><p>Votre <strong>virement</strong> de <strong>${montant.toLocaleString("fr-FR")} €</strong> (Mollie) pour le devis dommage ouvrage ${numero} a bien été enregistré.</p><p>Votre attestation DO et votre facture acquittée sont dans votre espace client. QR code sur l’attestation. Validité 10 ans, non résiliable.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+    text: `Bonjour ${raisonSociale},\n\nVotre virement de ${montant.toLocaleString("fr-FR")} € (Mollie) pour le devis dommage ouvrage ${numero} a bien été enregistré.\n\nVotre attestation DO et votre facture acquittée sont dans votre espace client. L'attestation comporte un code QR de vérification. Validité 10 ans, non résiliable.\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${raisonSociale},</p><p>Votre <strong>virement</strong> de <strong>${montant.toLocaleString("fr-FR")} €</strong> (Mollie) pour le devis dommage ouvrage ${numero} a bien été enregistré.</p><p>Votre attestation DO et votre facture acquittée sont dans votre espace client. code QR sur l’attestation. Validité 10 ans, non résiliable.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
   confirmationPaiementRcManuel: (
     raisonSociale: string,
@@ -494,8 +494,8 @@ export const EMAIL_TEMPLATES = {
     montant: number
   ) => ({
     subject: `Paiement reçu — 1er trimestre décennale (${numeroFacture}) - Optimum Assurance`,
-    text: `Bonjour ${raisonSociale},\n\nNous avons bien enregistré votre paiement de ${montant.toLocaleString("fr-FR")} € (Mollie) pour le premier trimestre de votre assurance décennale.\n\nVotre facture acquittée ${numeroFacture} est jointe à cet email et disponible dans votre espace client.\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour ${raisonSociale},</p><p>Nous avons bien enregistré votre <strong>paiement par carte</strong> de <strong>${montant.toLocaleString("fr-FR")} €</strong> (Mollie) pour le <strong>premier trimestre</strong> de votre assurance décennale.</p><p>Votre <strong>facture acquittée ${numeroFacture}</strong> est jointe à cet email et disponible dans votre espace client.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
+    text: `Bonjour ${raisonSociale},\n\nNous avons bien enregistré votre paiement de ${montant.toLocaleString("fr-FR")} € (Mollie) pour le premier trimestre de votre assurance décennale.\n\nVotre facture acquittée ${numeroFacture} est jointe à cet e-mail et disponible dans votre espace client.\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${raisonSociale},</p><p>Nous avons bien enregistré votre <strong>paiement par carte</strong> de <strong>${montant.toLocaleString("fr-FR")} €</strong> (Mollie) pour le <strong>premier trimestre</strong> de votre assurance décennale.</p><p>Votre <strong>facture acquittée ${numeroFacture}</strong> est jointe à cet e-mail et disponible dans votre espace client.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
   devisDoAjoute: (raisonSociale: string, numero: string, primeAnnuelle: number) => ({
     subject: `Votre devis et conditions dommage ouvrage ${numero} sont disponibles - Optimum Assurance`,
@@ -524,10 +524,10 @@ export const EMAIL_TEMPLATES = {
     const safeRef = escapeHtmlForEmail(numeroReference)
     const continueUrl = `${APP_URL}/souscription-dommage-ouvrage`
     const nextText = opts?.canContinueOnline
-      ? `\n\nProchaine étape : connectez-vous ou créez votre compte avec cette adresse email, puis poursuivez la souscription :\n${continueUrl}\n\nLe règlement est un virement unique Mollie du montant indiqué dans le PDF. L'attestation est délivrée après réception des fonds.\n`
+      ? `\n\nProchaine étape : connectez-vous ou créez votre compte avec cette adresse e-mail, puis poursuivez la souscription :\n${continueUrl}\n\nLe règlement est un virement unique Mollie du montant indiqué dans le PDF. L'attestation est délivrée après réception des fonds.\n`
       : `\n\nNotre équipe étudie votre dossier. Vous pouvez créer votre espace client pour déposer les pièces :\n${APP_URL}/espace-client\n`
     const nextHtml = opts?.canContinueOnline
-      ? `<p>Prochaine étape : connectez-vous ou créez votre compte avec cette adresse email, puis poursuivez la souscription.</p><p><a href="${continueUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Poursuivre ma souscription</a></p><p>Le règlement est un <strong>virement unique</strong> Mollie du montant indiqué dans le PDF. L'attestation est délivrée après réception des fonds.</p>`
+      ? `<p>Prochaine étape : connectez-vous ou créez votre compte avec cette adresse e-mail, puis poursuivez la souscription.</p><p><a href="${continueUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Poursuivre ma souscription</a></p><p>Le règlement est un <strong>virement unique</strong> Mollie du montant indiqué dans le PDF. L'attestation est délivrée après réception des fonds.</p>`
       : `<p>Notre équipe étudie votre dossier. Vous pouvez créer votre espace client pour déposer les pièces.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à l'espace client</a></p>`
     return {
       subject: `Votre estimation dommage ouvrage ${numeroReference} - Optimum Assurance`,
@@ -537,14 +537,14 @@ export const EMAIL_TEMPLATES = {
   },
   demandeAssuranceTitreRecue: (nomComplet: string) => ({
     subject: "Demande Assurance titre bien reçue - Optimum Assurance",
-    text: `Bonjour ${nomComplet},\n\nNous avons bien enregistré votre demande d'étude pour une assurance titre.\n\nNotre équipe analyse votre dossier (type d'actif, opération, calendrier et points de risque identifiés) et revient vers vous en général sous 24 à 48 h ouvrées.\n\nL'assurance titre est étudiée au cas par cas et intervient en complément des vérifications notariales / juridiques.\n\nPour toute précision : répondez à cet email ou écrivez-nous via ${APP_URL}/contact\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour ${nomComplet},</p><p>Nous avons bien enregistré votre <strong>demande d'étude Assurance titre</strong>.</p><p>Notre équipe analyse votre dossier (type d'actif, opération, calendrier et points de risque identifiés) et revient vers vous en général sous <strong>24 à 48 h ouvrées</strong>.</p><p>L'assurance titre est étudiée au cas par cas et intervient en complément des vérifications notariales / juridiques.</p><p>Pour toute précision : répondez à cet email ou utilisez notre <a href="${APP_URL}/contact" style="color:#2563eb;font-weight:bold">formulaire de contact</a>.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+    text: `Bonjour ${nomComplet},\n\nNous avons bien enregistré votre demande d'étude pour une assurance titre.\n\nNotre équipe analyse votre dossier (type d'actif, opération, calendrier et points de risque identifiés) et revient vers vous en général sous 24 à 48 h ouvrées.\n\nL'assurance titre est étudiée au cas par cas et intervient en complément des vérifications notariales / juridiques.\n\nPour toute précision : répondez à cet e-mail ou écrivez-nous via ${APP_URL}/contact\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${nomComplet},</p><p>Nous avons bien enregistré votre <strong>demande d'étude Assurance titre</strong>.</p><p>Notre équipe analyse votre dossier (type d'actif, opération, calendrier et points de risque identifiés) et revient vers vous en général sous <strong>24 à 48 h ouvrées</strong>.</p><p>L'assurance titre est étudiée au cas par cas et intervient en complément des vérifications notariales / juridiques.</p><p>Pour toute précision : répondez à cet e-mail ou utilisez notre <a href="${APP_URL}/contact" style="color:#2563eb;font-weight:bold">formulaire de contact</a>.</p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
   /** RC Fabriquant — pas de PDF automatique ; étude par un conseiller. */
   demandeRcFabriquantRecue: (raisonSociale: string) => ({
     subject: "Demande de devis RC Fabriquant bien reçue - Optimum Assurance",
-    text: `Bonjour ${raisonSociale},\n\nNous avons bien enregistré votre demande de devis pour une assurance Responsabilité Civile Fabriquant.\n\nUn conseiller étudiera votre dossier (activité, zones de commercialisation, chiffre d’affaires) et vous recontacte en général sous 24 à 48 h ouvrées avec une proposition adaptée.\n\nPour toute précision : répondez à cet email ou écrivez-nous via ${APP_URL}/contact\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour ${raisonSociale},</p><p>Nous avons bien enregistré votre demande de devis pour une assurance <strong>Responsabilité Civile Fabriquant</strong>.</p><p>Un conseiller étudiera votre dossier (activité, zones de commercialisation, chiffre d’affaires) et vous recontacte en général sous <strong>24 à 48 h ouvrées</strong> avec une proposition adaptée.</p><p>Pour toute précision : répondez à cet email ou utilisez notre <a href="${APP_URL}/contact" style="color:#2563eb;font-weight:bold">formulaire de contact</a>.</p><p>Cordialement,<br>Optimum Assurance</p>`,
+    text: `Bonjour ${raisonSociale},\n\nNous avons bien enregistré votre demande de devis pour une assurance Responsabilité Civile Fabriquant.\n\nUn conseiller étudiera votre dossier (activité, zones de commercialisation, chiffre d’affaires) et vous recontacte en général sous 24 à 48 h ouvrées avec une proposition adaptée.\n\nPour toute précision : répondez à cet e-mail ou écrivez-nous via ${APP_URL}/contact\n\nCordialement,\nOptimum Assurance`,
+    html: `<p>Bonjour ${raisonSociale},</p><p>Nous avons bien enregistré votre demande de devis pour une assurance <strong>Responsabilité Civile Fabriquant</strong>.</p><p>Un conseiller étudiera votre dossier (activité, zones de commercialisation, chiffre d’affaires) et vous recontacte en général sous <strong>24 à 48 h ouvrées</strong> avec une proposition adaptée.</p><p>Pour toute précision : répondez à cet e-mail ou utilisez notre <a href="${APP_URL}/contact" style="color:#2563eb;font-weight:bold">formulaire de contact</a>.</p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
   /**
    * Proposition métier après étude (RC Fabriquant) — message rédigé par l’admin, envoyé au prospect.
@@ -579,7 +579,7 @@ export const EMAIL_TEMPLATES = {
     const loginUrl = `${APP_URL}/connexion`
     const clientSpaceText =
       espaceClient?.mode === "created"
-        ? `\n\nVotre espace client a été créé automatiquement.\nEmail de connexion : ${espaceClient.email}\nMot de passe temporaire : ${espaceClient.tempPassword ?? "—"}\nConnexion : ${loginUrl}\nMerci de changer votre mot de passe dès la première connexion.`
+        ? `\n\nVotre espace client a été créé automatiquement.\nE-mail de connexion : ${espaceClient.email}\nMot de passe temporaire : ${espaceClient.tempPassword ?? "—"}\nConnexion : ${loginUrl}\nMerci de changer votre mot de passe dès la première connexion.`
         : espaceClient?.mode === "existing"
           ? `\n\nVous pouvez suivre votre dossier depuis votre espace client : ${loginUrl}`
           : ""
@@ -587,7 +587,7 @@ export const EMAIL_TEMPLATES = {
       espaceClient?.mode === "created"
         ? `<div style="margin:16px 0;padding:14px 16px;background:#eff6ff;border-radius:10px;border:1px solid #bfdbfe;">
              <p style="margin:0 0 8px;color:#1e3a8a;font-weight:700;">Espace client ouvert</p>
-             <p style="margin:0 0 6px;"><strong>Email :</strong> ${escapeHtmlForEmail(espaceClient.email)}</p>
+             <p style="margin:0 0 6px;"><strong>E-mail :</strong> ${escapeHtmlForEmail(espaceClient.email)}</p>
              <p style="margin:0 0 10px;"><strong>Mot de passe temporaire :</strong> ${escapeHtmlForEmail(espaceClient.tempPassword ?? "—")}</p>
              <p style="margin:0;color:#334155;font-size:13px;">Merci de changer votre mot de passe dès la première connexion.</p>
            </div>

@@ -236,7 +236,7 @@ export async function POST(request: NextRequest) {
           emailSent: false,
           temporaryPassword: tempPassword,
           warning:
-            "Compte existant détecté, mais email d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client.",
+            "Compte existant détecté, mais e-mail d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client.",
         })
       }
 
@@ -353,7 +353,7 @@ export async function POST(request: NextRequest) {
         emailSent: false,
         temporaryPassword: tempPassword,
         warning:
-          "Compte créé, mais email d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client.",
+          "Compte créé, mais e-mail d'accès non envoyé. Copiez le mot de passe temporaire affiché et transmettez-le manuellement au client.",
       })
     }
 

@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
               `Contrat: ${contract.contractNumber}`,
               `Produit: ${produitLabel}`,
               `Client: ${userLabel}`,
-              `Email client: ${normalizedEmail}`,
+              `E-mail client: ${normalizedEmail}`,
               `Statut paiement: ${latestPayment.status}`,
               `Dernière tentative: ${latestPayment.createdAt.toISOString()}`,
               `Montant: ${latestPayment.amount.toLocaleString("fr-FR")} €`,

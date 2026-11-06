@@ -88,7 +88,7 @@ async function remediateSingleDdaAction(params: {
     return {
       actionId,
       status: "failed",
-      error: "Email de remédiation invalide",
+      error: "E-mail de remédiation invalide",
       statusCode: 400,
     }
   }

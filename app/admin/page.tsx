@@ -87,13 +87,13 @@ export default async function AdminContractsPage({
                 href="/admin/seo/linkpilot"
                 className="shrink-0 rounded-xl border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:border-blue-400 hover:bg-blue-100"
               >
-                SEO LinkPilot AI
+                Suivi des liens
               </Link>
               <Link
                 href="/gestion"
                 className="shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-800 transition-colors hover:border-blue-300 hover:bg-blue-50"
               >
-                ← Gestion CRM
+                ← Espace de gestion
               </Link>
             </div>
           </div>

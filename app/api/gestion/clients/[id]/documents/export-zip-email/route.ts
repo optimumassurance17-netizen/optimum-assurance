@@ -393,7 +393,7 @@ export async function POST(
       // body facultatif
     }
     if (!EMAIL_RE.test(to)) {
-      return NextResponse.json({ error: "Email destinataire invalide" }, { status: 400 })
+      return NextResponse.json({ error: "E-mail destinataire invalide" }, { status: 400 })
     }
 
     const user = await prisma.user.findUnique({

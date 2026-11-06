@@ -214,7 +214,7 @@ export function isClientQuoteEditionLocked(type: string, allowDevisEdition: bool
   return CLIENT_QUOTE_TYPES.has(type)
 }
 
-/** Le devis conserve l'identité imprimée. Elle ne remplace pas la fiche ni l'email de connexion. */
+/** Le devis conserve l'identité imprimée. Elle ne remplace pas la fiche ni l'e-mail de connexion. */
 export function quoteKeepsOwnIdentity(type: string): boolean {
   return CLIENT_QUOTE_TYPES.has(type)
 }

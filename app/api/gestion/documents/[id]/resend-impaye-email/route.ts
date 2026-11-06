@@ -18,7 +18,7 @@ function parseDocumentData(value: string): { raisonSociale?: string } {
 
 const DECENNALE_ATTESTATION_TYPES = ["attestation", "attestation_nominative"] as const
 
-/** Renvoie l’email de relance impayé (décennale uniquement). */
+/** Renvoie l’e-mail de relance impayé (décennale uniquement). */
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions)

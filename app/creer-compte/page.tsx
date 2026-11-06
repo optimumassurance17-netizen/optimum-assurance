@@ -209,7 +209,7 @@ export default function CreerComptePage() {
           Votre espace client
         </h1>
         <p className="text-[#171717] mb-8">
-          Le compte est créé automatiquement. Le mot de passe est envoyé par email, puis le parcours continue.
+          Le compte est créé automatiquement. Le mot de passe est envoyé par e-mail, puis le parcours continue.
         </p>
 
         <div className="bg-[#f5f5f5] border border-[#d4d4d4] rounded-2xl p-6 mb-8">
@@ -261,7 +261,7 @@ export default function CreerComptePage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-6" aria-live="polite">
             {temporaryPassword ? (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-                <p>L&apos;email n&apos;est pas parti. Conservez ce mot de passe temporaire :</p>
+                <p>L&apos;e-mail n&apos;est pas parti. Conservez ce mot de passe temporaire :</p>
                 <p className="mt-2 font-mono font-semibold">{temporaryPassword}</p>
                 <button
                   type="button"

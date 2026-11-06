@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     const email = session.user.email?.trim().toLowerCase()
     if (!email || !EMAIL_RE.test(email)) {
-      return NextResponse.json({ error: "Email requis" }, { status: 400 })
+      return NextResponse.json({ error: "E-mail requis" }, { status: 400 })
     }
 
     const baseUrl = getMolliePublicBaseUrl()

@@ -52,12 +52,12 @@ export default async function DashboardSeoPage() {
             <Table>
               <Thead>
                 <Tr>
-                  <Th>Path</Th>
+                  <Th>Chemin</Th>
                   <Th>Mots</Th>
                   <Th>FAQ</Th>
-                  <Th>Schema</Th>
-                  <Th>Status</Th>
-                  <Th>Scan</Th>
+                  <Th>Schéma</Th>
+                  <Th>Statut</Th>
+                  <Th>Analyse</Th>
                 </Tr>
               </Thead>
               <Tbody>

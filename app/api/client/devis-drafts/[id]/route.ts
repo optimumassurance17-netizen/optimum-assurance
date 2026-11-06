@@ -16,7 +16,7 @@ function readRaisonSociale(data: string): string | null {
 }
 
 /**
- * DELETE - Supprime un brouillon de devis appartenant à l'email du client connecté.
+ * DELETE - Supprime un brouillon de devis appartenant à l'e-mail du client connecté.
  */
 export async function DELETE(
   _request: Request,

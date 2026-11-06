@@ -587,8 +587,8 @@ export default function ClientDetailPage() {
       } else {
         setToast({
           message: body.signatureLink
-            ? `${body.warning || "L'email n'a pas été envoyé."} Lien existant : ${body.signatureLink}`
-            : body.warning || "L'email n'a pas été envoyé.",
+            ? `${body.warning || "L'e-mail n'a pas été envoyé."} Lien existant : ${body.signatureLink}`
+            : body.warning || "L'e-mail n'a pas été envoyé.",
           type: "warning",
         })
       }
@@ -604,7 +604,7 @@ export default function ClientDetailPage() {
 
   const suspendAttestationQr = async (documentId: string, numero: string) => {
     const confirmed = window.confirm(
-      `Suspendre l'attestation décennale ${numero} ? Le QR code affichera une attestation suspendue. Un email d'impayé sera envoyé au client.`
+      `Suspendre l'attestation décennale ${numero} ? Le code QR affichera une attestation suspendue. Un e-mail d'impayé sera envoyé au client.`
     )
     if (!confirmed) return
     setSuspendingQrId(documentId)
@@ -634,8 +634,8 @@ export default function ClientDetailPage() {
       setToast({
         message:
           body.emailSent === false
-            ? body.warning || `QR code suspendu pour ${numero}. L'email d'impayé n'a pas pu être envoyé.`
-            : `QR code suspendu pour ${numero}. Email d'impayé envoyé au client.`,
+            ? body.warning || `code QR suspendu pour ${numero}. L'e-mail d'impayé n'a pas pu être envoyé.`
+            : `code QR suspendu pour ${numero}. E-mail d'impayé envoyé au client.`,
         type: body.emailSent === false ? "warning" : "success",
       })
     } catch (error) {
@@ -650,7 +650,7 @@ export default function ClientDetailPage() {
 
   const restoreAttestationQr = async (documentId: string, numero: string) => {
     const confirmed = window.confirm(
-      `Remettre en service l'attestation décennale ${numero} ? Le QR code affichera de nouveau une attestation valide. Aucun email ne sera envoyé.`
+      `Remettre en service l'attestation décennale ${numero} ? Le code QR affichera de nouveau une attestation valide. Aucun e-mail ne sera envoyé.`
     )
     if (!confirmed) return
     setSuspendingQrId(documentId)
@@ -678,7 +678,7 @@ export default function ClientDetailPage() {
         )
       }
       setToast({
-        message: `QR code remis en service pour ${numero}.`,
+        message: `code QR remis en service pour ${numero}.`,
         type: "success",
       })
     } catch (error) {
@@ -735,7 +735,7 @@ export default function ClientDetailPage() {
       if (action === "prevenir") {
         setToast({
           message: body.emailSent === false
-            ? body.warning || "Email non envoyé."
+            ? body.warning || "E-mail non envoyé."
             : `Information envoyée à ${body.sentTo || user.email}.`,
           type: body.emailSent === false ? "warning" : "success",
         })
@@ -743,7 +743,7 @@ export default function ClientDetailPage() {
       }
       if (action === "carte" && body.checkoutUrl && body.emailSent === false) {
         setToast({
-          message: `Email non envoyé. Lien carte : ${body.checkoutUrl}`,
+          message: `E-mail non envoyé. Lien carte : ${body.checkoutUrl}`,
           type: "warning",
         })
         return
@@ -822,7 +822,7 @@ export default function ClientDetailPage() {
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
       <header className="border-b border-gray-700 px-6 py-4">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <Link href="/gestion" className="text-gray-200 hover:text-white text-sm">← Dashboard</Link>
+          <Link href="/gestion" className="text-gray-200 hover:text-white text-sm">← Tableau de bord</Link>
         </div>
       </header>
 
@@ -928,8 +928,8 @@ export default function ClientDetailPage() {
                         : prev
                     )
                     const emailInfo = json.emailSent
-                      ? "Email client envoyé."
-                      : "Attestation créée, mais email client non envoyé."
+                      ? "E-mail client envoyé."
+                      : "Attestation créée, mais e-mail client non envoyé."
                     setToast({
                       message: json.warning
                         ? `${emailInfo} ${json.warning}`
@@ -995,7 +995,7 @@ export default function ClientDetailPage() {
                 }}
                 className="rounded-lg border border-[#2563eb]/70 bg-[#1e3a8a]/30 px-3 py-2 text-sm font-medium text-[#93c5fd] hover:bg-[#1e3a8a]/50"
               >
-                Envoyer un email
+                Envoyer un e-mail
               </button>
             </div>
           </div>
@@ -1045,7 +1045,7 @@ export default function ClientDetailPage() {
           <div className="mb-4 rounded-xl border border-gray-700 bg-[#202020] p-4">
             <ClientQuickSearch
               label="Recherche rapide d'une autre fiche client"
-              placeholder="Nom, email ou SIRET"
+              placeholder="Nom, e-mail ou SIRET"
               helperText="Ouvre une autre fiche client sans revenir au dashboard."
             />
           </div>
@@ -1146,7 +1146,7 @@ export default function ClientDetailPage() {
                 ) : null}
                 {questionnaireProfilePrefill.email ? (
                   <div>
-                    <dt className="text-sky-300/70">Email</dt>
+                    <dt className="text-sky-300/70">E-mail</dt>
                     <dd className="text-gray-100">{questionnaireProfilePrefill.email}</dd>
                   </div>
                 ) : null}
@@ -1206,7 +1206,7 @@ export default function ClientDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-gray-200 mb-1">Email (connexion)</label>
+                <label className="block text-gray-200 mb-1">E-mail (connexion)</label>
                 <input
                   type="email"
                   required
@@ -1638,7 +1638,7 @@ export default function ClientDetailPage() {
                         <th className="text-left p-3 font-medium text-gray-300">Date</th>
                         <th className="text-left p-3 font-medium text-gray-300">Produit</th>
                         <th className="text-left p-3 font-medium text-gray-300">Étape</th>
-                        <th className="text-left p-3 font-medium text-gray-300">Email</th>
+                        <th className="text-left p-3 font-medium text-gray-300">E-mail</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1877,7 +1877,7 @@ export default function ClientDetailPage() {
           <div>
             <h2 className="text-lg font-semibold text-white">Demander un document</h2>
             <p className="mt-1 text-sm text-gray-300">
-              Le message part par email au client et reste visible sur cette fiche. Il précise le document attendu.
+              Le message part par e-mail au client et reste visible sur cette fiche. Il précise le document attendu.
               L&apos;envoi ne confirme pas la garantie.
             </p>
           </div>
@@ -2252,7 +2252,7 @@ export default function ClientDetailPage() {
                               onClick={() => void suspendAttestationQr(d.id, d.numero)}
                               className="rounded-lg border border-red-500 px-3 py-1.5 text-xs font-semibold text-red-200 hover:border-red-300 disabled:opacity-50"
                             >
-                              {suspendingQrId === d.id ? "Suspension…" : "Suspendre le QR code"}
+                              {suspendingQrId === d.id ? "Suspension…" : "Suspendre le code QR"}
                             </button>
                           ) : null}
                           {(d.type === "attestation" || d.type === "attestation_nominative") && d.status === "suspendu" ? (
@@ -2907,7 +2907,7 @@ export default function ClientDetailPage() {
           >
             <h3 className="text-lg font-semibold text-red-200 mb-2">Confirmer la suppression</h3>
             <p className="text-sm text-gray-200 mb-4">
-              Cette action est irréversible. Saisissez l’email du client pour confirmer :{" "}
+              Cette action est irréversible. Saisissez l’e-mail du client pour confirmer :{" "}
               <span className="text-white font-mono text-xs break-all">{data.user.email}</span>
             </p>
             <input
@@ -2915,7 +2915,7 @@ export default function ClientDetailPage() {
               autoComplete="off"
               value={deleteConfirmEmail}
               onChange={(e) => setDeleteConfirmEmail(e.target.value)}
-              placeholder="Email du client"
+              placeholder="E-mail du client"
               className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white mb-4"
             />
             {deleteError ? <p className="mb-4 text-sm text-red-300">{deleteError}</p> : null}
@@ -2975,7 +2975,7 @@ export default function ClientDetailPage() {
       {emailModal && data && (
         <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60" onClick={() => setEmailModal(false)}>
           <div className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-white mb-4">Envoyer un email à {data.user.email}</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Envoyer un e-mail à {data.user.email}</h3>
             {emailPresetLabel ? (
               <p className="mb-3 inline-flex rounded border border-amber-700/60 bg-amber-950/30 px-2 py-1 text-xs text-amber-200">
                 Modèle: {emailPresetLabel}
@@ -2988,7 +2988,7 @@ export default function ClientDetailPage() {
                   type="text"
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
-                  placeholder="Objet de l'email"
+                  placeholder="Objet de l'e-mail"
                   className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
                 />
               </div>
@@ -3034,7 +3034,7 @@ export default function ClientDetailPage() {
                     }>(res)
                     if (res.ok && json.emailSent === false) {
                       setToast({
-                        message: json.warning || "Email non envoyé.",
+                        message: json.warning || "E-mail non envoyé.",
                         type: "warning",
                       })
                     } else if (res.ok && json.ok) {
@@ -3043,7 +3043,7 @@ export default function ClientDetailPage() {
                       setEmailBody("")
                       setEmailPresetLabel(null)
                       setToast({
-                        message: `Email envoyé à ${json.sentTo ?? data.user.email}`,
+                        message: `E-mail envoyé à ${json.sentTo ?? data.user.email}`,
                         type: "success",
                       })
                     } else {
@@ -3057,7 +3057,7 @@ export default function ClientDetailPage() {
                       message:
                         error instanceof Error
                           ? error.message
-                          : "Erreur lors de l’envoi de l’email.",
+                          : "Erreur lors de l’envoi de l’e-mail.",
                       type: "error",
                     })
                   } finally {

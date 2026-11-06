@@ -27,8 +27,8 @@ export function HomeQrSection() {
             Attestation vérifiable instantanément
           </h2>
           <p className="text-slate-200 text-lg leading-relaxed mb-6">
-            Chaque document comporte un lien et un QR code menant à une page publique de contrôle. Vos clients
-            vérifient en un scan que l&apos;attestation est authentique et que le contrat est actif.
+            Chaque document comporte un lien et un code QR menant à une page publique de contrôle. Vos clients
+            vérifient d&apos;un coup d&apos;œil que l&apos;attestation est authentique et que le contrat est actif.
           </p>
           <ul className="space-y-3 text-slate-200">
             <li className="flex gap-3 items-start">

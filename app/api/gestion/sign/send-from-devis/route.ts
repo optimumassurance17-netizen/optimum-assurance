@@ -24,7 +24,7 @@ export const runtime = "nodejs"
 
 /**
  * Admin : à partir d’un document **devis** décennale, génère le contrat PDF, crée une demande
- * de signature locale et envoie le lien `/sign/[id]` par email.
+ * de signature locale et envoie le lien `/sign/[id]` par e-mail.
  */
 export async function POST(request: NextRequest) {
   try {

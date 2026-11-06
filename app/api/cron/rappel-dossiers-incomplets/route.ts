@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
           subject: `[Optimum] Dossier incomplet — signature bloquée (${ageHours}h)`,
           lines: [
             `Type : signature en attente`,
-            `Email : ${email}`,
+            `E-mail : ${email}`,
             `Référence : ${pending.contractNumero}`,
             `Signature request : ${pending.signatureRequestId}`,
             `Âge : ${ageHours}h`,
@@ -268,7 +268,7 @@ export async function GET(request: NextRequest) {
           lines: [
             `Type : contrat approuvé non payé`,
             `Produit : ${produit}`,
-            `Email : ${email}`,
+            `E-mail : ${email}`,
             `Contrat : ${contract.contractNumber}`,
             `Âge : ${ageHours}h`,
             `Espace client : ${espaceClient}`,

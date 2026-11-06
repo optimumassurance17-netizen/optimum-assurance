@@ -1,6 +1,6 @@
 /**
  * URL publique canonique du site (sans slash final).
- * Utilisée pour SEO (metadata, robots, sitemap, JSON-LD), emails et liens absolus.
+ * Utilisée pour SEO (metadata, robots, sitemap, JSON-LD), e-mails et liens absolus.
  *
  * Ordre de priorité :
  * 1. NEXT_PUBLIC_SITE_CANONICAL — si défini, utilisé tel quel (ex. https://www.optimum-assurance.fr)

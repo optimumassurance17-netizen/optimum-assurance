@@ -28,10 +28,10 @@ export function ActivityDetailsBlock({
               {detail.code ? ` (Code ${detail.code})` : ""}
             </p>
             <p className="text-xs text-[#171717] mt-1">
-              <span className="font-medium">Definition :</span> {detail.definition}
+              <span className="font-medium">Définition :</span> {detail.definition}
             </p>
             <p className="text-xs text-[#171717] mt-2 font-medium">
-              Exclusions specifiques :
+              Exclusions spécifiques :
             </p>
             <ul className="list-disc list-inside text-xs text-[#171717] mt-1 space-y-1">
               {detail.exclusions.map((line) => (

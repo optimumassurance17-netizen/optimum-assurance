@@ -398,7 +398,7 @@ function DevisPageContent() {
           {[
             ["Tarif indicatif immédiat", "Après saisie du SIRET, du CA et d'au moins une activité."],
             ["SIRET pré-rempli", "Cliquez sur Remplir pour récupérer vos coordonnées d'entreprise."],
-            ["Reprise par email", `Après calcul du tarif, sauvegardez votre devis ${QUOTE_VALIDITY_DAYS} jours pour revenir plus tard.`],
+            ["Reprise par e-mail", `Après calcul du tarif, sauvegardez votre devis ${QUOTE_VALIDITY_DAYS} jours pour revenir plus tard.`],
           ].map(([title, body]) => (
             <div key={title} className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm">
               <p className="text-sm font-semibold text-slate-900 mb-1">{title}</p>

@@ -124,7 +124,7 @@ const failedOnly = latestSignatureReminderByRequest([
     createdAt: "2026-04-02T08:00:00.000Z",
   },
 ])
-assert(failedOnly.size === 0, "un email non parti ne date pas la relance")
+assert(failedOnly.size === 0, "un e-mail non parti ne date pas la relance")
 
 const activity = describeClientActivity([
   {
@@ -174,8 +174,8 @@ assert(dashboardPage.includes("Signatures en attente"), "le tableau de bord list
 assert(dashboardPage.includes("Relancé le"), "la liste indique la dernière relance")
 assert(!dashboardPage.includes("relance-signature"), "la liste du tableau de bord n'ouvre pas la route fiche")
 assert(
-  dashboardPage.includes("Envoyer un rappel de signature par email au client ?"),
-  "le bouton Réparer prévient qu'un email part"
+  dashboardPage.includes("Envoyer un rappel de signature par e-mail au client ?"),
+  "le bouton Réparer prévient qu'un e-mail part"
 )
 const repairRoute = readFileSync("app/api/gestion/signatures/repair/route.ts", "utf8")
 assert(repairRoute.includes("sendPendingSignatureReminder"), "Réparer envoie le rappel de signature")

@@ -223,7 +223,7 @@ test.describe("API validations critiques", () => {
     })
     expect(res.status()).toBe(400)
     const data = (await res.json()) as { error?: string }
-    expect(data.error).toMatch(/Email valide/i)
+    expect(data.error).toMatch(/E-mail valide/i)
   })
 
   test("Inscription: mot de passe trop court rejeté en 400", async ({ request }) => {

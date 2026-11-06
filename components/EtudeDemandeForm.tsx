@@ -36,7 +36,7 @@ export function EtudeDemandeForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim() || !email.includes("@")) {
-      setError("Veuillez entrer une adresse email valide.")
+      setError("Veuillez entrer une adresse e-mail valide.")
       return
     }
     setError(null)
@@ -75,7 +75,7 @@ export function EtudeDemandeForm() {
           email={email}
           raisonSociale={donnees?.raisonSociale}
           siret={donnees?.siret}
-          intro="Le compte est créé automatiquement avec cet e-mail. Le mot de passe arrive par email."
+          intro="Le compte est créé automatiquement avec cet e-mail. Le mot de passe arrive par e-mail."
         />
       </div>
     )
@@ -117,7 +117,7 @@ export function EtudeDemandeForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
-            Votre email pour recevoir la proposition *
+            Votre e-mail pour recevoir la proposition *
           </label>
           <input
             id="email"

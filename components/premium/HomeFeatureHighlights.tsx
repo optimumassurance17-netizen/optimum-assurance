@@ -18,7 +18,7 @@ const FEATURES = [
     ),
   },
   {
-    title: "QR code & vérification",
+    title: "code QR & vérification",
     desc: "Chaque attestation est vérifiable en ligne par vos clients et partenaires.",
     icon: (
       <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

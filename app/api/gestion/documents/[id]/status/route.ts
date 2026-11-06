@@ -88,7 +88,7 @@ export async function PATCH(
           status,
           emailSent: false,
           warning:
-            "Statut suspendu enregistré, mais email impayé non envoyé (RESEND_API_KEY / domaine expéditeur).",
+            "Statut suspendu enregistré, mais e-mail d'impayé non envoyé (RESEND_API_KEY / domaine expéditeur).",
         })
       }
     }
@@ -124,7 +124,7 @@ export async function PATCH(
           status,
           emailSent: false,
           warning:
-            "Résiliation enregistrée, mais email client non envoyé (RESEND_API_KEY / domaine expéditeur).",
+            "Résiliation enregistrée, mais e-mail client non envoyé (RESEND_API_KEY / domaine expéditeur).",
         })
       }
     }

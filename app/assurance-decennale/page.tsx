@@ -112,7 +112,7 @@ export default function AssuranceDecennaleIndexPage() {
               <ul className="mt-4 space-y-2 text-sm text-[#171717]">
                 <li>• SIRET, CA et activité principale suffisent pour lancer une première estimation.</li>
                 <li>• Tarif indicatif immédiat pour les profils éligibles.</li>
-                <li>• Sauvegarde du devis par email disponible après calcul du tarif.</li>
+                <li>• Sauvegarde du devis par e-mail disponible après calcul du tarif.</li>
               </ul>
             </div>
             <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">

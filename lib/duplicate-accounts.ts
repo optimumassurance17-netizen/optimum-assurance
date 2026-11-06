@@ -51,7 +51,7 @@ function pushGroups(
   }
 }
 
-/** Regroupe les comptes déjà créés : même email (casse ignorée) ou même SIRET à 14 chiffres. */
+/** Regroupe les comptes déjà créés : même e-mail (casse ignorée) ou même SIRET à 14 chiffres. */
 export function buildDuplicateGroups(accounts: DuplicateAccount[]): DuplicateGroup[] {
   const byEmail = new Map<string, DuplicateAccount[]>()
   const bySiret = new Map<string, DuplicateAccount[]>()

@@ -57,7 +57,7 @@ export default function DroitsPersonnesPage() {
             <h2 className="text-xl font-semibold text-[#0a0a0a] mb-4">Exercer vos droits</h2>
             <p className="mb-4">Pour toute demande relative à vos données personnelles :</p>
             <ul className="list-disc pl-6 space-y-2">
-              <li>Par email : <a href={`mailto:${contactEmail}`} className="text-[#2563eb] hover:underline">{contactEmail}</a></li>
+              <li>Par e-mail : <a href={`mailto:${contactEmail}`} className="text-[#2563eb] hover:underline">{contactEmail}</a></li>
               <li>En précisant l&apos;objet de votre demande (accès, rectification, effacement, etc.)</li>
               <li>En joignant une copie d&apos;une pièce d&apos;identité pour vérifier votre identité</li>
             </ul>

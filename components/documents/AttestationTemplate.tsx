@@ -51,7 +51,7 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
           <QRCodeSVG value={verificationUrl} size={80} level="M" />
           <div className="text-xs text-[#171717]">
             <p className="font-medium text-black">Vérification en ligne</p>
-            <p>Scannez le QR code pour vérifier l&apos;authenticité de cette attestation</p>
+            <p>Scannez le code QR pour vérifier l&apos;authenticité de cette attestation</p>
           </div>
         </div>
       )}

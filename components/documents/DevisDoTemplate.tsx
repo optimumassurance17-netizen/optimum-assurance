@@ -124,7 +124,7 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
             )}
             {data.email && (
               <tr>
-                <td className="py-1 pr-4 text-[#171717]">Email</td>
+                <td className="py-1 pr-4 text-[#171717]">E-mail</td>
                 <td>{data.email}</td>
               </tr>
             )}

@@ -47,8 +47,8 @@ export default async function DashboardGeoPage() {
             <Table>
               <Thead>
                 <Tr>
-                  <Th>Query</Th>
-                  <Th>Provider</Th>
+                  <Th>Requête</Th>
+                  <Th>Source</Th>
                   <Th>Mentions marque</Th>
                   <Th>Mentions concurrents</Th>
                   <Th>Ratio visibilité</Th>

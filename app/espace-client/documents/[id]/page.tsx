@@ -216,7 +216,7 @@ export default function DocumentPage() {
       const result = await readResponseJson<{ error?: string }>(res)
       if (!res.ok) throw new Error(result.error || "Erreur")
       setResiliationRequested(true)
-      setToast({ message: "Demande envoyée. Vous serez informé par email.", type: "success" })
+      setToast({ message: "Demande envoyée. Vous serez informé par e-mail.", type: "success" })
     } catch (err) {
       setToast({ message: err instanceof Error ? err.message : "Erreur", type: "error" })
     } finally {
@@ -477,7 +477,7 @@ export default function DocumentPage() {
 
             {(document.type === "devis" || document.type === "devis_do") && (
               <p className="mb-3 text-sm text-[#525252]">
-                Ces informations restent sur ce devis. Elles ne modifient pas l&apos;email de connexion.
+                Ces informations restent sur ce devis. Elles ne modifient pas l&apos;e-mail de connexion.
               </p>
             )}
 

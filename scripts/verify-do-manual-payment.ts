@@ -31,7 +31,7 @@ assert(
   button.includes("contract.hasCertificate === false"),
   "le bouton reste disponible si l'attestation n'a pas été générée"
 )
-assert(email.includes("confirmationPaiementDoManuel"), "l'email de paiement manuel existe")
+assert(email.includes("confirmationPaiementDoManuel"), "l'e-mail de paiement manuel existe")
 assert(!route.includes("productType !== \"decennale\""), "la route ne valide pas une décennale")
 
 console.log("Validation manuelle du paiement DO : vérifications OK")

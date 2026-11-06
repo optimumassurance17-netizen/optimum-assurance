@@ -95,7 +95,7 @@ export function DuplicateAccountsPanel({
     <section id="doublons" className="scroll-mt-24">
       <h2 className="text-lg font-semibold text-white mb-2">Comptes en double</h2>
       <p className="text-sm text-gray-300 mb-4">
-        Même email, sans tenir compte de la casse, ou même SIRET. La fusion garde la fiche la plus ancienne.
+        Même e-mail, sans tenir compte de la casse, ou même SIRET. La fusion garde la fiche la plus ancienne.
       </p>
       <div className="space-y-3">
         {groups.map((group) => {
@@ -105,7 +105,7 @@ export function DuplicateAccountsPanel({
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-amber-100">
-                    {group.kind === "email" ? "Même email" : "Même SIRET"} · {group.key}
+                    {group.kind === "email" ? "Même e-mail" : "Même SIRET"} · {group.key}
                   </p>
                   <ul className="mt-2 space-y-1 text-sm text-gray-200">
                     {group.members.map((member) => (

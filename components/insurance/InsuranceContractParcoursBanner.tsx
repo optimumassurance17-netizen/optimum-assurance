@@ -50,7 +50,7 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
       <div className="mb-8 rounded-2xl border border-blue-200 bg-blue-50 p-5 text-left">
         <p className="mb-1 font-semibold text-blue-950">Contrat en examen assureur</p>
         <p className="text-sm text-blue-900/90">
-          N° <span className="font-mono">{contractNumber}</span> — votre dossier est en validation manuelle. Vous recevrez un email
+          N° <span className="font-mono">{contractNumber}</span> — votre dossier est en validation manuelle. Vous recevrez un e-mail
           dès qu&apos;il sera accepté ; vous pourrez alors payer depuis votre espace client.
         </p>
       </div>
@@ -65,7 +65,7 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
           <p className="text-sm text-teal-900/90 mb-4">
             Comme la décennale, la cotisation est pensée <strong>par trimestre</strong>. Le montant affiché sur le contrat est celui de
             l&apos;échéance en cours : paiement par <strong>virement Mollie</strong> depuis le bouton ci-dessous. Les prochaines
-            échéances et relances sont <strong>pilotées manuellement</strong> par la gestion (ajustement du montant, emails, suivi).
+            échéances et relances sont <strong>pilotées manuellement</strong> par la gestion (ajustement du montant, e-mails, suivi).
           </p>
           <PayInsuranceContractButton
             contractId={contractId}

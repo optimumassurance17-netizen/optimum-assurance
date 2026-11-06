@@ -200,7 +200,7 @@ function parseRcFabLeadData(raw: string): RcFabLeadStructuredData {
 function getSlaBadge(hours: number): { label: string; className: string } {
   if (hours >= 72) {
     return {
-      label: "SLA dépassé",
+      label: "Délai dépassé",
       className: "bg-red-900/40 text-red-200 border border-red-700/60",
     }
   }
@@ -211,7 +211,7 @@ function getSlaBadge(hours: number): { label: string; className: string } {
     }
   }
   return {
-    label: "Dans SLA",
+    label: "Dans le délai",
     className: "bg-emerald-900/40 text-emerald-200 border border-emerald-700/60",
   }
 }
@@ -1123,7 +1123,7 @@ export default function GestionPage() {
       const created = `Compte client créé pour ${json.email}. Ce n'est pas un administrateur. Il est déjà choisi dans les devis ci-dessous.`
       const message =
         json.emailSent === false
-          ? `${json.warning || "Compte créé, mais l'email n'est pas parti."}${
+          ? `${json.warning || "Compte créé, mais l'e-mail n'est pas parti."}${
               json.temporaryPassword ? ` Mot de passe temporaire : ${json.temporaryPassword}.` : ""
             } ${created}`
           : created
@@ -1842,7 +1842,7 @@ export default function GestionPage() {
       .reduce((acc, payment) => acc + payment.amount, 0)
 
     const funnel = [
-      { id: "lead-to-quote", label: "Leads -> Devis émis", from: totalLeads, to: devisEmis },
+      { id: "lead-to-quote", label: "Demandes → devis émis", from: totalLeads, to: devisEmis },
       { id: "quote-to-signed", label: "Devis -> Contrats signés", from: devisEmis, to: signedContracts.length },
       {
         id: "signed-to-paid",
@@ -2252,17 +2252,17 @@ export default function GestionPage() {
       }
       if (!res.ok) throw new Error(body.error || "")
       if (body.alreadyPaid) {
-        setToast({ message: "Cette échéance est déjà réglée. Aucun email n'a été envoyé.", type: "warning" })
+        setToast({ message: "Cette échéance est déjà réglée. Aucun e-mail n'a été envoyé.", type: "warning" })
         return
       }
       if (body.emailSent === false) {
-        setToast({ message: body.warning || "Email non envoyé.", type: "warning" })
+        setToast({ message: body.warning || "E-mail non envoyé.", type: "warning" })
         return
       }
-      setToast({ message: "Email de relance impayé (décennale) envoyé au client", type: "success" })
+      setToast({ message: "E-mail de relance impayé (décennale) envoyé au client", type: "success" })
     } catch (e) {
       setToast({
-        message: e instanceof Error ? e.message : "Erreur lors de l’envoi de l’email",
+        message: e instanceof Error ? e.message : "Erreur lors de l’envoi de l’e-mail",
         type: "error",
       })
     }
@@ -2303,8 +2303,8 @@ export default function GestionPage() {
       if (body.emailSent === false) {
         setToast({
           message: body.checkoutUrl
-            ? `Email non envoyé. Lien carte : ${body.checkoutUrl}`
-            : body.warning || "Email non envoyé.",
+            ? `E-mail non envoyé. Lien carte : ${body.checkoutUrl}`
+            : body.warning || "E-mail non envoyé.",
           type: "warning",
         })
         await reloadDashboard()
@@ -2344,8 +2344,8 @@ export default function GestionPage() {
       if (body.emailSent === false) {
         setToast({
           message: body.checkoutUrl
-            ? `Email non envoyé. Lien carte : ${body.checkoutUrl}`
-            : body.warning || "Email non envoyé.",
+            ? `E-mail non envoyé. Lien carte : ${body.checkoutUrl}`
+            : body.warning || "E-mail non envoyé.",
           type: "warning",
         })
         await reloadDashboard()
@@ -2388,7 +2388,7 @@ export default function GestionPage() {
         message:
           body.warning ||
           (newStatus === "resilie"
-            ? "Résiliation enregistrée. Email envoyé au client."
+            ? "Résiliation enregistrée. E-mail envoyé au client."
             : "Statut mis à jour"),
         type: body.emailSent === false ? "warning" : "success",
       })
@@ -2529,7 +2529,7 @@ export default function GestionPage() {
         return
       }
       setToast({
-        message: `Contrat DO ${result.contract?.contractNumber ?? ""} créé (${result.contract?.status ?? "statut inconnu"}). Devis + CP disponibles dans l’espace client.${result.emailSent === false ? " Email client non envoyé." : ""}`,
+        message: `Contrat DO ${result.contract?.contractNumber ?? ""} créé (${result.contract?.status ?? "statut inconnu"}). Devis + CP disponibles dans l’espace client.${result.emailSent === false ? " E-mail client non envoyé." : ""}`,
         type: "success",
       })
       setDevisDoForm({ leadId: "", userId: "", primeAnnuelle: "", coutConstruction: "", telephone: "", adresseOperation: "", typeConstruction: "", destination: "", closCouvert: "", fraisGestion: "", fraisCourtage: "", operationLines: [] })
@@ -2587,13 +2587,13 @@ export default function GestionPage() {
       <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
         <header className="border-b border-gray-700 px-6 py-4">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-xl font-semibold text-white">Gestion CRM</h1>
+            <h1 className="text-xl font-semibold text-white">Espace de gestion</h1>
           </div>
         </header>
         <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
           <ClientQuickSearch
             label="Recherche fiche client"
-            placeholder="Nom, email ou SIRET"
+            placeholder="Nom, e-mail ou SIRET"
             helperText="Ouvre une fiche, une demande de devis, ou le contrat dommage ouvrage pour valider le paiement."
             query={ficheSearchQuery}
             onQueryChange={setFicheSearchQuery}
@@ -2636,7 +2636,7 @@ export default function GestionPage() {
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
       <header className="border-b border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold text-white">Gestion CRM</h1>
+          <h1 className="text-xl font-semibold text-white">Espace de gestion</h1>
           <div className="flex flex-wrap gap-2" role="toolbar" aria-label="Exports du tableau de bord">
             <button
               type="button"
@@ -2665,7 +2665,7 @@ export default function GestionPage() {
               onClick={() => {
                 if (!data) return
                 const csv = [
-                  ["Raison sociale", "Email", "SIRET", "Inscription"].join(";"),
+                  ["Raison sociale", "E-mail", "SIRET", "Inscription"].join(";"),
                   ...data.users.map((u) =>
                     [
                       u.raisonSociale ?? "",
@@ -2693,7 +2693,7 @@ export default function GestionPage() {
                 onClick={() => {
                   if (!data?.devisDoLeads) return
                   const csv = [
-                    ["Société", "Email", "Coût construction (€)", "Date"].join(";"),
+                    ["Société", "E-mail", "Coût construction (€)", "Date"].join(";"),
                     ...data.devisDoLeads.map((d) =>
                       [
                         d.raisonSociale ?? readDoLeadCompanyName(d.data) ?? "",
@@ -2723,7 +2723,7 @@ export default function GestionPage() {
                   if (!data?.devisRcFabriquantLeads?.length) return
                   const csv = [
                     [
-                      "Email",
+                      "E-mail",
                       "Raison sociale",
                       "Téléphone",
                       "Activité",
@@ -2790,7 +2790,7 @@ export default function GestionPage() {
                 onClick={() => {
                   if (!data?.devisLeads?.length) return
                   const csv = [
-                    ["Email", "Raison sociale", "SIRET", "Prime annuelle (€)", "Date"].join(";"),
+                    ["E-mail", "Raison sociale", "SIRET", "Prime annuelle (€)", "Date"].join(";"),
                     ...data.devisLeads.map((d) =>
                       [
                         d.email,
@@ -2830,7 +2830,7 @@ export default function GestionPage() {
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <input
                     type="search"
-                    placeholder="Rechercher (email, raison sociale, SIRET, n° contrat, signature, RC Fabriquant, devis DO)..."
+                    placeholder="Rechercher (e-mail, raison sociale, SIRET, n° contrat, signature, RC Fabriquant, devis DO)..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="bg-[#252525] border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-500 w-full sm:w-[29rem]"
@@ -2855,7 +2855,7 @@ export default function GestionPage() {
               </div>
               <ClientQuickSearch
                 label="Recherche fiche client"
-                placeholder="Nom, email ou SIRET"
+                placeholder="Nom, e-mail ou SIRET"
                 helperText="Ouvre une fiche, une demande de devis, ou le contrat dommage ouvrage pour valider le paiement."
                 query={ficheSearchQuery}
                 onQueryChange={setFicheSearchQuery}
@@ -2968,7 +2968,7 @@ export default function GestionPage() {
                   onClick={onListAnchor("leads-decennale")}
                   className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
                 >
-                  Leads déc.
+                  Demandes déc.
                 </a>
               )}
               {(data.devisDrafts?.length ?? 0) > 0 && (
@@ -3025,7 +3025,7 @@ export default function GestionPage() {
                 }}
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#2d2d2d] text-gray-200 border border-gray-600 hover:bg-[#383838] hover:text-white"
               >
-                Devis PDF perso
+                Devis PDF
               </a>
               <a
                 href="#stats-gestion"
@@ -3045,7 +3045,7 @@ export default function GestionPage() {
                 }}
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#0b3b2f] text-emerald-100 border border-emerald-800/80 hover:bg-[#104536]"
               >
-                Pilotage commercial V2
+                Pilotage commercial
               </a>
               <a
                 href="#funnel-conversion"
@@ -3055,7 +3055,7 @@ export default function GestionPage() {
                 }}
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#123524] text-emerald-100 border border-emerald-700/70 hover:bg-[#17452e]"
               >
-                Funnel conversion
+                Entonnoir de conversion
               </a>
               <a
                 href="#comptabilite-v2"
@@ -3065,7 +3065,7 @@ export default function GestionPage() {
                 }}
                 className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#312e81] text-indigo-100 border border-indigo-700/80 hover:bg-[#3730a3]"
               >
-                Comptabilité & impayés V2
+                Comptabilité et impayés
               </a>
               <a
                 href="#devis-decennale-manuel"
@@ -3113,7 +3113,7 @@ export default function GestionPage() {
             <section id="nouveau-client" className="scroll-mt-24 max-w-xl">
               <h2 className="text-lg font-semibold text-white mb-4">Nouveau client</h2>
               <p className="text-sm text-gray-200 mb-4">
-                Crée un compte client, pas un administrateur. Le client reçoit un mot de passe temporaire par email,
+                Crée un compte client, pas un administrateur. Le client reçoit un mot de passe temporaire par e-mail,
                 puis il est déjà choisi dans les devis décennale, dommage ouvrage et PDF.
               </p>
               <form
@@ -3122,7 +3122,7 @@ export default function GestionPage() {
               >
                 <div>
                   <label htmlFor="nouveau-client-email" className="block text-sm font-medium text-gray-200 mb-1">
-                    Email
+                    E-mail
                   </label>
                   <input
                     id="nouveau-client-email"
@@ -3249,7 +3249,7 @@ export default function GestionPage() {
                     type="search"
                     value={customDevisUserFilter}
                     onChange={(e) => setCustomDevisUserFilter(e.target.value)}
-                    placeholder="Email, raison sociale, SIRET…"
+                    placeholder="E-mail, raison sociale, SIRET…"
                     className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
                   />
                   <label className="text-sm text-gray-300">Client destinataire</label>
@@ -3275,7 +3275,7 @@ export default function GestionPage() {
                       setCustomDevisSourceLeadType(null)
                       setCustomDevisSourceLeadId("")
                       if (next === "assurance_titre") {
-                        setCustomDevisLabel("Assurance titre — proposition digitale")
+                        setCustomDevisLabel("Assurance titre — proposition numérique")
                         setCustomDevisPeriodicity("annuel")
                         setCustomDevisCoverageYears((current) => current || "10")
                       } else {
@@ -3462,7 +3462,7 @@ export default function GestionPage() {
                     }
                     if (!res.ok) throw new Error(j.error || res.statusText)
                     if (j.emailSent === false) {
-                      setToast({ message: j.warning || "Email non envoyé.", type: "warning" })
+                      setToast({ message: j.warning || "E-mail non envoyé.", type: "warning" })
                       return
                     }
                     setToast({ message: j.message || "Invitation envoyée.", type: "success" })
@@ -3564,7 +3564,7 @@ export default function GestionPage() {
                 </>
               )}
               <div className="bg-[#252525] rounded-xl p-4 border border-gray-700">
-                <p className="text-gray-200 text-sm">Leads devis décennale</p>
+                <p className="text-gray-200 text-sm">Demandes de devis décennale</p>
                 <p className="text-2xl font-bold text-amber-300">{data.devisLeads?.length ?? 0}</p>
                 <p className="text-xs text-gray-200 mt-1">100 derniers</p>
               </div>
@@ -3587,7 +3587,7 @@ export default function GestionPage() {
                 <Link href="#contrats-plateforme" className="text-2xl font-bold text-amber-200 hover:text-amber-100 block">
                   {data.insuranceContractsCount ?? 0}
                 </Link>
-                <p className="text-xs text-gray-200 mt-1">Tableau manuel + lien admin</p>
+                <p className="text-xs text-gray-200 mt-1">Tableau manuel et lien de gestion</p>
               </div>
             </section>
 
@@ -3598,7 +3598,7 @@ export default function GestionPage() {
               >
                 <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-lg font-semibold text-white">Funnel conversion réel (30 jours)</h2>
+                    <h2 className="text-lg font-semibold text-white">Entonnoir de conversion réel (30 jours)</h2>
                     <p className="text-xs text-emerald-200/90">
                       Événements trackés côté client : devis, souscription, compte, signature, mandat SEPA et paiement.
                     </p>
@@ -3653,9 +3653,9 @@ export default function GestionPage() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <div>
-                    <h2 className="text-lg font-semibold text-white">Pilotage commercial V2</h2>
+                    <h2 className="text-lg font-semibold text-white">Pilotage commercial</h2>
                     <p className="text-xs text-emerald-200/90">
-                      Vue funnel + priorités business pour piloter les relances et la conversion.
+                      Vue de l&apos;entonnoir et priorités commerciales pour piloter les relances et la conversion.
                     </p>
                   </div>
                   <span className="text-xs px-2 py-1 rounded border border-emerald-700/70 bg-emerald-950/40 text-emerald-200">
@@ -3665,11 +3665,11 @@ export default function GestionPage() {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
                   <div className="rounded-lg border border-gray-700 bg-[#242a27] px-3 py-2">
-                    <p className="text-[11px] text-gray-300">Leads entrants</p>
+                    <p className="text-[11px] text-gray-300">Demandes entrantes</p>
                     <p className="text-xl font-semibold text-white">{pilotageV2.totalLeads}</p>
                   </div>
                   <div className="rounded-lg border border-amber-700/50 bg-amber-950/20 px-3 py-2">
-                    <p className="text-[11px] text-amber-200">Leads chauds (24h+)</p>
+                    <p className="text-[11px] text-amber-200">Demandes urgentes (24 h et plus)</p>
                     <p className="text-xl font-semibold text-amber-100">{pilotageV2.hotLeads}</p>
                   </div>
                   <div className="rounded-lg border border-gray-700 bg-[#242a27] px-3 py-2">
@@ -3710,7 +3710,7 @@ export default function GestionPage() {
 
                 <div className="mt-5 grid lg:grid-cols-2 gap-4">
                   <div className="rounded-lg border border-gray-700 bg-[#242a27] p-3">
-                    <h3 className="text-sm font-semibold text-white mb-2">Entonnoir conversion</h3>
+                    <h3 className="text-sm font-semibold text-white mb-2">Entonnoir de conversion</h3>
                     <div className="space-y-3">
                       {pilotageV2.funnel.map((stage) => (
                         <div key={stage.id}>
@@ -3738,7 +3738,7 @@ export default function GestionPage() {
                   </div>
 
                   <div className="rounded-lg border border-gray-700 bg-[#242a27] p-3">
-                    <h3 className="text-sm font-semibold text-white mb-2">Pilotage par ligne business</h3>
+                    <h3 className="text-sm font-semibold text-white mb-2">Pilotage par activité</h3>
                     <div className="space-y-2">
                       {pilotageV2.lineBreakdown.map((line) => (
                         <div
@@ -3747,7 +3747,7 @@ export default function GestionPage() {
                         >
                           <span className="text-sm text-gray-100">{line.label}</span>
                           <div className="text-right">
-                            <p className="text-sm text-white">{line.leads} lead(s)</p>
+                            <p className="text-sm text-white">{line.leads} demande(s)</p>
                             <p className="text-xs text-amber-200">{line.toHandle} à traiter</p>
                           </div>
                         </div>
@@ -3896,7 +3896,7 @@ export default function GestionPage() {
                       </div>
                     </div>
                     <p className="mt-2 text-[11px] text-indigo-200/90">
-                      Relances impayé e-mail disponibles :{" "}
+                      Relances d&apos;impayé par e-mail :{" "}
                       <span className="font-semibold text-white">{comptabiliteV2.impayesRelancables}</span>
                     </p>
                   </div>
@@ -4385,7 +4385,7 @@ export default function GestionPage() {
                                   }>(res)
                                   if (!res.ok) throw new Error(j.error || "Impossible d'envoyer la relance DDA.")
                                   if (j.emailSent === false) {
-                                    setToast({ message: j.warning || "Email non envoyé.", type: "warning" })
+                                    setToast({ message: j.warning || "E-mail non envoyé.", type: "warning" })
                                     return
                                   }
 
@@ -4622,7 +4622,7 @@ export default function GestionPage() {
                 <thead>
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-3 sm:p-4 font-medium">Client</th>
-                    <th className="text-left p-3 sm:p-4 font-medium">Email</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">E-mail</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">SIRET</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden md:table-cell">DO</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Actions</th>
@@ -4674,7 +4674,7 @@ export default function GestionPage() {
                             <DocumentRequestButton
                               userId={u.id}
                               disabled={!u.email?.trim()}
-                              disabledTitle="Aucun email sur cette fiche."
+                              disabledTitle="Aucun e-mail sur cette fiche."
                               onResult={(result) => setToast({ message: result.message, type: result.type })}
                             />
                           </div>
@@ -4690,18 +4690,18 @@ export default function GestionPage() {
 
         {data && (data.devisLeads?.length ?? 0) > 0 && (
           <section id="leads-decennale" className="scroll-mt-24">
-            <h2 className="text-lg font-semibold text-white mb-4">Leads devis décennale (tarificateur)</h2>
-            <DashboardListNote shown={visibleDevisLeads.length} total={filteredDevisLeads.length} subject="leads" />
+            <h2 className="text-lg font-semibold text-white mb-4">Demandes de devis décennale (tarificateur)</h2>
+            <DashboardListNote shown={visibleDevisLeads.length} total={filteredDevisLeads.length} subject="demandes" />
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[640px]">
                 <thead>
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-3 sm:p-4 font-medium">Date</th>
-                    <th className="text-left p-3 sm:p-4 font-medium">Email</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">E-mail</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden md:table-cell">Raison sociale</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden lg:table-cell">SIRET</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Client</th>
-                    <th className="text-right p-3 sm:p-4 font-medium">Prime / SLA</th>
+                    <th className="text-right p-3 sm:p-4 font-medium">Prime / délai</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -4764,7 +4764,7 @@ export default function GestionPage() {
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-3 sm:p-4 font-medium">Créé</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Produit</th>
-                    <th className="text-left p-3 sm:p-4 font-medium">Email</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">E-mail</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Expire</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Reprendre</th>
                   </tr>
@@ -4846,7 +4846,7 @@ export default function GestionPage() {
                     : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
                 }`}
               >
-                PDF perso
+                Personnalisé
               </button>
               <button
                 type="button"
@@ -4857,7 +4857,7 @@ export default function GestionPage() {
                     : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
                 }`}
               >
-                Réparables (24h+)
+                Réparables (24 h et plus)
               </button>
             </div>
             <DashboardListNote
@@ -4875,8 +4875,8 @@ export default function GestionPage() {
                     <th className="text-left p-3 sm:p-4 font-medium">Client</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Âge</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Relancé le</th>
-                    <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">ID demande</th>
-                    <th className="text-left p-3 sm:p-4 font-medium">CRM</th>
+                    <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">N° demande</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">Suivi</th>
                     <th className="text-left p-3 sm:p-4 font-medium w-[5.5rem]">Action</th>
                   </tr>
                 </thead>
@@ -4899,7 +4899,7 @@ export default function GestionPage() {
                           <td className="p-3 sm:p-4 align-top">
                             {flow === "custom_pdf" ? (
                               <span className="inline-block text-xs font-medium uppercase tracking-wide bg-teal-900/50 text-teal-200 px-2 py-0.5 rounded">
-                                PDF perso
+                                Personnalisé
                               </span>
                             ) : (
                               <span className="inline-block text-xs font-medium uppercase tracking-wide bg-violet-900/50 text-violet-200 px-2 py-0.5 rounded">
@@ -4994,7 +4994,7 @@ export default function GestionPage() {
                                   onClick={async () => {
                                     if (
                                       !window.confirm(
-                                        "Envoyer un rappel de signature par email au client ? Le lien déjà ouvert est renvoyé."
+                                        "Envoyer un rappel de signature par e-mail au client ? Le lien déjà ouvert est renvoyé."
                                       )
                                     ) {
                                       return
@@ -5068,7 +5068,7 @@ export default function GestionPage() {
                           const json = await readResponseJson<{ error?: string; warning?: string; emailSent?: boolean }>(res)
                           if (!res.ok) throw new Error(json.error || "Erreur résiliation")
                           setToast({
-                            message: json.warning || "Résiliation autorisée. Email envoyé au client.",
+                            message: json.warning || "Résiliation autorisée. E-mail envoyé au client.",
                             type: json.emailSent === false ? "warning" : "success",
                           })
                           const dashRes = await fetch("/api/gestion/dashboard")
@@ -5172,7 +5172,7 @@ export default function GestionPage() {
                   <th className="text-left p-3 sm:p-4 font-medium">Mode</th>
                   <th className="text-left p-3 sm:p-4 font-medium">Montant</th>
                   <th className="text-left p-3 sm:p-4 font-medium">Statut</th>
-                  <th className="text-left p-3 sm:p-4 font-medium w-[4.5rem]">CRM</th>
+                  <th className="text-left p-3 sm:p-4 font-medium w-[4.5rem]">Suivi</th>
                   <th className="text-left p-3 sm:p-4 font-medium hidden md:table-cell">Mollie ID</th>
                 </tr>
               </thead>
@@ -5345,7 +5345,7 @@ export default function GestionPage() {
                               type="button"
                               onClick={() => handleResendImpayeEmail(d.id)}
                               className="text-sky-400 hover:text-sky-300 text-sm min-h-[44px] inline-flex items-center px-2"
-                              title="Renvoyer l’email de régularisation (décennale)"
+                              title="Renvoyer l’e-mail de régularisation (décennale)"
                             >
                               Relancer email
                             </button>
@@ -5492,7 +5492,7 @@ export default function GestionPage() {
                           href={`/gestion/clients/${d.userId}`}
                           className="text-[#2563eb] hover:text-[#1d4ed8] text-sm font-medium"
                         >
-                          CRM →
+                          Fiche →
                         </Link>
                         <DocumentRequestButton
                           documentId={d.id}
@@ -5547,7 +5547,7 @@ export default function GestionPage() {
               <table className="w-full text-sm min-w-[400px]">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="text-left p-3 sm:p-4 font-medium">Email</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">E-mail</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Raison sociale</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">SIRET</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Date</th>
@@ -5640,7 +5640,7 @@ export default function GestionPage() {
           <p className="text-sm text-gray-200 mb-4 max-w-2xl">
             Créez un devis pour un client existant. Ensuite, ouvrez le document depuis le tableau des documents
             (ou la fiche client) et cliquez sur <strong className="text-white">Envoyer pour signature</strong> : le
-            contrat PDF est généré, le client reçoit un lien de signature par email (même flux que la souscription en
+            contrat PDF est généré, le client reçoit un lien de signature par e-mail (même flux que la souscription en
             ligne).
           </p>
           <form onSubmit={handleCreateDevisDecennale} className="bg-[#252525] rounded-xl p-6 border border-gray-700 space-y-4 max-w-xl mb-10">
@@ -5650,7 +5650,7 @@ export default function GestionPage() {
                 type="search"
                 value={devisDecUserFilter}
                 onChange={(e) => setDevisDecUserFilter(e.target.value)}
-                placeholder="Email, raison sociale, SIRET…"
+                placeholder="E-mail, raison sociale, SIRET…"
                 className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
               />
               <label className="block text-sm font-medium text-gray-200 mb-1">Client</label>
@@ -5907,7 +5907,7 @@ export default function GestionPage() {
                 type="search"
                 value={devisDoUserFilter}
                 onChange={(e) => setDevisDoUserFilter(e.target.value)}
-                placeholder="Email, raison sociale, SIRET…"
+                placeholder="E-mail, raison sociale, SIRET…"
                 className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
               />
               <label htmlFor="devis-do-client" className="block text-sm font-medium text-gray-200">
@@ -6078,7 +6078,7 @@ export default function GestionPage() {
           <p className="text-sm text-gray-200 max-w-3xl">
             Choisissez la demande du client. Le générateur reprend la société, le SIRET, l&apos;activité, le type de
             produit, la zone, le chiffre d&apos;affaires et les autres réponses, puis prépare le devis, la fiche
-            d&apos;information et le contrat. Aucun email, aucune signature et aucun paiement.
+            d&apos;information et le contrat. Aucun e-mail, aucune signature et aucun paiement.
           </p>
           <p className="text-xs text-amber-200/80 border border-amber-900/40 rounded-lg px-3 py-2 bg-amber-950/20">
             Les montants imprimés restent le plafond 2&nbsp;500&nbsp;000&nbsp;€, la franchise 5&nbsp;000&nbsp;€ et la
@@ -6222,7 +6222,7 @@ export default function GestionPage() {
                 link.remove()
                 URL.revokeObjectURL(url)
                 setToast({
-                  message: "Dossier généré : devis, fiche d'information et contrat. Aucun email n'a été envoyé.",
+                  message: "Dossier généré : devis, fiche d'information et contrat. Aucun e-mail n'a été envoyé.",
                   type: "success",
                 })
               } catch (err) {
@@ -6279,7 +6279,7 @@ export default function GestionPage() {
                       : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
                   }`}
                 >
-                  SLA 72h+
+                  Délai de 72 h
                 </button>
               </div>
             </div>
@@ -6297,7 +6297,7 @@ export default function GestionPage() {
               <table className="w-full text-sm min-w-[720px]">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="text-left p-3 sm:p-4 font-medium">Email</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">E-mail</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Société</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden lg:table-cell">Activité</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Statut</th>
@@ -6555,7 +6555,7 @@ export default function GestionPage() {
             <h2 className="text-lg font-semibold text-white mb-2">Demandes Assurance titre</h2>
             <p className="text-sm text-gray-200 mb-4 max-w-3xl">
               Ces leads passent par une étude sur dossier. Une fois l&apos;espace client créé, vous pouvez préremplir le
-              module « Devis PDF personnalisé » pour envoyer une proposition digitale à signer, puis encaisser le paiement
+              module « Devis PDF personnalisé » pour envoyer une proposition numérique à signer, puis encaisser le paiement
               dans l&apos;espace client.
             </p>
             <DashboardListNote shown={visibleTitreLeads.length} total={filteredTitreLeads.length} subject="demandes" />
@@ -6563,7 +6563,7 @@ export default function GestionPage() {
               <table className="w-full text-sm min-w-[760px]">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="text-left p-3 sm:p-4 font-medium">Email</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">E-mail</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Contact / structure</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Dossier</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Statut</th>
@@ -6621,7 +6621,7 @@ export default function GestionPage() {
                                       productType: "assurance_titre",
                                       userId: matchedUser.id,
                                       userFilter: matchedUser.email || d.email,
-                                      label: "Assurance titre — proposition digitale",
+                                      label: "Assurance titre — proposition numérique",
                                       reference: `TITRE-${d.id.slice(-8).toUpperCase()}`,
                                       sourceLeadType: "assurance_titre",
                                       sourceLeadId: d.id,
@@ -6634,7 +6634,7 @@ export default function GestionPage() {
                                   }}
                                   className="text-sm font-medium min-h-[44px] px-3 py-2 rounded-lg border border-violet-500/70 text-violet-100 hover:bg-violet-900/30"
                                 >
-                                  Préparer la proposition digitale
+                                  Préparer la proposition numérique
                                 </button>
                                 <Link
                                   href={`/gestion/clients/${matchedUser.id}`}
@@ -6683,7 +6683,7 @@ export default function GestionPage() {
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-3 sm:p-4 font-medium">Société</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Chantier</th>
-                    <th className="text-left p-3 sm:p-4 font-medium">Email</th>
+                    <th className="text-left p-3 sm:p-4 font-medium">E-mail</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Coût</th>
                     <th className="text-left p-3 sm:p-4 font-medium hidden sm:table-cell">Date</th>
                     <th className="text-left p-3 sm:p-4 font-medium">Client</th>
@@ -6791,7 +6791,7 @@ export default function GestionPage() {
                 type="search"
                 value={avenantUserFilter}
                 onChange={(e) => setAvenantUserFilter(e.target.value)}
-                placeholder="Email, raison sociale, SIRET…"
+                placeholder="E-mail, raison sociale, SIRET…"
                 className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
               />
               <label htmlFor="avenant-client" className="block text-sm font-medium text-gray-200">
@@ -6953,13 +6953,13 @@ export default function GestionPage() {
         {/* Historique des résiliations */}
         {data?.adminActivityLogs && data.adminActivityLogs.length > 0 && (
           <section>
-            <h2 className="text-lg font-semibold text-white mb-4">Journal d&apos;audit admin (100 derniers)</h2>
+            <h2 className="text-lg font-semibold text-white mb-4">Journal d&apos;audit (100 derniers)</h2>
             <div className="bg-[#252525] rounded-xl overflow-x-auto border border-gray-700 -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-sm min-w-[400px]">
                 <thead>
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-4 font-medium">Date</th>
-                    <th className="text-left p-4 font-medium">Admin</th>
+                    <th className="text-left p-4 font-medium">Compte</th>
                     <th className="text-left p-4 font-medium">Action</th>
                     <th className="text-left p-4 font-medium">Cible</th>
                   </tr>
@@ -6997,7 +6997,7 @@ export default function GestionPage() {
                     <th className="text-left p-4 font-medium">Date</th>
                     <th className="text-left p-4 font-medium">Document</th>
                     <th className="text-left p-4 font-medium">Client</th>
-                    <th className="text-left p-4 font-medium">Admin</th>
+                    <th className="text-left p-4 font-medium">Compte</th>
                     <th className="text-left p-4 font-medium">Motif</th>
                   </tr>
                 </thead>
@@ -7118,7 +7118,7 @@ export default function GestionPage() {
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-sky-400/90 mb-3">Coordonnées</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-gray-200 mb-1">Email</label>
+                    <label className="block text-gray-200 mb-1">E-mail</label>
                     <input
                       type="email"
                       autoComplete="off"
@@ -7346,7 +7346,7 @@ export default function GestionPage() {
           >
             <h3 id="resiliation-modal-title" className="text-lg font-semibold text-white mb-4">Autoriser l&apos;annulation</h3>
             <p className="text-sm text-gray-200 mb-4">
-              Le document sera marqué comme résilié. Un email de confirmation sera envoyé au client.
+              Le document sera marqué comme résilié. Un e-mail de confirmation sera envoyé au client.
             </p>
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-200 mb-2">Motif (optionnel)</label>
@@ -7537,7 +7537,7 @@ export default function GestionPage() {
                     }>(res)
                     if (!res.ok) throw new Error(json.error || "Erreur")
                     if (json.emailSent === false) {
-                      setToast({ message: json.warning || "Email non envoyé.", type: "warning" })
+                      setToast({ message: json.warning || "E-mail non envoyé.", type: "warning" })
                       return
                     }
                     setToast({
@@ -7584,7 +7584,7 @@ export default function GestionPage() {
             <p className="text-xs text-gray-200 mb-4 leading-relaxed">
               Rédigez le corps du message tel qu’il sera lu par le prospect (conditions, prochaines étapes, pièces à
               fournir…). Le statut du lead passera à « Proposition envoyée » et l’indication de prime sera mémorisée si
-              vous en saisissez une. Réponse directe : l’e-mail part avec votre adresse en reply-to si elle est connue.
+              vous en saisissez une. Réponse directe : l’e-mail part avec votre adresse de réponse si elle est connue.
             </p>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-200 mb-2">
@@ -7658,7 +7658,7 @@ export default function GestionPage() {
                     }>(res)
                     if (!res.ok) throw new Error(json.error || "Erreur")
                     if (json.emailSent === false) {
-                      setToast({ message: json.warning || "Email non envoyé.", type: "warning" })
+                      setToast({ message: json.warning || "E-mail non envoyé.", type: "warning" })
                       return
                     }
                     setToast({ message: "E-mail de proposition envoyé au prospect.", type: "success" })
@@ -7688,7 +7688,7 @@ export default function GestionPage() {
           <div className="bg-[#252525] border border-gray-600 rounded-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-white mb-4">Faire une remise au client</h3>
             <p className="text-sm text-gray-200 mb-4">
-              {etudeMiseModal.raisonSociale || etudeMiseModal.email} — Envoyez une proposition avec prime personnalisée. Le client recevra un email avec un lien pour finaliser sa souscription.
+              {etudeMiseModal.raisonSociale || etudeMiseModal.email} — Envoyez une proposition avec prime personnalisée. Le client recevra un e-mail avec un lien pour finaliser sa souscription.
             </p>
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-200 mb-2">Prime annuelle personnalisée (€)</label>
@@ -7727,10 +7727,10 @@ export default function GestionPage() {
                     }>(res)
                     if (!res.ok) throw new Error(json.error || "Erreur")
                     if (json.emailSent === false) {
-                      setToast({ message: json.warning || "Email non envoyé.", type: "warning" })
+                      setToast({ message: json.warning || "E-mail non envoyé.", type: "warning" })
                       return
                     }
-                    setToast({ message: "Remise envoyée au client par email.", type: "success" })
+                    setToast({ message: "Remise envoyée au client par e-mail.", type: "success" })
                     setEtudeMiseModal(null)
                     const dashRes = await fetch("/api/gestion/dashboard")
                     if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
