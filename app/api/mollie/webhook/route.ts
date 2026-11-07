@@ -21,6 +21,7 @@ import { applyEcheancePaidEffects } from "@/lib/client-echeance-service"
 import { sendEcheancePaidReceipt } from "@/lib/echeance-receipt"
 import { findStoredCardLinkForPayment, settleStoredCardLink } from "@/lib/gestion-card-link"
 import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
+import { normaliserLotsCouverts } from "@/lib/do-options-lots"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -179,6 +180,7 @@ export async function POST(request: NextRequest) {
               codePostal?: string
               ville?: string
               closCouvert?: boolean
+              lotsCouverts?: unknown
               primeAnnuelle?: number
               fraisGestion?: number
               fraisCourtage?: number
@@ -192,6 +194,7 @@ export async function POST(request: NextRequest) {
             const dateEcheanceStr = dateEcheance.toLocaleDateString("fr-FR")
 
             const primeAnnuelle = devisData.primeAnnuelle ?? 0
+            const lotsCouverts = normaliserLotsCouverts(devisData.lotsCouverts)
             const fraisGestion = devisData.fraisGestion ?? 0
             const fraisCourtage = devisData.fraisCourtage ?? 0
             const totalTTC = primeAnnuelle + fraisGestion + fraisCourtage
@@ -204,6 +207,7 @@ export async function POST(request: NextRequest) {
               ville: devisData.ville,
               coutConstruction: attestationFacts.guaranteeAmount ?? undefined,
               closCouvert: devisData.closCouvert ?? false,
+              ...(lotsCouverts.length > 0 ? { lotsCouverts } : {}),
               primeAnnuelle,
               dateSignature,
               dateEcheance: dateEcheanceStr,

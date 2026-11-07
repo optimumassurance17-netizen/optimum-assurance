@@ -8,6 +8,12 @@ import { logAdminActivity } from "@/lib/admin-activity"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { formatDoConstructionCostActivity } from "@/lib/do-attestation-facts"
 import { buildDoDocumentLinesFromStoredJson } from "@/lib/do-operation-lines"
+import {
+  estClosEtCouvert,
+  libelleLotsCouverts,
+  lotsParDefaut,
+  normaliserLotsCouverts,
+} from "@/lib/do-options-lots"
 
 function asTrimmedString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined
@@ -78,13 +84,17 @@ export async function POST(request: NextRequest) {
           .filter((line): line is string => typeof line === "string" && line.trim().length > 0)
           .map((line) => line.trim())
       : []
+    const lotsChoisis = normaliserLotsCouverts(raw.lotsCouverts)
     const closCouvertRaw = raw.closCouvert
     const closCouvert =
-      closCouvertRaw === true || closCouvertRaw === "oui"
-        ? true
-        : closCouvertRaw === false || closCouvertRaw === "non"
-          ? false
-          : undefined
+      lotsChoisis.length > 0
+        ? estClosEtCouvert(lotsChoisis)
+        : closCouvertRaw === true || closCouvertRaw === "oui"
+          ? true
+          : closCouvertRaw === false || closCouvertRaw === "non"
+            ? false
+            : undefined
+    const lotsCouverts = lotsChoisis.length > 0 ? lotsChoisis : closCouvert == null ? [] : lotsParDefaut(closCouvert)
 
     if (!userId) return NextResponse.json({ error: "Client requis" }, { status: 400 })
     if (premium == null) return NextResponse.json({ error: "Prime annuelle invalide" }, { status: 400 })
@@ -116,6 +126,7 @@ export async function POST(request: NextRequest) {
       constructionNature,
       destination ? `Destination : ${destination}` : undefined,
       closCouvert != null ? (closCouvert ? "Garantie clos et couvert" : "Dommage ouvrage complète") : undefined,
+      lotsCouverts.length > 0 ? `Lots couverts : ${libelleLotsCouverts(lotsCouverts)}` : undefined,
       coutConstruction != null ? formatDoConstructionCostActivity(coutConstruction) : undefined,
       telephone ? `Téléphone : ${telephone}` : undefined,
       fraisGestion != null && fraisGestion > 0 ? `Frais de gestion : ${fraisGestion.toLocaleString("fr-FR")} EUR` : undefined,

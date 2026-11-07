@@ -83,6 +83,9 @@ jobs:
       - name: Vérification ajout d'activité client
         run: npm run test:ajout-activite
 
+      - name: Vérification options DO par lot
+        run: npm run test:do-options-lots
+
       - name: Prisma generate + Next build
         run: npm run build
 

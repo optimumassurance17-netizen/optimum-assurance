@@ -43,6 +43,7 @@
     "test:status-labels": "tsx scripts/verify-status-labels.ts",
     "test:reprise-passe": "tsx scripts/verify-decennale-reprise-passe.ts",
     "test:ajout-activite": "tsx scripts/verify-decennale-ajout-activite.ts",
+    "test:do-options-lots": "tsx scripts/verify-do-options-lots.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "e2e:seed-admin": "node scripts/seed-e2e-admin.mjs",

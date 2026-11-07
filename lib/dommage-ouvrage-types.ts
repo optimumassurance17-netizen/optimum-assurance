@@ -56,6 +56,8 @@ export interface DevisDommageOuvrageData {
   superficieCommerces?: number
   destinationConstruction: DestinationConstruction
   operationClosCouvert: boolean
+  /** Lots nommément couverts. Une sélection limitée à la structure vaut clos et couvert. */
+  lotsCouverts?: string[]
   habitationPrincipaleSecondaire: boolean
   nbBatiments: number
   nbEtages: number

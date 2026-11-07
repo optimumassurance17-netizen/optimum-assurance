@@ -6,10 +6,9 @@ import {
   DO_EXCLUSIONS,
   DO_OUVRAGES_EXCLUS_ABSOLUS,
   DO_OUVRAGES_EXCLUS_RELATIFS,
-  DO_LOTS_CLOS_COUVERT,
-  DO_LOTS_EXCLUS_CLOS_COUVERT,
   ELEMENTS_DISSOCIABLES_NOTE,
 } from "@/lib/nomenclature-activites"
+import { libelleLotsCouverts, resumeLotsDocument } from "@/lib/do-options-lots"
 import { COMPANY_BRAND, INSURER_NAME, LEGAL_ORIAS_LINE } from "@/lib/legal-branding"
 import { DEVOIR_CONSEIL_TEXTE_BY_PRODUCT } from "@/lib/devoir-conseil"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
@@ -46,6 +45,7 @@ interface DevisDoTemplateProps {
     typeConstruction?: string
     destination?: string
     closCouvert?: boolean
+    lotsCouverts?: string[]
     fraisGestion?: number
     fraisCourtage?: number
     caracteristiques?: string[]
@@ -249,13 +249,21 @@ export function DevisDoTemplate({ numero, data }: DevisDoTemplateProps) {
           </tbody>
         </table>
         <ConditionsParticulieresNotes lines={doCadreCompletLines()} />
-        {data.closCouvert === true && (
-          <div className="text-xs text-[#171717] mb-2 p-2 bg-[#dbeafe] rounded">
-            <p className="font-medium mb-1">Option clos et couvert : lots couverts</p>
-            <p>{DO_LOTS_CLOS_COUVERT.map((l) => l.lot).join(", ")}</p>
-            <p className="mt-1 text-[#333333]">Lots non couverts : {DO_LOTS_EXCLUS_CLOS_COUVERT.join(", ")}</p>
-          </div>
-        )}
+        {(() => {
+          const lots = resumeLotsDocument(data)
+          if (!lots) return null
+          return (
+            <div className="text-xs text-[#171717] mb-2 p-2 bg-[#dbeafe] rounded">
+              <p className="font-medium mb-1">
+                {lots.closEtCouvert ? "Option clos et couvert : lots couverts" : "Lots couverts"}
+              </p>
+              <p>{libelleLotsCouverts(lots.couverts)}</p>
+              {lots.exclus.length > 0 ? (
+                <p className="mt-1 text-[#333333]">Lots non couverts : {lots.exclus.join(", ")}</p>
+              ) : null}
+            </div>
+          )
+        })()}
         <p className="text-xs text-[#171717] italic">{ELEMENTS_DISSOCIABLES_NOTE}</p>
       </div>
 

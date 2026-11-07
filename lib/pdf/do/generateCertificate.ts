@@ -13,6 +13,7 @@ import { doConstructionAddressLine, doGuaranteeAmountLine } from "@/lib/do-attes
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
 import { doCadreCompletLines } from "@/lib/conditions-particulieres"
 import { drawClausesPaginated } from "../shared/drawClauses"
+import { texteIndiqueClosCouvert } from "@/lib/do-options-lots"
 
 /**
  * Attestation DO — projet, adresse, nature construction, QR.
@@ -190,7 +191,7 @@ export async function generateDOCertificate(data: InsuranceCertificateData): Pro
     10,
     13
   )
-  if (data.activities?.some((line) => /clos et couvert/i.test(line))) {
+  if (data.activities?.some((line) => texteIndiqueClosCouvert(line))) {
     y -= 8
     y = drawWrappedText(
       page,

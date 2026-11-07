@@ -12,6 +12,7 @@ import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
 import { DECENNALE_SOUS_TRAITANCE_ATTESTATION, decennaleCadreCompletLines, doCadreCompletLines, doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
 import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
+import { libelleLotsCouverts, normaliserLotsCouverts } from "@/lib/do-options-lots"
 
 function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
   const rows = decennaleGarantieRows(data)
@@ -382,6 +383,7 @@ export function AttestationDoPDFPage({
     codePostal?: string
     ville?: string
     closCouvert?: boolean
+    lotsCouverts?: unknown
     primeAnnuelle?: number
     dateSignature?: string
     dateEcheance?: string
@@ -389,6 +391,7 @@ export function AttestationDoPDFPage({
     verificationQrDataUri?: string
   }
   const typeGarantie = d.closCouvert ? "Clos et couvert" : "DO complète"
+  const lotsCouverts = normaliserLotsCouverts(d.lotsCouverts)
   const facts = readDoDocumentAttestation(data)
   const guaranteeLabel =
     facts.guaranteeAmount != null ? `${facts.guaranteeAmount.toLocaleString("fr-FR")} €` : "Non renseigné"
@@ -422,6 +425,9 @@ export function AttestationDoPDFPage({
           <Text style={pdfTheme.p}>
             Garantie limitée au clos et couvert. Cette limitation est indiquée aux acquéreurs et figure sur les actes.
           </Text>
+        ) : null}
+        {lotsCouverts.length > 0 ? (
+          <Text style={pdfTheme.p}>Lots couverts : {libelleLotsCouverts(lotsCouverts)}</Text>
         ) : null}
         <Text style={pdfTheme.p}>Prime : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
         <DoGarantiesPdf />

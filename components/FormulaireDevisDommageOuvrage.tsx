@@ -14,6 +14,8 @@ import {
   type TypeContrat,
 } from "@/lib/dommage-ouvrage-types"
 import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
+import { estClosEtCouvert, lotsParDefaut, normaliserLotsCouverts } from "@/lib/do-options-lots"
+import { DoLotsCouvertsPicker } from "@/components/DoLotsCouvertsPicker"
 import { buildDoSouscriptionInsurancePayload } from "@/lib/build-do-souscription-payload"
 import { STORAGE_KEYS } from "@/lib/types"
 import { DevoirConseil } from "@/components/DevoirConseil"
@@ -46,6 +48,7 @@ const initialData: Partial<DevisDommageOuvrageData> = {
   typeOuvrage: "maison_individuelle",
   destinationConstruction: "location",
   operationClosCouvert: false,
+  lotsCouverts: lotsParDefaut(false),
   habitationPrincipaleSecondaire: true,
   nbBatiments: 1,
   nbEtages: 0,
@@ -115,6 +118,7 @@ function getStepValidationError(
     case 3:
       if (!data.typeOuvrage) return "Sélectionnez le type d'ouvrage."
       if ((Number(data.superficieOuvrage) || 0) <= 0) return "Renseignez la superficie de l'ouvrage."
+      if (normaliserLotsCouverts(data.lotsCouverts).length === 0) return "Choisissez au moins un lot couvert."
       if (coutTotal <= 0) return "Renseignez le coût prévisionnel de la construction pour obtenir un devis exploitable."
       return null
     case 5:
@@ -806,7 +810,14 @@ export function FormulaireDevisDommageOuvrage() {
                   <input
                     type="checkbox"
                     checked={data.operationClosCouvert ?? false}
-                    onChange={(e) => update("operationClosCouvert", e.target.checked)}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setData((current) => ({
+                        ...current,
+                        operationClosCouvert: checked,
+                        lotsCouverts: lotsParDefaut(checked),
+                      }))
+                    }}
                     className="w-5 h-5 rounded text-[#2563eb]"
                   />
                   <span>Opération clos et couvert</span>
@@ -839,6 +850,16 @@ export function FormulaireDevisDommageOuvrage() {
                   <span>Photovoltaïques</span>
                 </label>
               </div>
+              <DoLotsCouvertsPicker
+                lots={normaliserLotsCouverts(data.lotsCouverts)}
+                onChange={(lots) =>
+                  setData((current) => ({
+                    ...current,
+                    lotsCouverts: lots,
+                    operationClosCouvert: estClosEtCouvert(lots),
+                  }))
+                }
+              />
               <div className="grid grid-cols-4 gap-4">
                 <div>
                   <label className={labelClass}>Bâtiments</label>

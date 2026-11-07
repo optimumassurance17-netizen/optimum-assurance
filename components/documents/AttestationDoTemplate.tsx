@@ -8,6 +8,7 @@ import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
 import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
 import { doCadreCompletLines } from "@/lib/conditions-particulieres"
 import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
+import { libelleLotsCouverts, normaliserLotsCouverts } from "@/lib/do-options-lots"
 
 interface AttestationDoTemplateProps {
   numero: string
@@ -18,6 +19,7 @@ interface AttestationDoTemplateProps {
     codePostal?: string
     ville?: string
     closCouvert: boolean
+    lotsCouverts?: string[]
     primeAnnuelle: number
     dateSignature: string
     dateEcheance: string
@@ -79,6 +81,11 @@ export function AttestationDoTemplate({ numero, verificationUrl, data }: Attesta
         {data.closCouvert && (
           <p className="mb-2 text-sm text-[#171717]">
             Garantie limitée au clos et couvert. Cette limitation est indiquée aux acquéreurs et figure sur les actes.
+          </p>
+        )}
+        {normaliserLotsCouverts(data.lotsCouverts).length > 0 && (
+          <p className="mb-2 text-sm text-[#171717]">
+            Lots couverts : {libelleLotsCouverts(normaliserLotsCouverts(data.lotsCouverts))}
           </p>
         )}
         <p className="mb-2 text-sm">Franchise : aucune (garantie obligatoire)</p>

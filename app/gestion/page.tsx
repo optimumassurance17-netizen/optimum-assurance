@@ -116,6 +116,8 @@ import {
   visibleDoDevisLeads,
 } from "@/lib/devis-do-lead"
 import { buildDoOperationLines } from "@/lib/do-operation-lines"
+import { estClosEtCouvert, lotsEffectifs, lotsParDefaut } from "@/lib/do-options-lots"
+import { DoLotsCouvertsPicker } from "@/components/DoLotsCouvertsPicker"
 import { constructionAddressFromLead } from "@/lib/do-attestation-facts"
 import type { DevisDommageOuvrageData } from "@/lib/dommage-ouvrage-types"
 import {
@@ -672,6 +674,7 @@ export default function GestionPage() {
     typeConstruction: "",
     destination: "",
     closCouvert: "",
+    lotsCouverts: [] as string[],
     fraisGestion: "",
     fraisCourtage: "",
     operationLines: [] as string[],
@@ -934,6 +937,7 @@ export default function GestionPage() {
       let typeConstruction = ""
       let destination = ""
       let closCouvert = ""
+      let lotsCouverts = current.lotsCouverts
       let operationLines = current.operationLines
       try {
         const leadData = JSON.parse(lead.data || "{}") as Record<string, unknown> & {
@@ -946,8 +950,19 @@ export default function GestionPage() {
         tel = identity.telephone || ""
         typeConstruction = mapTypeOuvrageToConstruction(leadData.typeOuvrage)
         destination = mapDestinationConstruction(leadData.destinationConstruction)
-        closCouvert =
-          leadData.operationClosCouvert === true ? "oui" : leadData.operationClosCouvert === false ? "non" : ""
+        lotsCouverts = lotsEffectifs({
+          lotsCouverts: leadData.lotsCouverts,
+          operationClosCouvert: leadData.operationClosCouvert,
+        })
+        closCouvert = lotsCouverts.length
+          ? estClosEtCouvert(lotsCouverts)
+            ? "oui"
+            : "non"
+          : leadData.operationClosCouvert === true
+            ? "oui"
+            : leadData.operationClosCouvert === false
+              ? "non"
+              : ""
         operationLines = buildDoOperationLines(
           leadData as Partial<DevisDommageOuvrageData>,
           lead.coutTotal ?? undefined
@@ -966,6 +981,7 @@ export default function GestionPage() {
         typeConstruction: typeConstruction || current.typeConstruction,
         destination: destination || current.destination,
         closCouvert: closCouvert || current.closCouvert,
+        lotsCouverts,
         operationLines,
       }
     })
@@ -2507,6 +2523,7 @@ export default function GestionPage() {
           typeConstruction: devisDoForm.typeConstruction || undefined,
           destination: devisDoForm.destination || undefined,
           closCouvert: devisDoForm.closCouvert || undefined,
+          lotsCouverts: devisDoForm.lotsCouverts,
           fraisGestion: Number(devisDoForm.fraisGestion) || undefined,
           fraisCourtage: Number(devisDoForm.fraisCourtage) || undefined,
           operationLines: devisDoForm.operationLines,
@@ -2532,7 +2549,7 @@ export default function GestionPage() {
         message: `Contrat DO ${result.contract?.contractNumber ?? ""} créé (${result.contract?.status ?? "statut inconnu"}). Devis + CP disponibles dans l’espace client.${result.emailSent === false ? " Email client non envoyé." : ""}`,
         type: "success",
       })
-      setDevisDoForm({ leadId: "", userId: "", primeAnnuelle: "", coutConstruction: "", telephone: "", adresseOperation: "", typeConstruction: "", destination: "", closCouvert: "", fraisGestion: "", fraisCourtage: "", operationLines: [] })
+      setDevisDoForm({ leadId: "", userId: "", primeAnnuelle: "", coutConstruction: "", telephone: "", adresseOperation: "", typeConstruction: "", destination: "", closCouvert: "", lotsCouverts: [], fraisGestion: "", fraisCourtage: "", operationLines: [] })
       const dashRes = await fetch("/api/gestion/dashboard")
       if (dashRes.ok) setData(await readResponseJson<DashboardData>(dashRes))
     } catch (err) {
@@ -6015,7 +6032,14 @@ export default function GestionPage() {
                 <label className="block text-sm font-medium text-gray-200 mb-1">Clos et couvert</label>
                 <select
                   value={devisDoForm.closCouvert}
-                  onChange={(e) => setDevisDoForm((f) => ({ ...f, closCouvert: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setDevisDoForm((f) => ({
+                      ...f,
+                      closCouvert: value,
+                      lotsCouverts: value === "oui" ? lotsParDefaut(true) : value === "non" ? lotsParDefaut(false) : [],
+                    }))
+                  }}
                   className="w-full bg-[#1a1a1a] border border-gray-600 rounded-lg px-4 py-2 text-white"
                 >
                   <option value="">—</option>
@@ -6024,6 +6048,17 @@ export default function GestionPage() {
                 </select>
               </div>
             </div>
+            <DoLotsCouvertsPicker
+              tone="dark"
+              lots={devisDoForm.lotsCouverts}
+              onChange={(lots) =>
+                setDevisDoForm((current) => ({
+                  ...current,
+                  lotsCouverts: lots,
+                  closCouvert: lots.length === 0 ? "" : estClosEtCouvert(lots) ? "oui" : "non",
+                }))
+              }
+            />
             <div>
               <label className="block text-sm font-medium text-gray-200 mb-1">Destination</label>
               <select

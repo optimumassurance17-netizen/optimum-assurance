@@ -1,3 +1,4 @@
+import { estClosEtCouvert, libelleLotsCouverts, lotsEffectifs } from "@/lib/do-options-lots"
 import type { DoEtudeQuestionnaireV1 } from "@/lib/do-etude-questionnaire-types"
 import {
   GARANTIES_LABELS,
@@ -72,7 +73,13 @@ export function buildDoOperationLines(
     "Destination",
     data.destinationConstruction ? DESTINATION_LABELS[data.destinationConstruction] : undefined
   )
-  add(lines, "Clos et couvert", ouiNon(data.operationClosCouvert))
+  const lots = lotsEffectifs(data)
+  if (lots.length > 0) {
+    add(lines, "Clos et couvert", estClosEtCouvert(lots) ? "Oui" : "Non")
+    add(lines, "Lots couverts", libelleLotsCouverts(lots))
+  } else {
+    add(lines, "Clos et couvert", ouiNon(data.operationClosCouvert))
+  }
   add(lines, "Habitation principale ou secondaire", ouiNon(data.habitationPrincipaleSecondaire))
   if (typeof data.nbBatiments === "number") add(lines, "Nombre de bâtiments", String(data.nbBatiments))
   if (typeof data.nbLogements === "number") add(lines, "Nombre de logements", String(data.nbLogements))

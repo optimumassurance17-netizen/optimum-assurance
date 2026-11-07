@@ -16,6 +16,7 @@ import {
   type ConversionTrackingContext,
 } from "@/lib/conversion-tracking"
 import { doDevisMatchKey, findFirstMatchingKey, normalizeIntakeEmail } from "@/lib/devis-intake"
+import { libelleLotsCouverts, lotsEffectifs } from "@/lib/do-options-lots"
 
 /**
  * Enregistre une demande de devis dommage ouvrage et envoie une estimation PDF par email si possible.
@@ -93,6 +94,8 @@ export async function POST(request: NextRequest) {
       if (parsed.destinationConstruction) lines.push(`Destination : ${String(parsed.destinationConstruction)}`)
       if (coutTotal != null && Number.isFinite(Number(coutTotal)))
         lines.push(`Montant TTC chantier (déclaré) : ${Number(coutTotal).toLocaleString("fr-FR")} €`)
+      const lots = lotsEffectifs(parsed)
+      if (lots.length > 0) lines.push(`Lots couverts : ${libelleLotsCouverts(lots)}`)
       lines.push(...buildConversionTrackingLines(tracking))
       await sendNewDevisRequestAlert({
         type: "dommage_ouvrage",
