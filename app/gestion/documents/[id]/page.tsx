@@ -11,7 +11,7 @@ import { AutoriserDevisButton } from "@/components/gestion/AutoriserDevisButton"
 import { ModifierDevisButton } from "@/components/gestion/ModifierDevisButton"
 import { DeleteErroneousContractButton } from "@/components/gestion/DeleteErroneousContractButton"
 import { isPerDocumentDevisEditionType } from "@/lib/devis-edition"
-import { isQuoteExpired, QUOTE_EXPIRED_ERROR } from "@/lib/quote-validity"
+import { isQuoteExpired, QUOTE_EXPIRED_ERROR, withQuoteIssueDate } from "@/lib/quote-validity"
 
 const DevisTemplate = dynamic(() => import("@/components/documents/DevisTemplate").then((m) => m.DevisTemplate), { ssr: false })
 const DevisDoTemplate = dynamic(() => import("@/components/documents/DevisDoTemplate").then((m) => m.DevisDoTemplate), { ssr: false })
@@ -68,6 +68,7 @@ export default function GestionDocumentPage() {
           userId: string
           verificationToken?: string | null
           allowDevisEdition?: boolean
+          createdAt?: string
         }>(res)
         if (!res.ok) throw new Error("Document introuvable")
         setDocument(data)
@@ -101,7 +102,12 @@ export default function GestionDocumentPage() {
   }
 
   const quoteExpired =
-    document.type === "devis" && Boolean(document.createdAt && isQuoteExpired(document.createdAt))
+    (document.type === "devis" || document.type === "devis_do") &&
+    Boolean(document.createdAt && isQuoteExpired(document.createdAt))
+  const quoteData =
+    document.type === "devis" || document.type === "devis_do"
+      ? withQuoteIssueDate(document.data, document.createdAt)
+      : document.data
 
   return (
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
@@ -111,7 +117,7 @@ export default function GestionDocumentPage() {
             ← Fiche client
           </Link>
           <div className="flex flex-wrap gap-3 items-center justify-end">
-            {document.type === "devis" && quoteExpired && (
+            {quoteExpired && (
               <p className="text-sm text-amber-300">{QUOTE_EXPIRED_ERROR}</p>
             )}
             {document.type === "devis" && !quoteExpired && (
@@ -219,10 +225,10 @@ export default function GestionDocumentPage() {
       <div className="max-w-4xl mx-auto px-6 py-8">
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden print:shadow-none text-black">
           {document.type === "devis" && (
-            <DevisTemplate numero={document.numero} data={document.data as never} />
+            <DevisTemplate numero={document.numero} data={quoteData as never} />
           )}
           {document.type === "devis_do" && (
-            <DevisDoTemplate numero={document.numero} data={document.data as never} />
+            <DevisDoTemplate numero={document.numero} data={quoteData as never} />
           )}
           {document.type === "contrat" && (
             <ContratTemplate numero={document.numero} data={document.data as never} />

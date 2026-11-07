@@ -12,7 +12,7 @@ import { DevoirConseil } from "@/components/DevoirConseil"
 import { readResponseJson } from "@/lib/read-response-json"
 import { isClientQuoteEditionLocked, isContractCoverageLocked } from "@/lib/devis-edition"
 import { isStoredClientQuoteType } from "@/lib/client-quote-delete"
-import { isQuoteExpired, QUOTE_EXPIRED_ERROR } from "@/lib/quote-validity"
+import { isQuoteExpired, QUOTE_EXPIRED_ERROR, withQuoteIssueDate } from "@/lib/quote-validity"
 import { SupprimerDevisButton } from "@/components/espace-client/SupprimerDevisButton"
 import { ReprisePasseExplication } from "@/components/espace-client/ReprisePasseExplication"
 import { documentShowsReprisePasse, reprisePasseDateLabel } from "@/lib/decennale-reprise-passe"
@@ -596,10 +596,16 @@ export default function DocumentPage() {
 
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden print:shadow-none">
           {document.type === "devis" && (
-            <DevisTemplate numero={document.numero} data={document.data as never} />
+            <DevisTemplate
+              numero={document.numero}
+              data={withQuoteIssueDate(document.data, document.createdAt) as never}
+            />
           )}
           {document.type === "devis_do" && (
-            <DevisDoTemplate numero={document.numero} data={document.data as never} />
+            <DevisDoTemplate
+              numero={document.numero}
+              data={withQuoteIssueDate(document.data, document.createdAt) as never}
+            />
           )}
           {document.type === "contrat" && (
             <ContratTemplate numero={document.numero} data={document.data as never} />

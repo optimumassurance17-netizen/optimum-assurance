@@ -31,3 +31,29 @@ export function isDisplayedQuoteExpired(
   if (issuedAt == null || issuedAt === "") return false
   return isQuoteExpired(issuedAt, now)
 }
+
+/** Date d'émission affichée sur la proposition. La date déjà imprimée est conservée. */
+export function quoteIssueDateLabel(
+  stored: unknown,
+  issuedAt: Date | string | null | undefined
+): string {
+  if (typeof stored === "string" && stored.trim()) return stored.trim()
+  if (issuedAt == null || issuedAt === "") return ""
+  const date = issuedAt instanceof Date ? issuedAt : new Date(issuedAt)
+  if (Number.isNaN(date.getTime())) return ""
+  return new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date)
+}
+
+export function withQuoteIssueDate<T extends Record<string, unknown>>(
+  data: T,
+  issuedAt: Date | string | null | undefined
+): T & { dateCreation?: string } {
+  const label = quoteIssueDateLabel(data.dateCreation, issuedAt)
+  if (!label || data.dateCreation === label) return data
+  return { ...data, dateCreation: label }
+}

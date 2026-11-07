@@ -7,7 +7,9 @@ import {
   isDisplayedQuoteExpired,
   isQuoteExpired,
   quoteExpiresAt,
+  quoteIssueDateLabel,
   quoteStillValidSince,
+  withQuoteIssueDate,
 } from "@/lib/quote-validity"
 import { describeClientSignature } from "@/lib/signature-reminder"
 
@@ -26,6 +28,13 @@ assert.equal(isDisplayedQuoteExpired(undefined, expires), false)
 assert.equal(isDisplayedQuoteExpired(issued, new Date(expires.getTime() - 1)), false)
 assert.equal(isDisplayedQuoteExpired(issued, expires), true)
 assert.equal(quoteStillValidSince(expires).toISOString(), issued.toISOString())
+assert.equal(quoteIssueDateLabel(" 15/03/2026 ", "2026-01-01T08:00:00.000Z"), "15/03/2026")
+assert.equal(quoteIssueDateLabel(undefined, "2026-01-01T23:30:00.000Z"), "02/01/2026")
+assert.equal(quoteIssueDateLabel(" ", null), "")
+assert.equal(
+  withQuoteIssueDate({ primeAnnuelle: 1 }, "2026-01-01T08:00:00.000Z").dateCreation,
+  "01/01/2026"
+)
 assert.match(QUOTE_EXPIRED_ERROR, /60 jours/)
 
 const freshSignature = describeClientSignature({
@@ -103,6 +112,11 @@ assert.match(gestion, /Expirée/)
 assert.doesNotMatch(gestion, /s\.repairEligible \?/)
 assert.match(fiche, /QUOTE_EXPIRED_ERROR/)
 assert.match(fiche, /quoteExpired \? "Expiré"/)
+const gestionDocument = read("app/gestion/documents/[id]/page.tsx")
+assert.match(gestionDocument, /document.type === "devis" \|\| document.type === "devis_do"/)
+assert.match(gestionDocument, /withQuoteIssueDate/)
+assert.match(gestionDocument, /QUOTE_EXPIRED_ERROR/)
+assert.match(read("app/espace-client/documents/[id]/page.tsx"), /withQuoteIssueDate/)
 assert.match(fiche, /Relancer la signature/)
 assert.match(rectification, /isDisplayedQuoteExpired\(s\.createdAt\)/)
 assert.match(doWindow, /DO_DEVIS_ACTION_WINDOW_MS/)

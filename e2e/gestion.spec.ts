@@ -1642,3 +1642,48 @@ test.describe("Gestion CRM — modification d'un contrat", () => {
     await expect(dialog).toBeVisible()
   })
 })
+
+test.describe("Gestion CRM — devis dommage ouvrage", () => {
+  test("La page d'un devis dommage ouvrage expiré indique sa date d'émission", async ({ page }) => {
+    await mockGestionAuth(page)
+    const documents: Record<string, { createdAt: string; numero: string }> = {
+      do_expire: { createdAt: "2026-01-01T08:00:00.000Z", numero: "DO-EXPIRE" },
+      do_recent: { createdAt: "2026-11-01T08:00:00.000Z", numero: "DO-RECENT" },
+    }
+    await page.route("**/api/gestion/documents/do_*", async (route) => {
+      const id = new URL(route.request().url()).pathname.split("/").pop() ?? ""
+      const doc = documents[id]
+      if (!doc) {
+        await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "Document introuvable" }) })
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id,
+          type: "devis_do",
+          numero: doc.numero,
+          createdAt: doc.createdAt,
+          userId: "client_do_1",
+          data: {
+            raisonSociale: "Bureau Seine",
+            primeAnnuelle: 2400,
+            adresseOperation: "8 quai de la Seine 75019 Paris",
+          },
+        }),
+      })
+    })
+
+    await page.goto("/gestion/documents/do_expire")
+    await expect(page.getByText("Ce devis a expiré. Une proposition est valable 60 jours à compter de son émission.")).toBeVisible()
+    await expect(page.getByText("valable 60 jours à partir du 01/01/2026")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Envoyer pour signature" })).toHaveCount(0)
+    await expect(page.getByText("DO-EXPIRE")).toBeVisible()
+
+    await page.goto("/gestion/documents/do_recent")
+    await expect(page.getByText("Ce devis a expiré. Une proposition est valable 60 jours à compter de son émission.")).toHaveCount(0)
+    await expect(page.getByText("valable 60 jours à partir du 01/11/2026")).toBeVisible()
+    await expect(page.getByText("DO-RECENT")).toBeVisible()
+  })
+})
