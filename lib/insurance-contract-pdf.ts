@@ -17,8 +17,8 @@ import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/sha
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { generateQuarterlyScheduleInsurancePdf } from "@/lib/insurance-contract-schedule-pdf"
-import { prisma } from "@/lib/prisma"
-import { periodiciteDecennale, primeEcheanceDecennale } from "@/lib/premium"
+import { periodiciteSepaDecennale } from "@/lib/decennale-sepa-periodicite"
+import { primeEcheanceDecennale } from "@/lib/premium"
 import { doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
 import { drawClausesPaginated } from "@/lib/pdf/shared/drawClauses"
 import { drawOptimumHeader } from "@/lib/pdf/shared/drawHeader"
@@ -132,18 +132,7 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
   page.drawText(sanitizeForPdfLib(`Client : ${c.clientName}`), { x: 50, y, size: 10, font })
   y -= 14
   const decennalePeriodicite =
-    c.productType === "decennale" && c.userId
-      ? periodiciteDecennale(
-          (
-            await prisma.sepaSubscription.findUnique({
-              where: { userId: c.userId },
-              select: { periodicite: true },
-            })
-          )?.periodicite ?? "mensuel"
-        )
-      : c.productType === "decennale"
-        ? "mensuel"
-        : null
+    c.productType === "decennale" ? await periodiciteSepaDecennale(c.userId) : null
   const montantFactureTtc =
     decennalePeriodicite != null
       ? primeEcheanceDecennale(c.premium, decennalePeriodicite)

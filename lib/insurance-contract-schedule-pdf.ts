@@ -11,12 +11,8 @@ import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/sha
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { PdfValidationError } from "@/lib/pdf/errors"
-import { prisma } from "@/lib/prisma"
-import {
-  periodiciteDecennale,
-  primeEcheanceDecennale,
-  type PeriodiciteCotisationDecennale,
-} from "@/lib/premium"
+import { periodiciteSepaDecennale } from "@/lib/decennale-sepa-periodicite"
+import { primeEcheanceDecennale } from "@/lib/premium"
 import {
   getRcFabPeriodicityMeta,
   normalizeRcFabPeriodicity,
@@ -89,15 +85,6 @@ function drawLines(
   return y
 }
 
-async function decennaleSchedulePeriodicite(c: InsuranceContract): Promise<PeriodiciteCotisationDecennale> {
-  if (!c.userId) return "mensuel"
-  const sub = await prisma.sepaSubscription.findUnique({
-    where: { userId: c.userId },
-    select: { periodicite: true },
-  })
-  return sub ? periodiciteDecennale(sub.periodicite) : "mensuel"
-}
-
 async function scheduleAmounts(c: InsuranceContract): Promise<{
   perQuarter: number
   annualIndicative: number
@@ -130,7 +117,7 @@ async function scheduleAmounts(c: InsuranceContract): Promise<{
   }
   if (c.productType === "decennale") {
     const annual = Math.round(c.premium * 100) / 100
-    const periodicite = await decennaleSchedulePeriodicite(c)
+    const periodicite = await periodiciteSepaDecennale(c.userId)
     const per = primeEcheanceDecennale(annual, periodicite)
     const mensuel = periodicite === "mensuel"
     return {
