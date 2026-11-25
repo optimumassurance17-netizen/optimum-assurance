@@ -89,6 +89,9 @@ jobs:
       - name: Vérification parcours décennale abandonné
         run: npm run test:parcours-abandonne
 
+      - name: Vérification paiement mensuel décennale
+        run: npm run test:paiement-mensuel
+
       - name: Prisma generate + Next build
         run: npm run build
 

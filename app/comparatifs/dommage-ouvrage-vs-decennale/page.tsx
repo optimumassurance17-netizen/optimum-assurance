@@ -50,7 +50,7 @@ const rows = [
   {
     sujet: "Paiement chez Optimum",
     left: "Paiement en une fois par virement bancaire via Mollie après validation du dossier.",
-    right: "Premier trimestre par carte bancaire via Mollie, puis prélèvements SEPA trimestriels.",
+    right: "Premier mois par carte bancaire via Mollie, puis prélèvements SEPA mensuels.",
   },
 ]
 

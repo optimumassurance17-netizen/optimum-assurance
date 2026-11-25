@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     const qualityError = validateSignatureQualityGate({
       flow: "decennale",
       annualTtc: Number(baseContract.primeAnnuelle),
-      periodicity: "trimestriel",
+      periodicity: "mensuel",
       clientLabel: String(baseContract.raisonSociale || doc.user.raisonSociale || doc.user.email || "Client"),
       reference: String(baseContract.numero || contractNumero),
       email: String(baseContract.email || doc.user.email || ""),

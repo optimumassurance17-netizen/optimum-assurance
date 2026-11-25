@@ -9,6 +9,7 @@ import type { MollieClient } from "@mollie/api-client"
 import { MandateMethod, MandateStatus, PaymentMethod, SequenceType } from "@mollie/api-client"
 import { prisma } from "@/lib/prisma"
 import { isValidIban, normalizeIban } from "@/lib/iban"
+import { moisEntreEcheancesDecennale, periodiciteDecennale } from "@/lib/premium"
 
 export { normalizeIban } from "@/lib/iban"
 
@@ -19,7 +20,7 @@ function addMonths(d: Date, months: number): Date {
 }
 
 /**
- * Après paiement CB du 1er trimestre : crée le client Mollie, le mandat SEPA et l’enregistrement SepaSubscription.
+ * Après paiement CB de la première échéance : crée le client Mollie, le mandat SEPA et l’enregistrement SepaSubscription.
  */
 export async function setupSepaSubscriptionAfterT1Card(
   mollie: MollieClient,
@@ -31,6 +32,7 @@ export async function setupSepaSubscriptionAfterT1Card(
     titulaireCompte: string
     primeAnnuelle: number
     baseUrl: string
+    periodicite?: string | null
   }
 ): Promise<{ ok: boolean; error?: string }> {
   const iban = normalizeIban(params.iban)
@@ -55,7 +57,8 @@ export async function setupSepaSubscriptionAfterT1Card(
 
     const mandateOk = mandate.status === MandateStatus.valid
     const now = new Date()
-    const nextSepaDue = addMonths(now, 3)
+    const periodicite = periodiciteDecennale(params.periodicite)
+    const nextSepaDue = addMonths(now, moisEntreEcheancesDecennale(periodicite))
 
     await prisma.sepaSubscription.upsert({
       where: { userId: params.userId },
@@ -64,6 +67,7 @@ export async function setupSepaSubscriptionAfterT1Card(
         mollieCustomerId: customer.id,
         mollieMandateId: mandate.id,
         primeAnnuelle: params.primeAnnuelle,
+        periodicite,
         trimestresSepaPayes: 0,
         firstTrimesterPaidAt: now,
         nextSepaDue,
@@ -76,6 +80,7 @@ export async function setupSepaSubscriptionAfterT1Card(
         mollieCustomerId: customer.id,
         mollieMandateId: mandate.id,
         primeAnnuelle: params.primeAnnuelle,
+        periodicite,
         trimestresSepaPayes: 0,
         firstTrimesterPaidAt: now,
         nextSepaDue,
@@ -144,11 +149,12 @@ export async function onSepaTrimestrePaid(subscriptionId: string): Promise<void>
 
   const next = sub.trimestresSepaPayes + 1
   const nextDueBase = sub.nextSepaDue ?? sub.firstTrimesterPaidAt ?? new Date()
+  const months = moisEntreEcheancesDecennale(periodiciteDecennale(sub.periodicite))
   await prisma.sepaSubscription.update({
     where: { id: subscriptionId },
     data: {
       trimestresSepaPayes: next,
-      nextSepaDue: addMonths(nextDueBase, 3),
+      nextSepaDue: addMonths(nextDueBase, months),
       status: "active",
       lastError: null,
       sepaPendingPaymentId: null,

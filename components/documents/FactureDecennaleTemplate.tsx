@@ -10,7 +10,7 @@ import {
 } from "@/lib/legal-branding"
 
 /**
- * Facture acquittée — assurance décennale (1er trimestre CB + frais).
+ * Facture acquittée — assurance décennale (première échéance CB + frais).
  * Parcours distinct du DO (`FactureDoTemplate`).
  */
 export interface FactureDecennaleData {
@@ -68,9 +68,9 @@ export function FactureDecennaleTemplate({ numero, data }: FactureDecennaleTempl
           <tbody>
             <tr className="border-t border-[#E5E0D8]">
               <td className="p-3">
-                <p className="font-medium">Assurance décennale — 1er trimestre (carte bancaire)</p>
+                <p className="font-medium">Assurance décennale — première échéance (carte bancaire)</p>
                 <p className="text-xs text-[#171717]">
-                  Échéances suivantes : prélèvements SEPA trimestriels sur mandat
+                  Échéances suivantes : prélèvements SEPA sur mandat
                 </p>
               </td>
               <td className="p-3 text-right font-medium">
@@ -78,7 +78,7 @@ export function FactureDecennaleTemplate({ numero, data }: FactureDecennaleTempl
               </td>
             </tr>
             <tr className="border-t border-[#E5E0D8]">
-              <td className="p-3">Frais de gestion prélèvement (trimestriel)</td>
+              <td className="p-3">Frais de gestion prélèvement</td>
               <td className="p-3 text-right">{data.fraisGestion.toLocaleString("fr-FR")} €</td>
             </tr>
             <tr className="border-t-2 border-[#2563eb] bg-[#eff6ff]">

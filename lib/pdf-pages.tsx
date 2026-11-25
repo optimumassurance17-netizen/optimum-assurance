@@ -449,7 +449,7 @@ export function AttestationDoPDFPage({
   )
 }
 
-/** Facture acquittée — assurance décennale (1er trimestre CB + frais). Ne pas confondre avec facture DO. */
+/** Facture acquittée — assurance décennale (première échéance CB + frais). Ne pas confondre avec facture DO. */
 export function FactureDecennalePDFPage({
   numero,
   data,
@@ -493,13 +493,13 @@ export function FactureDecennalePDFPage({
         </View>
         <View style={pdfTheme.row}>
           <Text style={pdfTheme.cellLeft}>
-            Assurance décennale — 1er trimestre (règlement par carte bancaire), prélèvements trimestriels suivants sur
+            Assurance décennale — première échéance (règlement par carte bancaire), prélèvements suivants sur
             mandat SEPA
           </Text>
           <Text style={pdfTheme.cellRight}>{(d.montantPremierTrimestre ?? 0).toLocaleString("fr-FR")} €</Text>
         </View>
         <View style={pdfTheme.row}>
-          <Text style={pdfTheme.cellLeft}>Frais de gestion prélèvement (trimestriel)</Text>
+          <Text style={pdfTheme.cellLeft}>Frais de gestion prélèvement</Text>
           <Text style={pdfTheme.cellRight}>{(d.fraisGestion ?? 0).toLocaleString("fr-FR")} €</Text>
         </View>
         <View style={pdfTheme.rowLast}>

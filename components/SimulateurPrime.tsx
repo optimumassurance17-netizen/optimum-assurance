@@ -166,7 +166,7 @@ export function SimulateurPrime() {
               })}{" "}
               €/mois <span className="text-lg font-semibold text-slate-800">(équivalent)</span>
             </p>
-            <p className="mt-1 text-sm text-slate-700">Soit {resultat.prime.toLocaleString("fr-FR")} €/an — prélèvement trimestriel</p>
+            <p className="mt-1 text-sm text-slate-700">Soit {resultat.prime.toLocaleString("fr-FR")} €/an — prélèvement mensuel</p>
             <p className="mt-1 text-sm text-slate-700">Économie estimée : {resultat.economie.toLocaleString("fr-FR")} €/an vs. assureurs traditionnels</p>
             <Link href="/devis" className="mt-3 inline-block text-sm font-semibold text-blue-600 hover:underline">
               Obtenir mon devis précis →

@@ -61,7 +61,7 @@ function categoryBenefits(categorie: string): string[] {
       return [
         "Activités techniques du bâtiment couvertes avec devis selon le profil réel",
         "Parcours adapté aux travaux d'électricité, plomberie, chauffage ou CVC",
-        "Paiement trimestriel et attestation conforme après validation du dossier",
+        "Paiement mensuel et attestation conforme après validation du dossier",
       ]
     case "Finition":
       return [
@@ -206,7 +206,7 @@ const ACTIVITY_ENTRIES: DecennaleSeoEntry[] = TARIFICATION_110_ACTIVITES.map((ac
     nom: categoryGenericName(activity.activite),
     activite: activity.activite,
     prixMin: String(prixMinMensuelEquivalent),
-    description: `${activity.activite} : assurance décennale en ligne avec devis selon chiffre d'affaires, attestation rapide et paiement trimestriel. ${categoryIntro(activity.categorie)} Dès ${prixMinMensuelEquivalent} €/mois équivalent.`,
+    description: `${activity.activite} : assurance décennale en ligne avec devis selon chiffre d'affaires, attestation rapide et paiement mensuel. ${categoryIntro(activity.categorie)} Dès ${prixMinMensuelEquivalent} €/mois.`,
     avantages: categoryBenefits(activity.categorie),
     faq: categoryFaq(activity.categorie, activity.activite, activity.prime_min),
     categorie: activity.categorie,
@@ -533,7 +533,7 @@ const HEADTERM_ENTRIES: DecennaleSeoEntry[] = HEADTERM_SEEDS.map((seed) => {
     nom: seed.nom,
     activite: seed.activite,
     prixMin: String(prixMinMensuelEquivalent),
-    description: `${seed.descriptionLead} Dès ${prixMinMensuelEquivalent} €/mois équivalent, paiement trimestriel.`,
+    description: `${seed.descriptionLead} Dès ${prixMinMensuelEquivalent} €/mois, paiement mensuel.`,
     avantages: seed.avantages,
     faq: seed.faq,
     categorie: seed.categorie,

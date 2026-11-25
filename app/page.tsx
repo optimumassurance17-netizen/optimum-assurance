@@ -109,7 +109,7 @@ export const metadata: Metadata = {
     absolute: HOME_SEO_TITLE,
   },
   description: truncateForDescription(
-    `Assurance décennale BTP obligatoire : devis en ligne en 3 minutes, attestation rapide et paiement trimestriel. Pour artisans, entreprises du bâtiment et bureaux d’études. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
+    `Assurance décennale BTP obligatoire : devis en ligne en 3 minutes, attestation rapide et paiement mensuel. Pour artisans, entreprises du bâtiment et bureaux d’études. Dès ${EQ_MENSUEL_MIN} €/mois.`,
     158
   ),
   alternates: { canonical: SITE_URL },
@@ -117,7 +117,7 @@ export const metadata: Metadata = {
     type: "website",
     url: SITE_URL,
     title: HOME_SEO_TITLE,
-    description: `Devis décennale BTP en 3 minutes, attestation rapide, documents conformes et paiement trimestriel. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
+    description: `Devis décennale BTP en 3 minutes, attestation rapide, documents conformes et paiement mensuel. Dès ${EQ_MENSUEL_MIN} €/mois.`,
     locale: "fr_FR",
     siteName: "Optimum Assurance",
     images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance — assurance décennale BTP" }],
@@ -125,7 +125,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: HOME_SEO_TITLE,
-    description: `Devis décennale BTP en 3 minutes, attestation rapide et paiement trimestriel. Dès ${EQ_MENSUEL_MIN} €/mois équivalent.`,
+    description: `Devis décennale BTP en 3 minutes, attestation rapide et paiement mensuel. Dès ${EQ_MENSUEL_MIN} €/mois.`,
     images: [`${SITE_URL}/opengraph-image`],
   },
 }
@@ -187,7 +187,7 @@ export default function Home() {
                 conformes.
               </p>
               <p className="text-slate-800 mb-2 font-semibold">
-                dès {EQ_MENSUEL_MIN} €/mois (équivalent) — plomberie, électricité, peinture…
+                dès {EQ_MENSUEL_MIN} €/mois — plomberie, électricité, peinture…
               </p>
               <p className="mb-10 text-sm text-slate-700 max-w-lg">{LEGENDE_PAIEMENT_TRIMESTRIEL}</p>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -218,7 +218,7 @@ export default function Home() {
                 <p className="mb-1 text-4xl font-bold text-slate-900 md:text-5xl tabular-nums min-h-[1.2em]">
                   {EQ_MENSUEL_MIN} €<span className="text-xl font-semibold text-slate-700">/mois</span>
                 </p>
-                <p className="mb-2 text-xs text-slate-700">Équivalent (min. 600 €/an)</p>
+                <p className="mb-2 text-xs text-slate-700">Min. 600 €/an, prélevé chaque mois</p>
                 <p className="mb-6 text-sm text-slate-700">
                   Plomberie, électricité — attestation après validation du dossier et du paiement.
                   <span className="mt-2 block text-xs text-slate-600">{LEGENDE_PAIEMENT_TRIMESTRIEL_COURT}</span>
@@ -390,7 +390,7 @@ export default function Home() {
               <span className="text-2xl mb-2 block">💰</span>
               <h3 className="font-semibold text-slate-900 mb-2">Prix transparents</h3>
               <p className="text-[#171717] text-sm leading-relaxed">
-                Tarifs compétitifs, dès {EQ_MENSUEL_MIN} €/mois équivalent (min. 600 €/an), prélèvement trimestriel. Jusqu&apos;à 30 % d&apos;économies vs. assureurs traditionnels.
+                Tarifs compétitifs, dès {EQ_MENSUEL_MIN} €/mois (min. 600 €/an), prélèvement mensuel. Jusqu&apos;à 30 % d&apos;économies vs. assureurs traditionnels.
               </p>
             </div>
             <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5] shadow-sm hover:shadow-md hover:border-[#d4d4d4] transition-all">
@@ -404,7 +404,7 @@ export default function Home() {
               <span className="text-2xl mb-2 block">🔄</span>
               <h3 className="font-semibold text-slate-900 mb-2">Prélèvement flexible</h3>
               <p className="text-[#171717] text-sm leading-relaxed">
-                Prélèvement trimestriel SEPA (1er trimestre par carte + frais). Régularisation par carte bancaire.
+                Prélèvement mensuel SEPA (1er mois par carte + frais). Régularisation par carte bancaire.
               </p>
             </div>
           </div>
@@ -589,7 +589,7 @@ export default function Home() {
               <p className="text-blue-600 text-sm font-semibold mb-1">Optimum Assurance</p>
               <p className="text-3xl font-bold text-blue-600">~{formatEurosFR(EQ_MENSUEL_EXEMPLE_OPTIMUM)} €/mois</p>
               <p className="text-sm text-[#171717] mt-2">
-                Même profil (~{formatEurosFR(EXEMPLE_COMPARAISON_ANNUEL_OPTIMUM)} €/an) — jusqu&apos;à 30 % d&apos;économies · prélèvement trimestriel
+                Même profil (~{formatEurosFR(EXEMPLE_COMPARAISON_ANNUEL_OPTIMUM)} €/an) — jusqu&apos;à 30 % d&apos;économies · prélèvement mensuel
               </p>
             </div>
             <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-200 text-center">

@@ -39,6 +39,7 @@ type EcheanceSubscription = {
   firstTrimesterPaidAt: Date | null
   trimestresSepaPayes: number
   lastError: string | null
+  periodicite?: string | null
   sepaPendingPaymentId?: string | null
 } | null
 
@@ -91,6 +92,7 @@ function echeancesFromLoadedRecords(input: {
     trimestresSepaPayes: subscription?.trimestresSepaPayes ?? 0,
     sepaSubscriptionId: subscription?.id ?? null,
     sepaLastError: subscription?.lastError ?? null,
+    periodicite: subscription?.periodicite,
     explicitPaidInstallments,
     avenantFees: fees,
     suspendedAttestations: documents.flatMap((document) => {

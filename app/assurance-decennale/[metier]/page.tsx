@@ -387,7 +387,7 @@ export default async function MetierPage({
           </Link>
           <p className="text-sm text-[#171717] max-w-lg mx-auto">
             Tarif selon votre CA et vos activités — devis en ligne, sans engagement. Dès {data.prixMin} €/mois
-            (équivalent) • Paiement trimestriel • Attestation après validation du dossier
+            • Paiement mensuel • Attestation après validation du dossier
           </p>
           {isHeadtermPage && relatedActivities.length > 0 && (
             <p className="text-sm text-[#171717] max-w-lg mx-auto">

@@ -298,7 +298,7 @@ export function persistInsuranceContractSnapshot(payload: {
 
 /**
  * Après souscription : crée le contrat Prisma.
- * Décennale approuvée : toujours suite « signature → mandat SEPA → /paiement (échéancier + 1er trimestre CB) » — pas de POST /contracts/pay ici.
+ * Décennale approuvée : toujours suite « signature → mandat SEPA → /paiement (échéancier + 1er mois CB) » — pas de POST /contracts/pay ici.
  * DO approuvé : redirection Mollie virement contrat plateforme (inchangé).
  */
 export async function runInsuranceContractStepAfterSouscription(

@@ -84,8 +84,8 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
           <p className="mb-1 font-semibold text-emerald-950">Dossier accepté — ordre des étapes</p>
           <p className="text-sm text-emerald-900/90">
             Contrat plateforme <span className="font-mono">{contractNumber}</span> est validé. Signez le contrat ci-dessous, puis
-            enchaînez avec le <strong>mandat SEPA</strong> et la page <strong>Paiement</strong> : échéancier trimestriel et{" "}
-            <strong>1er trimestre par carte</strong> (les échéances suivantes en prélèvement SEPA).
+            enchaînez avec le <strong>mandat SEPA</strong> et la page <strong>Paiement</strong> : échéancier mensuel et{" "}
+            <strong>1er mois par carte</strong> (les échéances suivantes en prélèvement SEPA).
           </p>
         </div>
       )

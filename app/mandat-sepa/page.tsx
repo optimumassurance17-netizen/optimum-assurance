@@ -15,14 +15,13 @@ import { getIbanValidationMessage, normalizeIban } from "@/lib/iban"
 import { readResponseJson } from "@/lib/read-response-json"
 import { trackConversion } from "@/lib/conversion-tracking"
 import { safeRepriseHref } from "@/lib/decennale-reprise"
+import { primeMensuelle } from "@/lib/premium"
 
-/** Unique mode : trimestriel — 1er trimestre + frais en CB, puis prélèvements SEPA trimestriels automatiques. */
-const PERIODICITE: PeriodicitePrelevement = "trimestriel"
+/** Paiement mensuel : 1er mois + frais en CB, puis prélèvements SEPA mensuels automatiques. */
+const PERIODICITE: PeriodicitePrelevement = "mensuel"
 
 function calculerPremierMontant(primeAnnuelle: number): number {
-  const frais = FRAIS_GESTION_PRELEVEMENT
-  const trimestriel = Math.round((primeAnnuelle / 4) * 100) / 100
-  return trimestriel + frais
+  return primeMensuelle(primeAnnuelle) + FRAIS_GESTION_PRELEVEMENT
 }
 
 export default function MandatSepaPage() {
@@ -175,14 +174,14 @@ export default function MandatSepaPage() {
           IBAN et mandat SEPA
         </h1>
         <p className="text-[#171717] mb-6">
-          Renseignez l&apos;IBAN pour les <strong>prélèvements SEPA trimestriels</strong> (après le premier règlement par carte), avec reconduction automatique annuelle.
+          Renseignez l&apos;IBAN pour les <strong>prélèvements SEPA mensuels</strong> (après le premier règlement par carte), avec reconduction automatique annuelle.
         </p>
 
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
           <p className="text-sm text-blue-900 leading-relaxed">
             <strong>Information importante :</strong> pour obtenir votre attestation rapidement, le{" "}
             <strong>premier paiement doit être effectué par carte bancaire</strong> à l&apos;étape suivante.
-            Les prélèvements SEPA concernent ensuite les échéances trimestrielles restantes.
+            Les prélèvements SEPA concernent ensuite les échéances mensuelles restantes.
           </p>
         </div>
 
@@ -202,9 +201,9 @@ export default function MandatSepaPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="p-4 bg-slate-100 rounded-xl border border-slate-200">
-            <h3 className="font-medium text-black mb-2">Paiement trimestriel</h3>
+            <h3 className="font-medium text-black mb-2">Paiement mensuel</h3>
             <p className="text-sm text-[#171717] mb-3">
-              <strong>4 échéances par an</strong> : le <strong>1er trimestre</strong> (avec {FRAIS_GESTION_PRELEVEMENT} € de frais de gestion) est réglé par <strong>carte bancaire</strong> à l&apos;étape suivante. Les <strong>échéances suivantes</strong> sont prélevées par <strong>SEPA trimestriel</strong> sur l&apos;IBAN ci-dessous (montant par trimestre : 1/4 de la prime annuelle), avec <strong>reconduction automatique annuelle</strong>.
+              <strong>12 échéances par an</strong> : le <strong>1er mois</strong> (avec {FRAIS_GESTION_PRELEVEMENT} € de frais de gestion) est réglé par <strong>carte bancaire</strong> à l&apos;étape suivante. Les <strong>échéances suivantes</strong> sont prélevées par <strong>SEPA mensuel</strong> sur l&apos;IBAN ci-dessous (montant par mois : 1/12 de la prime annuelle), avec <strong>reconduction automatique annuelle</strong>.
             </p>
             <p className="text-sm font-medium text-black">
               1er montant à régler par carte : {premierMontant.toLocaleString("fr-FR")} €

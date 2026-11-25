@@ -31,6 +31,7 @@ export default function ConfirmationPage() {
   const [isInsuranceContractFlow, setIsInsuranceContractFlow] = useState(false)
   /** 1er trimestre payé par carte + suite en SEPA trimestriel */
   const [decennalePremierTrimestreCarte, setDecennalePremierTrimestreCarte] = useState(false)
+  const [decennalePaiementMensuel, setDecennalePaiementMensuel] = useState(true)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -143,12 +144,15 @@ export default function ConfirmationPage() {
                   }
                 })()
                 const primeAnnuelle = tarif?.primeAnnuelle ?? 0
-                const periodicite = paiementOpts?.periodicite ?? "trimestriel"
+                const periodicite = paiementOpts?.periodicite === "trimestriel" ? "trimestriel" : "mensuel"
                 const primeTrimestrielle = Math.round((primeAnnuelle / 4) * 100) / 100
                 const primeMensuelleCalc =
                   primeAnnuelle > 0 ? Math.round((primeAnnuelle / 12) * 100) / 100 : undefined
-                const trimestrielCarte = paiementOpts?.premierPaiementCarte === true && periodicite === "trimestriel"
-                if (trimestrielCarte) setDecennalePremierTrimestreCarte(true)
+                const paiementCarte = paiementOpts?.premierPaiementCarte === true
+                const trimestrielCarte = paiementCarte && periodicite === "trimestriel"
+                const mensuelCarte = paiementCarte && periodicite === "mensuel"
+                if (paiementCarte) setDecennalePremierTrimestreCarte(true)
+                setDecennalePaiementMensuel(periodicite !== "trimestriel")
                 const signedPayload = getSignedContractData(souscription)
                 const rawActivities = Array.isArray(souscription.activites)
                   ? (souscription.activites as unknown[])
@@ -188,6 +192,10 @@ export default function ConfirmationPage() {
                         premierTrimestrePayeParCarte: true,
                         prelevementsSuivantsSepaTrimestriel: true,
                       }),
+                      ...(mensuelCarte && {
+                        premierMoisPayeParCarte: true,
+                        prelevementsSuivantsSepaMensuel: true,
+                      }),
                     }
                   : {
                       raisonSociale: souscription.raisonSociale,
@@ -218,6 +226,10 @@ export default function ConfirmationPage() {
                         premierTrimestrePayeParCarte: true,
                         prelevementsSuivantsSepaTrimestriel: true,
                       }),
+                      ...(mensuelCarte && {
+                        premierMoisPayeParCarte: true,
+                        prelevementsSuivantsSepaMensuel: true,
+                      }),
                     }
                 await fetch("/api/payments/record", {
                   method: "POST",
@@ -225,7 +237,7 @@ export default function ConfirmationPage() {
                   body: JSON.stringify({
                     molliePaymentId: paymentId,
                     amount: paiementOpts
-                      ? Math.round((primeAnnuelle / 4 + 60) * 100) / 100
+                      ? Math.round((primeAnnuelle / (periodicite === "mensuel" ? 12 : 4) + 60) * 100) / 100
                       : primeAnnuelle,
                     status: "paid",
                     metadata: {
@@ -341,8 +353,8 @@ export default function ConfirmationPage() {
               ) : decennalePremierTrimestreCarte
                 ? (
                     <>
-                      Votre premier trimestre a bien été réglé par carte bancaire. Les échéances suivantes seront
-                      prélevées par <strong>SEPA trimestriel</strong> sur l’IBAN du mandat, avec{" "}
+                      Votre {decennalePaiementMensuel ? "premier mois" : "premier trimestre"} a bien été réglé par carte bancaire. Les échéances suivantes seront
+                      prélevées par <strong>SEPA {decennalePaiementMensuel ? "mensuel" : "trimestriel"}</strong> sur l’IBAN du mandat, avec{" "}
                       <strong>reconduction automatique annuelle</strong>. Vous recevrez votre attestation par email dans
                       les prochaines minutes.
                     </>

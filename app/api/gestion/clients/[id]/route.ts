@@ -306,6 +306,7 @@ export async function GET(
           sepaPendingPaymentId: true,
           trimestresSepaPayes: true,
           primeAnnuelle: true,
+          periodicite: true,
         },
       })
       if (!subscription) return describeSepaReadiness(null)

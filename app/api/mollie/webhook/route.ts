@@ -336,7 +336,10 @@ export async function POST(request: NextRequest) {
           const amount = payment.amount?.value ? parseFloat(payment.amount.value) : 0
           const primeAnnuelle = parseFloat(metadata.primeAnnuelle || "0") || 0
           const fraisGestion = parseFloat(metadata.fraisGestion || "60") || 0
-          const montantPremierTrimestre = Math.round((primeAnnuelle / 4) * 100) / 100
+          const montantPremierTrimestre =
+            metadata.periodicite === "mensuel"
+              ? Math.round((primeAnnuelle / 12) * 100) / 100
+              : Math.round((primeAnnuelle / 4) * 100) / 100
           const datePaiement = new Date().toLocaleDateString("fr-FR")
           const factureDataDec = {
             raisonSociale: metadata.raisonSociale || user.raisonSociale || user.email,
@@ -409,6 +412,7 @@ export async function POST(request: NextRequest) {
           titulaireCompte: metadata.titulaireCompte || metadata.raisonSociale || "",
           primeAnnuelle: parseFloat(metadata.primeAnnuelle || "0") || 0,
           baseUrl,
+          periodicite: metadata.periodicite,
         })
         if (!setup.ok && setup.error) {
           console.error("[webhook] SEPA setup:", setup.error)

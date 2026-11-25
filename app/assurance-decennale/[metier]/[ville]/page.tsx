@@ -226,7 +226,7 @@ export default async function MetierVillePage({
 
         <PriceBlock
           amountLabel={data.prixIndicatif}
-          hint="Montant indicatif : sur le site principal, affichage souvent en équivalent mensuel ; paiement trimestriel. Prime selon chiffre d’affaires et sinistralité."
+          hint="Montant mensuel prélevé. Prime selon chiffre d’affaires et sinistralité."
         />
 
         <div className="mb-12">

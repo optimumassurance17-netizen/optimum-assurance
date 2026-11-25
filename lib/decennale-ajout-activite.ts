@@ -1,5 +1,5 @@
 import { ACTIVITES_AVEC_TARIFS, ACTIVITES_BTP } from "@/lib/activites-btp"
-import { primeTrimestrielle } from "@/lib/premium"
+import { primeEcheanceDecennale, periodiciteDecennale } from "@/lib/premium"
 import { calculerTarif } from "@/lib/tarification"
 
 export const AJOUT_ACTIVITE_MAX = 8
@@ -68,6 +68,7 @@ export function chiffrerAjoutActivite(input: {
   resilieNonPaiement: boolean
   reprisePasse: boolean
   trimestresDejaPayes: number
+  periodicite?: string | null
 }): AjoutActiviteResult {
   const activite = activiteCatalogue(input.activite)
   if (!activite) {
@@ -100,9 +101,11 @@ export function chiffrerAjoutActivite(input: {
   const hausse = Math.max(0, after.primeAnnuelle - before.primeAnnuelle)
   const nouvellePrimeAnnuelle = Math.round((input.primeAnnuelle + hausse) * 100) / 100
   const trimestresDejaPayes = Math.max(0, Math.min(12, Math.floor(input.trimestresDejaPayes) || 0))
+  const periodicite = periodiciteDecennale(input.periodicite ?? "trimestriel")
   const regularisation =
     Math.round(
-      (primeTrimestrielle(nouvellePrimeAnnuelle) - primeTrimestrielle(input.primeAnnuelle)) *
+      (primeEcheanceDecennale(nouvellePrimeAnnuelle, periodicite) -
+        primeEcheanceDecennale(input.primeAnnuelle, periodicite)) *
         trimestresDejaPayes *
         100
     ) / 100

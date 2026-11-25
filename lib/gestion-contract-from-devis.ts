@@ -65,7 +65,7 @@ export function buildContractDataFromDevisForSignature(
     primeMensuelle,
     primeTrimestrielle,
     modePaiement: "prelevement",
-    periodicitePrelevement: "trimestriel",
+    periodicitePrelevement: "mensuel",
     fraisGestionPrelevement: 60,
     // Règle métier: franchise décennale fixe à 1 000 € (toutes activités).
     franchise: FRANCHISE_DECENNALE_EUR,

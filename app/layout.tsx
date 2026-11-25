@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     template: "%s | Optimum Assurance",
   },
   description: truncateForDescription(
-    `Assurance décennale BTP obligatoire : devis en quelques minutes, attestation après paiement, contrôle du dossier et acceptation du risque. Plombier, électricien, peintre, maçon. Dès ${EQ_MENSUEL_MIN} €/mois équivalent (min. 600 €/an), paiement trimestriel.`,
+    `Assurance décennale BTP obligatoire : devis en quelques minutes, attestation après paiement, contrôle du dossier et acceptation du risque. Plombier, électricien, peintre, maçon. Dès ${EQ_MENSUEL_MIN} €/mois (min. 600 €/an), paiement mensuel.`,
     158
   ),
   keywords: [
@@ -67,13 +67,13 @@ export const metadata: Metadata = {
     url: baseUrl,
     siteName: "Optimum Assurance",
     title: "Assurance Décennale BTP en Ligne | Devis 3 min | Optimum Assurance",
-    description: `Devis décennale en quelques minutes, attestation après validation. Plombier, électricien, peintre. Dès ${EQ_MENSUEL_MIN} €/mois équivalent, prélèvement trimestriel. Sans engagement.`,
+    description: `Devis décennale en quelques minutes, attestation après validation. Plombier, électricien, peintre. Dès ${EQ_MENSUEL_MIN} €/mois, prélèvement mensuel. Sans engagement.`,
     images: [{ url: `${baseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance - Assurance décennale BTP" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Assurance Décennale BTP en Ligne | Optimum Assurance",
-    description: `Devis en quelques minutes, attestation après validation. Dès ${EQ_MENSUEL_MIN} €/mois équivalent, prélèvement trimestriel.`,
+    description: `Devis en quelques minutes, attestation après validation. Dès ${EQ_MENSUEL_MIN} €/mois, prélèvement mensuel.`,
     images: [{ url: `${baseUrl}/opengraph-image`, width: 1200, height: 630, alt: "Optimum Assurance" }],
   },
   robots: {

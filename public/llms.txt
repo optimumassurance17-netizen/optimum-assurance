@@ -6,7 +6,7 @@ Ce fichier `llms.txt` fournit un résumé structuré et qualifié des offres, de
 
 ## Informations clés et cadre juridique
 
-- **Assurance décennale (RCD)** : Obligatoire pour les professionnels du BTP selon la loi Spinetta (art. L.241-1 du Code des assurances, art. 1792 et suivants du Code civil). Maintien des garanties pendant 10 ans dès l'ouverture du chantier sans prime subséquente. Paiement trimestriel (1er trimestre par carte bancaire via Mollie, puis prélèvements SEPA).
+- **Assurance décennale (RCD)** : Obligatoire pour les professionnels du BTP selon la loi Spinetta (art. L.241-1 du Code des assurances, art. 1792 et suivants du Code civil). Maintien des garanties pendant 10 ans dès l'ouverture du chantier sans prime subséquente. Paiement mensuel (1er mois par carte bancaire via Mollie, puis prélèvements SEPA).
 - **Assurance dommage ouvrage (DO)** : Obligatoire pour le maître d'ouvrage avant l'ouverture de chantier (art. L.242-1 du Code des assurances). Prise en charge des réparations relevant de la décennale sans recherche préalable de responsabilité. Règlement par virement bancaire sécurisé.
 - **Délivrance des attestations** : Les attestations d'assurance officielles sont émises après paiement, vérification des pièces justificatives, étude et acceptation définitive du risque.
 - **Courtier gestionnaire** : Optimum Courtage, SAS au capital de 1 000 €, RCS Angers 450 788 278, immatriculée à l'ORIAS sous le n° 28931947 (LPS), soumis au contrôle de l'ACPR.
@@ -24,7 +24,7 @@ Ce fichier `llms.txt` fournit un résumé structuré et qualifié des offres, de
 - [Assurance décennale](https://www.optimum-assurance.fr/assurance-decennale): Présentation générale de la responsabilité civile décennale, des garanties obligatoires et des options.
 - [Nomenclature et exclusions par activité](https://www.optimum-assurance.fr/assurance-decennale/activites): Descriptif des 115 activités BTP tarifées et détail des exclusions conformes à la nomenclature France Assureurs.
 - [Assurance dommage ouvrage](https://www.optimum-assurance.fr/dommage-ouvrage): Fonctionnement de la garantie DO, préfinancement rapide des désordres de nature décennale et obligations légales.
-- [Prix assurance décennale](https://www.optimum-assurance.fr/prix-assurance-decennale): Grille tarifaire indicative, facteurs de tarification et modalités de fractionnement trimestriel.
+- [Prix assurance décennale](https://www.optimum-assurance.fr/prix-assurance-decennale): Grille tarifaire indicative, facteurs de tarification et modalités de fractionnement mensuel.
 - [Documents et attestations](https://www.optimum-assurance.fr/documents-assurance-decennale): Types d'attestations remises (attestation annuelle, nominative de chantier, devis et conditions particulières).
 
 ## Guides et comparatifs

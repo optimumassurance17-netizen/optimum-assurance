@@ -13,7 +13,7 @@ import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import type { InsuranceContractListItem } from "@/lib/insurance-contract-types"
 import { PayInsuranceContractButton } from "@/components/insurance/PayInsuranceContractButton"
 import { InsuranceContractPdfLinks } from "@/components/insurance/InsuranceContractPdfLinks"
-import { primeTrimestrielle } from "@/lib/premium"
+import { primeMensuelle } from "@/lib/premium"
 import { ProchaineEcheanceCard } from "@/components/espace-client/ProchaineEcheanceCard"
 import {
   getInsuranceProductLabel,
@@ -214,14 +214,14 @@ function buildDecennaleTimeline(status: AutonomyStatusPayload): DecennaleTimelin
       title: "Mandat SEPA",
       description: paymentDone && !sepaReady
         ? "Le mandat s’active à la confirmation du paiement carte. L’espace client se met à jour sans ressaisir l’IBAN."
-        : "Validation de l’IBAN pour activer les prélèvements trimestriels.",
+        : "Validation de l’IBAN pour activer les prélèvements mensuels.",
       state: paymentDone ? (sepaReady ? "done" : sepaBlocked ? "blocked" : "current") : paymentStepOpen ? "current" : "todo",
       href: paymentDone && !sepaReady ? "/espace-client" : hrefFor("continue-sepa-and-payment", "/mandat-sepa"),
     },
     {
       id: "payment",
       title: "Paiement d’activation",
-      description: "Paiement du premier trimestre et des frais de gestion.",
+      description: "Paiement du premier mois et des frais de gestion.",
       state: paymentDone ? "done" : paymentStepOpen ? "current" : "todo",
       href: paymentDone
         ? "/espace-client"
@@ -834,8 +834,8 @@ export default function EspaceClientPage() {
                         <>{c.premium.toLocaleString("fr-FR")} € TTC — règlement unique · </>
                       ) : c.productType === "decennale" ? (
                         <>
-                          {c.premium.toLocaleString("fr-FR")} € / an — 1er trimestre CB puis SEPA ≈{" "}
-                          {primeTrimestrielle(c.premium).toLocaleString("fr-FR")} € / trimestre ·{" "}
+                          {c.premium.toLocaleString("fr-FR")} € / an — 1er mois CB puis SEPA{" "}
+                          {primeMensuelle(c.premium).toLocaleString("fr-FR")} € / mois ·{" "}
                         </>
                       ) : (
                         <>{c.premium.toLocaleString("fr-FR")} € TTC · </>

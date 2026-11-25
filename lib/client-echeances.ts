@@ -1,5 +1,11 @@
 import { isPaymentLinkId } from "@/lib/card-link-lifetime"
-import { primeTrimestrielle } from "@/lib/premium"
+import {
+  moisEntreEcheancesDecennale,
+  nombreEcheancesAnnuellesDecennale,
+  periodiciteDecennale,
+  primeEcheanceDecennale,
+  type PeriodiciteCotisationDecennale,
+} from "@/lib/premium"
 
 export type ClientEcheanceKind = "decennale" | "avenant" | "attestation"
 
@@ -29,6 +35,7 @@ export type ClientEcheanceSource = {
   trimestresSepaPayes: number
   sepaSubscriptionId: string | null
   sepaLastError?: string | null
+  periodicite?: PeriodiciteCotisationDecennale | string | null
   explicitPaidInstallments: { installment: number; paidAt: Date | null }[]
   avenantFees: { id: string; amount: number; status: string; paidAt: Date | null; createdAt: Date }[]
   suspendedAttestations: {
@@ -82,7 +89,10 @@ export function buildClientEcheances(source: ClientEcheanceSource): ClientEchean
   const rows: ClientEcheance[] = []
   const prime = source.primeAnnuelle
   if (prime != null && prime > 0) {
-    const amount = primeTrimestrielle(prime)
+    const periodicite = periodiciteDecennale(source.periodicite ?? "trimestriel")
+    const amount = primeEcheanceDecennale(prime, periodicite)
+    const stepMonths = moisEntreEcheancesDecennale(periodicite)
+    const installmentsPerYear = nombreEcheancesAnnuellesDecennale(periodicite)
     const paidNumbers = new Set<number>()
     const paidAtByNumber = new Map<number, Date>()
     if (source.firstTrimesterPaidAt) {
@@ -99,7 +109,7 @@ export function buildClientEcheances(source: ClientEcheanceSource): ClientEchean
       if (entry.paidAt) paidAtByNumber.set(entry.installment, entry.paidAt)
     }
     const maxPaid = paidNumbers.size > 0 ? Math.max(...paidNumbers) : 0
-    const count = Math.max(4, maxPaid >= 4 ? maxPaid + 1 : 4)
+    const count = Math.max(installmentsPerYear, maxPaid >= installmentsPerYear ? maxPaid + 1 : installmentsPerYear)
     const anchor = source.anchorDate ?? source.firstTrimesterPaidAt
     const failureText = source.sepaLastError?.trim() || null
     const failureInstallment = source.sepaSubscriptionId && failureText
@@ -113,7 +123,7 @@ export function buildClientEcheances(source: ClientEcheanceSource): ClientEchean
         kind: "decennale",
         label: `Échéance ${installment}`,
         amount,
-        dueDate: anchor ? addMonths(anchor, (installment - 1) * 3).toISOString() : null,
+        dueDate: anchor ? addMonths(anchor, (installment - 1) * stepMonths).toISOString() : null,
         paid,
         paidAt: paidAt ? paidAt.toISOString() : null,
         installmentNumber: installment,

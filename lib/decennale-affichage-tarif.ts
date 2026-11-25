@@ -1,7 +1,7 @@
 /**
  * Affichage marketing décennale : équivalent mensuel (prime annuelle ÷ 12),
  * aligné sur `calculerTarif` (arrondi à 2 décimales).
- * Le paiement contractuel reste trimestriel (SEPA / 1er trimestre CB).
+ * Le paiement contractuel est mensuel (1er mois par carte, puis SEPA).
  */
 
 /** Arrondi identique à `lib/tarification.ts` pour la prime mensuelle affichée */
@@ -20,11 +20,10 @@ export function primeTrimestrielleDepuisAnnuel(primeAnnuelle: number): number {
 
 export const LEGENDE_EQ_MENSUEL = "équivalent mensuel (prime annuelle ÷ 12)"
 export const LEGENDE_PAIEMENT_TRIMESTRIEL =
-  "Paiement par prélèvement trimestriel : 1er trimestre par carte (+ frais), puis SEPA."
+  "Paiement par prélèvement mensuel : 1er mois par carte (+ frais), puis SEPA."
 
 /** Version courte (cartes, sous-titres) */
-export const LEGENDE_PAIEMENT_TRIMESTRIEL_COURT =
-  "Prélèvement trimestriel — pas de paiement mensuel."
+export const LEGENDE_PAIEMENT_TRIMESTRIEL_COURT = "Prélèvement mensuel."
 
 /** Prime annuelle minimale décennale (hors offres spécifiques) */
 export const PRIME_MIN_ANNUELLE = 600

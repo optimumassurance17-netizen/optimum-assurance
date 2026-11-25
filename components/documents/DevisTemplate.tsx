@@ -60,8 +60,6 @@ const COURTIER = {
 export function DevisTemplate({ numero, data }: DevisTemplateProps) {
   const activities = extractStructuredActivities(data)
   const optimizedExclusions = extractOptimizedExclusionLines(data)
-  const primeTrimestrielle =
-    data.primeTrimestrielle ?? Math.round((data.primeAnnuelle / 4) * 100) / 100
   const primeMensuelle =
     data.primeMensuelle ?? Math.round((data.primeAnnuelle / 12) * 100) / 100
   const dateCreation = data.dateCreation || new Date().toLocaleDateString("fr-FR")
@@ -217,12 +215,8 @@ export function DevisTemplate({ numero, data }: DevisTemplateProps) {
               <td className="text-right font-bold text-lg">{data.primeAnnuelle.toLocaleString("fr-FR")} €</td>
             </tr>
             <tr>
-              <td className="py-2">Équivalent mensuel TTC (prime ÷ 12)</td>
+              <td className="py-2">Prime mensuelle TTC — montant par échéance (hors 1er paiement CB + frais)</td>
               <td className="text-right font-semibold">{primeMensuelle.toLocaleString("fr-FR")} €</td>
-            </tr>
-            <tr>
-              <td className="py-2">Prime trimestrielle TTC — montant par échéance (hors 1er paiement CB + frais)</td>
-              <td className="text-right font-semibold">{primeTrimestrielle.toLocaleString("fr-FR")} €</td>
             </tr>
             <tr>
               <td className="py-2">Période de garantie</td>

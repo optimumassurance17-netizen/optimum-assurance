@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useMemo, useState } from "react"
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
-import { primeTrimestrielle } from "@/lib/premium"
+import { primeMensuelle } from "@/lib/premium"
 import { readResponseJson } from "@/lib/read-response-json"
 import {
   getInsuranceProductLabel,
@@ -125,7 +125,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
         <p className="font-medium text-amber-200 mb-1">Paiements plateforme — points d’attention</p>
         <p className="text-amber-100/90">
           <strong>Décennale :</strong> le champ <strong>Prime TTC</strong> = prime <strong>annuelle</strong> (comme au souscription) — le virement Mollie
-          côté client est automatiquement <strong>1/4 (trimestre)</strong>. <strong>DO :</strong> paiement unique. Après réception du
+          côté client est automatiquement <strong>1/12 (mois)</strong>. <strong>DO :</strong> paiement unique. Après réception du
           virement, <strong>Valider le paiement</strong> active le contrat et délivre l’attestation sans attendre Mollie.
           La même action est dans <strong>Recherche fiche client</strong> et sur la fiche de la société.{" "}
           <strong>Assurance titre :</strong> paiement unique Mollie. <strong>RC Fabriquant :</strong> la prime = montant de la{" "}
@@ -217,7 +217,7 @@ export function InsuranceContractsGestionBlock({ contracts, searchQuery, onRefre
                       {c.productType === "decennale" ? (
                         <p className="text-xs text-sky-300/90 mt-1">
                           Prime <strong>annuelle</strong> — prochain virement client ≈{" "}
-                          <strong>{primeTrimestrielle(c.premium).toLocaleString("fr-FR")} €</strong> / trimestre (Mollie)
+                          <strong>{primeMensuelle(c.premium).toLocaleString("fr-FR")} €</strong> / mois (Mollie)
                         </p>
                       ) : null}
                       {showRcFabHints ? (

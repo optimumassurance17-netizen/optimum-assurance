@@ -801,11 +801,10 @@ function DevisPageContent() {
                 <span className="text-4xl font-bold text-blue-600 tracking-tight">
                   {tarif.primeMensuelle.toLocaleString("fr-FR")} €
                 </span>
-                <span className="text-[#171717]">/ mois (équivalent)</span>
+                <span className="text-[#171717]">/ mois</span>
               </div>
               <p className="text-sm text-[#171717] mb-2">
-                Soit {tarif.primeAnnuelle.toLocaleString("fr-FR")} €/an — prélevé par trimestre :{" "}
-                <strong>{tarif.primeTrimestrielle.toLocaleString("fr-FR")} €</strong> / trimestre (hors 1er paiement CB + frais)
+                Soit {tarif.primeAnnuelle.toLocaleString("fr-FR")} €/an — prélevé chaque mois (hors 1er paiement CB + frais)
               </p>
               {tarif.reprisePasse && tarif.supplementReprisePasse && (
                 <p className="text-sm text-blue-600 mb-2 font-medium">

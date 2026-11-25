@@ -6,7 +6,7 @@ import { calculateRiskScore, requiresManualReview } from "@/lib/risk-scoring"
 import { renderContractPdf } from "@/lib/insurance-contract-pdf"
 import { prepareDoContractForPdf } from "@/lib/do-attestation-source"
 import { SITE_URL } from "@/lib/site-url"
-import { primeTrimestrielle } from "@/lib/premium"
+import { primeMensuelle, primeTrimestrielle } from "@/lib/premium"
 import {
   insuranceProductAllowsActiveInstallmentPayments,
   insuranceProductHasSchedule,
@@ -186,7 +186,7 @@ export function premiumMatchesMollieAmount(contractPremium: number, paidAmount: 
 
 /**
  * Montant attendu pour un paiement Mollie `insurance_contract` (virement).
- * - **Décennale** : `premium` en base = prime **annuelle** TTC → chaque virement = 1 trimestre (hors parcours 1er trimestre CB + SEPA).
+ * - **Décennale** : `premium` en base = prime **annuelle** TTC → chaque virement = 1 mois (hors 1er mois CB + SEPA).
  * - **DO** : `premium` = montant unique du contrat.
  * - **Assurance titre** : `premium` = montant unique du dossier.
  * - **RC Fabriquant** : `premium` = montant de l’échéance courante (saisi en gestion).
@@ -194,19 +194,23 @@ export function premiumMatchesMollieAmount(contractPremium: number, paidAmount: 
 export function mollieExpectedAmountForInsuranceContract(productType: string, premiumAnnualOrInstallment: number): number {
   const p = Math.round(premiumAnnualOrInstallment * 100) / 100
   if (productType === "decennale") {
-    return primeTrimestrielle(premiumAnnualOrInstallment)
+    return primeMensuelle(premiumAnnualOrInstallment)
   }
   return p
 }
 
-/** Comparaison paiement ↔ contrat (prend en compte la décennale = trimestre). */
+/** Comparaison paiement ↔ contrat. Un virement trimestriel déjà lancé reste accepté. */
 export function insuranceContractPaymentAmountMatches(
   productType: string,
   contractPremium: number,
   paidAmount: number
 ): boolean {
   const expected = mollieExpectedAmountForInsuranceContract(productType, contractPremium)
-  return premiumMatchesMollieAmount(expected, paidAmount)
+  if (premiumMatchesMollieAmount(expected, paidAmount)) return true
+  if (productType === "decennale") {
+    return premiumMatchesMollieAmount(primeTrimestrielle(contractPremium), paidAmount)
+  }
+  return false
 }
 
 function isUniqueConstraint(error: unknown): boolean {

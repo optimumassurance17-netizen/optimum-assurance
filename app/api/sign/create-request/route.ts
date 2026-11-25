@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
       primeMensuelle: primeMensuelle > 0 ? primeMensuelle : undefined,
       primeTrimestrielle,
       modePaiement: "prelevement",
-      periodicitePrelevement: "trimestriel",
+      periodicitePrelevement: "mensuel",
       fraisGestionPrelevement: 60,
       // Règle métier: décennale = franchise fixe 1 000 € pour toutes activités.
       franchise: FRANCHISE_DECENNALE_EUR,

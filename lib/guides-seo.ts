@@ -382,7 +382,7 @@ export const GUIDES_SEO = [
       "La prime décennale dépend du chiffre d'affaires, des activités et des antécédents. Chez Optimum, le minimum est de 600 € par an, payé par trimestre.",
     h1: "Combien coûte une assurance décennale ?",
     shortAnswer:
-      "Il n'y a pas un prix unique. La prime suit le chiffre d'affaires, les métiers exercés et l'historique de sinistres. Chez Optimum Assurance, la cotisation minimale est de 600 € par an, avec un prélèvement trimestriel.",
+      "Il n'y a pas un prix unique. La prime suit le chiffre d'affaires, les métiers exercés et l'historique de sinistres. Chez Optimum Assurance, la cotisation minimale est de 600 € par an, avec un prélèvement mensuel.",
     datePublished: "2026-10-01T09:20:00+02:00",
     dateModified: "2026-10-01T09:20:00+02:00",
     content: [

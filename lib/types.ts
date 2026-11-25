@@ -95,5 +95,5 @@ export const STORAGE_KEYS = {
 export const FRAIS_GESTION_PRELEVEMENT = 60
 export const FRAIS_AVENANT = 60
 
-/** Unique mode : trimestriel (1er paiement CB + frais, puis prélèvements SEPA trimestriels). */
-export type PeriodicitePrelevement = "trimestriel"
+/** Décennale : 1er mois par carte + frais, puis prélèvements SEPA mensuels. */
+export type PeriodicitePrelevement = "mensuel"

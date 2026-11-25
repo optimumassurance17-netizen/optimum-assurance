@@ -17,7 +17,7 @@ const baseUrl = SITE_URL
 export const metadata = {
   title: absoluteBrandTitle("Prix assurance décennale : tarifs, calcul et exemples"),
   description:
-    "Comprendre le prix d’une assurance décennale : critères de calcul, prime minimale, paiement trimestriel, exemples BTP et devis en ligne.",
+    "Comprendre le prix d’une assurance décennale : critères de calcul, prime minimale, paiement mensuel, exemples BTP et devis en ligne.",
   alternates: { canonical: `${baseUrl}/prix-assurance-decennale` },
   openGraph: {
     type: "article",
@@ -49,8 +49,8 @@ const rows = [
   },
   {
     sujet: "Paiement",
-    left: "Affichage souvent en équivalent mensuel pour faciliter la comparaison.",
-    right: "Paiement réel trimestriel : premier trimestre par carte, puis SEPA.",
+    left: "Le montant affiché est celui prélevé chaque mois.",
+    right: "Premier mois par carte, puis prélèvement SEPA mensuel.",
   },
 ]
 
@@ -97,8 +97,7 @@ export default function PrixAssuranceDecennalePage() {
             niveau de garantie attendu.
           </p>
           <p>
-            Le tarif affiché sur le site est présenté en équivalent mensuel pour faciliter la lecture, mais le paiement
-            contractuel reste trimestriel. {LEGENDE_PAIEMENT_TRIMESTRIEL}
+            Le tarif affiché sur le site est le montant prélevé chaque mois. {LEGENDE_PAIEMENT_TRIMESTRIEL}
           </p>
         </section>
 

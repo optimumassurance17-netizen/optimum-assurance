@@ -11,7 +11,12 @@ import { drawAccelerantLogoOnPage, loadAccelerantLogoImage } from "@/lib/pdf/sha
 import { formatEuro } from "@/lib/pdf/shared/pdfUtils"
 import { sanitizeForPdfLib } from "@/lib/pdf/shared/sanitizePdfText"
 import { PdfValidationError } from "@/lib/pdf/errors"
-import { primeTrimestrielle } from "@/lib/premium"
+import { prisma } from "@/lib/prisma"
+import {
+  periodiciteDecennale,
+  primeEcheanceDecennale,
+  type PeriodiciteCotisationDecennale,
+} from "@/lib/premium"
 import {
   getRcFabPeriodicityMeta,
   normalizeRcFabPeriodicity,
@@ -84,13 +89,22 @@ function drawLines(
   return y
 }
 
-function scheduleAmounts(c: InsuranceContract): {
+async function decennaleSchedulePeriodicite(c: InsuranceContract): Promise<PeriodiciteCotisationDecennale> {
+  if (!c.userId) return "mensuel"
+  const sub = await prisma.sepaSubscription.findUnique({
+    where: { userId: c.userId },
+    select: { periodicite: true },
+  })
+  return sub ? periodiciteDecennale(sub.periodicite) : "mensuel"
+}
+
+async function scheduleAmounts(c: InsuranceContract): Promise<{
   perQuarter: number
   annualIndicative: number
   modeLabel: string
   assumptionNote: string
   scheduleLabel: string
-} {
+}> {
   if (c.productType === "rc_fabriquant") {
     const periodicityRaw = parseRcFabPeriodicityFromExclusionsJson(c.exclusionsJson)
     const periodicity = normalizeRcFabPeriodicity(periodicityRaw)
@@ -116,15 +130,19 @@ function scheduleAmounts(c: InsuranceContract): {
   }
   if (c.productType === "decennale") {
     const annual = Math.round(c.premium * 100) / 100
-    const per = primeTrimestrielle(annual)
+    const periodicite = await decennaleSchedulePeriodicite(c)
+    const per = primeEcheanceDecennale(annual, periodicite)
+    const mensuel = periodicite === "mensuel"
     return {
       perQuarter: per,
       annualIndicative: annual,
-      modeLabel:
-        "1er trimestre : carte bancaire (Mollie) + frais de dossier selon parcours ; trimestres suivants : prélèvement SEPA sur mandat",
-      assumptionNote:
-        "Hypothèse : la prime TTC du contrat correspond à la prime annuelle, répartie en 4 échéances trimestrielles égales (hors frais éventuels du 1er appel).",
-      scheduleLabel: "trimestriel",
+      modeLabel: mensuel
+        ? "1er mois : carte bancaire (Mollie) + frais de dossier selon parcours ; mois suivants : prélèvement SEPA sur mandat"
+        : "1er trimestre : carte bancaire (Mollie) + frais de dossier selon parcours ; trimestres suivants : prélèvement SEPA sur mandat",
+      assumptionNote: mensuel
+        ? "Hypothèse : la prime TTC du contrat correspond à la prime annuelle, répartie en 12 échéances mensuelles égales (hors frais éventuels du 1er appel)."
+        : "Hypothèse : la prime TTC du contrat correspond à la prime annuelle, répartie en 4 échéances trimestrielles égales (hors frais éventuels du 1er appel).",
+      scheduleLabel: periodicite,
     }
   }
   throw new PdfValidationError("Échéancier trimestriel non applicable à ce produit.", "SCHEDULE_NOT_APPLICABLE")
@@ -135,7 +153,7 @@ function scheduleAmounts(c: InsuranceContract): {
  * (décennale ou RC Fabriquant).
  */
 export async function generateQuarterlyScheduleInsurancePdf(c: InsuranceContract): Promise<Uint8Array> {
-  const { perQuarter, annualIndicative, modeLabel, assumptionNote, scheduleLabel } = scheduleAmounts(c)
+  const { perQuarter, annualIndicative, modeLabel, assumptionNote, scheduleLabel } = await scheduleAmounts(c)
 
   const anchor = c.validFrom ?? c.paidAt ?? c.createdAt
   const t1 = anchor

@@ -10,7 +10,7 @@ export const SITE_KNOWLEDGE = `
 - **Accueil /** : présentation, simulateur de prime, liens vers devis.
 - **Assurance décennale BTP** : **/devis** (tarif automatique en quelques minutes). Pages SEO métiers : **/assurance-decennale/[metier]** (ex. plombier, électricien). Liste du menu avec descriptif et exclusions : **/assurance-decennale/activites**.
 - **Dommage ouvrage** : **/devis-dommage-ouvrage** (formulaire 5 étapes). Si le client est **connecté** et qu’une **première demande** est déjà enregistrée, la page oriente vers **/espace-client/questionnaire-do-etude** (questionnaire d’étude détaillé, prérempli depuis le premier envoi). Pages SEO : **/dommage-ouvrage/[slug]** (auto-construction, particulier, etc.).
-- **RC fabriquant** : **/devis-rc-fabriquant** — formulaire en **4 étapes** (entreprise, type de produit / zone / sous-traitance, CA, sinistralité) ; **pas de tarif affiché** au prospect. Email de confirmation et alerte équipe ; en **gestion** : suivi, e-mail de proposition, **indicatifs internes** (score / prime indicative), puis contrat plateforme après signature PDF personnalisé. **Cotisation en logique trimestrielle** (comme la décennale) : chaque échéance peut être un **virement Mollie** ou un **virement enregistré à la main** dans **/gestion** (**Virement reçu**), qui active le contrat et génère l'attestation. Montant ajustable en gestion. Pas de SEPA auto dédié RC sur ce flux.
+- **RC fabriquant** : **/devis-rc-fabriquant** — formulaire en **4 étapes** (entreprise, type de produit / zone / sous-traitance, CA, sinistralité) ; **pas de tarif affiché** au prospect. Email de confirmation et alerte équipe ; en **gestion** : suivi, e-mail de proposition, **indicatifs internes** (score / prime indicative), puis contrat plateforme après signature PDF personnalisé. **Cotisation selon la périodicité choisie en gestion** : chaque échéance peut être un **virement Mollie** ou un **virement enregistré à la main** dans **/gestion** (**Virement reçu**), qui active le contrat et génère l'attestation. Montant ajustable en gestion. Pas de SEPA auto dédié RC sur ce flux.
 - **Assurance titre** : **/assurance-titre** — formulaire d’étude pour transactions immobilières / refinancements / closings complexes ; **pas de tarif instantané**. Le visiteur décrit l’actif, l’opération, le montant, le calendrier et les risques identifiés (servitude, charge, fraude, empiètement, etc.). Le produit est présenté comme un **complément** aux vérifications notariales / juridiques, avec retour équipe en général sous **24 à 48 h ouvrées**. Après l’envoi, le **compte est créé automatiquement** avec l’email du formulaire (mot de passe envoyé par email) et le prospect peut compléter un **questionnaire d’étude détaillé** sur **/espace-client/assurance-titre** et **déposer ses pièces** dans la GED (titre de propriété, projet d’acte, état hypothécaire, plan cadastral, note du notaire).
 - **Contenu** : **/faq**, **/guides** et **/guides/[slug]** (guides pratiques), **/contact** (formulaire), **/cgv**, **/conditions-generales-dommage-ouvrage** (CG produit DO, avec le devis), **/conditions-attestations** (émission et validité des attestations décennale / DO), **/mentions-legales**, **/confidentialite**, **/droits-personnes**.
 - **Retrait QBE** : QBE France arrête la souscription décennale et vise une sortie du portefeuille au **31 décembre 2026**. Guide : **/guides/fin-assurance-decennale-qbe-2027**. Optimum **étudie le remplacement** des entreprises concernées avant le **1er janvier 2027** ; ce n’est pas un transfert automatique du contrat QBE. Les ouvrages déjà couverts par une police QBE émise restent du ressort de cette police. Orienter vers **/devis**.
@@ -24,12 +24,12 @@ export const SITE_KNOWLEDGE = `
 - **Vérification publique d’attestation** : **/v/[token]** (QR code / lien de vérification).
 
 ## Parcours assurance décennale BTP (ordre réel)
-1. **/devis** — Saisie CA, activités, options ; tarif immédiat **affiché en équivalent mensuel** (prime ÷ 12), avec rappel du **prélèvement trimestriel** ; possibilité de sauvegarder le brouillon par email.
+1. **/devis** — Saisie CA, activités, options ; tarif immédiat **affiché au mois** (prime ÷ 12), avec **prélèvement mensuel** ; possibilité de sauvegarder le brouillon par email.
 2. **/souscription** — Coordonnées entreprise, SIRET, représentant, activités.
 3. **/creer-compte** — le compte est **créé automatiquement** avec l’email de la souscription ; le mot de passe temporaire est envoyé par email, puis le parcours continue (signature ou espace client). Si l’email a déjà un compte, la page demande de se connecter.
 4. **/signature** — Signature électronique du contrat (puis **/sign/[id]** pour apposer la signature sur le PDF).
-5. **/mandat-sepa** — IBAN et mandat ; **prélèvement trimestriel uniquement** (pas d’option mensuelle).
-6. **/paiement** — **Premier trimestre + 60 € de frais de gestion** payés par **carte bancaire (Mollie)** ; les trimestres suivants sont prévus en **prélèvement SEPA** sur l’IBAN du mandat.
+5. **/mandat-sepa** — IBAN et mandat pour le **prélèvement mensuel**.
+6. **/paiement** — **Premier mois + 60 € de frais de gestion** payés par **carte bancaire (Mollie)** ; les mois suivants sont prévus en **prélèvement SEPA** sur l’IBAN du mandat.
 7. **/confirmation** — Après paiement, contrôle du dossier et acceptation du risque, **attestation** disponible dans l’espace client (PDF, QR de vérification).
 
 ## Parcours RC fabriquant
@@ -51,7 +51,7 @@ export const SITE_KNOWLEDGE = `
 5. **Attestation** après **réception des fonds**.
 
 ## Différences décennale vs DO (résumé)
-- **Décennale** : tarif tout de suite (affichage **équivalent mensuel** sur le site, **prélèvement réel trimestriel**) ; **1er trimestre + frais en CB** puis **SEPA trimestriel** ; attestation après paiement, contrôle du dossier et acceptation du risque.
+- **Décennale** : tarif tout de suite, **prélèvement mensuel** ; **1er mois + frais en CB** puis **SEPA mensuel** ; attestation après paiement, contrôle du dossier et acceptation du risque.
 - **DO** : souscription en ligne puis **virement unique** Mollie du montant indiqué ; attestation après encaissement.
 
 ## Outils techniques (information générale)

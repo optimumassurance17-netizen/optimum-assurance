@@ -61,7 +61,7 @@ export function InsuranceContractPdfLinks({
       )}
       {showQuarterlySchedule ? (
         <a href={`${base}/schedule`} target="_blank" rel="noreferrer" className={linkClass}>
-          Échéancier (trimestriel)
+          Échéancier
         </a>
       ) : null}
       {certificateAvailable ? (

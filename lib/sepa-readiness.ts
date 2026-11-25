@@ -1,4 +1,4 @@
-import { primeTrimestrielle } from "@/lib/premium"
+import { periodiciteDecennale, primeEcheanceDecennale } from "@/lib/premium"
 
 const CHARGEABLE_STATUSES = new Set(["active", "pending_mandate", "completed"])
 
@@ -10,6 +10,7 @@ export type SepaReadinessSource = {
   sepaPendingPaymentId: string | null
   trimestresSepaPayes: number
   primeAnnuelle: number
+  periodicite?: string | null
   pendingLocalMetadata?: string | null
 }
 
@@ -84,7 +85,13 @@ export function describeSepaReadiness(
   const due = Boolean(nextDue && nextDue.getTime() <= now.getTime())
   const chargeableStatus = CHARGEABLE_STATUSES.has(subscription.status)
   const cronWouldCharge = chargeableStatus && due && mandatePresent && !pendingPaymentId
-  const amount = subscription.primeAnnuelle > 0 ? primeTrimestrielle(subscription.primeAnnuelle) : null
+  const amount =
+    subscription.primeAnnuelle > 0
+      ? primeEcheanceDecennale(
+          subscription.primeAnnuelle,
+          periodiciteDecennale(subscription.periodicite ?? "trimestriel")
+        )
+      : null
 
   let summary: string
   if (subscription.status === "cancelled") {

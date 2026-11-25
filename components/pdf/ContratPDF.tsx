@@ -87,7 +87,9 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
               <>
                 <View style={pdfTheme.row}>
                   <Text style={pdfTheme.cellLeft}>Mode de paiement</Text>
-                  <Text style={pdfTheme.cellRight}>Prélèvement trimestriel</Text>
+                  <Text style={pdfTheme.cellRight}>
+                    {data.periodicitePrelevement === "trimestriel" ? "Prélèvement trimestriel" : "Prélèvement mensuel"}
+                  </Text>
                 </View>
                 {data.fraisGestionPrelevement != null && (
                   <View style={pdfTheme.row}>
@@ -96,21 +98,21 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
                   </View>
                 )}
                 <View style={pdfTheme.row}>
-                  <Text style={pdfTheme.cellLeft}>Montant par échéance trimestrielle</Text>
+                  <Text style={pdfTheme.cellLeft}>
+                    {data.periodicitePrelevement === "trimestriel"
+                      ? "Montant par échéance trimestrielle"
+                      : "Montant par échéance mensuelle"}
+                  </Text>
                   <Text style={pdfTheme.cellRight}>
-                    {(
-                      data.primeTrimestrielle ??
-                      (data.primeAnnuelle != null ? Math.round((data.primeAnnuelle / 4) * 100) / 100 : 0)
+                    {(data.periodicitePrelevement === "trimestriel"
+                      ? (data.primeTrimestrielle ??
+                        (data.primeAnnuelle != null ? Math.round((data.primeAnnuelle / 4) * 100) / 100 : 0))
+                      : (data.primeMensuelle ??
+                        (data.primeAnnuelle != null ? Math.round((data.primeAnnuelle / 12) * 100) / 100 : 0))
                     ).toLocaleString("fr-FR")}{" "}
                     €
                   </Text>
                 </View>
-                {data.primeAnnuelle != null && (
-                  <View style={pdfTheme.row}>
-                    <Text style={pdfTheme.cellLeft}>Équivalent mensuel (indicatif, prime ÷ 12)</Text>
-                    <Text style={pdfTheme.cellRight}>{Math.round((data.primeAnnuelle / 12) * 100) / 100} €</Text>
-                  </View>
-                )}
               </>
             )}
             <View style={pdfTheme.row}>

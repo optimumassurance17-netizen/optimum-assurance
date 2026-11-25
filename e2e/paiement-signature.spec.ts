@@ -165,13 +165,13 @@ test.describe("Tunnel signature et paiement", () => {
     await expect(page.getByRole("heading", { name: "Paiement" })).toBeVisible()
     await expect(page.getByText("Paiement sécurisé par Mollie")).toBeVisible()
 
-    await page.getByRole("button", { name: "Payer le 1er trimestre par carte" }).click()
+    await page.getByRole("button", { name: "Payer le 1er mois par carte" }).click()
 
     await expect(page).toHaveURL(/\/confirmation\?payment_id=pay_test_123/)
     await expect(page.getByRole("heading", { name: "Souscription confirmée" })).toBeVisible()
     await expect(
       page.getByText(
-        "Votre premier trimestre a bien été réglé par carte bancaire. Les échéances suivantes seront"
+        "Votre premier mois a bien été réglé par carte bancaire. Les échéances suivantes seront"
       )
     ).toBeVisible()
     await expect(page.getByText("reconduction automatique annuelle")).toBeVisible()

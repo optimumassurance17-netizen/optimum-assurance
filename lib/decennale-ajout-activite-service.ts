@@ -9,6 +9,7 @@ import { resolveUserActivitiesHierarchy } from "@/lib/activity-hierarchy"
 import { generateOptimizedExclusions } from "@/lib/optimized-exclusions"
 import { alignUserAttestationsWithContract } from "@/lib/attestation-follows-contract-sync"
 import { loadClientEcheances } from "@/lib/client-echeance-service"
+import { periodiciteDecennale } from "@/lib/premium"
 import {
   choixActivitesAjoutables,
   chiffrerAjoutActivite,
@@ -190,7 +191,13 @@ export async function ajouterActiviteClient(input: {
     }
   }
 
-  const echeances = await loadClientEcheances(input.userId)
+  const [echeances, sepa] = await Promise.all([
+    loadClientEcheances(input.userId),
+    prisma.sepaSubscription.findUnique({
+      where: { userId: input.userId },
+      select: { periodicite: true },
+    }),
+  ])
   const trimestresDejaPayes = echeances.filter((row) => row.kind === "decennale" && row.paid).length
   const quote = chiffrerAjoutActivite({
     activites: facts.activites,
@@ -202,6 +209,7 @@ export async function ajouterActiviteClient(input: {
     resilieNonPaiement: facts.resilieNonPaiement,
     reprisePasse: facts.reprisePasse,
     trimestresDejaPayes,
+    periodicite: sepa ? periodiciteDecennale(sepa.periodicite) : "trimestriel",
   })
   if (!quote.ok) return { ok: false, status: 400, error: quote.error }
 

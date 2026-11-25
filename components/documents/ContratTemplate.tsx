@@ -29,7 +29,7 @@ interface ContratTemplateProps {
     primeMensuelle?: number
     primeTrimestrielle?: number
     modePaiement?: "unique" | "prelevement"
-    periodicitePrelevement?: "trimestriel"
+    periodicitePrelevement?: "mensuel" | "trimestriel"
     fraisGestionPrelevement?: number
     franchise: number
     plafond: number
@@ -92,7 +92,9 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
                 <>
                   <tr className="border-b">
                     <td className="py-2">Mode de paiement</td>
-                    <td className="text-right">Prélèvement trimestriel</td>
+                    <td className="text-right">
+                      {data.periodicitePrelevement === "trimestriel" ? "Prélèvement trimestriel" : "Prélèvement mensuel"}
+                    </td>
                   </tr>
                   {data.fraisGestionPrelevement != null && (
                     <tr className="border-b">
@@ -100,26 +102,22 @@ export function ContratTemplate({ numero, data }: ContratTemplateProps) {
                       <td className="text-right">{data.fraisGestionPrelevement} €</td>
                     </tr>
                   )}
-                  {(data.primeTrimestrielle != null || data.primeAnnuelle != null) && (
-                    <tr className="border-b">
-                      <td className="py-2">Montant par échéance trimestrielle</td>
-                      <td className="text-right">
-                        {(
-                          data.primeTrimestrielle ??
-                          (data.primeAnnuelle != null ? Math.round((data.primeAnnuelle / 4) * 100) / 100 : 0)
-                        ).toLocaleString("fr-FR")}{" "}
-                        €
-                      </td>
-                    </tr>
-                  )}
-                  {data.primeAnnuelle != null && (
-                    <tr className="border-b">
-                      <td className="py-2">Équivalent mensuel (indicatif)</td>
-                      <td className="text-right">
-                        {Math.round((data.primeAnnuelle / 12) * 100) / 100} €
-                      </td>
-                    </tr>
-                  )}
+                  <tr className="border-b">
+                    <td className="py-2">
+                      {data.periodicitePrelevement === "trimestriel"
+                        ? "Montant par échéance trimestrielle"
+                        : "Montant par échéance mensuelle"}
+                    </td>
+                    <td className="text-right">
+                      {(data.periodicitePrelevement === "trimestriel"
+                        ? (data.primeTrimestrielle ??
+                          (data.primeAnnuelle != null ? Math.round((data.primeAnnuelle / 4) * 100) / 100 : 0))
+                        : (data.primeMensuelle ??
+                          (data.primeAnnuelle != null ? Math.round((data.primeAnnuelle / 12) * 100) / 100 : 0))
+                      ).toLocaleString("fr-FR")}{" "}
+                      €
+                    </td>
+                  </tr>
                 </>
               )}
             </tbody>

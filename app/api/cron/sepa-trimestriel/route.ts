@@ -6,7 +6,11 @@ import {
   onSepaTrimestrePaid,
   refreshMandateStatus,
 } from "@/lib/mollie-sepa"
-import { primeTrimestrielle } from "@/lib/premium"
+import {
+  moisEntreEcheancesDecennale,
+  periodiciteDecennale,
+  primeEcheanceDecennale,
+} from "@/lib/premium"
 import { prisma } from "@/lib/prisma"
 import { loadClientEcheances } from "@/lib/client-echeance-service"
 import { decennaleInstallmentReminder, nextSepaInstallmentNumber } from "@/lib/client-echeances"
@@ -52,11 +56,13 @@ export async function GET(request: NextRequest) {
         firstTrimesterPaidAt: true,
         createdAt: true,
         trimestresSepaPayes: true,
+        periodicite: true,
       },
     })
     for (const sub of legacyCompleted) {
       const anchor = sub.firstTrimesterPaidAt ?? sub.createdAt
-      const resumedDue = addMonths(anchor, (sub.trimestresSepaPayes + 1) * 3)
+      const months = moisEntreEcheancesDecennale(periodiciteDecennale(sub.periodicite))
+      const resumedDue = addMonths(anchor, (sub.trimestresSepaPayes + 1) * months)
       await prisma.sepaSubscription.update({
         where: { id: sub.id },
         data: {
@@ -127,15 +133,17 @@ export async function GET(request: NextRequest) {
           continue
         }
 
-        const amount = primeTrimestrielle(sub.primeAnnuelle)
+        const periodicite = periodiciteDecennale(sub.periodicite)
+        const amount = primeEcheanceDecennale(sub.primeAnnuelle, periodicite)
         const idx = sub.trimestresSepaPayes + 1
         const idempotencyKey = `sepa-${sub.id}-${idx}-${sub.nextSepaDue?.toISOString().slice(0, 10)}`
+        const rythme = periodicite === "mensuel" ? "mensuelle" : "trimestrielle"
 
         const payment = await createSepaTrimestrePayment(mollie, {
           customerId: sub.mollieCustomerId,
           mandateId: sub.mollieMandateId,
           amount,
-          description: `Décennale — échéance SEPA trimestrielle #${idx} — ${sub.user.raisonSociale || sub.user.email}`,
+          description: `Décennale — échéance SEPA ${rythme} #${idx} — ${sub.user.raisonSociale || sub.user.email}`,
           webhookUrl,
           redirectUrl,
           metadata: {

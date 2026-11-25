@@ -2668,7 +2668,7 @@ export default function ClientDetailPage() {
                     {data.sepa.nextDue ? new Date(data.sepa.nextDue).toLocaleDateString("fr-FR") : "—"}
                     {data.sepa.amount != null ? ` · ${data.sepa.amount.toLocaleString("fr-FR")} €` : ""}
                   </li>
-                  <li>Trimestres déjà prélevés : {data.sepa.trimestresSepaPayes}</li>
+                  <li>Échéances SEPA déjà prélevées : {data.sepa.trimestresSepaPayes}</li>
                   <li>Paiement en attente : {data.sepa.pendingLabel ?? "aucun"}</li>
                   <li className="break-words">Dernier incident : {data.sepa.lastError ?? "aucun"}</li>
                   <li>Le cron prélèverait maintenant : {data.sepa.cronWouldCharge ? "oui" : "non"}</li>

@@ -28,7 +28,7 @@ export const DECENNALE_CP_CADRE = [
   "Les techniques non courantes et les procédés qui s'écartent des activités déclarées doivent être signalés avant le début des travaux. À défaut, ils restent hors garantie.",
   DECENNALE_SOUS_TRAITANCE_COUVERTURE,
   "Durée : contrat annuel, reconduit sauf résiliation dans les formes prévues, au plus tard deux mois avant l'échéance, après une première année.",
-  "Paiement : prime annuelle TTC, fractionnée par trimestre. Le premier règlement suit le parcours de souscription, les échéances suivantes le prélèvement SEPA.",
+  "Paiement : prime annuelle TTC, fractionnée par mois. Le premier règlement suit le parcours de souscription, les échéances suivantes le prélèvement SEPA.",
 ] as const
 
 /**
