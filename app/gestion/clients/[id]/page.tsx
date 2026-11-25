@@ -1585,6 +1585,7 @@ export default function ClientDetailPage() {
                   : "non calculée"}
               </li>
               <li>Chantier : {pendingDoQuote.chantier || "adresse non renseignée"}</li>
+              {pendingDoQuote.lotsCouverture ? <li>{pendingDoQuote.lotsCouverture}</li> : null}
             </ul>
             <form
               className="space-y-3"
