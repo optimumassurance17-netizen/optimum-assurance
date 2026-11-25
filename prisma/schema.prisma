@@ -435,6 +435,18 @@ model ContractCounter {
   @@id([year, product])
 }
 
+/// Connexion publicitaire de la gestion. Le jeton est chiffré, jamais renvoyé au navigateur.
+model AdsConnection {
+  id                    String   @id @default(cuid())
+  provider              String   @unique
+  accountEmail          String?
+  customerId            String?
+  refreshTokenEncrypted String   @db.Text
+  connectedByEmail      String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
 /// Journal des PDF générés via /api/pdf/*
 model PdfGenerationLog {
   id             String   @id @default(cuid())

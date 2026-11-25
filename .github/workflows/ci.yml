@@ -92,6 +92,9 @@ jobs:
       - name: Vérification paiement mensuel décennale
         run: npm run test:paiement-mensuel
 
+      - name: Vérification robot publicitaire
+        run: npm run test:ads-robot
+
       - name: Prisma generate + Next build
         run: npm run build
 

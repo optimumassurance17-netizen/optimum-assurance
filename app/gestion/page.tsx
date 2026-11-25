@@ -2609,7 +2609,12 @@ export default function GestionPage() {
       <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
         <header className="border-b border-gray-700 px-6 py-4">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-xl font-semibold text-white">Gestion CRM</h1>
+            <div className="flex flex-wrap items-center gap-4">
+              <h1 className="text-xl font-semibold text-white">Gestion CRM</h1>
+              <Link href="/gestion/publicite" className="text-sm text-[#93c5fd] hover:underline">
+                Publicité
+              </Link>
+            </div>
           </div>
         </header>
         <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
@@ -2658,7 +2663,12 @@ export default function GestionPage() {
     <main className="gestion-app min-h-screen bg-[#1a1a1a] text-gray-200">
       <header className="border-b border-gray-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold text-white">Gestion CRM</h1>
+          <div className="flex flex-wrap items-center gap-4">
+            <h1 className="text-xl font-semibold text-white">Gestion CRM</h1>
+            <Link href="/gestion/publicite" className="text-sm text-[#93c5fd] hover:underline">
+              Publicité
+            </Link>
+          </div>
           <div className="flex flex-wrap gap-2" role="toolbar" aria-label="Exports du tableau de bord">
             <button
               type="button"
@@ -2899,6 +2909,12 @@ export default function GestionPage() {
               >
                 {outilsOuverts ? "Revenir au travail du jour" : "Graphiques et créations"}
               </button>
+              <Link
+                href="/gestion/publicite"
+                className="text-xs sm:text-sm px-2.5 py-1 rounded-md bg-[#222] text-gray-200 border border-gray-600 hover:bg-[#333]"
+              >
+                Publicité
+              </Link>
               {data.dashboardActionsSummary ? (
                 <a
                   href="#actions-du-jour"
