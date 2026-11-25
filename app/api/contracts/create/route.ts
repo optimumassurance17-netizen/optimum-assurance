@@ -11,6 +11,8 @@ import {
   buildDdaSuitabilityStatement,
   normalizeDdaProduct,
 } from "@/lib/dda-compliance"
+import { coverageLinesForDoUser } from "@/lib/do-attestation-source"
+import { activitesAvecLignesCouverture, lignesCouvertureLots } from "@/lib/do-options-lots"
 
 function asTrimmedString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined
@@ -184,6 +186,16 @@ export async function POST(request: NextRequest) {
     ]
     const mergedExclusions = [...new Set(mergedExclusionsRaw)]
 
+    const storedCoverage = productType === "do" ? await coverageLinesForDoUser(session.user.id) : []
+    const requestedCoverage =
+      productType === "do"
+        ? lignesCouvertureLots({
+            lotsCouverts: raw.lotsCouverts,
+            operationClosCouvert: typeof raw.operationClosCouvert === "boolean" ? raw.operationClosCouvert : null,
+          })
+        : []
+    const coverageLines = storedCoverage.length > 0 ? storedCoverage : requestedCoverage
+
     const { contract, risk } = await createInsuranceContract({
       productType,
       clientName,
@@ -192,7 +204,7 @@ export async function POST(request: NextRequest) {
       activities:
         productType === "decennale"
           ? hierarchy?.guaranteedHierarchyLines ?? matchedActivities
-          : matchedActivities,
+          : activitesAvecLignesCouverture(matchedActivities, coverageLines),
       exclusions: mergedExclusions,
       projectName,
       projectAddress,

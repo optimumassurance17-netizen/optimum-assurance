@@ -1,5 +1,6 @@
 import type { DevisDommageOuvrageData, QualiteMaitreOuvrage } from "@/lib/dommage-ouvrage-types"
 import { TYPES_OUVRAGE } from "@/lib/dommage-ouvrage-types"
+import { estClosEtCouvert, lotsEffectifs } from "@/lib/do-options-lots"
 import { calculerTarifDommageOuvrage, FRANCHISE_DOMMAGE_OUVRAGE_EUR } from "@/lib/tarification-dommage-ouvrage"
 import type { DevisResult } from "@/lib/tarification"
 import type { DoSouscriptionInsurancePayload, SouscriptionData } from "@/lib/types"
@@ -53,6 +54,7 @@ export function buildDoSouscriptionInsurancePayload(
   if (!projectAddress) return null
 
   const typeLabel = TYPES_OUVRAGE.find((t) => t.value === data.typeOuvrage)?.label ?? "Chantier"
+  const lotsCouverts = lotsEffectifs(data)
 
   const projectName = data.permisConstruireNumero?.trim()
     ? `Permis ${data.permisConstruireNumero.trim()} — ${data.villeConstruction?.trim() ?? ""}`.trim()
@@ -72,6 +74,9 @@ export function buildDoSouscriptionInsurancePayload(
     projectName,
     projectAddress,
     constructionNature: typeLabel,
+    ...(lotsCouverts.length > 0
+      ? { lotsCouverts, operationClosCouvert: estClosEtCouvert(lotsCouverts) }
+      : {}),
   }
 }
 

@@ -141,6 +141,10 @@ export async function createInsuranceContractFromDoPayload(
       projectAddress: data.projectAddress.trim(),
       constructionNature: data.constructionNature?.trim(),
       activities: data.constructionNature?.trim() ? [data.constructionNature.trim()] : undefined,
+      ...(data.lotsCouverts?.length ? { lotsCouverts: data.lotsCouverts } : {}),
+      ...(typeof data.operationClosCouvert === "boolean"
+        ? { operationClosCouvert: data.operationClosCouvert }
+        : {}),
       missingDocuments: false,
       companyAgeMonths: companyAgeMonthsFromDateIso(data.dateCreationSociete),
     }),

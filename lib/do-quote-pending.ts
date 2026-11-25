@@ -1,4 +1,5 @@
 import { constructionAddressFromLead, readDoLeadConstructionCost } from "@/lib/do-attestation-facts"
+import { lignesCouvertureLots } from "@/lib/do-options-lots"
 import { calculerTarifDommageOuvrage } from "@/lib/tarification-dommage-ouvrage"
 
 export type PendingDoQuote = {
@@ -6,6 +7,7 @@ export type PendingDoQuote = {
   constructionCost: number | null
   indicativePremium: number | null
   chantier: string
+  lotsCouverture: string | null
 }
 
 export type PendingDoQuoteStorageKey = "doEtudeQuestionnaireJson" | "doInitialQuestionnaireJson"
@@ -24,11 +26,13 @@ function parseQuestionnaire(raw: string | null | undefined): Record<string, unkn
 function quoteFromRecord(record: Record<string, unknown>, sourceLabel: string): PendingDoQuote {
   const constructionCost = readDoLeadConstructionCost(record)
   const tarif = constructionCost != null ? calculerTarifDommageOuvrage(constructionCost) : null
+  const coverage = lignesCouvertureLots(record)
   return {
     sourceLabel,
     constructionCost,
     indicativePremium: tarif?.primeAnnuelle ?? null,
     chantier: constructionAddressFromLead(record),
+    lotsCouverture: coverage.length > 0 ? coverage.join(" · ") : null,
   }
 }
 

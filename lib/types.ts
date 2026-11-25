@@ -67,6 +67,8 @@ export interface DoSouscriptionInsurancePayload {
   projectName: string
   projectAddress: string
   constructionNature?: string
+  lotsCouverts?: string[]
+  operationClosCouvert?: boolean
 }
 
 export interface MandatSepaData {

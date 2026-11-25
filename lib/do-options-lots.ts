@@ -123,3 +123,38 @@ export function texteIndiqueClosCouvert(line: string): boolean {
   if (!/clos et couvert/i.test(line)) return false
   return !/\bnon\b/i.test(line)
 }
+
+/** Les deux lignes à recopier sur le contrat et l'attestation. */
+export function lignesCouvertureLots(data: {
+  lotsCouverts?: unknown
+  operationClosCouvert?: boolean | null
+}): string[] {
+  const lots = lotsEffectifs(data)
+  if (lots.length === 0) return []
+  return [
+    estClosEtCouvert(lots) ? "Garantie clos et couvert" : "Dommage ouvrage complète",
+    `Lots couverts : ${libelleLotsCouverts(lots)}`,
+  ]
+}
+
+function ligneDeCouverture(line: string): boolean {
+  const text = line.trim()
+  if (text.toLocaleLowerCase("fr-FR").startsWith("lots couverts")) return true
+  return texteIndiqueClosCouvert(text) || /dommage ouvrage complète/i.test(text)
+}
+
+/**
+ * Ajoute la formule et les lots seulement si le contrat n'en parle pas déjà.
+ * Une ligne déjà présente (création gestion, par exemple) n'est pas doublée ni contredite.
+ */
+export function activitesAvecLignesCouverture(activities: readonly string[], lines: readonly string[]): string[] {
+  const current = [...activities]
+  if (current.some(ligneDeCouverture)) return current
+  const next = [...current]
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (!line || !ligneDeCouverture(line) || next.includes(line)) continue
+    next.push(line)
+  }
+  return next
+}
