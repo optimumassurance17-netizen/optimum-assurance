@@ -86,6 +86,9 @@ jobs:
       - name: Vérification options DO par lot
         run: npm run test:do-options-lots
 
+      - name: Vérification parcours décennale abandonné
+        run: npm run test:parcours-abandonne
+
       - name: Prisma generate + Next build
         run: npm run build
 

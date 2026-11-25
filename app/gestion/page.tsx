@@ -420,6 +420,7 @@ interface DashboardData {
     createdAt: string
     slaHours?: number
     slaLevel?: "ok" | "warning" | "critical"
+    parcours?: "abandonne" | "en_cours" | "abouti"
   }[]
   devisDrafts?: {
     id: string
@@ -1840,7 +1841,11 @@ export default function GestionPage() {
 
     const totalLeads = decennaleLeads.length + rcFabriquantLeads.length + doEtudeLeads.length
     const decennaleStillOpen = decennaleLeads.filter(
-      (lead) => !lead.rappelSentAt && (lead.slaHours ?? 0) >= 24 && !isDisplayedQuoteExpired(lead.createdAt)
+      (lead) =>
+        lead.parcours === "abandonne" &&
+        !lead.rappelSentAt &&
+        (lead.slaHours ?? 0) >= 24 &&
+        !isDisplayedQuoteExpired(lead.createdAt)
     )
     const hotLeads =
       decennaleStillOpen.length +
@@ -4753,6 +4758,19 @@ export default function GestionPage() {
                         <td className="p-3 sm:p-4 text-right">
                           <div className="flex flex-col items-end gap-1">
                             <span>{l.primeAnnuelle != null ? `${l.primeAnnuelle.toLocaleString("fr-FR")} €` : "—"}</span>
+                            {l.parcours === "abouti" ? (
+                              <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-emerald-900/50 text-emerald-200">
+                                Parcours abouti
+                              </span>
+                            ) : l.parcours === "en_cours" ? (
+                              <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-sky-900/50 text-sky-200">
+                                Parcours en cours
+                              </span>
+                            ) : !isDisplayedQuoteExpired(l.createdAt) && (l.slaHours ?? 0) >= 24 ? (
+                              <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-amber-900/50 text-amber-200">
+                                Parcours abandonné
+                              </span>
+                            ) : null}
                             {isDisplayedQuoteExpired(l.createdAt) ? (
                               <span className="inline-block text-[10px] uppercase tracking-wide px-2 py-0.5 rounded bg-amber-900/50 text-amber-200">
                                 Expiré

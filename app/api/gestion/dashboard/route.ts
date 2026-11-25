@@ -20,6 +20,12 @@ import {
   sortRequestsByArrival,
 } from "@/lib/devis-do-lead"
 import { isDisplayedQuoteExpired } from "@/lib/quote-validity"
+import { indicesParcoursDecennale } from "@/lib/parcours-decennale-lookup"
+import {
+  emailParcours,
+  PARCOURS_DECENNALE_VIDE,
+  statutParcoursDecennale,
+} from "@/lib/parcours-decennale"
 
 /** Message utilisateur + code Prisma pour le support (logs Vercel). */
 function errorPayloadForDashboard(error: unknown): { error: string; prismaCode?: string; debugMessage?: string } {
@@ -991,7 +997,14 @@ export async function GET() {
       })
     }
 
-    for (const d of devisLeads) {
+    const parcoursParEmail = await indicesParcoursDecennale(devisLeads.map((lead) => lead.email))
+    const devisLeadsAvecParcours = devisLeads.map((lead) => ({
+      ...lead,
+      parcours: statutParcoursDecennale(parcoursParEmail.get(emailParcours(lead.email)) ?? PARCOURS_DECENNALE_VIDE),
+    }))
+
+    for (const d of devisLeadsAvecParcours) {
+      if (d.parcours !== "abandonne") continue
       if (d.rappelSentAt) continue
       if (isDisplayedQuoteExpired(d.createdAt, now)) continue
       const ageMs = now.getTime() - d.createdAt.getTime()
@@ -1001,7 +1014,7 @@ export async function GET() {
         id: `lead-dec-${d.id}`,
         kind: "decennale_lead_followup",
         priority: ageMs >= overdue72hMs ? "high" : "medium",
-        title: "Lead devis décennale à relancer",
+        title: "Parcours décennale abandonné",
         description: `${d.email} — ${ageHours}h`,
         href: `#lead-decennale-${d.id}`,
         focusQuery: d.email.trim(),
@@ -1197,7 +1210,7 @@ export async function GET() {
     const echeancesASuivre = await loadEcheancesASuivre()
     const quotedEmails = await fetchDoQuotedEmails()
 
-    const devisLeadsWithSla = devisLeads.map((lead) => {
+    const devisLeadsWithSla = devisLeadsAvecParcours.map((lead) => {
       const slaHours = Math.max(0, Math.floor((Date.now() - lead.createdAt.getTime()) / (60 * 60 * 1000)))
       return {
         ...lead,

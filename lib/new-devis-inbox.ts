@@ -25,6 +25,7 @@ type DecennaleLead = {
   email: string
   raisonSociale?: string | null
   createdAt: string
+  parcours?: "abandonne" | "en_cours" | "abouti"
 }
 
 type DoLead = {
@@ -111,6 +112,7 @@ export function selectNewDevisInbox(
   for (const lead of input.devisLeads ?? []) {
     const email = lead.email.trim()
     if (!email || isDisplayedQuoteExpired(lead.createdAt, now)) continue
+    if (lead.parcours === "en_cours" || lead.parcours === "abouti") continue
     const user = userForEmail(users, email)
     rows.push({
       key: `decennale:${lead.id}`,

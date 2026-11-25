@@ -4,6 +4,8 @@ import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
 import { assertCronAuthorized } from "@/lib/cron-auth"
 import { requireManualReminderDispatch } from "@/lib/cron-reminder-mode"
 import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
+import { indicesParcoursDecennale } from "@/lib/parcours-decennale-lookup"
+import { emailParcours, PARCOURS_DECENNALE_VIDE, parcoursDecennaleAbandonne } from "@/lib/parcours-decennale"
 
 /**
  * Cron : rappel devis abandonné 24-48h après envoi
@@ -33,21 +35,20 @@ export async function GET(request: NextRequest) {
 
     let sent = 0
     let unsubscribedSkipped = 0
+    let progressedSkipped = 0
+    const indices = await indicesParcoursDecennale(leads.map((lead) => lead.email))
     for (const lead of leads) {
-      const normalizedEmail = lead.email.trim().toLowerCase()
+      const normalizedEmail = emailParcours(lead.email)
       if (!normalizedEmail) continue
       if (await isReminderUnsubscribed(normalizedEmail, "devis_reminder")) {
         unsubscribedSkipped++
         continue
       }
 
-      const userWithPayment = await prisma.user.findFirst({
-        where: { email: normalizedEmail },
-        include: {
-          payments: { where: { status: "paid" }, take: 1 },
-        },
-      })
-      if (userWithPayment?.payments?.length) continue
+      if (!parcoursDecennaleAbandonne(indices.get(normalizedEmail) ?? PARCOURS_DECENNALE_VIDE)) {
+        progressedSkipped++
+        continue
+      }
 
       const template = EMAIL_TEMPLATES.rappelDevisAbandonne(
         lead.raisonSociale || lead.email,
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ sent, total: leads.length, unsubscribedSkipped })
+    return NextResponse.json({ sent, total: leads.length, unsubscribedSkipped, progressedSkipped })
   } catch (error) {
     console.error("Erreur rappel devis:", error)
     return NextResponse.json({ error: "Erreur" }, { status: 500 })
