@@ -3,6 +3,7 @@
 import { SITE_URL } from "@/lib/site-url"
 import { DocumentBrandHeader } from "@/components/documents/DocumentBrandHeader"
 import { COMPANY_BRAND } from "@/lib/legal-branding"
+import { factureDoLignes } from "@/lib/facture-montants"
 import { ConditionsParticulieresNotes } from "@/components/documents/ConditionsParticulieresNotes"
 import { doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
 
@@ -33,6 +34,12 @@ interface FactureDoTemplateProps {
 
 export function FactureDoTemplate({ numero, data }: FactureDoTemplateProps) {
   const typeGarantie = data.closCouvert ? "Clos et couvert" : "DO complète"
+  const lignes = factureDoLignes({
+    primeAnnuelle: data.primeAnnuelle,
+    fraisGestion: data.fraisGestion,
+    fraisCourtage: data.fraisCourtage,
+    montantPaye: data.totalTTC,
+  })
 
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0 text-sm">
@@ -80,25 +87,25 @@ export function FactureDoTemplate({ numero, data }: FactureDoTemplateProps) {
                 )}
               </td>
               <td className="p-3 text-right font-medium">
-                {data.primeAnnuelle.toLocaleString("fr-FR")} €
+                {lignes.prime.toLocaleString("fr-FR")} €
               </td>
             </tr>
-            {data.fraisGestion > 0 && (
+            {lignes.fraisGestion > 0 && (
               <tr className="border-t border-[#E5E0D8]">
                 <td className="p-3">Frais de gestion</td>
-                <td className="p-3 text-right">{data.fraisGestion.toLocaleString("fr-FR")} €</td>
+                <td className="p-3 text-right">{lignes.fraisGestion.toLocaleString("fr-FR")} €</td>
               </tr>
             )}
-            {data.fraisCourtage > 0 && (
+            {lignes.fraisCourtage > 0 && (
               <tr className="border-t border-[#E5E0D8]">
                 <td className="p-3">Frais de courtage</td>
-                <td className="p-3 text-right">{data.fraisCourtage.toLocaleString("fr-FR")} €</td>
+                <td className="p-3 text-right">{lignes.fraisCourtage.toLocaleString("fr-FR")} €</td>
               </tr>
             )}
             <tr className="border-t-2 border-[#2563eb] bg-[#eff6ff]">
               <td className="p-3 font-bold">Total TTC</td>
               <td className="p-3 text-right font-bold text-lg">
-                {data.totalTTC.toLocaleString("fr-FR")} €
+                {lignes.total.toLocaleString("fr-FR")} €
               </td>
             </tr>
           </tbody>

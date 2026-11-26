@@ -98,6 +98,9 @@ jobs:
       - name: Vérification robot publicitaire
         run: npm run test:ads-robot
 
+      - name: Vérification des montants de facture
+        run: npm run test:factures
+
       - name: Prisma generate + Next build
         run: npm run build
 

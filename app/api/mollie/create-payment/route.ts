@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
       })
       if (paidRows.some((row) => premierTrimestrePaymentMatches(row.metadata, contractNumero))) {
         return NextResponse.json(
-          { error: "Le premier trimestre est déjà payé.", alreadyPaid: true },
+          { error: "Ce premier règlement est déjà payé.", alreadyPaid: true },
           { status: 409 }
         )
       }
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error: isPremierTrimestre
-              ? "Le premier trimestre est déjà payé."
+              ? "Ce premier règlement est déjà payé."
               : "Cette régularisation est déjà payée.",
             alreadyPaid: true,
           },
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
         : {
             type: "decennale_premier_trimestre",
             contractNumero,
-            label: "Premier trimestre",
+            label: metadata.periodicite === "trimestriel" ? "1er trimestre" : "1er mois",
             premierPaiementCarte: "true",
             userId: session.user.id,
             email: (customerEmail || account?.email || "").trim().toLowerCase(),

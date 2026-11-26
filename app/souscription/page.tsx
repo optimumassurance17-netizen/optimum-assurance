@@ -241,9 +241,9 @@ export default function SouscriptionPage() {
                 : "—"}
           </p>
           <p className="text-sm text-[#171717]">
-            Soit {devis.tarif?.primeAnnuelle?.toLocaleString("fr-FR")} €/an — prélevé par trimestre :{" "}
-            {devis.tarif?.primeTrimestrielle ?? (devis.tarif?.primeAnnuelle ? Math.round((devis.tarif.primeAnnuelle / 4) * 100) / 100 : "—")}{" "}
-            € / trimestre
+            Soit {devis.tarif?.primeAnnuelle?.toLocaleString("fr-FR")} €/an — prélevé par mois :{" "}
+            {devis.tarif?.primeMensuelle ?? (devis.tarif?.primeAnnuelle ? Math.round((devis.tarif.primeAnnuelle / 12) * 100) / 100 : "—")}{" "}
+            € / mois
           </p>
         </div>
 

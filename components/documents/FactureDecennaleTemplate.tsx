@@ -8,6 +8,7 @@ import {
   COMPANY_BRAND,
   INSURER_NAME,
 } from "@/lib/legal-branding"
+import { presenterFactureDecennale } from "@/lib/facture-montants"
 
 /**
  * Facture acquittée — assurance décennale (première échéance CB + frais).
@@ -33,12 +34,13 @@ interface FactureDecennaleTemplateProps {
 }
 
 export function FactureDecennaleTemplate({ numero, data }: FactureDecennaleTemplateProps) {
+  const lignes = presenterFactureDecennale(data)
   return (
     <div className="bg-white p-8 max-w-[210mm] mx-auto font-sans text-black print:p-0 text-sm">
       <DocumentBrandHeader tagline="Assurance décennale professionnelle" />
 
       <h2 className="text-xl font-semibold mb-2 text-center">FACTURE ACQUITTÉE</h2>
-      <p className="text-center text-[#171717] mb-6">Premier trimestre et frais de gestion</p>
+      <p className="text-center text-[#171717] mb-6">{lignes.libelleSousTitre}</p>
 
       <div className="flex justify-between mb-6">
         <div>
@@ -68,23 +70,21 @@ export function FactureDecennaleTemplate({ numero, data }: FactureDecennaleTempl
           <tbody>
             <tr className="border-t border-[#E5E0D8]">
               <td className="p-3">
-                <p className="font-medium">Assurance décennale — première échéance (carte bancaire)</p>
-                <p className="text-xs text-[#171717]">
-                  Échéances suivantes : prélèvements SEPA sur mandat
-                </p>
+                <p className="font-medium">{lignes.libelleEcheance}</p>
+                <p className="text-xs text-[#171717]">{lignes.libelleSuite}</p>
               </td>
               <td className="p-3 text-right font-medium">
-                {data.montantPremierTrimestre.toLocaleString("fr-FR")} €
+                {lignes.montantEcheance.toLocaleString("fr-FR")} €
               </td>
             </tr>
             <tr className="border-t border-[#E5E0D8]">
               <td className="p-3">Frais de gestion prélèvement</td>
-              <td className="p-3 text-right">{data.fraisGestion.toLocaleString("fr-FR")} €</td>
+              <td className="p-3 text-right">{lignes.fraisGestion.toLocaleString("fr-FR")} €</td>
             </tr>
             <tr className="border-t-2 border-[#2563eb] bg-[#eff6ff]">
               <td className="p-3 font-bold">Total réglé</td>
               <td className="p-3 text-right font-bold text-lg">
-                {data.montantTotalPaye.toLocaleString("fr-FR")} €
+                {lignes.montantTotalPaye.toLocaleString("fr-FR")} €
               </td>
             </tr>
           </tbody>
@@ -92,7 +92,7 @@ export function FactureDecennaleTemplate({ numero, data }: FactureDecennaleTempl
       </div>
 
       <p className="text-xs text-[#171717] mb-4">
-        Prime annuelle de référence : {data.primeAnnuelle.toLocaleString("fr-FR")} €
+        Prime annuelle de référence : {lignes.primeAnnuelle.toLocaleString("fr-FR")} €
       </p>
 
       <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl mb-6">

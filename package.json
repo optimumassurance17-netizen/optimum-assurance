@@ -48,6 +48,7 @@
     "test:parcours-abandonne": "tsx scripts/verify-parcours-decennale-abandon.ts",
     "test:paiement-mensuel": "tsx scripts/verify-paiement-mensuel.ts",
     "test:ads-robot": "tsx scripts/verify-ads-robot.ts",
+    "test:factures": "tsx scripts/verify-facture-montants.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "e2e:seed-admin": "node scripts/seed-e2e-admin.mjs",
