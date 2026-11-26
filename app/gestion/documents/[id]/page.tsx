@@ -198,13 +198,24 @@ export default function GestionDocumentPage() {
                 onError={(message) => setToast({ message, type: "error" })}
               />
             )}
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="text-sm text-[#2563eb] hover:text-[#1d4ed8]"
-            >
-              Imprimer / PDF
-            </button>
+            {document.type === "attestation" || document.type === "attestation_nominative" ? (
+              <a
+                href={`/api/documents/${document.id}/pdf?inline=1`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-[#2563eb] hover:text-[#1d4ed8]"
+              >
+                Imprimer / PDF
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="text-sm text-[#2563eb] hover:text-[#1d4ed8]"
+              >
+                Imprimer / PDF
+              </button>
+            )}
             <Link href="/gestion" className="text-gray-200 hover:text-white text-sm">Dashboard</Link>
           </div>
         </div>
@@ -216,8 +227,8 @@ export default function GestionDocumentPage() {
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden print:shadow-none text-black">
+      <div className="max-w-4xl mx-auto px-6 py-8 print:max-w-none print:px-0 print:py-0">
+        <div className="document-sheet bg-white rounded-2xl shadow-lg overflow-hidden print:rounded-none print:shadow-none print:overflow-visible text-black">
           {document.type === "devis" && (
             <DevisTemplate numero={document.numero} data={document.data as never} />
           )}

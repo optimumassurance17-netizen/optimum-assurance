@@ -7,7 +7,7 @@ export function DecennaleGarantiesTable({
 }) {
   const rows = decennaleGarantieRows(data)
   return (
-    <table className="w-full border-collapse border border-[#e5e5e5]">
+    <table className="garanties-table w-full border-collapse border border-[#e5e5e5]">
       <thead>
         <tr className="bg-[#dbeafe]">
           <th className="border border-[#e5e5e5] p-3 text-left text-base font-bold">Garanties</th>

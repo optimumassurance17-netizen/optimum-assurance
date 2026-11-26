@@ -154,6 +154,7 @@ export function FormulaireDevisDommageOuvrage() {
   const [siretError, setSiretError] = useState<string | null>(null)
   const [eligibleOnlineDo, setEligibleOnlineDo] = useState(false)
   const [trackingContext, setTrackingContext] = useState<ConversionTrackingContext | null>(null)
+  const [draftReady, setDraftReady] = useState(false)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -181,6 +182,7 @@ export function FormulaireDevisDommageOuvrage() {
     if (hasConversionTrackingContext(tracking)) {
       setTrackingContext(tracking)
     }
+    setDraftReady(true)
   }, [])
 
   const saveBrouillon = useCallback((
@@ -204,9 +206,9 @@ export function FormulaireDevisDommageOuvrage() {
   }, [])
 
   useEffect(() => {
-    if (submitted) return
+    if (!draftReady || submitted) return
     saveBrouillon(data, step, trackingContext)
-  }, [data, step, submitted, saveBrouillon, trackingContext])
+  }, [draftReady, data, step, submitted, saveBrouillon, trackingContext])
 
   const update = (key: keyof DevisDommageOuvrageData, value: unknown) => {
     setData((d) => ({ ...d, [key]: value }))

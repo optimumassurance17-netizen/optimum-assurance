@@ -118,7 +118,7 @@ export function AttestationTemplate({ numero, verificationUrl, data }: Attestati
         </a>
       </p>
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="print-keep mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-full border-2 border-[#1e40af] p-4 text-center">
           <p className="text-[10px] font-bold tracking-wide text-[#1e40af]">
             TAMPON ASSUREUR
