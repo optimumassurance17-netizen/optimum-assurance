@@ -33,6 +33,7 @@
     "typecheck": "tsc --noEmit",
     "test:pdf-contractual": "tsx scripts/verify-pdf-contractual-mentions.ts",
     "test:decennale-attestation-pdf": "tsx scripts/verify-decennale-certificate-layout.ts",
+    "test:document-print-pdf": "tsx scripts/verify-document-print-pdf.ts",
     "test:do-attestation": "tsx scripts/verify-do-attestation.ts",
     "test:seo-indexation": "tsx scripts/verify-seo-indexation.ts",
     "test:activity-fallback": "tsx scripts/verify-activity-hierarchy-fallback.ts",

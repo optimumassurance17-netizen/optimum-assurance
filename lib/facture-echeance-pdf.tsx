@@ -37,11 +37,11 @@ function FactureEcheancePDFPage({ data }: { data: FactureEcheancePdfData }) {
         </View>
         <View style={pdfTheme.row}>
           <Text style={pdfTheme.cellLeft}>Assurance décennale — {data.label}</Text>
-          <Text style={pdfTheme.cellRight}>{data.amount.toLocaleString("fr-FR")} €</Text>
+          <Text style={pdfTheme.cellRight}>{data.amount.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €</Text>
         </View>
         <View style={pdfTheme.rowLast}>
           <Text style={pdfTheme.cellLeft}>Total TTC à régler</Text>
-          <Text style={pdfTheme.cellRight}>{data.amount.toLocaleString("fr-FR")} €</Text>
+          <Text style={pdfTheme.cellRight}>{data.amount.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €</Text>
         </View>
       </View>
       <Text style={[pdfTheme.p, { marginTop: 12 }]}>

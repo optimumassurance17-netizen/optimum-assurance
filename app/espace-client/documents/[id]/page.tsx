@@ -130,10 +130,6 @@ export default function DocumentPage() {
     fetchDoc()
   }, [routeId, status, router])
 
-  const handlePrint = () => {
-    window.print()
-  }
-
   const parseDate = (str: string): Date | null => {
     if (!str || typeof str !== "string") return null
     const parts = str.trim().split(/[/\-.]/)
@@ -445,23 +441,14 @@ export default function DocumentPage() {
                 }}
               />
             ) : null}
-            {document.type === "attestation" || document.type === "attestation_nominative" ? (
-              <a
-                href={`/api/documents/${document.id}/pdf?inline=1`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-[#2563eb] text-white px-6 py-2 rounded-xl hover:bg-[#1d4ed8] font-medium inline-flex items-center"
-              >
-                {document.type === "attestation_nominative" ? "Télécharger PDF A4" : "Imprimer / PDF"}
-              </a>
-            ) : (
-              <button
-                onClick={handlePrint}
-                className="bg-[#2563eb] text-white px-6 py-2 rounded-xl hover:bg-[#1d4ed8] font-medium"
-              >
-                Imprimer / PDF
-              </button>
-            )}
+            <a
+              href={`/api/documents/${document.id}/pdf?inline=1`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#2563eb] text-white px-6 py-2 rounded-xl hover:bg-[#1d4ed8] font-medium inline-flex items-center"
+            >
+              {document.type === "attestation_nominative" ? "Télécharger PDF A4" : "Imprimer / PDF"}
+            </a>
           </div>
         </div>
 
