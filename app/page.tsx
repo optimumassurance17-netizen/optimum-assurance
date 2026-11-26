@@ -64,7 +64,6 @@ import {
   EXEMPLE_COMPARAISON_ANNUEL_OPTIMUM,
   EXEMPLE_COMPARAISON_ECONOMIE_ANNUELLE,
   PRIME_ANNUELLE_EXEMPLE_NETTOYAGE_TOITURE,
-  PRIME_TRIMESTRIELLE_EXEMPLE_NETTOYAGE_TOITURE,
   LEGENDE_PAIEMENT_TRIMESTRIEL,
   LEGENDE_PAIEMENT_TRIMESTRIEL_COURT,
   formatEurosFR,
@@ -536,8 +535,7 @@ export default function Home() {
               <p className="text-blue-600 font-semibold mb-4">
                 dès {formatEurosFR(EQ_MENSUEL_EXEMPLE_NETTOYAGE_TOITURE, { minFrac: 2, maxFrac: 2 })} €/mois{" "}
                 <span className="text-[#171717] font-normal text-sm block mt-1">
-                  ({formatEurosFR(PRIME_ANNUELLE_EXEMPLE_NETTOYAGE_TOITURE)} €/an, soit{" "}
-                  {formatEurosFR(PRIME_TRIMESTRIELLE_EXEMPLE_NETTOYAGE_TOITURE)} €/trimestre prélevé)
+                  ({formatEurosFR(PRIME_ANNUELLE_EXEMPLE_NETTOYAGE_TOITURE)} €/an, prélevé chaque mois)
                 </span>
               </p>
               <Link href="/devis" className="text-blue-600 font-medium hover:underline group-hover:underline">Mon devis →</Link>

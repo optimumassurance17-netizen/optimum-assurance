@@ -437,7 +437,7 @@ interface DashboardData {
     createdAt: string
     userId: string
     user: { id: string; email: string; raisonSociale: string | null } | null
-    signatureFlow: "custom_pdf" | "decennale"
+    signatureFlow: "custom_pdf" | "decennale" | "do_quote"
     signatureFlowLabel?: string
     ageHours?: number
     remindedAt?: string | null
@@ -725,7 +725,7 @@ export default function GestionPage() {
   const [docTypeFilter, setDocTypeFilter] = useState<string>("all")
   const [actionsFilter, setActionsFilter] = useState<"all" | "high" | "overdue72h">("all")
   const [signatureFlowFilter, setSignatureFlowFilter] = useState<
-    "all" | "custom_pdf" | "decennale" | "repair_eligible"
+    "all" | "custom_pdf" | "decennale" | "do_quote" | "repair_eligible"
   >("all")
   const [rcFabFilter, setRcFabFilter] = useState<"all" | "a_traiter" | "sla72h">("all")
   const [toast, setToast] = useState<{ message: string; type?: "success" | "warning" | "error" } | null>(null)
@@ -1703,7 +1703,8 @@ export default function GestionPage() {
     return data.pendingSignatures.filter((signature) => {
       if (!matchesPendingSignatureSearch(signature, searchQuery)) return false
       if (signatureFlowFilter === "custom_pdf") return signature.signatureFlow === "custom_pdf"
-      if (signatureFlowFilter === "decennale") return signature.signatureFlow !== "custom_pdf"
+      if (signatureFlowFilter === "decennale") return signature.signatureFlow === "decennale"
+      if (signatureFlowFilter === "do_quote") return signature.signatureFlow === "do_quote"
       if (signatureFlowFilter === "repair_eligible") {
         return signature.repairEligible === true && !isDisplayedQuoteExpired(signature.createdAt)
       }
@@ -4143,7 +4144,11 @@ export default function GestionPage() {
                             const age = hours < 24 ? `${hours} h` : `${Math.floor(hours / 24)} j`
                             const flowLabel =
                               row.signatureFlowLabel ||
-                              (row.signatureFlow === "custom_pdf" ? "PDF personnalisé" : "Décennale")
+                              (row.signatureFlow === "do_quote"
+                                ? "Dommage ouvrage"
+                                : row.signatureFlow === "custom_pdf"
+                                  ? "PDF personnalisé"
+                                  : "Décennale")
                             return (
                               <div
                                 key={row.signatureRequestId}
@@ -4898,6 +4903,17 @@ export default function GestionPage() {
                 }`}
               >
                 PDF perso
+              </button>
+              <button
+                type="button"
+                onClick={() => setSignatureFlowFilter("do_quote")}
+                className={`px-2.5 py-1 rounded border ${
+                  signatureFlowFilter === "do_quote"
+                    ? "bg-sky-900/40 border-sky-600 text-sky-100"
+                    : "bg-[#1f1f1f] border-gray-600 text-gray-200 hover:border-gray-500"
+                }`}
+              >
+                Dommage ouvrage
               </button>
               <button
                 type="button"

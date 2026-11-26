@@ -12,6 +12,8 @@ export type InsuranceContractListItem = {
   createdAt: string
   paidAt: string | null
   rejectedReason: string | null
+  /** Devis DO signé. Les autres produits restent payables sans cette étape. */
+  quoteSigned: boolean
 }
 
 /** Snapshot sessionStorage après création (parcours souscription / signature). */

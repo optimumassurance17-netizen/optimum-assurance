@@ -198,7 +198,7 @@ export default function SignaturePage() {
         </h1>
         <p className="text-[#171717] mb-8">
           {souscription.insuranceProduct === "do"
-            ? "Votre dossier dommage ouvrage se règle par un virement unique Mollie. S'il est déjà accepté, le virement s'ouvre depuis l'espace client. S'il est encore en étude, le même virement unique s'y ouvre après acceptation."
+            ? "Signez le devis dommage ouvrage, puis réglez par un virement unique Mollie depuis l'espace client une fois le dossier accepté."
             : "Signez électroniquement votre contrat d’assurance décennale sur notre page de signature sécurisée."}
         </p>
 
@@ -257,8 +257,8 @@ export default function SignaturePage() {
         {souscription.insuranceProduct === "do" ? (
           <div className="bg-[#ebe6e0] border border-[#d4d4d4] rounded-2xl p-6 mb-8">
             <p className="text-sm text-[#171717]">
-              Le dommage ouvrage se règle par un virement unique. L&apos;attestation est délivrée après
-              réception des fonds. Le suivi et le virement sont dans l&apos;espace client.
+              Signez d&apos;abord le devis. Le virement unique et l&apos;attestation, après réception des
+              fonds, sont dans l&apos;espace client.
             </p>
           </div>
         ) : null}
@@ -276,7 +276,7 @@ export default function SignaturePage() {
         <div className="bg-[#ebe6e0] border border-[#d4d4d4] rounded-2xl p-6 mb-8 mt-6">
           <p className="text-sm text-[#171717] mb-4">
             {souscription.insuranceProduct === "do"
-              ? "Ouvrez l'espace client pour lancer le virement unique, ou le retrouver dès que le dossier est accepté."
+              ? "Ouvrez l'espace client pour signer le devis. Le virement unique s'y fait après cette signature, une fois le dossier accepté."
               : "Vous serez redirigé vers la page de signature pour apposer votre signature sur le PDF. Poursuivez ensuite vers le mandat SEPA et le paiement."}
           </p>
           <button

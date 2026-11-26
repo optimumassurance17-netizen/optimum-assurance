@@ -12,6 +12,10 @@ import {
 import { insuranceContractPayLockKeys } from "@/lib/insurance-contract-pay-lock"
 import { getMolliePublicBaseUrl } from "@/lib/mollie-public-base-url"
 import { getInsuranceProductLabel } from "@/lib/insurance-product"
+import {
+  DO_QUOTE_SIGNATURE_REQUIRED_ERROR,
+  doQuotePaymentAllowed,
+} from "@/lib/do-quote-signature-rules"
 
 /** Statuts Mollie pour lesquels le client peut encore utiliser le même paiement. */
 const MOLLIE_REUSABLE_STATUSES = new Set(["open", "pending", "authorized"])
@@ -66,6 +70,9 @@ export async function POST(request: NextRequest) {
 
     if (!contractPreview) {
       return NextResponse.json({ error: "Contrat introuvable ou non payable" }, { status: 404 })
+    }
+    if (!doQuotePaymentAllowed(contractPreview.productType, contractPreview.signedQuoteStorageKey)) {
+      return NextResponse.json({ error: DO_QUOTE_SIGNATURE_REQUIRED_ERROR }, { status: 409 })
     }
 
     const amount = mollieExpectedAmountForInsuranceContract(

@@ -43,11 +43,7 @@ async function tryMollieRedirectIfApproved(contractId: string): Promise<
 }
 
 function shouldRedirectApprovedToMollieContractPay(snapshot: InsuranceContractSnapshot): boolean {
-  return (
-    snapshot.productType === "do" ||
-    snapshot.productType === "rc_fabriquant" ||
-    snapshot.productType === "assurance_titre"
-  )
+  return snapshot.productType === "rc_fabriquant" || snapshot.productType === "assurance_titre"
 }
 
 async function resumeInsuranceContractFlowFromSnapshot(
@@ -109,7 +105,7 @@ export type CreateInsuranceFromSouscriptionOk = {
 }
 
 export type CreateInsuranceFromSouscriptionResult =
-  | { ok: true; contract: CreateInsuranceFromSouscriptionOk }
+  | { ok: true; contract: CreateInsuranceFromSouscriptionOk; signatureLink?: string | null }
   | { ok: false; error: string }
 
 export async function createInsuranceContractFromDoPayload(
@@ -152,6 +148,7 @@ export async function createInsuranceContractFromDoPayload(
 
   const json = (await res.json().catch(() => ({}))) as {
     error?: string
+    signatureLink?: string | null
     contract?: {
       id: string
       contractNumber: string
@@ -172,6 +169,7 @@ export async function createInsuranceContractFromDoPayload(
   const c = json.contract
   return {
     ok: true,
+    signatureLink: typeof json.signatureLink === "string" ? json.signatureLink : null,
     contract: {
       contractId: c.id,
       contractNumber: c.contractNumber,
@@ -299,12 +297,13 @@ export function persistInsuranceContractSnapshot(payload: {
 /**
  * Après souscription : crée le contrat Prisma.
  * Décennale approuvée : toujours suite « signature → mandat SEPA → /paiement (échéancier + 1er mois CB) » — pas de POST /contracts/pay ici.
- * DO approuvé : redirection Mollie virement contrat plateforme (inchangé).
+ * DO : signature du devis émis, puis virement unique depuis l'espace client une fois le dossier accepté.
  */
 export async function runInsuranceContractStepAfterSouscription(
   data: SouscriptionData | DoSouscriptionInsurancePayload
 ): Promise<
   | { outcome: "mollie_redirect"; checkoutUrl: string }
+  | { outcome: "signature_redirect"; signatureLink: string }
   | { outcome: "continue_flow"; error?: string }
 > {
   if (typeof sessionStorage !== "undefined") {
@@ -347,8 +346,8 @@ export async function runInsuranceContractStepAfterSouscription(
     return { outcome: "continue_flow" }
   }
 
-  if (status === CONTRACT_STATUS.approved && productType === "do") {
-    return tryMollieRedirectIfApproved(contractId)
+  if (productType === "do" && created.signatureLink) {
+    return { outcome: "signature_redirect", signatureLink: created.signatureLink }
   }
 
   return { outcome: "continue_flow" }

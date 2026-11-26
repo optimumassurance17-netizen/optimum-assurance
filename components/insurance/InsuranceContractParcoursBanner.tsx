@@ -63,7 +63,7 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
         <div className="mb-8 p-5 rounded-2xl border border-teal-200 bg-teal-50 text-left">
           <p className="font-semibold text-teal-950 mb-1">RC Fabriquant — cotisation trimestrielle</p>
           <p className="text-sm text-teal-900/90 mb-4">
-            Comme la décennale, la cotisation est pensée <strong>par trimestre</strong>. Le montant affiché sur le contrat est celui de
+            La cotisation est <strong>trimestrielle</strong>. Le montant affiché sur le contrat est celui de
             l&apos;échéance en cours : paiement par <strong>virement Mollie</strong> depuis le bouton ci-dessous. Les prochaines
             échéances et relances sont <strong>pilotées manuellement</strong> par la gestion (ajustement du montant, emails, suivi).
           </p>
@@ -93,12 +93,13 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
     return (
       <div className="mb-8 p-5 rounded-2xl border border-[#2563eb]/40 bg-[#eff6ff] text-left">
         <p className="font-semibold text-[#0a0a0a] mb-1">
-          {isDoPlatform ? "Paiement du contrat (virement unique)" : "Paiement du contrat (virement)"}
+          {isDoPlatform ? "Devis à signer, puis virement unique" : "Paiement du contrat (virement)"}
         </p>
         <p className="text-sm text-[#171717] mb-4">
           {isDoPlatform ? (
             <>
-              {DO_DOSSIER_VALIDE_MESSAGE} Le virement unique se lance depuis le bouton ci-dessous.
+              Signez le devis depuis l&apos;espace client. {DO_DOSSIER_VALIDE_MESSAGE} Le virement unique
+              s&apos;ouvre après cette signature, une fois le dossier accepté.
             </>
           ) : (
             <>
@@ -107,16 +108,19 @@ export function InsuranceContractParcoursBanner({ snapshot, souscriptionProduct 
             </>
           )}
         </p>
-        <PayInsuranceContractButton
-          contractId={contractId}
-          label={
-            isDoPlatform
-              ? "Payer par virement unique"
-              : isTitlePlatform
-                ? "Payer le dossier — virement Mollie"
-                : undefined
-          }
-        />
+        {isDoPlatform ? (
+          <a
+            href="/espace-client?suite=do"
+            className="inline-flex items-center justify-center rounded-xl bg-[#2563eb] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#1d4ed8]"
+          >
+            Signer le devis dans l&apos;espace client
+          </a>
+        ) : (
+          <PayInsuranceContractButton
+            contractId={contractId}
+            label={isTitlePlatform ? "Payer le dossier — virement Mollie" : undefined}
+          />
+        )}
       </div>
     )
   }

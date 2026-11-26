@@ -41,7 +41,7 @@ interface DocumentItem {
 type PendingSignatureItem = {
   signatureRequestId: string
   contractNumero: string
-  signatureFlow: "decennale" | "custom_pdf"
+  signatureFlow: "decennale" | "custom_pdf" | "do_quote"
   signatureFlowLabel?: string
   createdAt: string
   signatureLink: string
@@ -635,9 +635,9 @@ export default function EspaceClientPage() {
             <p className="font-semibold mb-1">Dommage ouvrage — suite du dossier</p>
             {suiteDo && hasOpenDoContract ? (
               <p className="text-sm text-[#171717] mb-3">
-                Votre souscription est enregistrée. Le règlement est un virement unique. S&apos;il est déjà
-                accepté, le bouton est dans la liste des contrats. S&apos;il est en étude, le même virement
-                unique apparaîtra ici après acceptation.
+                Votre souscription est enregistrée. Signez le devis, puis réglez par un virement unique
+                une fois le dossier accepté. Le bouton de virement apparaît dans la liste des contrats
+                après la signature.
               </p>
             ) : null}
             {!hasOpenDoContract &&
@@ -649,8 +649,8 @@ export default function EspaceClientPage() {
             ) : !hasOpenDoContract && (suiteDo || doEtudeBanner.canContinueOnline) ? (
               <p className="text-sm text-[#171717] mb-3">
                 {suiteDo
-                  ? "Le contrat n'a pas été ouvert. Reprenez la souscription pour lancer le virement unique du montant indiqué."
-                  : "Prochaine étape : finaliser la souscription pour ouvrir le virement unique du montant indiqué."}
+                  ? "Le contrat n'a pas été ouvert. Reprenez la souscription : le devis se signe ensuite, avant le virement unique."
+                  : "Prochaine étape : finaliser la souscription. Le devis se signe ensuite, avant le virement unique."}
               </p>
             ) : (
               <p className="text-sm text-[#171717] mb-3">
@@ -861,7 +861,9 @@ export default function EspaceClientPage() {
                         Continuer mandat SEPA + paiement CB
                       </Link>
                     )}
-                    {((c.status === CONTRACT_STATUS.approved && c.productType !== "decennale") ||
+                    {((c.status === CONTRACT_STATUS.approved &&
+                      c.productType !== "decennale" &&
+                      (c.productType !== "do" || c.quoteSigned)) ||
                       (c.status === CONTRACT_STATUS.active &&
                         insuranceProductAllowsActiveInstallmentPayments(c.productType))) && (
                       <PayInsuranceContractButton
@@ -878,6 +880,28 @@ export default function EspaceClientPage() {
                       />
                     )}
                     {c.productType === "do" &&
+                    !c.quoteSigned &&
+                    (c.status === CONTRACT_STATUS.pending_validation ||
+                      c.status === CONTRACT_STATUS.approved) ? (
+                      <div className="max-w-sm text-left sm:text-right">
+                        <p className="text-xs leading-relaxed text-[#171717]">
+                          Signez le devis avant le virement unique.
+                        </p>
+                        {pendingSignatures
+                          .filter((item) => item.contractNumero === c.contractNumber)
+                          .map((item) => (
+                            <a
+                              key={item.signatureRequestId}
+                              href={item.signatureLink}
+                              className="mt-2 inline-flex items-center justify-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+                            >
+                              Signer le devis
+                            </a>
+                          ))}
+                      </div>
+                    ) : null}
+                    {c.productType === "do" &&
+                    c.quoteSigned &&
                     (c.status === CONTRACT_STATUS.approved || c.status === CONTRACT_STATUS.active) ? (
                       <p className="max-w-sm text-xs leading-relaxed text-[#171717]">{DO_DOSSIER_VALIDE_MESSAGE}</p>
                     ) : null}
@@ -892,7 +916,7 @@ export default function EspaceClientPage() {
                     {c.status === CONTRACT_STATUS.pending_validation && (
                       <span className="inline-block rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-blue-900">
                         {c.productType === "do"
-                          ? "En étude — virement unique après acceptation"
+                          ? "En étude — signature du devis, puis virement unique après acceptation"
                           : "En examen assureur"}
                       </span>
                     )}
@@ -1375,9 +1399,12 @@ export default function EspaceClientPage() {
                   >
                     <div>
                       <p className="text-sm font-semibold text-[#0a0a0a]">
-                        {item.signatureFlow === "custom_pdf"
-                          ? item.signatureFlowLabel || "Dossier personnalisé"
-                          : "Contrat décennale"}
+                        {item.signatureFlowLabel ||
+                          (item.signatureFlow === "do_quote"
+                            ? "Devis dommage ouvrage"
+                            : item.signatureFlow === "custom_pdf"
+                              ? "Dossier personnalisé"
+                              : "Contrat décennale")}
                       </p>
                       <p className="text-xs text-[#171717]">
                         Référence {item.contractNumero} · créé le{" "}

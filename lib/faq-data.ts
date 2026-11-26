@@ -17,10 +17,10 @@ export const faqs = [
   { q: "Quels sont les frais pour un avenant ?", r: "Les avenants de modification sont soumis à des frais de 60 € uniques. Ces frais sont automatiquement reportés sur la prochaine échéance de prélèvement SEPA." },
   { q: "Comment déclarer un sinistre ?", r: "Contactez-nous par email ou via l'assistant en ligne (bouton en bas à droite) dès que possible. Nos experts vous accompagnent pour constituer votre dossier et accélérer le traitement. Prévenez votre assureur dans les 5 jours après réception de l'avis du maître d'ouvrage.", id: "sinistre" },
   { q: "Qu'est-ce que la reprise du passé ?", r: "La reprise du passé permet de couvrir rétroactivement vos ouvrages des 3 derniers mois, sous réserve de non sinistralité. Elle n'est disponible que si vous n'avez déclaré aucun sinistre sur les 5 dernières années. Une majoration de 40 % s'applique sur ces 3 mois." },
-  { q: "Comment fonctionne le devis dommage ouvrage ?", r: "Après l'envoi du formulaire, poursuivez la souscription en ligne avec le même email (le lien est aussi dans l'email d'estimation). Le règlement est un virement unique Mollie du montant indiqué. L'attestation est délivrée après réception des fonds." },
+  { q: "Comment fonctionne le devis dommage ouvrage ?", r: "Après l'envoi du formulaire, poursuivez la souscription en ligne avec le même email (le lien est aussi dans l'email d'estimation). Signez ensuite le devis émis. Le règlement est un virement unique Mollie du montant indiqué, une fois le dossier accepté. L'attestation est délivrée après réception des fonds." },
   {
     q: "Quel est le parcours dommage ouvrage (DO) ?",
-    r: "1) Vous remplissez le formulaire sur la page Devis dommage ouvrage (5 étapes : souscripteur, opération, ouvrage et coûts, terrain et technique, garanties). 2) Vous poursuivez la souscription en ligne avec le même email. 3) Vous réglez par un virement unique Mollie du montant indiqué. 4) Vous pouvez déposer les pièces dans la GED et compléter le questionnaire d'étude. 5) L'attestation est disponible après réception du virement.",
+    r: "1) Vous remplissez le formulaire sur la page Devis dommage ouvrage (5 étapes : souscripteur, opération, ouvrage et coûts, terrain et technique, garanties). 2) Vous poursuivez la souscription en ligne avec le même email. 3) Vous signez électroniquement le devis émis. 4) Vous réglez par un virement unique Mollie du montant indiqué, une fois le dossier accepté. 5) Vous pouvez déposer les pièces dans la GED et compléter le questionnaire d'étude. 6) L'attestation est disponible après réception du virement.",
     id: "parcours-do",
   },
   {
@@ -35,12 +35,12 @@ export const faqs = [
   },
   {
     q: "Le mandat SEPA apparaît à quel moment ?",
-    r: "Pour la décennale, c'est normal qu'il ne soit pas visible avant : le mandat SEPA est finalisé après le premier paiement carte bancaire validé (statut paid côté Mollie). Ensuite, les prélèvements mensuels suivants utilisent ce mandat.",
+    r: "Pour la décennale, le mandat SEPA se signe après la signature du contrat et avant le premier paiement par carte. Vous renseignez l'IBAN, puis vous réglez le premier mois et les frais par carte. Les prélèvements mensuels suivants utilisent ce mandat.",
     id: "parcours-sepa",
   },
   {
     q: "J'ai payé le 1er mois, mais je ne vois pas encore le SEPA : que faire ?",
-    r: "Vérifiez d'abord que le paiement carte est bien confirmé. Le mandat SEPA est créé juste après via le webhook de paiement. Si l'information n'apparaît pas dans un délai raisonnable, contactez le support avec l'email du compte et l'identifiant de paiement Mollie (tr_xxx) pour vérification immédiate.",
+    r: "Le mandat se prépare sur la page Mandat SEPA, après la signature du contrat et avant le paiement du premier mois. Si la page ne s'ouvre pas, reconnectez-vous : l'espace client ramène à l'étape en cours. Si le blocage continue, contactez le support avec l'email du compte.",
     id: "parcours-sepa-blocage",
   },
   // FAQ parcours souscription

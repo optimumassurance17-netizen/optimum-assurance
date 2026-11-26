@@ -14,16 +14,11 @@ import {
   readContractObject,
 } from "@/lib/esign/local-signature-fallback"
 import { renderPendingDecennalePdf } from "@/lib/esign/render-pending-decennale-pdf"
+import { LocalSignatureError } from "@/lib/esign/local-signature-error"
+import { completeDoQuoteSignature } from "@/lib/esign/complete-do-quote-signature"
+import { isDoQuoteSignatureData } from "@/lib/do-quote-signature-rules"
 
-export class LocalSignatureError extends Error {
-  status: number
-
-  constructor(message: string, status: number) {
-    super(message)
-    this.name = "LocalSignatureError"
-    this.status = status
-  }
-}
+export { LocalSignatureError } from "@/lib/esign/local-signature-error"
 
 type LocalSignatureInput = {
   pending: PendingSignature
@@ -36,6 +31,9 @@ type LocalSignatureInput = {
 /** Signe le PDF stocké dans le dossier, puis crée le contrat sans Supabase. */
 export async function completeLocalSignature(input: LocalSignatureInput) {
   const raw = readContractObject(input.pending.contractData)
+  if (isDoQuoteSignatureData(raw)) {
+    return completeDoQuoteSignature(input)
+  }
   if (raw && isLocalCustomPdfContract(raw)) {
     return completeLocalCustomPdfSignature(input)
   }

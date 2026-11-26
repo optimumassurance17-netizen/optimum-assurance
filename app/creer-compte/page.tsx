@@ -84,6 +84,10 @@ export default function CreerComptePage() {
     const ins = await runInsuranceContractStepAfterSouscription(
       isDoSouscriptionPayload(payload) ? payload : (payload as SouscriptionData)
     )
+    if (ins.outcome === "signature_redirect") {
+      window.location.href = ins.signatureLink
+      return
+    }
     if (ins.outcome === "mollie_redirect") {
       window.location.href = ins.checkoutUrl
       return

@@ -10,6 +10,9 @@ export function signaturePageNotice(nextPath: string | undefined): string {
   if (isInternalPath(nextPath, "/mandat-sepa")) {
     return `${INTRO} Après validation, le parcours continue vers le mandat SEPA.`
   }
+  if (nextPath?.includes("suite=do")) {
+    return `${INTRO} Après validation, le virement unique se fait depuis l'espace client, une fois le dossier accepté.`
+  }
   if (isInternalPath(nextPath, "/espace-client")) {
     return `${INTRO} Après validation, vous retrouvez votre espace client.`
   }

@@ -9,6 +9,7 @@ import { sendOperationsAlert } from "@/lib/operations-alert"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { isReminderUnsubscribed } from "@/lib/reminder-unsubscribe"
 import { getInsuranceProductLabelLower } from "@/lib/insurance-product"
+import { doQuotePaymentAllowed } from "@/lib/do-quote-signature-rules"
 
 const LOOKBACK_DAYS = 14
 const CLIENT_REMINDER_AFTER_HOURS = 24
@@ -105,6 +106,9 @@ export async function GET(request: NextRequest) {
 
       if (contract.paidAt || contract.lifecyclePayments.some((payment) => (payment.status || "").toLowerCase() === "paid")) {
         skippedAlreadyPaid++
+        continue
+      }
+      if (!doQuotePaymentAllowed(contract.productType, contract.signedQuoteStorageKey)) {
         continue
       }
 
