@@ -56,7 +56,6 @@ export const pdfTheme = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e2e8f0",
     borderRadius: 4,
-    overflow: "hidden",
     backgroundColor: "#f8fafc",
   },
   tableHeader: {

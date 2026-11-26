@@ -11,7 +11,7 @@ const whatsappUrl = buildWhatsAppRedirectPath({
 
 export function Footer() {
   return (
-    <footer className="border-t border-slate-200/90 bg-white px-4 py-10 sm:px-6 md:px-8 sm:py-12">
+    <footer className="border-t border-slate-200/90 bg-white px-4 py-10 sm:px-6 md:px-8 sm:py-12 print:hidden">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-center md:text-left">
           <DelegationLegalLine size="xs" className="md:text-center" />

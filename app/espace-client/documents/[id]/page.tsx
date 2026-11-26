@@ -375,14 +375,16 @@ export default function DocumentPage() {
         <Header />
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <Breadcrumb
-          items={[
-            { label: "Accueil", href: "/" },
-            { label: "Espace client", href: "/espace-client" },
-            { label: document?.numero || "Document" },
-          ]}
-        />
+      <div className="max-w-4xl mx-auto px-6 py-8 print:max-w-none print:px-0 print:py-0">
+        <div className="print:hidden">
+          <Breadcrumb
+            items={[
+              { label: "Accueil", href: "/" },
+              { label: "Espace client", href: "/espace-client" },
+              { label: document?.numero || "Document" },
+            ]}
+          />
+        </div>
         {document.type === "devis_do" && !quoteExpired && (
           <div className="mb-6 print:hidden space-y-3">
             <p className="text-sm text-[#333333]">
@@ -594,7 +596,7 @@ export default function DocumentPage() {
           </section>
         )}
 
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden print:shadow-none">
+        <div className="document-sheet bg-white rounded-2xl shadow-lg overflow-hidden print:rounded-none print:shadow-none print:overflow-visible">
           {document.type === "devis" && (
             <DevisTemplate numero={document.numero} data={document.data as never} />
           )}
@@ -656,11 +658,13 @@ export default function DocumentPage() {
       </div>
 
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
+        <div className="print:hidden">
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        </div>
       )}
     </main>
   )

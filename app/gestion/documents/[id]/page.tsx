@@ -216,8 +216,8 @@ export default function GestionDocumentPage() {
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden print:shadow-none text-black">
+      <div className="max-w-4xl mx-auto px-6 py-8 print:max-w-none print:px-0 print:py-0">
+        <div className="document-sheet bg-white rounded-2xl shadow-lg overflow-hidden print:rounded-none print:shadow-none print:overflow-visible text-black">
           {document.type === "devis" && (
             <DevisTemplate numero={document.numero} data={document.data as never} />
           )}

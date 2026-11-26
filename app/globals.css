@@ -149,10 +149,66 @@ body:has(.gestion-app) select option {
 }
 
 @media print {
-  body {
-    background: white !important;
+  @page {
+    size: A4;
+    margin: 12mm;
   }
+
+  html,
+  body,
+  main {
+    background: #fff !important;
+    color: #000 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  #main-content {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
   .print\:hidden {
     display: none !important;
+  }
+
+  /* Chrome coupe l'attestation à la première page si un parent a overflow:hidden. */
+  .document-sheet,
+  .document-sheet * {
+    overflow: visible !important;
+    box-shadow: none !important;
+    max-height: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .document-sheet {
+    border-radius: 0 !important;
+  }
+
+  .document-sheet .garanties-table {
+    width: 100% !important;
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+
+  .document-sheet .garanties-table th,
+  .document-sheet .garanties-table td {
+    padding: 5px 6px !important;
+  }
+
+  .document-sheet .garanties-table th,
+  .document-sheet .garanties-table td:nth-child(1),
+  .document-sheet .garanties-table td:nth-child(3),
+  .document-sheet .garanties-table td:nth-child(4) {
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+  }
+
+  .document-sheet tr,
+  .document-sheet .print-keep {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

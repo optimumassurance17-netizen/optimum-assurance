@@ -115,7 +115,7 @@ export default function RootLayout({
           {`(function(){document.documentElement.classList.remove("dark");try{localStorage.removeItem("theme");}catch(e){}})();`}
         </Script>
         <ForceLightTheme />
-        <a href="#main-content" className="skip-link">Aller au contenu principal</a>
+        <a href="#main-content" className="skip-link print:hidden">Aller au contenu principal</a>
         <SessionProvider>
           <div id="main-content" tabIndex={-1}>
             {children}

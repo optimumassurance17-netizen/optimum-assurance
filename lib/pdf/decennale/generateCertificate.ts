@@ -8,7 +8,8 @@ import { finalizeWithFooters } from "../shared/finalizePdf"
 import { drawOptimumHeader } from "../shared/drawHeader"
 import { ANTI_FRAUD_LINE, ATTESTATION_WARNING, PDF_COLORS, PDF_PAGE } from "../shared/pdfLayout"
 import { drawAttestationQrRow, embedVerificationQr } from "../shared/qrCode"
-import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt } from "../shared/pdfUtils"
+import { sanitizeForPdfLib } from "../shared/sanitizePdfText"
+import { drawTextPdf, drawWrappedText, formatEuro, formatGeneratedAt, wrapLines } from "../shared/pdfUtils"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { DECENNALE_SOUS_TRAITANCE_ATTESTATION, decennaleCadreCompletLines } from "@/lib/conditions-particulieres"
@@ -107,6 +108,31 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
   y = drawWrappedText(page, data.address, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, font, 10, 13)
   y -= 16
 
+  /** Hauteur du bloc tampon, du titre jusqu'au-dessus du pied de page. */
+  const SIGNATURE_BLOCK_HEIGHT = 90
+  const continueAttestation = (subtitle: string) => {
+    page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
+    y = drawOptimumHeader(page, font, fontBold, "ATTESTATION — suite", subtitle, accelerantLogo)
+  }
+  const drawFlow = (
+    text: string,
+    usedFont: typeof font,
+    size: number,
+    lineHeight: number,
+    color = PDF_COLORS.text,
+    subtitle = "Suite",
+    x = PDF_PAGE.marginX,
+    maxWidth = PDF_PAGE.contentWidth
+  ) => {
+    const lines = wrapLines(sanitizeForPdfLib(text), maxWidth, usedFont, size)
+    for (const line of lines) {
+      if (y < PDF_PAGE.marginBottom + lineHeight) continueAttestation(subtitle)
+      drawTextPdf(page, line, { x, y, size, font: usedFont, color, maxWidth })
+      y -= lineHeight
+    }
+  }
+
+  if (y < PDF_PAGE.marginBottom + 48) continueAttestation("Activités")
   drawTextPdf(page, "Couverture : RC décennale", {
     x: PDF_PAGE.marginX,
     y,
@@ -115,6 +141,7 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     color: PDF_COLORS.text,
   })
   y -= 14
+  if (y < PDF_PAGE.marginBottom + 28) continueAttestation("Activités")
   drawTextPdf(page, "Activités assurées :", {
     x: PDF_PAGE.marginX,
     y,
@@ -124,69 +151,35 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
   })
   y -= 14
   for (const activity of activityLines) {
-    y = drawWrappedText(
-      page,
-      `• ${activity}`,
-      PDF_PAGE.marginX,
-      y,
-      PDF_PAGE.contentWidth,
-      font,
-      10,
-      13
-    )
+    drawFlow(`• ${activity}`, font, 10, 13, PDF_COLORS.text, "Activités")
     y -= 4
   }
   y -= 6
-  y = drawWrappedText(
-    page,
-    DECENNALE_SOUS_TRAITANCE_ATTESTATION,
-    PDF_PAGE.marginX,
-    y,
-    PDF_PAGE.contentWidth,
-    fontBold,
-    10,
-    13
-  )
+  drawFlow(DECENNALE_SOUS_TRAITANCE_ATTESTATION, fontBold, 10, 13, PDF_COLORS.text, "Activités")
   y -= 10
   if (optimizedExclusions.length > 0) {
-    y = drawWrappedText(
-      page,
+    drawFlow(
       `Ne sont pas couverts : ${optimizedExclusions.join(" ; ")}.`,
-      PDF_PAGE.marginX,
-      y,
-      PDF_PAGE.contentWidth,
       font,
       10,
-      13
+      13,
+      PDF_COLORS.text,
+      "Activités"
     )
     y -= 14
   }
-  y = drawWrappedText(
-    page,
+  drawFlow(
     `Période de validité : du ${data.startDate} au ${data.endDate}.`,
-    PDF_PAGE.marginX,
-    y,
-    PDF_PAGE.contentWidth,
     font,
     10,
-    13
+    13,
+    PDF_COLORS.text,
+    "Activités"
   )
   y -= 12
-  y = drawWrappedText(
-    page,
-    `Prime annuelle TTC : ${formatEuro(data.premium)}.`,
-    PDF_PAGE.marginX,
-    y,
-    PDF_PAGE.contentWidth,
-    font,
-    10,
-    13
-  )
+  drawFlow(`Prime annuelle TTC : ${formatEuro(data.premium)}.`, font, 10, 13, PDF_COLORS.text, "Activités")
   y -= 14
-  if (y < PDF_PAGE.marginBottom + 120) {
-    page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
-    y = drawOptimumHeader(page, font, fontBold, "ATTESTATION — suite", "Garanties", accelerantLogo)
-  }
+  if (y < PDF_PAGE.marginBottom + 140) continueAttestation("Garanties")
   drawTextPdf(page, "Garanties, montants et franchise", {
     x: PDF_PAGE.marginX,
     y,
@@ -196,30 +189,16 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
   })
   y -= 18
   for (const row of decennaleGarantieRows({})) {
-    if (y < PDF_PAGE.marginBottom + 70) {
-      page = pdfDoc.addPage([PDF_PAGE.width, PDF_PAGE.height])
-      y = drawOptimumHeader(page, font, fontBold, "ATTESTATION — suite", "Garanties", accelerantLogo)
-    }
-    y = drawWrappedText(
-      page,
+    if (y < PDF_PAGE.marginBottom + 80) continueAttestation("Garanties")
+    drawFlow(
       `${row.nom} — plafond ${row.plafond} — franchise ${row.franchise}`,
-      PDF_PAGE.marginX,
-      y,
-      PDF_PAGE.contentWidth,
       fontBold,
       13,
-      16
+      16,
+      PDF_COLORS.text,
+      "Garanties"
     )
-    y = drawWrappedText(
-      page,
-      row.description,
-      PDF_PAGE.marginX,
-      y,
-      PDF_PAGE.contentWidth,
-      font,
-      10,
-      13
-    )
+    drawFlow(row.description, font, 10, 13, PDF_COLORS.text, "Garanties")
     y -= 8
   }
   {
@@ -238,6 +217,9 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
   }
   y -= 10
 
+  const closingHeight = 14 + 36 + 12 + 36 + 10 + 24 + 12 + SIGNATURE_BLOCK_HEIGHT
+  if (y < PDF_PAGE.marginBottom + closingHeight) continueAttestation("Conditions d'effet")
+
   drawTextPdf(page, "Conditions d'effet", {
     x: PDF_PAGE.marginX,
     y,
@@ -246,25 +228,24 @@ export async function generateDecennaleCertificate(data: InsuranceCertificateDat
     color: PDF_COLORS.text,
   })
   y -= 14
-  y = drawWrappedText(
-    page,
+  drawFlow(
     certificateActive
       ? "Paiement reçu — risque accepté par l’assureur — pièces conformes."
       : "Paiement non reçu ou validation non finalisée — document non actif.",
-    PDF_PAGE.marginX,
-    y,
-    PDF_PAGE.contentWidth,
     font,
     9,
-    12
+    12,
+    PDF_COLORS.text,
+    "Conditions d'effet"
   )
   y -= 12
-  y = drawWrappedText(page, ANTI_FRAUD_LINE, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, fontBold, 9, 12, PDF_COLORS.primary)
+  drawFlow(ANTI_FRAUD_LINE, fontBold, 9, 12, PDF_COLORS.primary, "Conditions d'effet")
   y -= 10
-  y = drawWrappedText(page, ATTESTATION_WARNING, PDF_PAGE.marginX, y, PDF_PAGE.contentWidth, fontBold, 9, 12)
-  y -= 16
+  drawFlow(ATTESTATION_WARNING, fontBold, 9, 12, PDF_COLORS.text, "Conditions d'effet")
+  y -= 12
 
-  const signatureTopY = Math.max(y + 26, 152)
+  if (y < PDF_PAGE.marginBottom + SIGNATURE_BLOCK_HEIGHT) continueAttestation("Signature")
+  const signatureTopY = y
   const signatureX = PDF_PAGE.width - PDF_PAGE.marginX - 180
   drawTextPdf(page, "Signature autorisée", {
     x: signatureX,

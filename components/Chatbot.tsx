@@ -90,8 +90,8 @@ export default function Chatbot() {
         onClick={() => setOpen((o) => !o)}
         className={
           stickyDevisBarVisible
-            ? "fixed z-[110] flex items-center gap-2 bg-[#2563eb] text-white px-4 py-3 rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 bottom-[max(9.25rem,calc(env(safe-area-inset-bottom)+7.75rem))] md:bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-[max(1.5rem,env(safe-area-inset-right))]"
-            : "fixed z-[110] flex items-center gap-2 bg-[#2563eb] text-white px-4 py-3 rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-[max(1.5rem,env(safe-area-inset-right))]"
+            ? "print:hidden fixed z-[110] flex items-center gap-2 bg-[#2563eb] text-white px-4 py-3 rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 bottom-[max(9.25rem,calc(env(safe-area-inset-bottom)+7.75rem))] md:bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-[max(1.5rem,env(safe-area-inset-right))]"
+            : "print:hidden fixed z-[110] flex items-center gap-2 bg-[#2563eb] text-white px-4 py-3 rounded-full shadow-lg hover:bg-[#1d4ed8] transition-all hover:scale-105 bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-[max(1.5rem,env(safe-area-inset-right))]"
         }
         aria-label={open ? "Fermer le chat" : "Ouvrir l'assistant"}
       >
@@ -115,8 +115,8 @@ export default function Chatbot() {
         <div
           className={
             stickyDevisBarVisible
-              ? "fixed z-[110] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-96 sm:max-w-none max-h-[min(70vh,100dvh-8rem)] flex flex-col bg-white rounded-2xl shadow-2xl border border-[#e5e5e5] overflow-hidden max-md:bottom-[max(13.5rem,calc(env(safe-area-inset-bottom)+11.25rem))] md:bottom-24 right-[max(1rem,env(safe-area-inset-right))] sm:right-6"
-              : "fixed z-[110] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-96 sm:max-w-none max-h-[min(70vh,100dvh-8rem)] flex flex-col bg-white rounded-2xl shadow-2xl border border-[#e5e5e5] overflow-hidden bottom-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] right-[max(1rem,env(safe-area-inset-right))] sm:bottom-24 sm:right-6"
+              ? "print:hidden fixed z-[110] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-96 sm:max-w-none max-h-[min(70vh,100dvh-8rem)] flex flex-col bg-white rounded-2xl shadow-2xl border border-[#e5e5e5] overflow-hidden max-md:bottom-[max(13.5rem,calc(env(safe-area-inset-bottom)+11.25rem))] md:bottom-24 right-[max(1rem,env(safe-area-inset-right))] sm:right-6"
+              : "print:hidden fixed z-[110] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-96 sm:max-w-none max-h-[min(70vh,100dvh-8rem)] flex flex-col bg-white rounded-2xl shadow-2xl border border-[#e5e5e5] overflow-hidden bottom-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] right-[max(1rem,env(safe-area-inset-right))] sm:bottom-24 sm:right-6"
           }
           role="dialog"
           aria-label="Chat assistant Optimum Assurance"
