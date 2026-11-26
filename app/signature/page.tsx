@@ -189,7 +189,10 @@ export default function SignaturePage() {
                 ]
           }
         />
-        <Stepper currentStep="signature" />
+        <Stepper
+          parcours={souscription.insuranceProduct === "do" ? "do" : "decennale"}
+          currentStep={souscription.insuranceProduct === "do" ? "virement" : "signature"}
+        />
         <h1 className="text-3xl font-semibold mb-2 text-black">
           {souscription.insuranceProduct === "do" ? "Prochaine étape" : "Signature numérique"}
         </h1>

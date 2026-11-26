@@ -202,7 +202,7 @@ export default function SouscriptionDommageOuvragePage() {
             { label: "Souscription" },
           ]}
         />
-        <Stepper currentStep="souscription" />
+        <Stepper parcours="do" currentStep="souscription" />
         <h1 className="text-3xl font-semibold mb-2 text-black">Souscription dommage ouvrage</h1>
         <p className="text-[#171717] mb-8">
           Le règlement est un virement unique Mollie du montant indiqué. Après validation, la page de virement

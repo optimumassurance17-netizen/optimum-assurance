@@ -204,7 +204,7 @@ export default function CreerComptePage() {
       <Header />
 
       <div className="max-w-2xl mx-auto px-6 py-12">
-        <Stepper currentStep="compte" />
+        <Stepper parcours={data && isDoSouscriptionPayload(data) ? "do" : "decennale"} currentStep="compte" />
         <h1 className="text-3xl font-semibold mb-2 text-black">
           Votre espace client
         </h1>
