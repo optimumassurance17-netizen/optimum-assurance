@@ -445,12 +445,14 @@ export default function DocumentPage() {
                 }}
               />
             ) : null}
-            {document.type === "attestation_nominative" ? (
+            {document.type === "attestation" || document.type === "attestation_nominative" ? (
               <a
-                href={`/api/documents/${document.id}/pdf`}
+                href={`/api/documents/${document.id}/pdf?inline=1`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-[#2563eb] text-white px-6 py-2 rounded-xl hover:bg-[#1d4ed8] font-medium inline-flex items-center"
               >
-                Télécharger PDF A4
+                {document.type === "attestation_nominative" ? "Télécharger PDF A4" : "Imprimer / PDF"}
               </a>
             ) : (
               <button

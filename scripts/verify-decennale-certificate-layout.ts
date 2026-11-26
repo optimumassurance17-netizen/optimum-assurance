@@ -4,6 +4,9 @@
  */
 import assert from "node:assert/strict"
 import { createRequire } from "node:module"
+import React from "react"
+import { renderToBuffer } from "@react-pdf/renderer"
+import { DocumentsCombinedPDF } from "@/components/pdf/DocumentsCombinedPDF"
 import { generateDecennaleCertificate } from "@/lib/pdf/decennale/generateCertificate"
 import { PDF_PAGE } from "@/lib/pdf/shared/pdfLayout"
 import type { InsuranceCertificateData } from "@/lib/pdf/types"
@@ -97,6 +100,36 @@ async function main() {
   const longPdf = await generateDecennaleCertificate(sample(longActivities))
   assertLayout(await readItems(shortPdf), shortActivities)
   assertLayout(await readItems(longPdf), longActivities)
+
+  const clientPdf = await renderToBuffer(
+    React.createElement(DocumentsCombinedPDF, {
+      documents: [
+        {
+          id: "doc-attest",
+          type: "attestation",
+          numero: "ATT-CLIENT-1",
+          data: {
+            raisonSociale: "Entreprise Impression Test",
+            siret: "12345678901234",
+            adresse: "10 rue de Test",
+            codePostal: "75001",
+            ville: "Paris",
+            activites: ["Maçonnerie générale"],
+            primeAnnuelle: 2400,
+            dateEffet: "01/01/2026",
+            dateEcheance: "31/12/2026",
+          },
+        },
+      ],
+    }) as Parameters<typeof renderToBuffer>[0]
+  )
+  const clientText = (await readItems(new Uint8Array(clientPdf))).map((item) => item.str).join(" ")
+  assert.match(clientText, /ATTESTATION/)
+  assert.match(clientText, /Entreprise Impression Test/)
+  assert.match(clientText, /Maçonnerie générale/)
+  assert.match(clientText, /TAMPON ASSUREUR/)
+  assert.doesNotMatch(clientText, /Métiers décennale|Imprimer \/ PDF|Espace client/)
+
   console.log("verify-decennale-certificate-layout: ok")
 }
 

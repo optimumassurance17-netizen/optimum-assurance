@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { renderToBuffer } from "@react-pdf/renderer"
 import React from "react"
+import { isAdmin } from "@/lib/admin"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { DocumentsCombinedPDF } from "@/components/pdf/DocumentsCombinedPDF"
@@ -18,7 +19,7 @@ import { SITE_URL } from "@/lib/site-url"
 const QR_ENABLED_TYPES = new Set(["attestation", "attestation_nominative", "attestation_do"])
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -33,9 +34,9 @@ export async function GET(
     }
 
     const document = await prisma.document.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id },
     })
-    if (!document) {
+    if (!document || (document.userId !== session.user.id && !isAdmin(session))) {
       return NextResponse.json({ error: "Document introuvable" }, { status: 404 })
     }
 
@@ -71,13 +72,14 @@ export async function GET(
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- renderToBuffer attend un Document react-pdf
     const pdfBuffer = await renderToBuffer(pdfElement as any)
-    const filename = `${document.numero}.pdf`
+    const filename = `${document.numero.replace(/[^A-Za-z0-9._-]/g, "") || "document"}.pdf`
+    const inline = new URL(request.url).searchParams.get("inline") === "1"
 
     return new NextResponse(Buffer.from(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}"`,
         "Cache-Control": "no-store",
       },
     })
