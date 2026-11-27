@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 
 import { buildDoSouscriptionInsurancePayload } from "../lib/build-do-souscription-payload"
+import { calculerTarifDommageOuvrage } from "../lib/tarification-dommage-ouvrage"
 import { buildDoOperationLines } from "../lib/do-operation-lines"
 import { applyPendingDoQuoteCorrection, describePendingDoQuote } from "../lib/do-quote-pending"
 import {
@@ -106,7 +107,8 @@ const payload = buildDoSouscriptionInsurancePayload(
 )
 assert.deepEqual(payload?.lotsCouverts, ["Terrassement", "Gros œuvre"])
 assert.equal(payload?.operationClosCouvert, true)
-assert.equal(payload?.premium, 3040)
+assert.equal(payload?.premium, calculerTarifDommageOuvrage(180000)?.primeAnnuelle)
+assert.equal(payload?.premium, 2128)
 const sansLots = buildDoSouscriptionInsurancePayload(
   {
     qualiteMaitreOuvrage: "particulier_habitation",
