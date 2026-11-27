@@ -9,6 +9,8 @@ import { generateDOQuotePolicyBundle } from "@/lib/pdf/do/generateQuotePolicyBun
 import { CONTRACT_STATUS } from "@/lib/insurance-contract-status"
 import type { InsuranceCertificateData, InsuranceData } from "@/lib/pdf/types"
 import { invoiceSettlementCopy } from "@/lib/contract-client-documents"
+import { factureDecennaleLignes } from "@/lib/facture-montants"
+import { FRAIS_GESTION_PRELEVEMENT } from "@/lib/types"
 import { LEGAL_DELEGATION_MANDATORY, ORIAS_NUMBER } from "@/lib/legal-branding"
 import { SITE_URL } from "@/lib/site-url"
 import { parseActivitiesJson, parseExclusionsJson } from "@/lib/insurance-contract-activities"
@@ -133,26 +135,57 @@ async function generateSimpleInvoicePdf(c: InsuranceContract): Promise<Uint8Arra
   y -= 14
   const decennalePeriodicite =
     c.productType === "decennale" ? await periodiciteSepaDecennale(c.userId) : null
-  const montantFactureTtc =
+  const lignesDecennale =
     decennalePeriodicite != null
-      ? primeEcheanceDecennale(c.premium, decennalePeriodicite)
-      : c.premium
-  page.drawText(sanitizeForPdfLib(`Montant TTC : ${formatEuro(montantFactureTtc)}`), { x: 50, y, size: 11, font: bold })
-  y -= 16
-  if (decennalePeriodicite) {
-    const rythme = decennalePeriodicite === "mensuel" ? "mensuelle" : "trimestrielle"
+      ? factureDecennaleLignes({
+          primeAnnuelle: c.premium,
+          fraisGestion: FRAIS_GESTION_PRELEVEMENT,
+          montantPaye:
+            primeEcheanceDecennale(c.premium, decennalePeriodicite) + FRAIS_GESTION_PRELEVEMENT,
+          periodicite: decennalePeriodicite,
+        })
+      : null
+  if (lignesDecennale) {
+    page.drawText(sanitizeForPdfLib(`${lignesDecennale.libelleEcheance} : ${formatEuro(lignesDecennale.montantEcheance)}`), {
+      x: 50,
+      y,
+      size: 10,
+      font,
+      maxWidth: 500,
+    })
+    y -= 16
+    page.drawText(sanitizeForPdfLib(`Frais de gestion prélèvement : ${formatEuro(lignesDecennale.fraisGestion)}`), {
+      x: 50,
+      y,
+      size: 10,
+      font,
+    })
+    y -= 16
+    page.drawText(sanitizeForPdfLib(`Total TTC réglé : ${formatEuro(lignesDecennale.montantTotalPaye)}`), {
+      x: 50,
+      y,
+      size: 11,
+      font: bold,
+    })
+    y -= 16
     page.drawText(
       sanitizeForPdfLib(
-        `(Échéance ${rythme} — prime annuelle de référence ${formatEuro(c.premium)} TTC)`
+        `${lignesDecennale.libelleSuite}. Prime annuelle de référence ${formatEuro(c.premium)} TTC.`
       ),
       { x: 50, y, size: 9, font, maxWidth: 500 }
     )
     y -= 22
   } else {
-    y -= 4
+    page.drawText(sanitizeForPdfLib(`Montant TTC : ${formatEuro(c.premium)}`), { x: 50, y, size: 11, font: bold })
+    y -= 20
   }
   y -= 14
-  const settlement = invoiceSettlementCopy(c.productType)
+  const settlement = lignesDecennale
+    ? {
+        method: "Carte bancaire (Mollie), puis prélèvement SEPA",
+        note: lignesDecennale.libelleSuite,
+      }
+    : invoiceSettlementCopy(c.productType)
   page.drawText(sanitizeForPdfLib(`Moyen de paiement : ${settlement.method}`), {
     x: 50,
     y,

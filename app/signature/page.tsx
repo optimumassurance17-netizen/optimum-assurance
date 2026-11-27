@@ -242,7 +242,7 @@ export default function SignaturePage() {
                     ? ` · ${souscription.tarif.primeAnnuelle.toLocaleString("fr-FR")} €/an`
                     : ""}
                   )
-                  {` — prélèvement ${souscription.tarif?.primeTrimestrielle ?? (souscription.tarif?.primeAnnuelle ? Math.round((souscription.tarif.primeAnnuelle / 4) * 100) / 100 : "—")} €/trimestre`}
+                  {` — prélèvement ${souscription.tarif?.primeMensuelle ?? (souscription.tarif?.primeAnnuelle ? Math.round((souscription.tarif.primeAnnuelle / 12) * 100) / 100 : "—")} €/mois`}
                 </>
               )}
             </li>

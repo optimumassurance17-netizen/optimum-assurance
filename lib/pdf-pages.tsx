@@ -13,6 +13,7 @@ import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
 import { DECENNALE_SOUS_TRAITANCE_ATTESTATION, decennaleCadreCompletLines, doCadreCompletLines, doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
 import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
 import { libelleLotsCouverts, normaliserLotsCouverts } from "@/lib/do-options-lots"
+import { factureDoLignes, presenterFactureDecennale } from "@/lib/facture-montants"
 
 function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
   const rows = decennaleGarantieRows(data)
@@ -467,9 +468,12 @@ export function FactureDecennalePDFPage({
     primeAnnuelle?: number
     fraisGestion?: number
     montantPremierTrimestre?: number
+    montantEcheance?: number
     montantTotalPaye?: number
+    periodicite?: string | null
     datePaiement?: string
   }
+  const lignes = presenterFactureDecennale(d)
   const cpPages = chunkLinesByLength(decennaleCadreCompletLines(), 1400)
   return (
     <>
@@ -492,26 +496,21 @@ export function FactureDecennalePDFPage({
           <Text style={pdfTheme.tableHeaderText}>Désignation</Text>
         </View>
         <View style={pdfTheme.row}>
-          <Text style={pdfTheme.cellLeft}>
-            Assurance décennale — première échéance (règlement par carte bancaire), prélèvements suivants sur
-            mandat SEPA
-          </Text>
-          <Text style={pdfTheme.cellRight}>{(d.montantPremierTrimestre ?? 0).toLocaleString("fr-FR")} €</Text>
+          <Text style={pdfTheme.cellLeft}>{lignes.libelleEcheance}</Text>
+          <Text style={pdfTheme.cellRight}>{lignes.montantEcheance.toLocaleString("fr-FR")} €</Text>
         </View>
         <View style={pdfTheme.row}>
           <Text style={pdfTheme.cellLeft}>Frais de gestion prélèvement</Text>
-          <Text style={pdfTheme.cellRight}>{(d.fraisGestion ?? 0).toLocaleString("fr-FR")} €</Text>
+          <Text style={pdfTheme.cellRight}>{lignes.fraisGestion.toLocaleString("fr-FR")} €</Text>
         </View>
         <View style={pdfTheme.rowLast}>
           <Text style={pdfTheme.cellLeft}>Total TTC réglé</Text>
-          <Text style={pdfTheme.cellRight}>
-            {(d.montantTotalPaye ?? 0).toLocaleString("fr-FR")} €
-          </Text>
+          <Text style={pdfTheme.cellRight}>{lignes.montantTotalPaye.toLocaleString("fr-FR")} €</Text>
         </View>
       </View>
       <Text style={[pdfTheme.p, { marginTop: 10, fontSize: 8, color: "#64748b" }]}>
-        Prime annuelle de référence : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € (échéances suivantes selon
-        mandat). Les garanties, la franchise et les plafonds sont ceux des conditions particulières du contrat.
+        {lignes.libelleSuite}. Prime annuelle de référence : {lignes.primeAnnuelle.toLocaleString("fr-FR")} €. Les
+        garanties, la franchise et les plafonds sont ceux des conditions particulières du contrat.
       </Text>
       <Text style={[pdfTheme.legalText, { marginTop: 16 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
@@ -544,10 +543,18 @@ export function FactureDoPDFPage({
     ville?: string
     closCouvert?: boolean
     primeAnnuelle?: number
+    fraisGestion?: number
+    fraisCourtage?: number
     totalTTC?: number
     datePaiement?: string
   }
   const typeGarantie = d.closCouvert ? "Clos et couvert" : "DO complète"
+  const lignes = factureDoLignes({
+    primeAnnuelle: d.primeAnnuelle ?? 0,
+    fraisGestion: d.fraisGestion,
+    fraisCourtage: d.fraisCourtage,
+    montantPaye: d.totalTTC,
+  })
   const cpPages = chunkLinesByLength(doConditionsParticulieresLines(), 1400)
   return (
     <>
@@ -569,11 +576,23 @@ export function FactureDoPDFPage({
         </View>
         <View style={pdfTheme.row}>
           <Text style={pdfTheme.cellLeft}>Assurance DO — {typeGarantie}</Text>
-          <Text style={pdfTheme.cellRight}>{(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} €</Text>
+          <Text style={pdfTheme.cellRight}>{lignes.prime.toLocaleString("fr-FR")} €</Text>
         </View>
+        {lignes.fraisGestion > 0 ? (
+          <View style={pdfTheme.row}>
+            <Text style={pdfTheme.cellLeft}>Frais de gestion</Text>
+            <Text style={pdfTheme.cellRight}>{lignes.fraisGestion.toLocaleString("fr-FR")} €</Text>
+          </View>
+        ) : null}
+        {lignes.fraisCourtage > 0 ? (
+          <View style={pdfTheme.row}>
+            <Text style={pdfTheme.cellLeft}>Frais de courtage</Text>
+            <Text style={pdfTheme.cellRight}>{lignes.fraisCourtage.toLocaleString("fr-FR")} €</Text>
+          </View>
+        ) : null}
         <View style={pdfTheme.rowLast}>
           <Text style={pdfTheme.cellLeft}>Total TTC</Text>
-          <Text style={pdfTheme.cellRight}>{(d.totalTTC ?? d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} €</Text>
+          <Text style={pdfTheme.cellRight}>{lignes.total.toLocaleString("fr-FR")} €</Text>
         </View>
       </View>
       <Text style={[pdfTheme.p, { marginTop: 10, fontSize: 8, color: "#64748b" }]}>

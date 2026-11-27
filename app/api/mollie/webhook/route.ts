@@ -22,6 +22,7 @@ import { sendEcheancePaidReceipt } from "@/lib/echeance-receipt"
 import { findStoredCardLinkForPayment, settleStoredCardLink } from "@/lib/gestion-card-link"
 import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
 import { normaliserLotsCouverts } from "@/lib/do-options-lots"
+import { factureDecennaleLignes, factureDoLignes } from "@/lib/facture-montants"
 
 function generateVerificationToken(): string {
   return randomBytes(16).toString("hex")
@@ -197,7 +198,13 @@ export async function POST(request: NextRequest) {
             const lotsCouverts = normaliserLotsCouverts(devisData.lotsCouverts)
             const fraisGestion = devisData.fraisGestion ?? 0
             const fraisCourtage = devisData.fraisCourtage ?? 0
-            const totalTTC = primeAnnuelle + fraisGestion + fraisCourtage
+            const montantPaye = payment.amount?.value ? parseFloat(payment.amount.value) : 0
+            const lignesDo = factureDoLignes({
+              primeAnnuelle,
+              fraisGestion,
+              fraisCourtage,
+              montantPaye,
+            })
             const attestationFacts = readDoDocumentAttestation(devisData as unknown as Record<string, unknown>)
 
             const attestationData = {
@@ -235,10 +242,10 @@ export async function POST(request: NextRequest) {
               typeConstruction: devisData.typeConstruction,
               destination: devisData.destination,
               closCouvert: devisData.closCouvert ?? false,
-              primeAnnuelle,
-              fraisGestion,
-              fraisCourtage,
-              totalTTC,
+              primeAnnuelle: lignesDo.prime,
+              fraisGestion: lignesDo.fraisGestion,
+              fraisCourtage: lignesDo.fraisCourtage,
+              totalTTC: lignesDo.total,
               datePaiement: dateSignature,
               numeroDevis: doc.numero,
             }
@@ -336,10 +343,12 @@ export async function POST(request: NextRequest) {
           const amount = payment.amount?.value ? parseFloat(payment.amount.value) : 0
           const primeAnnuelle = parseFloat(metadata.primeAnnuelle || "0") || 0
           const fraisGestion = parseFloat(metadata.fraisGestion || "60") || 0
-          const montantPremierTrimestre =
-            metadata.periodicite === "mensuel"
-              ? Math.round((primeAnnuelle / 12) * 100) / 100
-              : Math.round((primeAnnuelle / 4) * 100) / 100
+          const lignesDec = factureDecennaleLignes({
+            primeAnnuelle,
+            fraisGestion,
+            montantPaye: amount,
+            periodicite: metadata.periodicite,
+          })
           const datePaiement = new Date().toLocaleDateString("fr-FR")
           const factureDataDec = {
             raisonSociale: metadata.raisonSociale || user.raisonSociale || user.email,
@@ -348,10 +357,15 @@ export async function POST(request: NextRequest) {
             adresse: user.adresse ?? undefined,
             codePostal: user.codePostal ?? undefined,
             ville: user.ville ?? undefined,
-            primeAnnuelle,
-            fraisGestion,
-            montantPremierTrimestre,
-            montantTotalPaye: amount,
+            primeAnnuelle: lignesDec.primeAnnuelle,
+            fraisGestion: lignesDec.fraisGestion,
+            montantPremierTrimestre: lignesDec.montantEcheance,
+            montantEcheance: lignesDec.montantEcheance,
+            montantTotalPaye: lignesDec.montantTotalPaye,
+            periodicite: lignesDec.periodicite,
+            libelleEcheance: lignesDec.libelleEcheance,
+            libelleSuite: lignesDec.libelleSuite,
+            libelleSousTitre: lignesDec.libelleSousTitre,
             datePaiement,
           }
           const numeroFactureDec = await getNextNumero("facture_decennale")

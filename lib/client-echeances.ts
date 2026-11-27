@@ -405,7 +405,7 @@ export function decennaleInstallmentReminder(
   if (row.paid || !(row.amount > 0)) return { send: false, reason: "paid" }
   return {
     send: true,
-    label: row.label.trim() || "échéance trimestrielle",
+    label: row.label.trim() || "échéance",
     amount: row.amount,
   }
 }
