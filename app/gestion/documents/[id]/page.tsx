@@ -198,24 +198,14 @@ export default function GestionDocumentPage() {
                 onError={(message) => setToast({ message, type: "error" })}
               />
             )}
-            {document.type === "attestation" || document.type === "attestation_nominative" ? (
-              <a
-                href={`/api/documents/${document.id}/pdf?inline=1`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-[#2563eb] hover:text-[#1d4ed8]"
-              >
-                Imprimer / PDF
-              </a>
-            ) : (
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="text-sm text-[#2563eb] hover:text-[#1d4ed8]"
-              >
-                Imprimer / PDF
-              </button>
-            )}
+            <a
+              href={`/api/documents/${document.id}/pdf?inline=1`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-[#2563eb] hover:text-[#1d4ed8]"
+            >
+              Imprimer / PDF
+            </a>
             <Link href="/gestion" className="text-gray-200 hover:text-white text-sm">Dashboard</Link>
           </div>
         </div>

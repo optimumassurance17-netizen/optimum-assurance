@@ -47,11 +47,13 @@ export async function GET(
       return NextResponse.json({ error: "Document invalide (JSON illisible)" }, { status: 422 })
     }
 
+    const inline = new URL(request.url).searchParams.get("inline") === "1"
+
     if (document.type === "contrat") {
       const signedBytes = decodeStoredPdfBase64(data[LOCAL_SIGNED_PDF_KEY], MAX_LOCAL_SIGNED_PDF_BYTES)
       if (signedBytes) {
         const safeNumero = document.numero.replace(/[^A-Za-z0-9._-]/g, "") || "contrat"
-        return pdfBytesResponse(signedBytes, `${safeNumero}.pdf`, "attachment")
+        return pdfBytesResponse(signedBytes, `${safeNumero}.pdf`, inline ? "inline" : "attachment")
       }
     }
 
@@ -73,7 +75,6 @@ export async function GET(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- renderToBuffer attend un Document react-pdf
     const pdfBuffer = await renderToBuffer(pdfElement as any)
     const filename = `${document.numero.replace(/[^A-Za-z0-9._-]/g, "") || "document"}.pdf`
-    const inline = new URL(request.url).searchParams.get("inline") === "1"
 
     return new NextResponse(Buffer.from(pdfBuffer), {
       status: 200,

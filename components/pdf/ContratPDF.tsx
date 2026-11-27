@@ -81,7 +81,7 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
             </View>
             <View style={pdfTheme.row}>
               <Text style={pdfTheme.cellLeft}>Prime annuelle</Text>
-              <Text style={pdfTheme.cellRight}>{(data.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+              <Text style={pdfTheme.cellRight}>{(data.primeAnnuelle ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} € TTC</Text>
             </View>
             {data.modePaiement === "prelevement" && (
               <>
@@ -109,7 +109,7 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
                         (data.primeAnnuelle != null ? Math.round((data.primeAnnuelle / 4) * 100) / 100 : 0))
                       : (data.primeMensuelle ??
                         (data.primeAnnuelle != null ? Math.round((data.primeAnnuelle / 12) * 100) / 100 : 0))
-                    ).toLocaleString("fr-FR")}{" "}
+                    ).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")}{" "}
                     €
                   </Text>
                 </View>
@@ -117,11 +117,11 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
             )}
             <View style={pdfTheme.row}>
               <Text style={pdfTheme.cellLeft}>Franchise</Text>
-              <Text style={pdfTheme.cellRight}>{(data.franchise ?? 0).toLocaleString("fr-FR")} €</Text>
+              <Text style={pdfTheme.cellRight}>{(data.franchise ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €</Text>
             </View>
             <View style={pdfTheme.rowLast}>
               <Text style={pdfTheme.cellLeft}>Plafond de garantie</Text>
-              <Text style={pdfTheme.cellRight}>{(data.plafond ?? 0).toLocaleString("fr-FR")} €</Text>
+              <Text style={pdfTheme.cellRight}>{(data.plafond ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €</Text>
             </View>
           </View>
         </View>
@@ -129,7 +129,7 @@ export function ContratPDF({ numero, data }: ContratPDFProps) {
         <View style={pdfTheme.section}>
           <Text style={pdfTheme.h3}>Article 5 - Déclaration</Text>
           <Text style={pdfTheme.p}>
-            Chiffre d&apos;affaires annuel déclaré : {data.chiffreAffaires?.toLocaleString("fr-FR")} €
+            Chiffre d&apos;affaires annuel déclaré : {data.chiffreAffaires?.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €
           </Text>
         </View>
 

@@ -23,7 +23,7 @@ const PENTE_LABELS: Record<NonNullable<DevisDommageOuvrageData["penteTerrain"]>,
 }
 
 function euro(amount: number): string {
-  return `${amount.toLocaleString("fr-FR")} EUR`
+  return `${amount.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} EUR`
 }
 
 function add(lines: string[], label: string, value: string | null | undefined) {

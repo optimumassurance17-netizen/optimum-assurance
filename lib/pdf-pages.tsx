@@ -10,9 +10,15 @@ import { extractStructuredActivities } from "@/lib/activity-hierarchy-format"
 import { extractOptimizedExclusionLines } from "@/lib/optimized-exclusions"
 import { decennaleGarantieRows } from "@/lib/decennale-garanties-affichage"
 import { DO_GARANTIES_LEGALES } from "@/lib/nomenclature-activites"
-import { DECENNALE_SOUS_TRAITANCE_ATTESTATION, decennaleCadreCompletLines, doCadreCompletLines, doConditionsParticulieresLines } from "@/lib/conditions-particulieres"
+import { DECENNALE_SOUS_TRAITANCE_ATTESTATION, decennaleCadreCompletLines, doCadreCompletLines, doConditionsParticulieresLines, DO_QUOTE_VALIDITY_DAYS } from "@/lib/conditions-particulieres"
+import { QUOTE_VALIDITY_DAYS } from "@/lib/quote-validity"
 import { readDoDocumentAttestation } from "@/lib/do-attestation-facts"
 import { libelleLotsCouverts, normaliserLotsCouverts } from "@/lib/do-options-lots"
+
+/** Espace insécable français : la police PDF standard l'affiche comme un slash. */
+function pdfTexte(value: string): string {
+  return value.replace(/[\u202f\u00a0]/g, " ")
+}
 
 function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
   const rows = decennaleGarantieRows(data)
@@ -31,9 +37,9 @@ function DecennaleGarantiesPdf({ data }: { data: Record<string, unknown> }) {
               <Text style={{ fontSize: 13, fontFamily: "Helvetica-Bold", color: "#0f172a" }}>{row.nom}</Text>
               <Text style={{ fontSize: 9, color: "#475569", marginTop: 2 }}>{row.description}</Text>
             </View>
-            <Text style={{ width: "22%", fontSize: 12, textAlign: "right", fontFamily: "Helvetica-Bold", color: "#0f172a" }}>{row.plafond}</Text>
+            <Text style={{ width: "22%", fontSize: 12, textAlign: "right", fontFamily: "Helvetica-Bold", color: "#0f172a" }}>{pdfTexte(row.plafond)}</Text>
             <Text style={{ width: "18%", fontSize: 12, textAlign: "right", fontFamily: "Helvetica-Bold", color: "#0f172a" }}>
-              {row.franchise}
+              {pdfTexte(row.franchise)}
             </Text>
           </View>
         ))}
@@ -183,15 +189,15 @@ export function ContratPDFPage({
           </View>
           <View style={pdfTheme.row}>
             <Text style={pdfTheme.cellLeft}>Prime annuelle</Text>
-            <Text style={pdfTheme.cellRight}>{(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+            <Text style={pdfTheme.cellRight}>{(d.primeAnnuelle ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} € TTC</Text>
           </View>
           <View style={pdfTheme.row}>
             <Text style={pdfTheme.cellLeft}>Franchise</Text>
-            <Text style={pdfTheme.cellRight}>{(d.franchise ?? 0).toLocaleString("fr-FR")} €</Text>
+            <Text style={pdfTheme.cellRight}>{(d.franchise ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €</Text>
           </View>
           <View style={pdfTheme.rowLast}>
             <Text style={pdfTheme.cellLeft}>Plafond</Text>
-            <Text style={pdfTheme.cellRight}>{(d.plafond ?? 0).toLocaleString("fr-FR")} €</Text>
+            <Text style={pdfTheme.cellRight}>{(d.plafond ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €</Text>
           </View>
         </View>
         <DecennaleGarantiesPdf data={data} />
@@ -260,7 +266,7 @@ export function AttestationPDFPage({
         <Text style={pdfTheme.p}>
           Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}
         </Text>
-        <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+        <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} € TTC</Text>
         <DecennaleGarantiesPdf data={data} />
       </View>
       <View style={{ flexDirection: "row", marginTop: 14 }}>
@@ -347,7 +353,7 @@ export function AttestationNominativePDFPage({
         <Text style={pdfTheme.p}>
           Période : du {d.dateEffet ?? "—"} au {d.dateEcheance ?? "—"}
         </Text>
-        <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+        <Text style={pdfTheme.p}>Prime annuelle : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} € TTC</Text>
         <DecennaleGarantiesPdf data={data} />
       </View>
 
@@ -394,7 +400,7 @@ export function AttestationDoPDFPage({
   const lotsCouverts = normaliserLotsCouverts(d.lotsCouverts)
   const facts = readDoDocumentAttestation(data)
   const guaranteeLabel =
-    facts.guaranteeAmount != null ? `${facts.guaranteeAmount.toLocaleString("fr-FR")} €` : "Non renseigné"
+    facts.guaranteeAmount != null ? `${facts.guaranteeAmount.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €` : "Non renseigné"
   const cpPages = chunkLinesByLength(doCadreCompletLines(), 1400)
   return (
     <>
@@ -429,7 +435,7 @@ export function AttestationDoPDFPage({
         {lotsCouverts.length > 0 ? (
           <Text style={pdfTheme.p}>Lots couverts : {libelleLotsCouverts(lotsCouverts)}</Text>
         ) : null}
-        <Text style={pdfTheme.p}>Prime : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € TTC</Text>
+        <Text style={pdfTheme.p}>Prime : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} € TTC</Text>
         <DoGarantiesPdf />
       </View>
       <Text style={[pdfTheme.legalText, { marginTop: 14 }]}>{pdfLegalLinksLine()}</Text>
@@ -496,21 +502,21 @@ export function FactureDecennalePDFPage({
             Assurance décennale — première échéance (règlement par carte bancaire), prélèvements suivants sur
             mandat SEPA
           </Text>
-          <Text style={pdfTheme.cellRight}>{(d.montantPremierTrimestre ?? 0).toLocaleString("fr-FR")} €</Text>
+          <Text style={pdfTheme.cellRight}>{(d.montantPremierTrimestre ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €</Text>
         </View>
         <View style={pdfTheme.row}>
           <Text style={pdfTheme.cellLeft}>Frais de gestion prélèvement</Text>
-          <Text style={pdfTheme.cellRight}>{(d.fraisGestion ?? 0).toLocaleString("fr-FR")} €</Text>
+          <Text style={pdfTheme.cellRight}>{(d.fraisGestion ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €</Text>
         </View>
         <View style={pdfTheme.rowLast}>
           <Text style={pdfTheme.cellLeft}>Total TTC réglé</Text>
           <Text style={pdfTheme.cellRight}>
-            {(d.montantTotalPaye ?? 0).toLocaleString("fr-FR")} €
+            {(d.montantTotalPaye ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €
           </Text>
         </View>
       </View>
       <Text style={[pdfTheme.p, { marginTop: 10, fontSize: 8, color: "#64748b" }]}>
-        Prime annuelle de référence : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} € (échéances suivantes selon
+        Prime annuelle de référence : {(d.primeAnnuelle ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} € (échéances suivantes selon
         mandat). Les garanties, la franchise et les plafonds sont ceux des conditions particulières du contrat.
       </Text>
       <Text style={[pdfTheme.legalText, { marginTop: 16 }]}>{pdfLegalLinksLine()}</Text>
@@ -569,11 +575,11 @@ export function FactureDoPDFPage({
         </View>
         <View style={pdfTheme.row}>
           <Text style={pdfTheme.cellLeft}>Assurance DO — {typeGarantie}</Text>
-          <Text style={pdfTheme.cellRight}>{(d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} €</Text>
+          <Text style={pdfTheme.cellRight}>{(d.primeAnnuelle ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €</Text>
         </View>
         <View style={pdfTheme.rowLast}>
           <Text style={pdfTheme.cellLeft}>Total TTC</Text>
-          <Text style={pdfTheme.cellRight}>{(d.totalTTC ?? d.primeAnnuelle ?? 0).toLocaleString("fr-FR")} €</Text>
+          <Text style={pdfTheme.cellRight}>{(d.totalTTC ?? d.primeAnnuelle ?? 0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €</Text>
         </View>
       </View>
       <Text style={[pdfTheme.p, { marginTop: 10, fontSize: 8, color: "#64748b" }]}>
@@ -647,7 +653,7 @@ export function AttestationNonSinistralitePDFPage({
   )
 }
 
-/** Page générique pour devis, avenant, devis_do sans template PDF dédié */
+/** PDF imprimable pour devis, devis dommage ouvrage et avenant. */
 export function DocumentResumePDFPage({
   type,
   numero,
@@ -662,8 +668,42 @@ export function DocumentResumePDFPage({
     devis_do: "Devis dommage ouvrage",
     avenant: "Avenant",
   }
-  const d = data as { raisonSociale?: string; primeAnnuelle?: number; dateEffet?: string }
+  const d = data as {
+    raisonSociale?: string
+    siret?: string
+    adresse?: string
+    codePostal?: string
+    ville?: string
+    email?: string
+    telephone?: string
+    primeAnnuelle?: number
+    primeMensuelle?: number
+    franchise?: number
+    plafond?: number
+    chiffreAffaires?: number
+    dateEffet?: string
+    dateEcheance?: string
+    dateCreation?: string
+    contractNumero?: string
+    motifAvenant?: string
+    dateAvenant?: string
+    adresseOperation?: string
+  }
   const label = labels[type] || type
+  const activities = extractStructuredActivities(d)
+  const address = [d.adresse, d.codePostal, d.ville].filter(Boolean).join(" ")
+  const doFacts = type === "devis_do" ? readDoDocumentAttestation(data) : null
+  const lots = type === "devis_do" ? normaliserLotsCouverts(data.lotsCouverts) : []
+  const avenantLines: string[] = []
+  if (type === "avenant") {
+    if (typeof d.chiffreAffaires === "number") {
+      avenantLines.push(`Chiffre d'affaires : ${d.chiffreAffaires.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €`)
+      avenantLines.push(
+        `Plafond de la responsabilité civile décennale : ${(d.chiffreAffaires * 2).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} € par sinistre`
+      )
+    }
+    if (activities.length > 0) avenantLines.push(`Activités : ${activities.join(", ")}`)
+  }
   const regime =
     type === "devis_do"
       ? doCadreCompletLines()
@@ -673,18 +713,91 @@ export function DocumentResumePDFPage({
   const regimePages = chunkLinesByLength(regime, 1400)
   return (
     <>
-    <Page size="A4" style={pdfTheme.page}>
+    <Page size="A4" style={pdfTheme.page} wrap>
       <PdfBrandHeader tagline={label} />
-      <Text style={pdfTheme.h2}>{label}</Text>
+      <Text style={pdfTheme.h2}>{label.toUpperCase()}</Text>
       <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold", color: "#1e40af" }]}>N° {numero}</Text>
-      {d.raisonSociale && <Text style={pdfTheme.p}>Client : {d.raisonSociale}</Text>}
-      {d.primeAnnuelle != null && (
-        <Text style={pdfTheme.p}>Prime : {d.primeAnnuelle.toLocaleString("fr-FR")} € TTC</Text>
-      )}
-      {d.dateEffet && <Text style={pdfTheme.p}>Date d&apos;effet : {d.dateEffet}</Text>}
-      <Text style={[pdfTheme.p, { marginTop: 20, fontSize: 9, color: "#64748b" }]}>
-        Consultez ce document en ligne dans votre espace client pour les détails complets.
-      </Text>
+      {type === "devis" ? (
+        <Text style={pdfTheme.p}>
+          Proposition valable {QUOTE_VALIDITY_DAYS} jours
+          {d.dateCreation ? ` à partir du ${d.dateCreation}` : ""}.
+        </Text>
+      ) : null}
+      {type === "devis_do" ? (
+        <Text style={pdfTheme.p}>
+          Proposition valable {DO_QUOTE_VALIDITY_DAYS} jours
+          {d.dateCreation ? ` à partir du ${d.dateCreation}` : ""}.
+        </Text>
+      ) : null}
+      {d.raisonSociale ? <Text style={pdfTheme.p}>Client : {d.raisonSociale}</Text> : null}
+      {d.siret ? <Text style={pdfTheme.p}>SIRET : {d.siret}</Text> : null}
+      {address ? <Text style={pdfTheme.p}>{address}</Text> : null}
+      {d.telephone ? <Text style={pdfTheme.p}>Téléphone : {d.telephone}</Text> : null}
+      {d.email ? <Text style={pdfTheme.p}>Email : {d.email}</Text> : null}
+      {type === "avenant" ? (
+        <Text style={pdfTheme.p}>Contrat modifié : {d.contractNumero || "—"}</Text>
+      ) : null}
+      {type === "avenant" ? (
+        <Text style={pdfTheme.p}>Motif : {d.motifAvenant || "Modification contractuelle"}</Text>
+      ) : null}
+      {type === "avenant" && d.dateAvenant ? (
+        <Text style={pdfTheme.p}>Date de l&apos;avenant : {d.dateAvenant}</Text>
+      ) : null}
+      {type === "devis_do" ? (
+        <Text style={pdfTheme.p}>
+          Adresse de construction : {doFacts?.constructionAddress || d.adresseOperation || "Non renseignée"}
+        </Text>
+      ) : null}
+      {type === "devis_do" && doFacts?.guaranteeAmount != null ? (
+        <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold" }]}>
+          Montant des garanties : {doFacts.guaranteeAmount.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €
+        </Text>
+      ) : null}
+      {lots.length > 0 ? (
+        <Text style={pdfTheme.p}>Lots couverts : {libelleLotsCouverts(lots)}</Text>
+      ) : null}
+      {d.dateEffet ? <Text style={pdfTheme.p}>Date d&apos;effet : {d.dateEffet}</Text> : null}
+      {d.dateEcheance ? <Text style={pdfTheme.p}>Échéance : {d.dateEcheance}</Text> : null}
+      {typeof d.chiffreAffaires === "number" && type !== "avenant" ? (
+        <Text style={pdfTheme.p}>Chiffre d&apos;affaires : {d.chiffreAffaires.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} € HT</Text>
+      ) : null}
+      {typeof d.primeAnnuelle === "number" ? (
+        <Text style={pdfTheme.p}>Prime annuelle : {d.primeAnnuelle.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} € TTC</Text>
+      ) : null}
+      {typeof d.primeMensuelle === "number" ? (
+        <Text style={pdfTheme.p}>Prime mensuelle : {d.primeMensuelle.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} € TTC</Text>
+      ) : null}
+      {typeof d.franchise === "number" ? (
+        <Text style={pdfTheme.p}>Franchise : {d.franchise.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €</Text>
+      ) : null}
+      {typeof d.plafond === "number" ? (
+        <Text style={pdfTheme.p}>Plafond : {d.plafond.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} €</Text>
+      ) : null}
+      {activities.length > 0 && type !== "avenant" ? (
+        <View style={pdfTheme.section}>
+          <Text style={pdfTheme.h3}>Activités</Text>
+          {activities.map((activity, index) => (
+            <Text key={`${activity}-${index}`} style={pdfTheme.p}>
+              • {activity}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+      {type === "devis" ? (
+        <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold" }]}>{DECENNALE_SOUS_TRAITANCE_ATTESTATION}</Text>
+      ) : null}
+      {type === "devis" || type === "avenant" ? <DecennaleGarantiesPdf data={data} /> : null}
+      {type === "devis_do" ? <DoGarantiesPdf /> : null}
+      {avenantLines.map((line) => (
+        <Text key={line} style={pdfTheme.p}>
+          • {line}
+        </Text>
+      ))}
+      {type === "avenant" ? (
+        <Text style={[pdfTheme.p, { fontFamily: "Helvetica-Bold" }]}>
+          Frais d&apos;avenant : 60 €, reportés sur la prochaine échéance.
+        </Text>
+      ) : null}
       <Text style={[pdfTheme.legalText, { marginTop: 14 }]}>{pdfLegalLinksLine()}</Text>
       <Text style={[pdfTheme.legalText, { marginTop: 6 }]}>
         Optimum Courtage agit par délégation de Accelerant Insurance.
