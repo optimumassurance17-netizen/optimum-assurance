@@ -143,6 +143,10 @@ export default function SouscriptionDommageOuvragePage() {
       setInsuranceLoading(true)
       try {
         const ins = await runInsuranceContractStepAfterSouscription(merged)
+        if (ins.outcome === "signature_redirect") {
+          window.location.href = ins.signatureLink
+          return
+        }
         if (ins.outcome === "mollie_redirect") {
           window.location.href = ins.checkoutUrl
           return
@@ -205,9 +209,8 @@ export default function SouscriptionDommageOuvragePage() {
         <Stepper parcours="do" currentStep="souscription" />
         <h1 className="text-3xl font-semibold mb-2 text-black">Souscription dommage ouvrage</h1>
         <p className="text-[#171717] mb-8">
-          Le règlement est un virement unique Mollie du montant indiqué. Après validation, la page de virement
-          s&apos;ouvre. Si le dossier reste en étude, le même virement unique se fait depuis l&apos;espace client
-          après acceptation.
+          Après validation, vous signez le devis. Le règlement est ensuite un virement unique Mollie du
+          montant indiqué, depuis l&apos;espace client, une fois le dossier accepté.
         </p>
 
         <div className="bg-[#ebe0db] border border-[#d4c9c4] rounded-xl p-4 mb-8">

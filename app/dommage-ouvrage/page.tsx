@@ -164,7 +164,7 @@ export default function DommageOuvrageHubPage() {
             <ul className="space-y-1">
               <li>• Prévoyez l&apos;adresse du chantier, le coût prévisionnel et le profil du maître d&apos;ouvrage.</li>
               <li>• Le brouillon reste enregistré sur votre appareil pendant la saisie.</li>
-              <li>• Après l&apos;envoi, poursuivez la souscription en ligne. Le règlement est un virement unique.</li>
+              <li>• Après l&apos;envoi, poursuivez la souscription en ligne, signez le devis, puis réglez par un virement unique.</li>
             </ul>
           </div>
           <div className="flex flex-wrap gap-3">

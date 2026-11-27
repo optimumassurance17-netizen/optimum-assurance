@@ -159,6 +159,10 @@ export default function SouscriptionPage() {
       setInsuranceLoading(true)
       try {
         const ins = await runInsuranceContractStepAfterSouscription(souscription)
+        if (ins.outcome === "signature_redirect") {
+          window.location.href = ins.signatureLink
+          return
+        }
         if (ins.outcome === "mollie_redirect") {
           window.location.href = ins.checkoutUrl
           return

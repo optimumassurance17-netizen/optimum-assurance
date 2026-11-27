@@ -43,7 +43,7 @@ type DashboardPendingSignature = {
   createdAt: string
   userId: string
   user: { id: string; email: string; raisonSociale: string | null } | null
-  signatureFlow: "custom_pdf" | "decennale"
+  signatureFlow: "custom_pdf" | "decennale" | "do_quote"
   signatureFlowLabel?: string
   ageHours: number
   repairEligible?: boolean
@@ -577,7 +577,7 @@ export default function GestionRectificationPage() {
                     <div>
                       <p className="font-mono text-sm text-white">{s.signatureRequestId}</p>
                       <p className="text-xs text-gray-400">
-                        {s.contractNumero} · {s.signatureFlow === "custom_pdf" ? (s.signatureFlowLabel || "custom_pdf") : "décennale"} ·
+                        {s.contractNumero} · {s.signatureFlow === "do_quote" ? "dommage ouvrage" : s.signatureFlow === "custom_pdf" ? (s.signatureFlowLabel || "custom_pdf") : "décennale"} ·
                         {" "}{s.user?.email || "utilisateur introuvable"} · âge {s.ageHours}h
                         {expired ? <span className="text-amber-200"> · Expirée</span> : null}
                       </p>

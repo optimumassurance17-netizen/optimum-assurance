@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { collapseDecennaleContractDuplicates } from "@/lib/decennale-contract-replacement"
 import { prisma } from "@/lib/prisma"
 import type { InsuranceContractListItem } from "@/lib/insurance-contract-types"
+import { doQuotePaymentAllowed } from "@/lib/do-quote-signature-rules"
 
 /**
  * Contrats plateforme (Prisma) liés à l'utilisateur connecté.
@@ -31,6 +32,7 @@ export async function GET() {
         createdAt: true,
         paidAt: true,
         rejectedReason: true,
+        signedQuoteStorageKey: true,
       },
     })
 
@@ -44,6 +46,7 @@ export async function GET() {
       createdAt: c.createdAt.toISOString(),
       paidAt: c.paidAt?.toISOString() ?? null,
       rejectedReason: c.rejectedReason,
+      quoteSigned: doQuotePaymentAllowed(c.productType, c.signedQuoteStorageKey),
     }))
 
     return NextResponse.json({ contracts })

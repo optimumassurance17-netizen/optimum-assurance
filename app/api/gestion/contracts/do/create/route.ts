@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { createInsuranceContract, findReusableDoContract } from "@/lib/insurance-contract-service"
 import { logAdminActivity } from "@/lib/admin-activity"
 import { sendEmail, EMAIL_TEMPLATES } from "@/lib/email"
+import { deleteDoQuoteSignatureRequest, openDoQuoteSignature } from "@/lib/do-quote-signature"
 import { formatDoConstructionCostActivity } from "@/lib/do-attestation-facts"
 import { buildDoDocumentLinesFromStoredJson } from "@/lib/do-operation-lines"
 import {
@@ -186,14 +187,23 @@ export async function POST(request: NextRequest) {
     })
 
     let emailSent: boolean | null = null
+    let signatureLink: string | null = null
     if (user.email) {
-      const template = EMAIL_TEMPLATES.devisDoAjoute(clientName, contract.contractNumber, premium)
+      const signature = await openDoQuoteSignature(contract.id)
+      if (signature.ok) signatureLink = signature.signatureLink
+      const template = EMAIL_TEMPLATES.devisDoAjoute(clientName, contract.contractNumber, premium, {
+        signatureLink,
+      })
       emailSent = await sendEmail({
         to: user.email,
         subject: template.subject,
         text: template.text,
-        html: (template as { html?: string }).html,
+        html: template.html,
       })
+      if (!emailSent && signature.ok && signature.created && signature.signatureRequestId) {
+        await deleteDoQuoteSignatureRequest(signature.signatureRequestId)
+        signatureLink = null
+      }
     }
 
     return NextResponse.json({

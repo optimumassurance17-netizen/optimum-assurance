@@ -9,6 +9,7 @@ import { logContractAction } from "@/lib/insurance-contract-service"
 import { renderContractPdf } from "@/lib/insurance-contract-pdf"
 import { prepareDoContractForPdf } from "@/lib/do-attestation-source"
 import { SITE_URL } from "@/lib/site-url"
+import { deleteDoQuoteSignatureRequest, openDoQuoteSignature } from "@/lib/do-quote-signature"
 
 export async function POST(
   _request: NextRequest,
@@ -52,11 +53,21 @@ export async function POST(
 
     const ready = await prepareDoContractForPdf(contract)
     const pdfBytes = await renderContractPdf(ready, "quote")
+    const signature = await openDoQuoteSignature(contract.id)
+    if (!signature.ok) {
+      return NextResponse.json({ error: signature.error }, { status: signature.status })
+    }
     const clientLabel = contract.user?.raisonSociale || contract.clientName || email
     const safeClientLabel = escapeHtmlForEmail(clientLabel)
     const safeContractNumber = escapeHtmlForEmail(contract.contractNumber)
-    const espaceClientUrl = `${SITE_URL}/espace-client#contrats-plateforme`
-    const subject = `Votre devis dommage-ouvrage ${contract.contractNumber} - Optimum Assurance`
+    const espaceClientUrl = `${SITE_URL}/espace-client?suite=do`
+    const signatureLink = signature.signatureLink
+    const subject = signature.alreadySigned
+      ? `Votre devis dommage-ouvrage ${contract.contractNumber} - Optimum Assurance`
+      : `Votre devis dommage-ouvrage ${contract.contractNumber} est à signer - Optimum Assurance`
+    const nextStep = signature.alreadySigned
+      ? "Ce devis est déjà signé. Le virement unique se fait depuis l'espace client, une fois le dossier accepté."
+      : "Signez le devis avant le virement unique. Le virement se fait depuis l'espace client, une fois le dossier accepté."
     const text = [
       `Bonjour ${clientLabel},`,
       "",
@@ -65,7 +76,10 @@ export async function POST(
       `Référence : ${contract.contractNumber}`,
       `Montant TTC : ${contract.premium.toLocaleString("fr-FR")} €`,
       "",
-      "Vous pouvez également retrouver ce document dans votre espace client :",
+      nextStep,
+      ...(signatureLink ? ["", signatureLink] : []),
+      "",
+      "Espace client :",
       espaceClientUrl,
       "",
       "Cordialement,",
@@ -75,7 +89,13 @@ export async function POST(
       <p>Bonjour ${safeClientLabel},</p>
       <p>Veuillez trouver en pièce jointe votre <strong>devis dommage-ouvrage</strong> et les conditions particulières associées.</p>
       <p style="font-size:13px;color:#64748b;">Référence : <strong>${safeContractNumber}</strong><br>Montant TTC : <strong>${contract.premium.toLocaleString("fr-FR")} €</strong></p>
-      <p><a href="${espaceClientUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p>
+      <p>${nextStep}</p>
+      ${
+        signatureLink
+          ? `<p><a href="${signatureLink}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Signer le devis</a></p>`
+          : ""
+      }
+      <p><a href="${espaceClientUrl}" style="color:#2563eb;font-weight:bold">Accéder à mon espace client</a></p>
       <p>Cordialement,<br>Optimum Assurance</p>
     `.trim()
 
@@ -93,6 +113,9 @@ export async function POST(
     })
 
     if (!sent) {
+      if (signature.created && signature.signatureRequestId) {
+        await deleteDoQuoteSignatureRequest(signature.signatureRequestId)
+      }
       return NextResponse.json(emailNotSentBody())
     }
 

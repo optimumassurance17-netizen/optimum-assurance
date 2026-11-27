@@ -370,7 +370,7 @@ export const GUIDES_SEO = [
       },
       {
         type: "p",
-        text: "Après le devis, la signature du contrat et le paiement du premier trimestre, le dossier est contrôlé. L'attestation est mise à disposition dans l'espace client une fois le risque accepté. Le document comporte un QR code de vérification. Elle n'est pas délivrée tant que le paiement et le contrôle ne sont pas terminés.",
+        text: "Après le devis, la signature du contrat et le paiement du premier mois, le dossier est contrôlé. L'attestation est mise à disposition dans l'espace client une fois le risque accepté. Le document comporte un QR code de vérification. Elle n'est pas délivrée tant que le paiement et le contrôle ne sont pas terminés.",
       },
     ],
   },
@@ -379,7 +379,7 @@ export const GUIDES_SEO = [
     slug: "prix-assurance-decennale",
     title: "Prix de l'assurance décennale : ce qui fait varier la prime",
     description:
-      "La prime décennale dépend du chiffre d'affaires, des activités et des antécédents. Chez Optimum, le minimum est de 600 € par an, payé par trimestre.",
+      "La prime décennale dépend du chiffre d'affaires, des activités et des antécédents. Chez Optimum, le minimum est de 600 € par an, prélevé chaque mois.",
     h1: "Combien coûte une assurance décennale ?",
     shortAnswer:
       "Il n'y a pas un prix unique. La prime suit le chiffre d'affaires, les métiers exercés et l'historique de sinistres. Chez Optimum Assurance, la cotisation minimale est de 600 € par an, avec un prélèvement mensuel.",
@@ -404,7 +404,7 @@ export const GUIDES_SEO = [
       },
       {
         type: "p",
-        text: "La cotisation minimale est de 600 € par an. Le site affiche un équivalent mensuel pour comparer, mais le paiement réel est trimestriel : le premier trimestre et les frais de gestion se règlent par carte, puis les échéances suivantes sont prévues en prélèvement SEPA. Le montant affiché au devis reste indicatif tant que le dossier n'est pas accepté.",
+        text: "La cotisation minimale est de 600 € par an. Le paiement est mensuel : le premier mois et les frais de gestion se règlent par carte, puis les échéances suivantes sont prélevées par SEPA. Le montant affiché au devis reste indicatif tant que le dossier n'est pas accepté.",
       },
       {
         type: "h2",
@@ -538,7 +538,7 @@ export const GUIDES_SEO = [
       },
       {
         type: "p",
-        text: "La demande se lance sur le formulaire dommage ouvrage, puis la souscription se poursuit en ligne avec le même email. Le règlement est un virement unique du montant indiqué. Les pièces se déposent dans l'espace client. Le questionnaire d'étude reprend l'opération, l'ouvrage, les coûts et les éléments techniques.",
+        text: "La demande se lance sur le formulaire dommage ouvrage, puis la souscription se poursuit en ligne avec le même email. Le devis émis se signe avant le virement unique du montant indiqué. Les pièces se déposent dans l'espace client. Le questionnaire d'étude reprend l'opération, l'ouvrage, les coûts et les éléments techniques.",
       },
     ],
   },

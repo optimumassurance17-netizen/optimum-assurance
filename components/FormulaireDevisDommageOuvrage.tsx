@@ -323,7 +323,7 @@ export function FormulaireDevisDommageOuvrage() {
         <h2 className="text-xl font-bold text-black mb-4">Demande envoyée</h2>
         <p className="text-black mb-4">
           {eligibleOnlineDo
-            ? "Votre demande est enregistrée. Prochaine étape : finaliser la souscription en ligne avec cette adresse email, puis régler par un virement unique Mollie. Le montant ci-dessous est celui du virement. Le même lien est dans l'email d'estimation."
+            ? "Votre demande est enregistrée. Prochaine étape : finaliser la souscription en ligne avec cette adresse email, signer le devis, puis régler par un virement unique Mollie une fois le dossier accepté. Le montant ci-dessous est celui du virement. Le même lien est dans l'email d'estimation."
             : "Votre demande de devis dommage ouvrage a bien été enregistrée. Notre équipe vous transmettra le prix définitif sous 24 h après étude de votre dossier."}
         </p>
         <div className="bg-[#dbeafe] border border-[#E8D5CF] rounded-xl p-4 mb-6">
@@ -332,7 +332,7 @@ export function FormulaireDevisDommageOuvrage() {
             {eligibleOnlineDo ? (
               <>
                 <li>Votre espace client s&apos;ouvre automatiquement avec cette adresse</li>
-                <li>Valider la souscription : un virement unique Mollie s&apos;ouvre pour le montant indiqué</li>
+                <li>Valider la souscription, puis signer le devis avant le virement unique Mollie</li>
                 <li>L&apos;attestation est délivrée après réception des fonds</li>
               </>
             ) : (

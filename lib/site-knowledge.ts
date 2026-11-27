@@ -47,12 +47,12 @@ export const SITE_KNOWLEDGE = `
 1. **/devis-dommage-ouvrage** — Questionnaire en **5 étapes** (souscripteur, opération, ouvrage et coûts, terrain et technique, garanties). Brouillon enregistré localement dans le navigateur.
 2. Envoi → demande enregistrée, email avec le lien **/souscription-dommage-ouvrage**.
 3. **Compte connecté** : la souscription se reprend sur **/souscription-dommage-ouvrage** (même email, même si le navigateur a perdu le brouillon). Le questionnaire **/espace-client/questionnaire-do-etude** complète le dossier.
-4. Contrat plateforme : **paiement par virement unique Mollie** du montant indiqué (prime entière, pas de trimestrialisation). Un particulier sans SIRET peut suivre ce virement. Un dossier à risque reste en étude, puis le même virement unique s’ouvre dans l’espace client après acceptation. Pièces (permis, DOC, plans…) en **GED**.
+4. Contrat plateforme : **signature du devis émis**, puis **paiement par virement unique Mollie** du montant indiqué (prime entière, pas de trimestrialisation). Un particulier sans SIRET peut suivre ce parcours. Un dossier à risque reste en étude : la signature précède le virement, qui s’ouvre dans l’espace client après acceptation. Pièces (permis, DOC, plans…) en **GED**.
 5. **Attestation** après **réception des fonds**.
 
 ## Différences décennale vs DO (résumé)
 - **Décennale** : tarif tout de suite, **prélèvement mensuel** ; **1er mois + frais en CB** puis **SEPA mensuel** ; attestation après paiement, contrôle du dossier et acceptation du risque.
-- **DO** : souscription en ligne puis **virement unique** Mollie du montant indiqué ; attestation après encaissement.
+- **DO** : souscription en ligne, **signature du devis**, puis **virement unique** Mollie du montant indiqué ; attestation après encaissement.
 
 ## Outils techniques (information générale)
 - **Paiements** : **Mollie** (carte, virement selon produit). **Signature** : parcours **/signature** puis page **/sign/[id]** (PDF + signature manuscrite sur le document).

@@ -3,9 +3,16 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { quoteStillValidSince } from "@/lib/quote-validity"
+import {
+  DO_QUOTE_AFTER_SIGN_PATH,
+  signatureFlowFromPendingData,
+  signatureFlowLabel,
+} from "@/lib/do-quote-signature-rules"
 
 type PendingContractData = {
   customUploadedDevisFlow?: unknown
+  doQuoteFlow?: unknown
+  insuranceContractId?: unknown
   produitLabel?: unknown
   afterSignNextPath?: unknown
 }
@@ -49,9 +56,9 @@ export async function GET() {
         parsed = {}
       }
 
-      const customUploadedDevisFlow = parsed.customUploadedDevisFlow === true
+      const flow = signatureFlowFromPendingData(parsed)
       const produitLabel = asTrimmedString(parsed.produitLabel)
-      const fallbackNextPath = customUploadedDevisFlow ? "/espace-client" : "/mandat-sepa"
+      const fallbackNextPath = flow === "decennale" ? "/mandat-sepa" : DO_QUOTE_AFTER_SIGN_PATH
       const nextPath = normalizeInternalPath(asTrimmedString(parsed.afterSignNextPath), fallbackNextPath)
       const signatureLink = `/sign/${row.signatureRequestId}?next=${encodeURIComponent(nextPath)}`
 
@@ -59,9 +66,8 @@ export async function GET() {
         signatureRequestId: row.signatureRequestId,
         contractNumero: row.contractNumero,
         createdAt: row.createdAt.toISOString(),
-        signatureFlow: customUploadedDevisFlow ? "custom_pdf" : "decennale",
-        signatureFlowLabel:
-          produitLabel || (customUploadedDevisFlow ? "Document personnalisé" : "Contrat décennale"),
+        signatureFlow: flow,
+        signatureFlowLabel: signatureFlowLabel(flow, produitLabel),
         signatureLink,
       }
     })

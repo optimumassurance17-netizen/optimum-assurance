@@ -13,6 +13,8 @@ import {
 } from "@/lib/dda-compliance"
 import { coverageLinesForDoUser } from "@/lib/do-attestation-source"
 import { activitesAvecLignesCouverture, lignesCouvertureLots } from "@/lib/do-options-lots"
+import { openDoQuoteSignature } from "@/lib/do-quote-signature"
+import { EMAIL_TEMPLATES, sendEmail } from "@/lib/email"
 
 function asTrimmedString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined
@@ -95,7 +97,17 @@ export async function POST(request: NextRequest) {
     if (productType === "do" && projectAddress) {
       const existing = await findReusableDoContract(session.user.id, projectAddress)
       if (existing) {
+        let signatureLink: string | null = null
+        if (existing.status !== "rejected") {
+          try {
+            const signature = await openDoQuoteSignature(existing.id)
+            if (signature.ok) signatureLink = signature.signatureLink
+          } catch (error) {
+            console.error("[contracts/create] signature devis DO existant", error)
+          }
+        }
         return NextResponse.json({
+          signatureLink,
           contract: {
             id: existing.id,
             contractNumber: existing.contractNumber,
@@ -231,7 +243,35 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    let signatureLink: string | null = null
+    if (productType === "do" && contract.status !== "rejected") {
+      try {
+        const signature = await openDoQuoteSignature(contract.id)
+        if (signature.ok && signature.signatureLink) {
+          signatureLink = signature.signatureLink
+          const recipient = session.user.email?.trim()
+          if (recipient) {
+            const template = EMAIL_TEMPLATES.devisDoAjoute(
+              clientName,
+              contract.contractNumber,
+              premium,
+              { signatureLink }
+            )
+            await sendEmail({
+              to: recipient,
+              subject: template.subject,
+              text: template.text,
+              html: template.html,
+            })
+          }
+        }
+      } catch (error) {
+        console.error("[contracts/create] signature devis DO", error)
+      }
+    }
+
     return NextResponse.json({
+      signatureLink,
       contract: {
         id: contract.id,
         contractNumber: contract.contractNumber,

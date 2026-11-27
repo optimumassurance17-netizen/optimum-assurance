@@ -726,13 +726,16 @@ export async function GET() {
           )
     const remindedAtByRequest = latestSignatureReminderByRequest(signatureReminderLogs)
     const pendingSignatures = pendingSignaturesRaw.map((p) => {
-      let signatureFlow: "custom_pdf" | "decennale" = "decennale"
+      let signatureFlow: "custom_pdf" | "decennale" | "do_quote" = "decennale"
       let signatureFlowLabel: string | undefined
       const ageHours = Math.max(0, Math.floor((now.getTime() - p.createdAt.getTime()) / (60 * 60 * 1000)))
       const expired = isDisplayedQuoteExpired(p.createdAt, now)
       try {
         const j = JSON.parse(p.contractData || "{}") as Record<string, unknown>
-        if (j.customUploadedDevisFlow === true) {
+        if (j.doQuoteFlow === true) {
+          signatureFlow = "do_quote"
+          signatureFlowLabel = "Devis dommage ouvrage"
+        } else if (j.customUploadedDevisFlow === true) {
           signatureFlow = "custom_pdf"
           const pl = typeof j.produitLabel === "string" ? j.produitLabel.trim() : ""
           signatureFlowLabel = pl ? pl.slice(0, 120) : undefined

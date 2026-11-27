@@ -14,6 +14,10 @@ import {
   insuranceProductUsesDirectMollieAfterApproval,
 } from "@/lib/insurance-product"
 import { SITE_URL } from "@/lib/site-url"
+import {
+  DO_QUOTE_SIGNATURE_REQUIRED_ERROR,
+  doQuotePaymentAllowed,
+} from "@/lib/do-quote-signature-rules"
 
 export async function POST(
   _request: NextRequest,
@@ -36,6 +40,7 @@ export async function POST(
         premium: true,
         status: true,
         paidAt: true,
+        signedQuoteStorageKey: true,
         user: { select: { email: true, raisonSociale: true } },
       },
     })
@@ -60,6 +65,9 @@ export async function POST(
     }
     if (contract.paidAt && contract.productType !== "rc_fabriquant") {
       return NextResponse.json({ error: "Ce contrat est déjà payé." }, { status: 400 })
+    }
+    if (!doQuotePaymentAllowed(contract.productType, contract.signedQuoteStorageKey)) {
+      return NextResponse.json({ error: DO_QUOTE_SIGNATURE_REQUIRED_ERROR }, { status: 409 })
     }
 
     const email = contract.user?.email?.trim().toLowerCase()

@@ -104,6 +104,9 @@ jobs:
       - name: Vérification des montants de facture
         run: npm run test:factures
 
+      - name: Vérification signature du devis dommage ouvrage
+        run: npm run test:signature-do
+
       - name: Prisma generate + Next build
         run: npm run build
 

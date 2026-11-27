@@ -498,11 +498,25 @@ export const EMAIL_TEMPLATES = {
     text: `Bonjour ${raisonSociale},\n\nNous avons bien enregistré votre paiement de ${montant.toLocaleString("fr-FR")} € (Mollie) pour la première échéance de votre assurance décennale.\n\nVotre facture acquittée ${numeroFacture} est jointe à cet email et disponible dans votre espace client.\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
     html: `<p>Bonjour ${raisonSociale},</p><p>Nous avons bien enregistré votre <strong>paiement par carte</strong> de <strong>${montant.toLocaleString("fr-FR")} €</strong> (Mollie) pour la <strong>première échéance</strong> de votre assurance décennale.</p><p>Votre <strong>facture acquittée ${numeroFacture}</strong> est jointe à cet email et disponible dans votre espace client.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Cordialement,<br>Optimum Assurance</p>`,
   }),
-  devisDoAjoute: (raisonSociale: string, numero: string, primeAnnuelle: number) => ({
-    subject: `Votre devis et conditions dommage ouvrage ${numero} sont disponibles - Optimum Assurance`,
-    text: `Bonjour ${raisonSociale},\n\nVotre devis et conditions dommage ouvrage sont disponibles dans votre espace client.\n\nRéférence : ${numero}\nPrime annuelle : ${primeAnnuelle.toLocaleString("fr-FR")} €\n\nCette proposition est valable ${QUOTE_VALIDITY_DAYS} jours à compter de son émission.\n\nRèglement : uniquement par virement bancaire via Mollie (instructions sur la page de paiement). Attestation délivrée après encaissement et activation du contrat.\n\n${APP_URL}/espace-client\n\nCordialement,\nOptimum Assurance`,
-    html: `<p>Bonjour ${raisonSociale},</p><p>Votre <strong>devis et conditions dommage ouvrage</strong> sont disponibles dans votre espace client.</p><p><strong>Référence :</strong> ${numero}<br><strong>Prime annuelle :</strong> ${primeAnnuelle.toLocaleString("fr-FR")} €</p><p>Cette proposition est valable <strong>${QUOTE_VALIDITY_DAYS} jours</strong> à compter de son émission.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p><p>Règlement : <strong>uniquement virement bancaire (Mollie)</strong> — coordonnées et référence sur la page sécurisée. Attestation après réception du virement et activation du contrat.</p><p>Cordialement,<br>Optimum Assurance</p>`,
-  }),
+  devisDoAjoute: (
+    raisonSociale: string,
+    numero: string,
+    primeAnnuelle: number,
+    opts?: { signatureLink?: string | null }
+  ) => {
+    const signatureLink = opts?.signatureLink?.trim() || ""
+    const signatureText = signatureLink
+      ? `\nSignez d'abord le devis :\n${signatureLink}\n\nAprès signature, le règlement est un virement unique Mollie, une fois le dossier accepté. L'attestation est délivrée après encaissement.\n`
+      : `\nSignez le devis depuis votre espace client, puis réglez par virement unique Mollie une fois le dossier accepté. L'attestation est délivrée après encaissement.\n\n${APP_URL}/espace-client\n`
+    const signatureHtml = signatureLink
+      ? `<p><a href="${signatureLink}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Signer le devis</a></p><p>Après signature, le règlement est un <strong>virement unique</strong> Mollie, une fois le dossier accepté. L'attestation est délivrée après encaissement.</p>`
+      : `<p>Signez le devis depuis votre espace client, puis réglez par <strong>virement unique</strong> Mollie une fois le dossier accepté. L'attestation est délivrée après encaissement.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à mon espace client</a></p>`
+    return {
+      subject: `Votre devis dommage ouvrage ${numero} est à signer - Optimum Assurance`,
+      text: `Bonjour ${raisonSociale},\n\nVotre devis dommage ouvrage est émis.\n\nRéférence : ${numero}\nMontant TTC : ${primeAnnuelle.toLocaleString("fr-FR")} €\n\nCette proposition est valable ${QUOTE_VALIDITY_DAYS} jours à compter de son émission.\n${signatureText}\nCordialement,\nOptimum Assurance`,
+      html: `<p>Bonjour ${raisonSociale},</p><p>Votre <strong>devis dommage ouvrage</strong> est émis.</p><p><strong>Référence :</strong> ${numero}<br><strong>Montant TTC :</strong> ${primeAnnuelle.toLocaleString("fr-FR")} €</p><p>Cette proposition est valable <strong>${QUOTE_VALIDITY_DAYS} jours</strong> à compter de son émission.</p>${signatureHtml}<p>Cordialement,<br>Optimum Assurance</p>`,
+    }
+  },
   devisSauvegarde: (email: string, resumeUrl: string, opts?: { pdfJoint?: boolean }) => {
     const pdfLine = opts?.pdfJoint
       ? "\n\nVotre devis (PDF) est joint à ce message."
@@ -525,10 +539,10 @@ export const EMAIL_TEMPLATES = {
     const safeRef = escapeHtmlForEmail(numeroReference)
     const continueUrl = `${APP_URL}/souscription-dommage-ouvrage`
     const nextText = opts?.canContinueOnline
-      ? `\n\nProchaine étape : connectez-vous ou créez votre compte avec cette adresse email, puis poursuivez la souscription :\n${continueUrl}\n\nLe règlement est un virement unique Mollie du montant indiqué dans le PDF. L'attestation est délivrée après réception des fonds.\n`
+      ? `\n\nProchaine étape : connectez-vous ou créez votre compte avec cette adresse email, puis poursuivez la souscription :\n${continueUrl}\n\nAprès la souscription, signez le devis. Le règlement est ensuite un virement unique Mollie du montant indiqué, une fois le dossier accepté. L'attestation est délivrée après réception des fonds.\n`
       : `\n\nNotre équipe étudie votre dossier. Vous pouvez créer votre espace client pour déposer les pièces :\n${APP_URL}/espace-client\n`
     const nextHtml = opts?.canContinueOnline
-      ? `<p>Prochaine étape : connectez-vous ou créez votre compte avec cette adresse email, puis poursuivez la souscription.</p><p><a href="${continueUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Poursuivre ma souscription</a></p><p>Le règlement est un <strong>virement unique</strong> Mollie du montant indiqué dans le PDF. L'attestation est délivrée après réception des fonds.</p>`
+      ? `<p>Prochaine étape : connectez-vous ou créez votre compte avec cette adresse email, puis poursuivez la souscription.</p><p><a href="${continueUrl}" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Poursuivre ma souscription</a></p><p>Après la souscription, <strong>signez le devis</strong>. Le règlement est ensuite un <strong>virement unique</strong> Mollie du montant indiqué, une fois le dossier accepté. L'attestation est délivrée après réception des fonds.</p>`
       : `<p>Notre équipe étudie votre dossier. Vous pouvez créer votre espace client pour déposer les pièces.</p><p><a href="${APP_URL}/espace-client" style="color:#2563eb;font-weight:bold;background:#eff6ff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block">Accéder à l'espace client</a></p>`
     return {
       subject: `Votre estimation dommage ouvrage ${numeroReference} - Optimum Assurance`,

@@ -77,7 +77,7 @@ export default function DevisDommageOuvragePage() {
               <li>• <strong>Reprise du passé</strong> — Jusqu&apos;à 2 ans en arrière (sous réserve de non sinistralité) — soumis à étude</li>
             </ul>
           <p className="text-sm text-black mt-3">
-            Prix selon le coût de construction. Après l&apos;envoi, poursuivez la souscription : le règlement est un virement unique.
+            Prix selon le coût de construction. Après l&apos;envoi, poursuivez la souscription, signez le devis, puis réglez par un virement unique.
           </p>
           <p className="text-sm text-black mt-2">
             Après création de compte, vous pourrez déposer vos documents (permis, DOC, plans, conventions, étude de sol) dans votre espace client GED.
