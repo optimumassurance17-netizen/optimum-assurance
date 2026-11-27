@@ -101,6 +101,12 @@ assert.match(dashboard, /repairEligible: ageHours >= 24 && !expired/)
 assert.match(gestion, /expired \? null : \(/)
 assert.match(gestion, /Expirée/)
 assert.doesNotMatch(gestion, /s\.repairEligible \?/)
+const gestionDocument = read("app/gestion/documents/[id]/page.tsx")
+assert.match(
+  gestionDocument,
+  /document\.type === "devis" \|\| document\.type === "devis_do"/
+)
+assert.match(gestionDocument, /QUOTE_EXPIRED_ERROR/)
 assert.match(fiche, /QUOTE_EXPIRED_ERROR/)
 assert.match(fiche, /quoteExpired \? "Expiré"/)
 assert.match(fiche, /Relancer la signature/)
