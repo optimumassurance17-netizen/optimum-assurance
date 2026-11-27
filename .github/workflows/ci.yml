@@ -62,6 +62,9 @@ jobs:
       - name: Vérification attestation dommage ouvrage
         run: npm run test:do-attestation
 
+      - name: Vérification du tarif dommage ouvrage
+        run: npm run test:tarif-do
+
       - name: Vérification indexation SEO
         run: npm run test:seo-indexation
 

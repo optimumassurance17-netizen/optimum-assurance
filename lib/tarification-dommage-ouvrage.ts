@@ -2,7 +2,8 @@
  * Tarification indicative - Assurance dommage ouvrage
  * Prix approximatifs selon le coût de construction.
  * Prix définitif à la fin de l'étude sous 24h.
- * Remise web : 5 % sur la part DO.
+ * Chaque palier fourni est réduit de 30 %.
+ * Remise web : 5 % sur la part DO, appliquée après cette baisse.
  * Option TRC : +0,4 % du montant du chantier.
  * Option RCMO : +0,2 % du montant du chantier.
  */
@@ -19,14 +20,24 @@ export interface TarifDommageOuvrageResult {
   supplementRcmo?: number
 }
 
-const TRANCHES: { min: number; max: number; prix: number }[] = [
+/** Paliers fournis, avant la baisse de 30 %. */
+const PALIERS_FOURNIS = [
   { min: 0, max: 100_000, prix: 1900 },
   { min: 100_000, max: 150_000, prix: 2700 },
   { min: 150_000, max: 250_000, prix: 3200 },
   { min: 250_000, max: 500_000, prix: 4200 },
-]
+] as const
 
-const TAUX_AU_DELA_500K = 0.017 // 1.7%
+const BAISSE_PALIERS_DO = 0.3
+const TAUX_FOURNI_AU_DELA_500K = 0.017
+
+const TRANCHES: { min: number; max: number; prix: number }[] = PALIERS_FOURNIS.map((palier) => ({
+  min: palier.min,
+  max: palier.max,
+  prix: Math.round(palier.prix * (1 - BAISSE_PALIERS_DO)),
+}))
+
+const TAUX_AU_DELA_500K = TAUX_FOURNI_AU_DELA_500K * (1 - BAISSE_PALIERS_DO) // 1,19 %
 const REMISE_WEB_DO = 0.05 // 5% sur la part DO
 const TAUX_TRC = 0.004 // 0.4% du montant du chantier
 const TAUX_RCMO = 0.002 // 0.2% du montant du chantier
@@ -53,10 +64,14 @@ export function calculerTarifDommageOuvrage(
     }
   }
 
-  // Au-delà de 500 000 € : taux de 1.7%
+  // Au-delà de 500 000 € : 1,19 % (1,7 % fourni, moins 30 %)
   if (prime === undefined && cout >= 500_000) {
     prime = Math.round(cout * TAUX_AU_DELA_500K)
-    tranche = `> 500 k€ (${(TAUX_AU_DELA_500K * 100).toFixed(1)} %)`
+    const tauxAffiche = (TAUX_AU_DELA_500K * 100).toLocaleString("fr-FR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+    tranche = `> 500 k€ (${tauxAffiche} %)`
   }
 
   if (prime === undefined || tranche === undefined) return null
